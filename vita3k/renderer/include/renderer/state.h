@@ -88,6 +88,7 @@ struct State {
 
     bool should_display;
 
+    // bool need_page_table = false;
     // only support disabled by default
     int supported_mapping_methods_mask = 1;
     MappingMethod mapping_method = MappingMethod::Disabled;
@@ -130,6 +131,7 @@ struct State {
     virtual std::vector<std::string> get_gpu_list() {
         return { "Automatic" };
     }
+
     virtual bool support_custom_drivers() {
         return false;
     }
@@ -137,6 +139,8 @@ struct State {
     virtual uint32_t get_gpu_version() {
         return 0;
     }
+
+    virtual std::string_view get_gpu_name() = 0;
 
     virtual void precompile_shader(const ShadersHash &hash) = 0;
     virtual void preclose_action() = 0;
