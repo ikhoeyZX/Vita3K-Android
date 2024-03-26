@@ -24,10 +24,6 @@
 
 #include <gxm/functions.h>
 #include <mem/ptr.h>
-#include <util/align.h>
-#include <util/log.h>
-
-static constexpr bool log_parameter = false;
 
 namespace renderer::gl {
 
@@ -60,7 +56,7 @@ static void apply_sampler_state(const SceGxmTexture &gxm_texture, const GLenum t
 bool GLTextureCache::init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id) {
     TextureCache::init(hashless_texture_cache, texture_folder, game_id);
     backend = Backend::OpenGL;
-
+    
     // check for dxt support
     int total_extensions = 0;
     glGetIntegerv(GL_NUM_EXTENSIONS, &total_extensions);
@@ -76,8 +72,7 @@ bool GLTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
             break;
         }
     }
-
-    return textures.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
+    return textures.init(glGenTextures, glDeleteTextures);
 }
 
 void GLTextureCache::select(size_t index, const SceGxmTexture &texture) {
@@ -106,8 +101,6 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
 
     const SceGxmTextureFormat fmt = gxm::get_format(gxm_texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
-    const SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(gxm_texture.uaddr_mode);
-    const SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(gxm_texture.vaddr_mode);
     uint32_t width = gxm::get_width(gxm_texture);
     uint32_t height = gxm::get_height(gxm_texture);
     const GLint *const swizzle = translate_swizzle(fmt);
@@ -118,7 +111,7 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     // TODO Support mip-mapping.
     if (mip_count)
         glTexParameteri(texture_bind_type, GL_TEXTURE_MAX_LEVEL, mip_count - 1);
-
+        
 #ifdef ANDROID
     for(int i = 0; i < 4; i++){
         glTexParameteri(texture_bind_type, GL_TEXTURE_SWIZZLE_R + i, swizzle[i]);
@@ -134,14 +127,14 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     const GLenum type = translate_type(base_format);
     const auto texture_type = gxm_texture.texture_type();
     const auto base_fmt = gxm::get_base_format(fmt);
-
+    
     if(!support_dxt && gxm::is_block_compressed_format(base_format)){
         // texture is decompressed on the CPU
         internal_format = bcn_to_rgba8(base_format);
         int num_comp = gxm::get_num_components(base_format);
         format = (num_comp == 4) ? GL_RGBA : (num_comp == 2 ? GL_RG : GL_RED);
     }
-
+    
     std::uint32_t org_width = width;
     std::uint32_t org_height = height;
 
@@ -245,7 +238,6 @@ void GLTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
     const GLenum texture_bind_type = GL_TEXTURE_2D;
 
     glTexParameteri(texture_bind_type, GL_TEXTURE_MAX_LEVEL, mipcount - 1);
-
 #ifdef ANDROID
     for(int i = 0; i < 4; i++){
         glTexParameteri(texture_bind_type, GL_TEXTURE_SWIZZLE_R + i, swizzle[i]);
@@ -253,7 +245,6 @@ void GLTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
 #else
     glTexParameteriv(texture_bind_type, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 #endif
-
     apply_sampler_state(gxm_texture, texture_bind_type, anisotropic_filtering);
 
     bool compressed = gxm::is_bcn_format(base_format) || renderer::texture::is_astc_format(base_format);
