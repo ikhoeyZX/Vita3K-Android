@@ -174,7 +174,7 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
         case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
         case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8: {
             // case not handled by our reverse function
-            const uint8_t *src_pixels = reinterpret_cast<const uint8_t *>(pixels);
+            const uint8_t *src_pixels = static_cast<const uint8_t *>(pixels);
             for (uint32_t i = 0; i < nb_pixels; i++) {
                 data_unswizzled[3 * i + 0] = src_pixels[3 * i + 2];
                 data_unswizzled[3 * i + 1] = src_pixels[3 * i + 1];
@@ -250,8 +250,8 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
             break;
 
         case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4: {
-            const uint16_t *src = reinterpret_cast<const uint16_t *>(pixels);
-            for (int i = 0; i < nb_pixels; i++) {
+            const uint16_t *src = static_cast<const uint16_t *>(pixels);
+            for (uint32_t i = 0; i < nb_pixels; i++) {
                 uint8_t r = src[i] & 0xF;
                 uint8_t g = (src[i] >> 4) & 0xF;
                 uint8_t b = (src[i] >> 8) & 0xF;
@@ -264,8 +264,8 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
             break;
         }
         case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5: {
-            const uint16_t *src = reinterpret_cast<const uint16_t *>(pixels);
-            for (int i = 0; i < nb_pixels; i++) {
+            const uint16_t *src = static_cast<const uint16_t *>(pixels);
+            for (uint32_t i = 0; i < nb_pixels; i++) {
                 uint8_t r = src[i] & 0x1F;
                 uint8_t g = (src[i] >> 5) & 0x3F;
                 uint8_t b = (src[i] >> 11) & 0x1F;
@@ -276,8 +276,8 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
             break;
         }
         case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5: {
-            const uint16_t *src = reinterpret_cast<const uint16_t *>(pixels);
-            for (int i = 0; i < nb_pixels; i++) {
+            const uint16_t *src = static_cast<const uint16_t *>(pixels);
+            for (uint32_t i = 0; i < nb_pixels; i++) {
                 uint8_t r = src[i] & 0x1F;
                 uint8_t g = (src[i] >> 5) & 0x1F;
                 uint8_t b = (src[i] >> 10) & 0x1F;
@@ -291,8 +291,8 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
         }
 
         case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10: {
-            const uint32_t *src = reinterpret_cast<const uint32_t *>(pixels);
-            for (int i = 0; i < nb_pixels; i++) {
+            const uint32_t *src = static_cast<const uint32_t *>(pixels);
+            for (uint32_t i = 0; i < nb_pixels; i++) {
                 uint32_t r = src[i] & 0x3FF;
                 uint32_t g = (src[i] >> 10) & 0x3FF;
                 uint32_t b = (src[i] >> 20) & 0x3FF;
@@ -308,30 +308,30 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
         case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
         case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
         case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16: {
-            const uint16_t *src = reinterpret_cast<const uint16_t *>(pixels);
-            for (int i = 0; i < nb_pixels * nb_comp; i++)
+            const uint16_t *src = static_cast<const uint16_t *>(pixels);
+            for (uint32_t i = 0; i < nb_pixels * nb_comp; i++)
                 converted_data[i] = src[i] >> 8;
             break;
         }
         case SCE_GXM_TEXTURE_BASE_FORMAT_F16:
         case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
         case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16: {
-            const uint16_t *src = reinterpret_cast<const uint16_t *>(pixels);
-            for (int i = 0; i < nb_pixels * nb_comp; i++)
-                converted_data[i] = static_cast<uint8_t>(std::clamp(util::decode_flt16(src[i]) * 255.0, 0.0, 255.0));
+            const uint16_t *src = static_cast<const uint16_t *>(pixels);
+            for (uint32_t i = 0; i < nb_pixels * nb_comp; i++)
+                converted_data[i] = static_cast<uint8_t>(std::clamp(util::decode_flt16(src[i]) * 255.0f, 0.0f, 255.0f));
             break;
         }
         case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
         case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32: {
-            const float *src = reinterpret_cast<const float *>(pixels);
-            for (int i = 0; i < nb_pixels * nb_comp; i++)
+            const float *src = static_cast<const float *>(pixels);
+            for (uint32_t i = 0; i < nb_pixels * nb_comp; i++)
                 converted_data[i] = static_cast<uint8_t>(std::clamp(src[i] * 255.0f + 0.5f, 0.0f, 255.0f));
             break;
         }
         case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
         case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32: {
-            const uint32_t *src = reinterpret_cast<const uint32_t *>(pixels);
-            for (int i = 0; i < nb_pixels * nb_comp; i++)
+            const uint32_t *src = static_cast<const uint32_t *>(pixels);
+            for (uint32_t i = 0; i < nb_pixels * nb_comp; i++)
                 converted_data[i] = src[i] >> 24;
             break;
         }
@@ -340,7 +340,7 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
             return;
         }
 
-        const uint8_t *data = converted_data.empty() ? reinterpret_cast<const uint8_t *>(pixels) : converted_data.data();
+        const uint8_t *data = converted_data.empty() ? static_cast<const uint8_t *>(pixels) : converted_data.data();
 
         // if the texture has 4 components but the alpha is set to 1 using the swizzle, convert it to a 3-component texture
         std::vector<uint8_t> data_comp3;
@@ -367,7 +367,7 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
 
             auto convert_to_linear = [](uint8_t pixel) {
                 // linear = srgb^(2.2)
-                return static_cast<uint8_t>(roundf(powf(static_cast<float>(pixel) / 255.0f, 2.2f) * 255.0));
+                return static_cast<uint8_t>(roundf(powf(static_cast<float>(pixel) / 255.0f, 2.2f) * 255.0f));
             };
             if (nb_comp == 3) {
                 for (uint32_t i = 0; i < nb_pixels; i++) {
@@ -400,7 +400,7 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
     if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8 || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8) {
         // 24bpp textures are not supported nby dds files, convert them to rgba8
         expanded_data.resize(width * height * 4);
-        const uint8_t *data = reinterpret_cast<const uint8_t *>(pixels);
+        const uint8_t *data = static_cast<const uint8_t *>(pixels);
         for (uint32_t i = 0; i < width * height; i++) {
             expanded_data[4 * i + 0] = data[3 * i + 0];
             expanded_data[4 * i + 1] = data[3 * i + 1];
@@ -422,7 +422,7 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
     uint32_t block_stride_in_bytes = (pixels_per_stride * block_height * bpp) / 8;
     uint32_t block_width_in_bytes = (width * block_height * bpp) / 8;
     uint32_t nb_blocks_y = height / block_height;
-    const char *data_loc = reinterpret_cast<const char *>(pixels);
+    const char *data_loc = static_cast<const char *>(pixels);
     for (uint32_t block_y = 0; block_y < nb_blocks_y; block_y++) {
         output_file.write(data_loc, block_width_in_bytes);
         data_loc += block_stride_in_bytes;
@@ -460,7 +460,6 @@ bool TextureCache::import_configure_texture() {
 
     // with 3-component or 4-component textures with a specific swizzle, upload them as 4 component
     // (rgb8 textures are not that much supported on modern gpus)
-    bool alpha_is_1 = (nb_comp == 3) || (nb_comp == 4 && (gxm_texture.swizzle_format & 0b100));
     if (nb_comp == 3)
         nb_comp = 4;
 
@@ -508,7 +507,7 @@ bool TextureCache::import_configure_texture() {
         }
         is_srgb = ddspp::is_srgb(dds_descriptor->format);
         swap_rb = dds_swap_rb(dds_descriptor->format);
-
+        
         if (texture::is_astc_format(base_format) && !support_astc) {
             LOG_ERROR_ONCE("ASTC textures are not support by this device");
             return false;
@@ -522,7 +521,7 @@ bool TextureCache::import_configure_texture() {
 #endif
             return false;
         }
-
+        
         imported_texture_decoded = imported_texture_raw_data.data() + dds_descriptor->headerSize;
     } else {
         int nb_channels;
@@ -759,7 +758,7 @@ static SceGxmTextureBaseFormat dxgi_to_gxm(const ddspp::DXGIFormat format) {
         return SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5;
     case B4G4R4A4_UNORM:
         return SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4;
-
+        
 #define ASTC_FMT(b_x, b_y)                \
     case ASTC_##b_x##X##b_y##_UNORM:      \
     case ASTC_##b_x##X##b_y##_UNORM_SRGB: \
@@ -767,7 +766,7 @@ static SceGxmTextureBaseFormat dxgi_to_gxm(const ddspp::DXGIFormat format) {
 
 #include "../texture/astc_formats.inc"
 #undef ASTC_FMT
-
+        
     default:
         return static_cast<SceGxmTextureBaseFormat>(-1);
     }
@@ -875,7 +874,7 @@ static ddspp::DXGIFormat dxgi_apply_srgb(const ddspp::DXGIFormat format) {
         return BC3_UNORM_SRGB;
     case BC7_UNORM:
         return BC7_UNORM_SRGB;
-
+        
 #define ASTC_FMT(b_x, b_y)           \
     case ASTC_##b_x##X##b_y##_UNORM: \
         return ASTC_##b_x##X##b_y##_UNORM_SRGB;
@@ -962,8 +961,8 @@ static void apply_swizzle_4(const void *src, void *dst, uint32_t nb_pixels, bool
     // used for swapping r and b
     constexpr T mask_rb = ((one << size1) - 1) | (((one << size3) - 1) << (size1 + size2));
 
-    const T *src_pixels = reinterpret_cast<const T *>(src);
-    T *dst_pixels = reinterpret_cast<T *>(dst);
+    const T *src_pixels = static_cast<const T *>(src);
+    T *dst_pixels = static_cast<T *>(dst);
     for (uint32_t i = 0; i < nb_pixels; i++) {
         // go from rgba to abgr
         // we must take into account that components can have different sizes
@@ -998,8 +997,8 @@ static void reverse_comp3_order(const void *src, void *dst, uint32_t nb_pixels) 
     constexpr uint32_t mask_g = ((1 << size2) - 1) << size1
         | (has_leftover ? ~((1 << rgb_size) - 1) : 0);
 
-    const T *src_pixels = reinterpret_cast<const T *>(src);
-    T *dst_pixels = reinterpret_cast<T *>(dst);
+    const T *src_pixels = static_cast<const T *>(src);
+    T *dst_pixels = static_cast<T *>(dst);
     for (uint32_t i = 0; i < nb_pixels; i++) {
         // go from rgb to bgr
         T pixel = src_pixels[i];
