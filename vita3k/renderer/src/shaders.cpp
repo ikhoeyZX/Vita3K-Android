@@ -43,8 +43,8 @@ bool get_shaders_cache_hashs(State &renderer) {
     // Read size of hashes list
     size_t size;
     shaders_hashs.read((char *)&size, sizeof(size));
-    
-    // Check version of cache
+
+    // Check version of cache and device id
     uint32_t versionInFile;
     shaders_hashs.read((char *)&versionInFile, sizeof(uint32_t));
     uint32_t features_mask;
@@ -69,7 +69,9 @@ bool get_shaders_cache_hashs(State &renderer) {
     for (size_t a = 0; a < size; a++) {
         auto read = [&shaders_hashs]() {
             Sha256Hash hash;
+
             shaders_hashs.read(reinterpret_cast<char *>(hash.data()), sizeof(Sha256Hash));
+
             return hash;
         };
 
@@ -93,13 +95,13 @@ void save_shaders_cache_hashs(State &renderer, std::vector<ShadersHash> &shaders
     if (shaders_hashs.is_open()) {
         // Write Size of shaders cache hashes list
         const auto size = shaders_cache_hashs.size();
-        shaders_hashs.write((char *)&size, sizeof(size));
+        shaders_hashs.write((const char *)&size, sizeof(size));
 
         // Write version of cache
         const uint32_t versionInFile = shader::CURRENT_VERSION;
-        shaders_hashs.write((char *)&versionInFile, sizeof(uint32_t));
+        shaders_hashs.write((const char *)&versionInFile, sizeof(uint32_t));
         const uint32_t features_mask = renderer.get_features_mask();
-        shaders_hashs.write((char *)&features_mask, sizeof(uint32_t));
+        shaders_hashs.write((const char *)&features_mask, sizeof(uint32_t));
 
         // Write shader hash list
         for (const auto &hash : shaders_cache_hashs) {
@@ -136,7 +138,7 @@ static bool load_shader(const fs::path &shader_name, char **destination, std::si
     return true;
 }
 
-static const Sha256Hash get_shader_hash(const SceGxmProgram &program) {
+static Sha256Hash get_shader_hash(const SceGxmProgram &program) {
     const Sha256Hash hash_bytes = sha256(&program, program.size);
     return hash_bytes;
 }
