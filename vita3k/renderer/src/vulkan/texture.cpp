@@ -65,7 +65,6 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
     // so start a new recording right now if the macroblock has changed
     context.check_for_macroblock_change(false);
 
-    Address data_addr = texture.data_addr << 2;
     bool is_vertex = index >= SCE_GXM_MAX_TEXTURE_UNITS;
 
     const SceGxmTextureFormat format = gxm::get_format(texture);
@@ -85,9 +84,6 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
     std::optional<TextureLookupResult> lookup_result = std::nullopt;
 
     SceGxmColorBaseFormat format_target_of_texture;
-
-    uint16_t width = static_cast<uint16_t>(gxm::get_width(texture));
-    uint16_t height = static_cast<uint16_t>(gxm::get_height(texture));
 
     TextureViewport texture_viewport{};
 
@@ -257,7 +253,7 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
 
     samplers.resize(max_sampler_used);
 
-    // check for linear filtering on depth support
+        // check for linear filtering on depth support
     const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(vk::Format::eD32SfloatS8Uint);
     support_depth_linear_filtering = static_cast<bool>(depth_linear.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
 
@@ -269,7 +265,7 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     // check for astc support
     const vk::FormatProperties astc_support = state.physical_device.getFormatProperties(vk::Format::eAstc4x4SrgbBlock);
     support_astc = static_cast<bool>(astc_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
-
+    
     return true;
 }
 
@@ -424,7 +420,7 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
 static void *add_alpha_channel(const void *pixels, const uint32_t width, const uint32_t height, std::vector<uint8_t> &data) {
     data.resize(width * height * 4);
 
-    const uint8_t *src = reinterpret_cast<const uint8_t *>(pixels);
+    const uint8_t *src = static_cast<const uint8_t *>(pixels);
     uint8_t *dst = data.data();
     for (uint32_t y = 0; y < height; y++) {
         for (uint32_t x = 0; x < width; x++) {
@@ -485,7 +481,7 @@ void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
         return;
     }
 
-    memcpy(reinterpret_cast<uint8_t *>(staging_buffer.buffer.mapped_data) + staging_buffer.used_so_far, text_data, upload_size);
+    memcpy(static_cast<uint8_t *>(staging_buffer.buffer.mapped_data) + staging_buffer.used_so_far, text_data, upload_size);
 
     vk::ImageSubresourceLayers layer{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
@@ -495,7 +491,7 @@ void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
     };
     vk::BufferImageCopy region{
         .bufferOffset = staging_buffer.used_so_far,
-        .bufferRowLength = static_cast<uint32_t>(pixels_per_stride),
+        .bufferRowLength = pixels_per_stride,
         .bufferImageHeight = buffer_height,
         .imageSubresource = layer,
         .imageOffset = { 0, 0, 0 },
@@ -541,7 +537,6 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
         min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
         mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
     }
-
     // create sampler
     vk::SamplerCreateInfo sampler_info{
         .magFilter = texture::translate_filter(mag_filter),
