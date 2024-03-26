@@ -111,6 +111,7 @@ static GLenum translate_stencil_func(SceGxmStencilFunc stencil_func) {
 
 void sync_mask(const GLState &state, GLContext &context, const MemState &mem) {
     GLubyte initial_byte = context.record.depth_stencil_surface.mask ? 0xFF : 0;
+
     auto width = context.render_target->width;
     auto height = context.render_target->height;
 
@@ -268,8 +269,8 @@ void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front) {
 void sync_point_line_width(const GLState &state, const std::uint32_t width, const bool is_front) {
     // Point Line Width
     if (is_front) {
-        glLineWidth(static_cast<GLfloat>(width * state.res_multiplier));
-        glPointSize(static_cast<GLfloat>(width * state.res_multiplier));
+        glLineWidth(width * state.res_multiplier);
+        glPointSize(width * state.res_multiplier);
     }
 }
 
@@ -313,16 +314,9 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         texture_as_surface = context.current_color_attachment;
         swizzle_surface = color::translate_swizzle(context.record.color_surface.colorFormat);
 
-        if (std::find(context.self_sampling_indices.begin(), context.self_sampling_indices.end(), index)
-            == context.self_sampling_indices.end()) {
-            context.self_sampling_indices.push_back(index);
-        }
+        vector_utils::push_if_not_exists(context.self_sampling_indices, index);
     } else {
-        auto res = std::find(context.self_sampling_indices.begin(), context.self_sampling_indices.end(),
-            static_cast<GLuint>(index));
-        if (res != context.self_sampling_indices.end()) {
-            context.self_sampling_indices.erase(res);
-        }
+        vector_utils::erase_first(context.self_sampling_indices, index);
 
         SceGxmColorBaseFormat format_target_of_texture;
 
@@ -488,15 +482,13 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
 
         const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
 
-        const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
-        GLenum type = attribute_format_to_gl_type(attribute_format);
-        const GLboolean normalized = attribute_format_normalized(attribute_format);
+        GLenum type = attribute_format_to_gl_type(attribute.format);
+        const GLboolean normalized = attribute_format_normalized(attribute.format);
 
-        int attrib_location = 0;
         bool upload_integral = false;
 
         shader::usse::AttributeInformation info = glvert->attribute_infos.at(attribute.regIndex);
-        attrib_location = info.location;
+        int attrib_location = info.location;
 
         // these 2 values are only used when a matrix is used as a vertex attribute
         // this is only supported for regformated attribute for now
@@ -531,7 +523,7 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
             if (component_count > 4) {
                 // a matrix is used as an attribute, pack everything into an array of vec4
                 array_size = (component_count + 3) / 4;
-                array_element_size = 4 * gxm::attribute_format_size(attribute_format);
+                array_element_size = 4 * gxm::attribute_format_size(attribute.format);
                 component_count = 4;
             }
         } else {
@@ -552,7 +544,7 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
         const std::uint16_t stream_index = attribute.streamIndex;
 
         for (uint32_t i = 0; i < array_size; i++) {
-            if (upload_integral || (attribute_format == SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED)) {
+            if (upload_integral || (attribute.format == SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED)) {
                 glVertexAttribIPointer(attrib_location + i, component_count, type, stream.stride, reinterpret_cast<const GLvoid *>(i * array_element_size + attribute.offset + offset_in_buffer[stream_index]));
             } else {
                 glVertexAttribPointer(attrib_location + i, component_count, type, normalized, stream.stride, reinterpret_cast<const GLvoid *>(i * array_element_size + attribute.offset + offset_in_buffer[stream_index]));
