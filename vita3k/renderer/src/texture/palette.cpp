@@ -20,7 +20,6 @@
 
 #include <gxm/types.h>
 #include <mem/ptr.h>
-#include <util/log.h>
 
 namespace renderer::texture {
 
@@ -49,4 +48,4 @@ const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState
     return palette_ptr.get(mem);
 }
 
-} // namespace renderer::texture
+} // namespace renderer
