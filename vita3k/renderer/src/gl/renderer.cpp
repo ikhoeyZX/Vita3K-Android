@@ -112,7 +112,7 @@ void bind_fundamental(GLContext &context) {
 
 static void after_callback(const char *name, void *funcptr, int len_args, ...) {
     for (GLenum error = glad_glGetError(); error != GL_NO_ERROR; error = glad_glGetError()) {
-        LOG_ERROR("OpenGL: {} set error {}.", name, error);
+        LOG_ERROR("OpenGLES: {} set error {}.", name, error);
     }
 }
 
@@ -167,8 +167,7 @@ static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum 
 
 bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &config) {
     auto &gl_state = dynamic_cast<GLState &>(*state);
-    auto &hashless_texture_cache = config.hashless_texture_cache;
-
+    
 #ifndef NDEBUG
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
@@ -203,7 +202,6 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
         }
     }
 #endif
-
     if (!gl_state.context)
         return false;
 
@@ -212,7 +210,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
 #else
     gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 #endif
-    // glad_set_post_callback(after_callback);
+
     // Detect GPU and features
     const std::string gpu_name = reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
     const std::string version = reinterpret_cast<const GLchar *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
@@ -259,6 +257,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
     }
 
+    // always enabled in the opengl renderer
 #ifdef ANDROID
     gl_state.features.use_mask_bit = false;
 #else
@@ -289,7 +288,7 @@ bool create(std::unique_ptr<Context> &context) {
     context = std::make_unique<GLContext>();
     GLContext *gl_context = reinterpret_cast<GLContext *>(context.get());
 
-    const bool init_result = gl_context->vertex_array.init(reinterpret_cast<renderer::Generator *>(glGenVertexArrays), reinterpret_cast<renderer::Deleter *>(glDeleteVertexArrays));
+    const bool init_result = gl_context->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays);
 
     if (!init_result) {
         return false;
@@ -304,14 +303,14 @@ bool create(GLState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
     rt = std::make_unique<GLRenderTarget>();
     GLRenderTarget *render_target = reinterpret_cast<GLRenderTarget *>(rt.get());
 
-    if (state.features.use_mask_bit && !render_target->maskbuffer.init(reinterpret_cast<renderer::Generator *>(glGenFramebuffers), reinterpret_cast<renderer::Deleter *>(glDeleteFramebuffers))) {
+    if (state.features.use_mask_bit && !render_target->maskbuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
         return false;
     }
 
     render_target->width = static_cast<uint16_t>(params.width * state.res_multiplier);
     render_target->height = static_cast<uint16_t>(params.height * state.res_multiplier);
 
-    render_target->attachments.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
+    render_target->attachments.init(glGenTextures, glDeleteTextures);
 
     glBindTexture(GL_TEXTURE_2D, render_target->attachments[0]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, render_target->width, render_target->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
@@ -335,7 +334,7 @@ bool create(GLState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
         glDrawBuffers(1, drawbuffers);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
-    
+
     return true;
 }
 
@@ -477,7 +476,7 @@ static bool format_need_temp_storage(const GLState &state, SceGxmColorSurface &s
 
 static void post_process_pixels_data(GLState &renderer, std::uint32_t *pixels, std::uint8_t *source, std::uint32_t width, std::uint32_t height, const std::uint32_t stride,
     SceGxmColorSurface &surface) {
-    uint8_t *curr_input = reinterpret_cast<uint8_t *>(source);
+    uint8_t *curr_input = source;
     uint8_t *curr_output = reinterpret_cast<uint8_t *>(pixels);
 
     const bool is_U8U8U8_RGBA = surface.colorFormat == SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA;
@@ -700,6 +699,7 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
+
         texture_size.x = static_cast<float>(frame.image_size.x);
         texture_size.y = static_cast<float>(frame.image_size.y);
 
@@ -757,6 +757,10 @@ int GLState::get_max_anisotropic_filtering() {
 
 void GLState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
+}
+
+std::string_view GLState::get_gpu_name() {
+    return reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
 }
 
 void GLState::precompile_shader(const ShadersHash &hash) {
