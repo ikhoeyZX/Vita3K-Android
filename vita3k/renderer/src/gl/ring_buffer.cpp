@@ -29,7 +29,7 @@ RingBuffer::RingBuffer(GLenum purpose, const std::size_t capacity)
     , cursor_(0)
     , capacity_(capacity)
     , purpose_(purpose) {
-    buffer_.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers));
+    buffer_.init(glGenBuffers, glDeleteBuffers);
 }
 
 RingBuffer::~RingBuffer() {
@@ -46,8 +46,7 @@ void RingBuffer::create_and_map() {
 #else
     glBufferStorage(purpose_, capacity_, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 #endif
-
-    base_ = reinterpret_cast<std::uint8_t *>(glMapBufferRange(purpose_, 0, capacity_, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT));
+    base_ = static_cast<std::uint8_t *>(glMapBufferRange(purpose_, 0, capacity_, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT));
 
     if (!base_) {
         LOG_ERROR("Failed to map persistent buffer to host!");
