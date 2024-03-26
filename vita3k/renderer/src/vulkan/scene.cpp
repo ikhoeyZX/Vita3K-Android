@@ -23,7 +23,6 @@
 #include <config/state.h>
 #include <spdlog/fmt/bin_to_hex.h>
 
-#include <util/align.h>
 #include <util/log.h>
 
 namespace renderer::vulkan {
@@ -40,7 +39,6 @@ void set_uniform_buffer(VKContext &context, MemState &mem, const ShaderProgram *
             // we must always cover everything as some small part of the buffer may get changed only
             context.state.buffer_trapping.access_buffer(data.address(), data_size_upload, mem, false, true);
         }
-
         const uint64_t buffer_address = context.state.get_matching_device_address(data.address());
         if (vertex_shader) {
             context.curr_vert_ublock.set_buffer_address(block_num, buffer_address);
@@ -49,6 +47,7 @@ void set_uniform_buffer(VKContext &context, MemState &mem, const ShaderProgram *
         }
     } else {
         const uint32_t offset_start_upload = offset * 4;
+
         if (vertex_shader) {
             if (!context.vertex_uniform_storage_allocated) {
                 // Allocate a region for it. Don't worry though, when the shader program is changed
@@ -172,12 +171,8 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
     descriptors[0] = context.global_set;
     descriptors[1] = context.rendertarget_set;
 
-    const uint16_t vertex_textures_count = reinterpret_cast<VertexProgram *>(
-        context.record.vertex_program.get(mem)->renderer_data.get())
-                                               ->texture_count;
-    const uint16_t fragment_texture_count = reinterpret_cast<VKFragmentProgram *>(
-        context.record.fragment_program.get(mem)->renderer_data.get())
-                                                ->texture_count;
+    const uint16_t vertex_textures_count = context.record.vertex_program.get(mem)->renderer_data->texture_count;
+    const uint16_t fragment_texture_count = context.record.fragment_program.get(mem)->renderer_data->texture_count;
 
     vk::PipelineLayout pipeline_layout = state.pipeline_cache.pipeline_layouts[vertex_textures_count][fragment_texture_count];
 
@@ -189,7 +184,6 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
     context.last_frag_texture_count = fragment_texture_count;
 
     {
-        int set_idx = 0;
         if (need_vert_descr) {
             context.last_vert_texture_descriptor = retrieve_descriptor(context, true, vertex_textures_count);
         }
@@ -254,7 +248,6 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
         descriptors.size(), descriptors.data(), dynamic_offset_count, dynamic_offsets);
 }
 
-// vertex count is only used with double buffer mapping
 static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t instance_count, uint32_t max_index) {
     GxmRecordState &state = context.record;
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
@@ -268,7 +261,7 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
         max_stream_idx = std::max<int>(max_stream_idx, attribute.streamIndex);
     }
     max_stream_idx++;
-
+    
     if(context.state.mapping_method == MappingMethod::DoubleBuffer){
         for(int i = 0; i < max_stream_idx; i++)
             state.vertex_streams[i].size = 0;
@@ -290,7 +283,7 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
                 context.state.buffer_trapping.access_buffer(state.vertex_streams[i].data.address(), static_cast<uint32_t>(state.vertex_streams[i].size), mem, context.state.has_shader_store);
         }
     }
-
+    
     if (max_stream_idx == 0)
         return;
 
@@ -479,11 +472,10 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     // Upload index data.
     vk::IndexType index_type = (format == SCE_GXM_INDEX_FORMAT_U16) ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
     const size_t index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
-
+    
     uint32_t max_index = 0;
     if (use_memory_mapping) {
         auto [buffer, offset] = context.state.get_matching_mapping(indices);
-
         if(context.state.mapping_method == MappingMethod::DoubleBuffer){
             TrappedBuffer* trapped_buffer = context.state.buffer_trapping.access_buffer(indices.address(), count * index_size, mem);
             if(trapped_buffer->extra == ~0){
@@ -501,13 +493,14 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         context.render_cmd.bindIndexBuffer(buffer, offset, index_type);
     } else {
         const size_t index_buffer_size = index_size * count;
+
         context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices_ptr);
         context.render_cmd.bindIndexBuffer(context.index_stream_ring_buffer.handle(), context.index_stream_ring_buffer.data_offset, index_type);
     }
-
+    
     // bind the vertex streams
     bind_vertex_streams(context, mem, instance_count, max_index);
-
+    
     context.render_cmd.drawIndexed(count, instance_count, 0, 0, 0);
 
     context.vertex_uniform_storage_allocated = false;
