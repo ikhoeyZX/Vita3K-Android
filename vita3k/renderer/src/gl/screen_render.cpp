@@ -242,7 +242,7 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
 #ifndef ANDROID
     glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
 #endif
-    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
+    glViewport(last_viewport[0], last_viewport[1], last_viewport[2], last_viewport[3]);
     glColorMask(last_color_mask[0], last_color_mask[1], last_color_mask[2], last_color_mask[3]);
 }
 
