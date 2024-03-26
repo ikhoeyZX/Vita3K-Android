@@ -27,19 +27,19 @@
 
 #include <shader/spirv_recompiler.h>
 
-#include <gxm/functions.h>
 #include <vector>
 
 namespace renderer::gl {
 static SharedGLObject compile_glsl(GLenum type, const std::string &source) {
     R_PROFILE(__func__);
+    LOG_INFO("BEGIN COMPILE GLSL");
 
-    const SharedGLObject shader = std::make_shared<GLObject>();
+    SharedGLObject shader = std::make_shared<GLObject>();
     if (!shader->init(glCreateShader(type), glDeleteShader)) {
         return SharedGLObject();
     }
-
-    const GLchar *source_glchar = static_cast<const GLchar *>(source.c_str());
+    LOG_INFO("BEGIN COMPILE SHADER in compile_glsl");
+    const GLchar *source_glchar = source.c_str();
     const GLint length = static_cast<GLint>(source.length());
     glShaderSource(shader->get(), 1, &source_glchar, &length);
 
@@ -56,79 +56,89 @@ static SharedGLObject compile_glsl(GLenum type, const std::string &source) {
 
         LOG_ERROR("{}", log.data());
     }
-
+    LOG_INFO("In compile_glsl, is complied?");
     GLint is_compiled = GL_FALSE;
     glGetShaderiv(shader->get(), GL_COMPILE_STATUS, &is_compiled);
     assert(is_compiled != GL_FALSE);
     if (!is_compiled) {
+        LOG_INFO("In compile_glsl : NO");
         return SharedGLObject();
     }
-
+    LOG_INFO("In compile_glsl : YES");
     return shader;
 }
 
 static SharedGLObject compile_spirv(GLenum type, const std::vector<std::uint32_t> &source) {
     R_PROFILE(__func__);
+    LOG_INFO("BEGIN COMPILE SPIRV");
 
-    const SharedGLObject shader = std::make_shared<GLObject>();
+    SharedGLObject shader = std::make_shared<GLObject>();
     if (!shader->init(glCreateShader(type), glDeleteShader)) {
         return SharedGLObject();
     }
-
+    LOG_INFO("In compile_spirv : GL get length");
     const GLchar *source_glchar = reinterpret_cast<const GLchar *>(source.data());
     const GLint length = static_cast<GLint>(source.size() * sizeof(std::uint32_t));
-
+    LOG_INFO("In compile_spirv : compile_lv1");
     GLuint need_compile[1] = { shader->get() };
     const char *shader_entry = (type == GL_VERTEX_SHADER) ? "main_vs" : "main_fs";
-
+    LOG_INFO("In compile_spirv : compile_lv2");
     glShaderBinary(1, need_compile, GL_SHADER_BINARY_FORMAT_SPIR_V_ARB, source_glchar, length);
     glSpecializeShaderARB(need_compile[0], shader_entry, 0, nullptr, nullptr);
-
+    LOG_INFO("In compile_spirv : get leght");
     GLint log_length = 0;
     glGetShaderiv(shader->get(), GL_INFO_LOG_LENGTH, &log_length);
 
     // Intel driver returns an info log length of at least 1 even if it is empty.
     if (log_length > 1) {
+        LOG_INFO("In compile_spirv : leght empty");
         std::vector<GLchar> log;
         log.resize(log_length);
         glGetShaderInfoLog(shader->get(), log_length, nullptr, log.data());
 
         LOG_ERROR("{}", log.data());
     }
+    LOG_INFO("In compile_spirv : is compile");
 
     GLint is_compiled = GL_FALSE;
     glGetShaderiv(shader->get(), GL_COMPILE_STATUS, &is_compiled);
     assert(is_compiled != GL_FALSE);
     if (!is_compiled) {
+        LOG_INFO("In compile_spirv : not compiled");
         return SharedGLObject();
     }
-
+    LOG_INFO("In compile_spirv : Finish");
     return shader;
 }
 
 static std::string convert_hash_to_hex(const Sha256Hash &hash) {
+    LOG_INFO("BEGIN convert_hash_to_hex");
     std::stringstream ss;
     ss << std::hex << std::setfill('0');
     for (size_t i = 0; hash.size() > i; ++i) {
         ss << std::setw(2) << static_cast<uint32_t>(hash[i]);
     }
-
+    LOG_INFO("In compile_spirv : HASH is {}", ss.str());
     return ss.str();
 }
 
-static SharedGLObject compile_program(ProgramCache &program_cache, const SharedGLObject frag_shader, const SharedGLObject vert_shader, const ProgramHashes &hashes) {
-    const SharedGLObject program = std::make_shared<GLObject>();
+static SharedGLObject compile_program(ProgramCache &program_cache, const SharedGLObject &frag_shader, const SharedGLObject &vert_shader, const ProgramHashes &hashes) {
+    SharedGLObject program = std::make_shared<GLObject>();
+    LOG_INFO("BEGIN compile program");
     if (!program->init(glCreateProgram(), glDeleteProgram)) {
+        LOG_INFO("In compile program: shader not exist");
         return SharedGLObject();
     }
-
+    LOG_INFO("In compile program: AttachShader FRAG");
     glAttachShader(program->get(), frag_shader->get());
+    LOG_INFO("In compile program: AttachShader VERT");
     glAttachShader(program->get(), vert_shader->get());
+    LOG_INFO("In compile program: Link shader");
     glLinkProgram(program->get());
-
+    LOG_INFO("In compile program: GET Lenght");
     GLint log_length = 0;
     glGetProgramiv(program->get(), GL_INFO_LOG_LENGTH, &log_length);
-
+    LOG_INFO("In compile program: intel log legth");
     // Intel driver returns an info log length of at least 1 even if it is empty.
     if (log_length > 1) {
         std::vector<GLchar> log;
@@ -137,25 +147,29 @@ static SharedGLObject compile_program(ProgramCache &program_cache, const SharedG
 
         LOG_ERROR("{}\n", log.data());
     }
-
+    LOG_INFO("In compile program: is linked");
     GLint is_linked = GL_FALSE;
     glGetProgramiv(program->get(), GL_LINK_STATUS, &is_linked);
     assert(is_linked != GL_FALSE);
     if (is_linked == GL_FALSE) {
+        LOG_INFO("In compile program: retry");
         return SharedGLObject();
     }
-
+    LOG_INFO("In compile program: Shader is Linked");
+    LOG_INFO("In compile program: DetachShader FRAG");
     glDetachShader(program->get(), frag_shader->get());
+    LOG_INFO("In compile program: DetachShader VERT");
     glDetachShader(program->get(), vert_shader->get());
-
+    LOG_INFO("In compile program: CALL HASH");
     program_cache.emplace(hashes, program);
-
+    LOG_INFO("In compile program: Finish");
     return program;
 }
 
 static SharedGLObject compile_shader(const fs::path &shader_cache_path, const std::string &shader_version, const std::string &hash_hex,
     const char *type_str, const GLenum type, ShaderCache &cache, const Sha256Hash &hash) {
     // Set Shader version with hash
+    LOG_INFO("BEGIN COMPILE SHADER!");
 
     // Load Shader
     const auto shader_name = shader_cache_path / fmt::format("{}-{}.{}", shader_version, hash_hex, type_str);
@@ -164,18 +178,20 @@ static SharedGLObject compile_shader(const fs::path &shader_cache_path, const st
         LOG_WARN("{} shader is empty or not found:\n{}", type_str, hash_hex);
         return SharedGLObject();
     }
-
+    LOG_INFO("In compile_shader: Shader exist!");
     // Compile Shader
-    const SharedGLObject obj = compile_glsl(type, shader);
+    SharedGLObject obj = compile_glsl(type, shader);
+    LOG_INFO("In compile_shader: start compile");
     if (!obj) {
         LOG_CRITICAL("Error in compile {} shader:\n{}", type_str, hash_hex);
         return SharedGLObject();
     }
 
     // Push shader Compiled
+    LOG_INFO("In compile_shader: get cache");
     cache.emplace(hash, obj);
     LOG_INFO("{} shader compiled: {}", type_str, hash_hex);
-
+    LOG_INFO("In compile_shader: finish");
     return obj;
 }
 
@@ -188,15 +204,17 @@ static std::vector<ShadersHash>::iterator get_shaders_hash_index(std::vector<Sha
 }
 
 void pre_compile_program(GLState &renderer, const ShadersHash &hash) {
+    LOG_INFO("BEGIN pre_compile_program");
     if (fs::exists(renderer.shaders_path) && !fs::is_empty(renderer.shaders_path)) {
         // Compile Fragment Shader
+        LOG_INFO("in pre_compile_program :  begin compile FRAG");
         const auto frag_hash_hex = convert_hash_to_hex(hash.frag);
         const SharedGLObject frag_shader = compile_shader(renderer.shaders_path, renderer.shader_version,
             frag_hash_hex, "frag", GL_FRAGMENT_SHADER, renderer.fragment_shader_cache, hash.frag);
         if (!frag_shader) {
             return;
         }
-
+        LOG_INFO("in pre_compile_program :  begin compile VERT");
         // Compile Vertex Shader
         const auto vert_hash_hex = convert_hash_to_hex(hash.vert);
         const SharedGLObject vert_shader = compile_shader(renderer.shaders_path, renderer.shader_version,
@@ -216,33 +234,38 @@ void pre_compile_program(GLState &renderer, const ShadersHash &hash) {
 static SharedGLObject get_or_compile_shader(const SceGxmProgram *program, const FeatureState &features, const Sha256Hash &hash,
     ShaderCache &cache, const GLenum type, const shader::Hints &hints, bool shader_cache, bool spirv, bool maskupdate, const fs::path &shader_cache_path, const fs::path &shader_log_path, const std::string &shader_version, uint32_t &shaders_count_compiled) {
     const auto cached = cache.find(hash);
+    LOG_INFO("BEGIN get_or_compile_shader");
     if (cached == cache.end()) {
         SharedGLObject obj = nullptr;
-
+        LOG_INFO("In get_or_compile_shader : recompile cache");
         // Need to compile new one and add it to cache
         if (features.spirv_shader && spirv) {
+            LOG_INFO("In get_or_compile_shader : recompile cache SPIRV");
             obj = compile_spirv(type, load_spirv_shader(*program, features, false, hints, maskupdate, shader_cache_path, shader_log_path, shader_version + "spv", shader_cache));
         } else {
+            LOG_INFO("In get_or_compile_shader : recompile cache  GLSL");
             obj = compile_glsl(type, load_glsl_shader(*program, features, hints, maskupdate, shader_cache_path, shader_log_path, shader_version, shader_cache));
         }
-
+        LOG_INFO("In get_or_compile_shader : check hash");
         cache.emplace(hash, obj);
 
         shaders_count_compiled++;
-
+        
         return obj;
     }
-
+    LOG_INFO("In get_or_compile_shader : finish");
     return cached->second;
 }
 
 SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmRecordState &state, const FeatureState &features, const MemState &mem,
     bool shader_cache, bool spirv, bool maskupdate) {
     R_PROFILE(__func__);
-
+    LOG_INFO("BEGIN SHARED OBJECT compile_program");
+    LOG_INFO("In SharedGLObject compile_program : ASSERT FRAG");
     assert(state.fragment_program);
+    LOG_INFO("In SharedGLObject compile_program : ASSERT VERT");
     assert(state.vertex_program);
-
+    LOG_INFO("In SharedGLObject compile_program : GET Storage mem");
     const SceGxmVertexProgram &vertex_program_gxm = *state.vertex_program.get(mem);
     const SceGxmFragmentProgram &fragment_program_gxm = *state.fragment_program.get(mem);
 
@@ -251,7 +274,7 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
 
     const GLVertexProgram &vertex_program = *reinterpret_cast<GLVertexProgram *>(
         vertex_program_gxm.renderer_data.get());
-
+    LOG_INFO("In SharedGLObject compile_program : check hash");
     const ProgramHashes hashes(fragment_program.hash, vertex_program.hash);
 
     // First pass, trying to find the program, since link is costly
@@ -283,7 +306,7 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
         return SharedGLObject();
     }
 
-    const SharedGLObject program = compile_program(renderer.program_cache, fragment_shader, vertex_shader, hashes);
+    SharedGLObject program = compile_program(renderer.program_cache, fragment_shader, vertex_shader, hashes);
 
     // Save shader cache haches
     const auto shader_cache_hash_index = get_shaders_hash_index(renderer.shaders_cache_hashs, fragment_program.hash, vertex_program.hash);
