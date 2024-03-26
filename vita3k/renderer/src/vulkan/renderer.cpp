@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-ifdef ANDROID
+#ifdef ANDROID
 // must be first
 #define __ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__
 #endif
