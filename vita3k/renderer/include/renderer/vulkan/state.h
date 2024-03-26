@@ -25,6 +25,7 @@
 #include <renderer/vulkan/surface_cache.h>
 #include <renderer/vulkan/types.h>
 
+typedef void *ImTextureID;
 struct Config;
 
 namespace renderer::vulkan {
@@ -73,6 +74,9 @@ struct VKState : public renderer::State {
     vk::CommandPool general_command_pool;
     // Transfer pool has transient bit set.
     vk::CommandPool transfer_command_pool;
+    // command pool which can be used from multiple thread
+    vk::CommandPool multithread_command_pool;
+    std::mutex multithread_pool_mutex;
 
     // objects for which one copy is needed for every frame being rendered at the same time
     std::array<FrameObject, MAX_FRAMES_RENDERING> frames;
@@ -100,7 +104,7 @@ struct VKState : public renderer::State {
     // support for the VK_KHR_uniform_buffer_standard_layout extension, needed for memory mapping and texture viewport
     bool support_standard_layout = false;
     bool support_rasterized_order_access = false;
-    
+
 #ifdef ANDROID
     bool support_android_buffer_import = false;
     bool support_unix_fd_import = false;
