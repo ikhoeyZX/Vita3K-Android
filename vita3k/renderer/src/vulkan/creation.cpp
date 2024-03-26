@@ -15,8 +15,6 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <renderer/functions.h>
-
 #include <xxh3.h>
 
 #include <renderer/types.h>
@@ -159,7 +157,7 @@ VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &p
     height = static_cast<uint32_t>(params.height * state.res_multiplier);
 
     vk::ImageUsageFlags color_usage = vk::ImageUsageFlagBits::eColorAttachment;
-    if (state.features.support_shader_interlock)
+        if (state.features.support_shader_interlock)
         color_usage |= vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage;
     else
         color_usage |= vk::ImageUsageFlagBits::eInputAttachment | vk::ImageUsageFlagBits::eTransientAttachment;
@@ -214,7 +212,6 @@ bool create(VKState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
 }
 
 void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt) {
-    VKContext &context = *reinterpret_cast<VKContext *>(state.context);
     VKRenderTarget &render_target = *reinterpret_cast<VKRenderTarget *>(rt.get());
 
     // don't forget to destroy the framebuffers
@@ -238,7 +235,7 @@ void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt) {
 
 bool create(std::unique_ptr<VertexProgram> &vp, VKState &state, const SceGxmProgram &program) {
     vp = std::make_unique<VertexProgram>();
-
+    
     if (program.program_flags & SCE_GXM_PROGRAM_FLAG_BUFFER_STORE)
         state.has_shader_store = true;
 
