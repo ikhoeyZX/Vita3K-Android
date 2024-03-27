@@ -17,164 +17,114 @@
 
 #pragma once
 
-#include <util/bit_cast.h>
-#include <vkutil/vkutil.h>
+#define VK_NO_PROTOTYPES
+#define VULKAN_HPP_NO_CONSTRUCTORS
+#define VULKAN_HPP_NO_SPACESHIP_OPERATOR
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
+#include <vulkan/vulkan.hpp>
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnullability-completeness"
+#endif
+
+#include <vk_mem_alloc.hpp>
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+
+#include <util/fs.h>
 
 namespace vkutil {
 
-void init(vma::Allocator vma_allocator);
-
-struct Image {
-    vma::Allocation allocation;
-    vk::Image image{};
-    vk::ImageView view{};
-    vk::Sampler sampler{};
-
-    uint32_t width;
-    uint32_t height;
-    vk::Format format;
-    ImageLayout layout = ImageLayout::Undefined;
-
-    // should the existing image, view, sampler be destroyed when this image is destroyed?
-    bool destroy_on_deletion = true;
-
-    Image();
-    Image(uint32_t width, uint32_t height, vk::Format format);
-    ~Image();
-
-    // allow the object to be moved
-    Image(Image &&other) noexcept;
-    Image &operator=(Image &&other) noexcept;
-
-    // make sure an image is never copied
-    Image(const Image &) = delete;
-    Image &operator=(Image const &) = delete;
-
-    void init_image(vk::ImageUsageFlags usage, vk::ComponentMapping mapping = default_comp_mapping, const vk::ImageCreateFlags image_create_flags = vk::ImageCreateFlags(), const void *pNext = nullptr);
-    // called by ~Image
-    void destroy();
-
-    void transition_to(vk::CommandBuffer buffer, ImageLayout new_layout, const vk::ImageSubresourceRange &range = color_subresource_range);
-    // use this when you don't care about the former content of the image
-    void transition_to_discard(vk::CommandBuffer buffer, ImageLayout new_layout, const vk::ImageSubresourceRange &range = color_subresource_range);
+static constexpr vk::ImageSubresourceRange color_subresource_range = {
+    .aspectMask = vk::ImageAspectFlagBits::eColor,
+    .baseMipLevel = 0,
+    .levelCount = 1,
+    .baseArrayLayer = 0,
+    .layerCount = 1
 };
 
-struct Buffer {
-    vma::Allocation allocation;
-    vk::Buffer buffer;
-
-    vk::DeviceSize size = 0;
-    // only useful is buffer is host visible
-    void *mapped_data = nullptr;
-
-    bool destroy_on_deletion = true;
-
-    Buffer();
-    Buffer(vk::DeviceSize size);
-    ~Buffer();
-
-    // allow the object to be moved
-    Buffer(Buffer &&other) noexcept;
-    Buffer &operator=(Buffer &&other) noexcept;
-
-    // make sure an image is never copied
-    Buffer(const Buffer &) = delete;
-    Buffer &operator=(Buffer const &) = delete;
-
-    void init_buffer(vk::BufferUsageFlags usage_flags, const vma::AllocationCreateInfo &alloc_create_info = vma_auto_alloc);
-    // called by ~Image
-    void destroy();
+static constexpr vk::ImageSubresourceRange ds_subresource_range = {
+    .aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil,
+    .baseMipLevel = 0,
+    .levelCount = 1,
+    .baseArrayLayer = 0,
+    .layerCount = 1
 };
 
-// structure that holds contiguous data
-// if the end is reached, it starts back at the beginning
-class RingBuffer {
-protected:
-    vkutil::Buffer buffer;
-    vk::BufferUsageFlags usage;
-
-    uint32_t cursor = ~0;
-    uint32_t capacity;
-
-public:
-    // any buffer alignment on vulkan is at most 256 on 99% of instances
-    uint32_t alignment = 256;
-    uint32_t data_offset = 0;
-
-    explicit RingBuffer(vk::BufferUsageFlags usage, const size_t capacity);
-    virtual ~RingBuffer() = default;
-    virtual void create() = 0;
-
-    // Allocate new data from ring buffer
-    void allocate(const uint32_t data_size);
-    // copy the content to the framebuffer
-    // cmd_buffer may not be used
-    virtual void copy(vk::CommandBuffer cmd_buffer, const uint32_t size, const void *data, const uint32_t offset = 0) = 0;
-
-    // allocate then copy
-    void allocate(vk::CommandBuffer cmd_buffer, const uint32_t data_size, const void *data) {
-        allocate(data_size);
-        copy(cmd_buffer, data_size, data);
-    }
-
-    vk::Buffer handle() const {
-        return buffer.buffer;
-    }
+static constexpr vk::ImageSubresourceLayers color_subresource_layer = {
+    .aspectMask = vk::ImageAspectFlagBits::eColor,
+    .mipLevel = 0,
+    .baseArrayLayer = 0,
+    .layerCount = 1
 };
 
-// RingBuffer allocated in the GPU memory, may not be accessible from the host
-// updates are done with updateBuffer, so each data chunk should be small
-// this is used for our uniform buffers
-class LocalRingBuffer : public RingBuffer {
-public:
-    explicit LocalRingBuffer(vk::BufferUsageFlags usage, const size_t capacity)
-        : RingBuffer(usage, capacity) {
-    }
-    void create() override;
-
-    void copy(vk::CommandBuffer cmd_buffer, const uint32_t size, const void *data, const uint32_t offset = 0) override;
+static constexpr vk::ComponentMapping default_comp_mapping = {
+    vk::ComponentSwizzle::eIdentity,
+    vk::ComponentSwizzle::eIdentity,
+    vk::ComponentSwizzle::eIdentity,
+    vk::ComponentSwizzle::eIdentity
 };
 
-// RingBuffer using host visible memory
-// Should be used for content that is only read a few times and not worth
-// transferring to the GPU memory
-class HostRingBuffer : public RingBuffer {
-protected:
-    bool is_coherent;
-
-public:
-    explicit HostRingBuffer(vk::BufferUsageFlags usage, const size_t capacity)
-        : RingBuffer(usage, capacity) {
-    }
-    void create() override;
-
-    void copy(vk::CommandBuffer cmd_buffer, const uint32_t size, const void *data, const uint32_t offset = 0) override;
+static constexpr vk::ComponentMapping rgba_mapping = {
+    vk::ComponentSwizzle::eR,
+    vk::ComponentSwizzle::eG,
+    vk::ComponentSwizzle::eB,
+    vk::ComponentSwizzle::eA
 };
 
-// Queue that contains GPU objects that are planned to be destroyed (deferred destruction)
-class DestroyQueue {
-private:
-    vk::Device device;
-    std::vector<uint64_t> destroy_list;
+static constexpr vk::ColorComponentFlags default_color_mask = vk::ColorComponentFlagBits::eR
+    | vk::ColorComponentFlagBits::eG
+    | vk::ColorComponentFlagBits::eB
+    | vk::ColorComponentFlagBits::eA;
 
-public:
-    void init(vk::Device device);
-
-    template <typename T>
-    std::enable_if_t<vk::isVulkanHandleType<T>::value> add(T &vk_object) {
-        if (!vk_object)
-            return;
-
-        destroy_list.push_back(static_cast<uint64_t>(T::objectType));
-        destroy_list.push_back(std::bit_cast<uint64_t>(vk_object));
-        vk_object = nullptr;
-    }
-
-    void add_image(Image &image);
-    void add_buffer(Buffer &buffer);
-    void add_cmd_buffer(vk::CommandBuffer cmd_buffer, vk::CommandPool cmd_pool);
-
-    void destroy_objects();
+static constexpr vma::AllocationCreateInfo vma_auto_alloc = {
+    .usage = vma::MemoryUsage::eAuto
 };
 
-}; // namespace vkutil
+static constexpr vma::AllocationCreateInfo vma_mapped_alloc = {
+    .flags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite | vma::AllocationCreateFlagBits::eMapped,
+    .usage = vma::MemoryUsage::eAuto,
+};
+
+static constexpr vma::AllocationCreateInfo vma_host_visible = {
+    .flags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
+    .usage = vma::MemoryUsage::eAuto,
+    .requiredFlags = vk::MemoryPropertyFlagBits::eHostVisible,
+};
+
+vk::CommandBuffer create_single_time_command(vk::Device device, vk::CommandPool cmd_pool);
+void end_single_time_command(vk::Device device, vk::Queue queue, vk::CommandPool cmd_pool, vk::CommandBuffer cmd_buffer);
+
+vk::ShaderModule load_shader(vk::Device device, const fs::path &shader_path);
+vk::ShaderModule load_shader(vk::Device device, const void *data, const uint32_t size);
+
+void copy_buffer(vk::Device device, vk::CommandPool cmd_pool, vk::Queue queue, vk::Buffer src, vk::Buffer dst, vk::DeviceSize size);
+
+enum struct ImageLayout {
+    Undefined,
+    TransferSrc,
+    TransferDst,
+    ColorAttachment,
+    DepthStencilAttachment,
+    ColorAttachmentReadWrite,
+    SampledImage,
+    StorageImage,
+    DepthReadOnly
+};
+void transition_image_layout(vk::CommandBuffer cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range = color_subresource_range);
+// transition image layout assuming you don't care about the former image content
+void transition_image_layout_discard(vk::CommandBuffer cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range = color_subresource_range);
+// Return the vulkan layout associated with ImageLayout
+vk::ImageLayout get_underlying_layout(ImageLayout layout);
+
+// given the swizzle of the color surface (which was written as rgba because vulkan doesn't support swizzle on framebuffers)
+// and the swizzle of the texture that's reading from the color surface
+// return the swizzle the texture should to make it like the color actually had a swizzle applied to it
+vk::ComponentMapping color_to_texture_swizzle(const vk::ComponentMapping &swizzle_color, const vk::ComponentMapping &swizzle_texture);
+
+} // namespace vkutil
