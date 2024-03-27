@@ -41,7 +41,7 @@
 #include <vulkan/vulkan_beta.h>
 #endif
 
-ifdef ANDROID
+#ifdef ANDROID
 #include <SDL.h>
 #include <adrenotools/bcenabler.h>
 #include <adrenotools/driver.h>
