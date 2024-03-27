@@ -966,6 +966,7 @@ uint32_t VKState::get_features_mask() {
         struct {
             bool use_shader_interlock : 1;
             bool use_texture_viewport : 1;
+            bool use_memory_mapping : 1;
             bool use_rgb_attributes : 1;
             bool use_scaled_attributes : 1;
         };
