@@ -50,7 +50,7 @@ private:
     vk::PipelineLayout pipeline_layout;
     vk::Pipeline pipeline;
 
-    vkutil::Buffer vao;
+    vkutil::vk::Buffer vao;
     std::vector<std::array<float, 4>> last_uvs;
 
     vk::ShaderModule vertex_shader;
