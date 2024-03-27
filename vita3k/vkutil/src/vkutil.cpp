@@ -50,7 +50,7 @@ void end_single_time_command(vk::Device device, vk::Queue queue, vk::CommandPool
     device.freeCommandBuffers(cmd_pool, cmd_buffer);
 }
 
-vk::ShaderModule load_shader(vk::Device device, const std::string &path) {
+vk::ShaderModule load_shader(vk::Device device, const fs::path &shader_path) {
     const std::vector<uint8_t> shader_code = fs_utils::read_asset_raw(fs::path(path));
     return load_shader(device, shader_code.data(), shader_code.size());
 }
@@ -58,7 +58,7 @@ vk::ShaderModule load_shader(vk::Device device, const std::string &path) {
 vk::ShaderModule load_shader(vk::Device device, const void *data, const uint32_t size) {
     vk::ShaderModuleCreateInfo shader_info{
         .codeSize = size,
-        .pCode = reinterpret_cast<const uint32_t *>(data)
+        .pCode = static_cast<const uint32_t *>(data)
     };
 
     return device.createShaderModule(shader_info);
