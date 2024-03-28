@@ -1121,7 +1121,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 #endif
         break;
     }
-    case MappingMethod::PageTable: 
+    case MappingMethod::PageTable: {
         // add 4 KiB because we can as an easy way to prevent crashes due to memory accesses right after the memory boundary
         // also make sure later the mapped address is 4K aligned
         vkutil::Buffer buffer(size + KiB(4));
