@@ -34,6 +34,7 @@ jobs:
       - name: Set up build environment
         run: |
           sudo apt-get install -y ninja-build
+          git submodule update --init --recursive
           vcpkg install boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
 
       - name: Decode Keystore
