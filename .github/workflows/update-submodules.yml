@@ -8,15 +8,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with: {token: '${{secrets.PUSH_TOKEN}}'}
     - name: Checkout submodules
       run: git submodule update --init --no-recommend-shallow
-    - name: Import GPG key
-      uses: crazy-max/ghaction-import-gpg@v6
-      with:
-        gpg_private_key: ${{secrets.GPG_PRIVATE_KEY}}
-        passphrase: ${{secrets.GPG_PASS}}
-        git_user_signingkey: true
     - name: Update submodules
       run: |
         if git commit -S -am"Update submodules (automated)
