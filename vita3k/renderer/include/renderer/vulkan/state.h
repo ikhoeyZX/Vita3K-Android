@@ -25,7 +25,6 @@
 #include <renderer/vulkan/surface_cache.h>
 #include <renderer/vulkan/types.h>
 
-typedef void *ImTextureID;
 struct Config;
 
 namespace renderer::vulkan {
@@ -141,6 +140,7 @@ struct VKState : public renderer::State {
     uint64_t get_matching_device_address(const Address address);
     std::vector<std::string> get_gpu_list() override;
     uint32_t get_gpu_version() override;
+    std::string_view get_gpu_name() override;
 
     void precompile_shader(const ShadersHash &hash) override;
     void preclose_action() override;
