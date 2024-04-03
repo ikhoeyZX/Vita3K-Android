@@ -194,7 +194,7 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     context.ignore_macroblock = false;
 }
 
-oid VKContext::start_recording(bool first_in_scene) {
+void VKContext::start_recording(bool first_in_scene) {
     if (is_recording) {
         LOG_ERROR("Attempt to start recording while already recording");
         return;
