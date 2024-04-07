@@ -176,7 +176,7 @@ static spv::Function *make_fx10_unpack_func(spv::Builder &b, const SpirvUtilFunc
     spv::Id type_f32_v3 = b.makeVectorType(type_f32, 3);
 
     spv::Function *fx10_unpack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32_v3, "unpack3xFX10", { type_i32 }, { "to_unpack" },
+        spv::NoPrecision, type_f32_v3, "unpack3xFX10", { type_ui32 }, { "to_unpack" },
         decorations, &fx10_unpack_func_block);
     fx10_unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
 
@@ -258,7 +258,7 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
     }
 
     spv::Function *unpack_func = b.makeFunctionEntry(
-        spv::NoPrecision, output_type, func_name.c_str(), { type_i32 }, { "to_unpack" },
+        spv::NoPrecision, output_type, func_name.c_str(), { type_ui32 }, { "to_unpack" },
         decorations, &unpack_func_block);
     unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
     spv::Id extracted = unpack_func->getParamId(0);
@@ -327,7 +327,7 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
     }
     case DataType::INT16: {
         func_name = "pack2xS16";
-        input_type = b.makeVectorType(type_i32, 2);
+        input_type = b.makeVectorType(type_ui32, 2);
         comp_count = 2;
         is_signed = true;
         break;
@@ -341,7 +341,7 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
     }
     case DataType::INT8: {
         func_name = "pack4xS8";
-        input_type = b.makeVectorType(type_i32, 4);
+        input_type = b.makeVectorType(type_ui32, 4);
         comp_count = 4;
         is_signed = true;
         break;
@@ -390,7 +390,7 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const SpirvUtilFunct
     spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
 
     spv::Function *f16_unpack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32_v2, "unpack2xF16", { type_f32 }, { "to_unpack" },
+        spv::NoPrecision, type_f32_v2, "unpack2xF16", { type_ui32 }, { "to_unpack" },
         decorations, &f16_unpack_func_block);
     f16_unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
 
@@ -413,7 +413,7 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const SpirvUtilFunctio
 
     spv::Id type_ui32 = b.makeUintType(32);
     spv::Id type_f32 = b.makeFloatType(32);
-    spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
+    spv::Id type_f32_v2 = b.makeVectorType(type_ui32, 2);
 
     spv::Function *f16_pack_func = b.makeFunctionEntry(
         spv::NoPrecision, type_f32, "pack2xF16", { type_f32_v2 }, { "to_pack" },
