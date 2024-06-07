@@ -90,7 +90,7 @@
 	path = external/dynarmic
 	url = https://github.com/Vita3K/dynarmic.git
 [submodule "external/ffmpeg-core"]
-	path = external/ffmpeg-core
+	path = external/ffmpeg
 	url = https://github.com/Macdu/ffmpeg-core.git
 [submodule "external/libadrenotools"]
 	path = external/libadrenotools

@@ -284,7 +284,7 @@ if(ANDROID)
 	# 	file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg/shared/android/${ANDROID_ABI}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt")
 	# endif()
 endif()
-add_subdirectory(ffmpeg-core)
+add_subdirectory(ffmpeg)
 
 if(APPLE)
  	execute_process(
