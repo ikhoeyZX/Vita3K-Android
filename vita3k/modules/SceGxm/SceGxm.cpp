@@ -21,7 +21,7 @@
 
 #include <span>
 #include <stack>
-#ifdef __x86_64__
+#if defined(__x86_64__) && !defined(__APPLE__)
 #include <xxh_x86dispatch.h>
 #else
 #define XXH_INLINE_ALL
@@ -1779,7 +1779,7 @@ EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmCo
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-	// This structure needs 8-byte alignment
+    // This structure needs 8-byte alignment
     *context = Ptr<SceGxmContext>(align(params->hostMem.address(), 8));
 
     SceGxmContext* ctx = context->get(emuenv.mem);

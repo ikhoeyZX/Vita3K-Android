@@ -1,6 +1,5 @@
 apply plugin: 'com.android.application'
 
-
 android {
 	namespace "org.vita3k.emulator"
 	compileSdk 34
@@ -8,11 +7,15 @@ android {
 	buildToolsVersion "34.0.0"
 
 	defaultConfig {
-		applicationId "org.vita3k.emulator"
+		applicationId "org.vita3k.emulator.ikhoeyZX"
 		minSdk 28
 		targetSdk 34
-		versionCode 11
-		versionName "0.2.0-11.5-ikhoeyZX"
+		versionCode 12
+		versionName "0.2.0-12-ikhoeyZX"
+
+		buildFeatures {
+			buildConfig true
+		}
 
 		externalNativeBuild {
 			cmake {
@@ -61,8 +64,8 @@ android {
 			}
 			minifyEnabled true
 			shrinkResources true
-			signingConfig = signingConfigs.ci
 			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+			signingConfig = signingConfigs.ci
 		}
 	}
 
@@ -98,7 +101,7 @@ android {
 
 dependencies {
 	implementation 'androidx.appcompat:appcompat:1.6.1'
-	implementation 'androidx.core:core:1.12.0'
+	implementation "androidx.core:core:1.12.0"
 	implementation 'androidx.core:core-google-shortcuts:1.1.0'
 	implementation 'com.google.android.material:material:1.11.0'
 	implementation 'androidx.constraintlayout:constraintlayout:2.1.4'

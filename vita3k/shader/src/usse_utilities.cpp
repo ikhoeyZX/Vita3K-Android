@@ -350,6 +350,7 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
     for (int i = 0; i < comp_count; ++i) {
         spv::Id comp = b.createBinOp(spv::OpVectorExtractDynamic, comp_type, extracted, b.makeIntConstant(i));
         output = b.createOp(spv::OpBitFieldInsert, comp_type, { output, comp, b.makeIntConstant(comp_bits * i), b.makeIntConstant(comp_bits) });
+
     }
 
     output = b.createUnaryOp(spv::OpBitcast, type_f32, output);

@@ -122,7 +122,7 @@ std::string parameter_name(const SceGxmProgramParameter &parameter) {
     // replace brackets by underscores as on some drivers (Adreno) they cause the shader to crash
     std::replace(full_name.begin(), full_name.end(), '[', '_');
     std::replace(full_name.begin(), full_name.end(), ']', '_');
-    
+
     return full_name;
 }
 

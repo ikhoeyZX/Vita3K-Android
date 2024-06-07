@@ -246,8 +246,7 @@ bool ThreadState::run_loop() {
                 if (to_do == ThreadToDo::step) {
                     res = step(*cpu);
                     to_do = ThreadToDo::suspend;
-
-               } else
+                } else
                     res = run(*cpu);
 
                 // handle svc call if this was what stopped the cpu

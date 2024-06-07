@@ -26,7 +26,6 @@
 #include <shader/profile.h>
 #include <shader/usse_translator_entry.h>
 #include <shader/usse_translator_types.h>
-#include <shader/usse_utilities.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/overloaded.h>
@@ -119,18 +118,8 @@ struct TranslationState {
 
 struct VertexProgramOutputProperties {
     std::string name;
-    std::uint32_t component_count;
-    std::uint32_t location;
-
-    VertexProgramOutputProperties()
-        : name("")
-        , component_count(0)
-        , location(0) {}
-
-    VertexProgramOutputProperties(const char *name, std::uint32_t component_count, std::uint32_t location)
-        : name(name)
-        , component_count(component_count)
-        , location(location) {}
+    std::uint32_t component_count{};
+    std::uint32_t location{};
 };
 using VertexProgramOutputPropertiesMap = std::map<SceGxmVertexProgramOutputs, VertexProgramOutputProperties>;
 
@@ -152,7 +141,7 @@ static spv::Id create_array_if_needed(spv::Builder &b, const spv::Id param_id, c
 
 static spv::Id get_type_basic(spv::Builder &b, const Input &input) {
     switch (input.type) {
-    // clang-format off
+        // clang-format off
     case DataType::F16:
     case DataType::F32:
          return b.makeFloatType(32);
@@ -322,8 +311,14 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
             }
         }
 
-        if (is_integer_data_type(dest.type) && b.isFloatType(utils::unwrap_type(b, b.getTypeId(var))))
-            var = utils::convert_to_int(b, utils, var, dest.type, true);
+        if (is_integer_data_type(dest.type)) {
+            if (b.isFloatType(utils::unwrap_type(b, b.getTypeId(var)))) {
+                var = utils::convert_to_int(b, utils, var, dest.type, true);
+            } else if (convert_to_float) {
+                var = utils::convert_to_float(b, utils, var, dest.type, false);
+                dest.type = (dest.type == DataType::INT32 || dest.type == DataType::UINT32) ? DataType::F32 : DataType::F16;
+            }
+        }
 
         if (is_4th_component_1) {
             // set the 4th component to 1, because it's what the shader is expecting it to be
@@ -579,7 +574,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             std::string_view swizzle_str = ".xy";
             std::string_view projecting;
-            
+
             if (swizzle_texcoord != 0x100) {
                 projecting = "proj";
             }
@@ -770,7 +765,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             spv::Id i32 = b.makeIntegerType(32, true);
             current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), b.createLoad(current_coord, spv::NoPrecision));
-            current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { current_coord, current_coord, 0, 1 });
+            current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { { true, current_coord }, { true, current_coord }, { false, 0 }, { false, 1 } });
 
             if (features.preserve_f16_nan_as_u16) {
                 spv::Id uiv4 = b.makeVectorType(b.makeUintType(32), 4);
@@ -813,6 +808,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                     spv::Id rgb = b.createOp(spv::OpVectorShuffle, v3, { { true, source }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 } });
                     const spv::Id gamma = utils::make_uniform_vector_from_type(b, v3, 2.2f);
                     rgb = b.createBuiltinCall(v3, utils.std_builtins, GLSLstd450Pow, { rgb, gamma });
+                    b.setPrecision(rgb, precision);
                     source = b.createOp(spv::OpVectorShuffle, v4, { { true, rgb }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 }, { false, 6 } });
 
                     store_source_result();
@@ -1106,7 +1102,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, translation_state.is_vulkan ? 1 : 3);
         if (translation_state.is_vulkan)
             b.addDecoration(translation_state.render_info_id, spv::DecorationDescriptorSet, 0);
-            
+
         if (program.is_frag_color_used() && features.should_use_shader_interlock() && translation_state.is_vulkan) {
             // specialization constant for shader interlock:
             // layout (constant_id = GAMMA_CORRECTION_SPECIALIZATION_ID) const bool is_srgb = false;
@@ -1500,8 +1496,9 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         spv::Id signed_i32 = b.makeIntType(32);
         spv::Id coord_id = b.createLoad(translate_state.frag_coord_id, spv::NoPrecision);
         spv::Id translated_id = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(signed_i32, 4), coord_id);
-        translated_id = b.createOp(spv::OpVectorShuffle, b.makeVectorType(signed_i32, 2), { translated_id, translated_id, 0, 1 });
-        
+
+        translated_id = b.createOp(spv::OpVectorShuffle, b.makeVectorType(signed_i32, 2), { { true, translated_id }, { true, translated_id }, { false, 0 }, { false, 1 } });
+
         if (translate_state.is_vulkan) {
             spv::Id old_color = color;
             // if (is_srgb)
@@ -1558,7 +1555,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         spv::Id i32 = b.makeIntegerType(32, true);
         spv::Id v2i32 = b.makeVectorType(i32, 2);
         current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), b.createLoad(current_coord, spv::NoPrecision));
-        current_coord = b.createOp(spv::OpVectorShuffle, v2i32, { current_coord, current_coord, 0, 1 });
+        current_coord = b.createOp(spv::OpVectorShuffle, v2i32, { { true, current_coord }, { true, current_coord }, { false, 0 }, { false, 1 } });
 
         spv::Id sampled_type = b.makeFloatType(32);
         spv::Id v4 = b.makeVectorType(sampled_type, 4);

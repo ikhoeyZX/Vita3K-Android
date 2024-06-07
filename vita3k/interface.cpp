@@ -155,6 +155,7 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &z
                 gui::draw_begin(*gui, emuenv);
                 if(emuenv.renderer->current_backend == renderer::Backend::OpenGL)
                     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
                 gui::draw_ui(*gui, emuenv);
                 ImGui::PushFont(gui->vita_font);
                 gui::draw_reinstall_dialog(&status, *gui, emuenv);
@@ -276,7 +277,6 @@ std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, GuiState *gui, con
     }
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
-
 
     if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
         LOG_CRITICAL("miniz error reading archive: {}", miniz_get_error(zip));
@@ -431,6 +431,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
         for (auto i = 0; i < 4; i++)
             if (emuenv.ctrl.controllers_name[i])
                 LOG_INFO("Controller {}: {}", ctrl_idx++, emuenv.ctrl.controllers_name[i]);
+
         if (emuenv.ctrl.has_motion_support)
             LOG_INFO("Controller has motion support");
     }
@@ -710,9 +711,11 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 sce_ctrl_btn = SCE_CTRL_PSBUTTON;
 #else
 
+#ifdef ANDROID
+            if(event.key.keysym.sym == SDLK_AC_BACK)
+                sce_ctrl_btn = SCE_CTRL_PSBUTTON;
+#else
             // toggle gui state
-            if (allow_switch_state && (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_gui))
-                emuenv.display.imgui_render = !emuenv.display.imgui_render;
             if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_touch && !gui.is_key_capture_dropped)
                 toggle_touchscreen();
             if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_fullscreen && !gui.is_key_capture_dropped)
@@ -728,6 +731,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             
             if (sce_ctrl_btn != 0)
                 ui_navigation(sce_ctrl_btn);
+
 #ifdef ANDROID
             if(!was_in_livearea && gui.vita_area.live_area_screen){
                 emuenv.display.imgui_render = true;

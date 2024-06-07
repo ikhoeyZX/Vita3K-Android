@@ -24,7 +24,7 @@
 
 #include <mem/ptr.h>
 
-// #include <dynarmic/frontend/A32/a32_ir_emitter.h>
+//#include <dynarmic/frontend/A32/a32_ir_emitter.h>
 
 class ArmDynarmicCP15 : public Dynarmic::A32::Coprocessor {
     uint32_t tpidruro;
@@ -118,7 +118,7 @@ public:
 
     void PreCodeTranslationHook(bool is_thumb, Dynarmic::A32::VAddr pc, Dynarmic::A32::IREmitter &ir) override {
         if (cpu->log_code) {
-    //        ir.CallHostFunction(&TraceInstruction, ir.Imm64((uint64_t)this), ir.Imm64(pc), ir.Imm64(is_thumb));
+            //ir.CallHostFunction(&TraceInstruction, ir.Imm64((uint64_t)this), ir.Imm64(pc), ir.Imm64(is_thumb));
         }
     }
 
@@ -309,6 +309,7 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.coprocessors[15] = cp15;
     config.processor_id = core_id;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;
+    config.enable_cycle_counting = false;
 
     return std::make_unique<Dynarmic::A32::Jit>(config);
 }
@@ -334,7 +335,7 @@ int DynarmicCPU::run() {
     do {
         halt_reason = jit->Run();
     } while (halt_reason == Dynarmic::HaltReason::Step || halt_reason == Dynarmic::HaltReason::CacheInvalidation);
-   
+
     return halted;
 }
 

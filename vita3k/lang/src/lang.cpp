@@ -28,7 +28,7 @@
 namespace lang {
 
 static const std::vector<std::string> list_user_lang_static = {
-     "id", "ms", "ua"
+    "id", "ms", "ua"
 };
 
 void init_lang(LangState &lang, EmuEnvState &emuenv) {
@@ -291,7 +291,7 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
 
                 // Message
                 set_lang_string(emuenv.common_dialog.lang.message, lang_child.child("message"));
-                
+
                 // Performance Overlay
                 set_lang_string(lang.performance_overlay, lang_child.child("performance_overlay"));
 
@@ -415,10 +415,11 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                 // Welcome
                 set_lang_string(lang.welcome, lang_child.child("welcome"));
             }
-        } else
-            LOG_ERROR("Error open lang file xml: {}", lang_xml_path.string());
+        } else {
+            LOG_ERROR("Error parsing xml lang file: {}", lang_xml_path);
+        }
     } else
-        LOG_ERROR("Lang file xml not found: {}", lang_xml_path.string());
+        LOG_ERROR("Lang file xml not found: {}", lang_xml_path);
 }
 
 } // namespace lang

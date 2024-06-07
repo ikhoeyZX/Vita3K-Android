@@ -27,6 +27,7 @@
 #pragma once
 
 #include <util/fs.h>
+
 #include <string>
 #include <vector>
 
@@ -101,6 +102,7 @@ Result open_file(fs::path &resulting_path, const std::vector<FileFilter> &file_f
  * @return Result code of the operation as specified in `host::dialog::filesystem::Result`
  */
 Result pick_folder(fs::path &resulting_path, const fs::path &default_path = "");
+
 
 /**
  * @brief Open a File* handle when given a path that was obtained using open_file

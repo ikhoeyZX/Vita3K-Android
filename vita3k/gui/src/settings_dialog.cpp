@@ -1,4 +1,4 @@
-// Vita3K emulator project
+﻿// Vita3K emulator project
 // Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
@@ -35,10 +35,6 @@
 
 #include <emuenv/state.h>
 
-#include <misc/cpp/imgui_stdlib.h>
-
-#include <cpu/functions.h>
-
 #include <string>
 #include <util/fs.h>
 #include <util/log.h>
@@ -48,7 +44,6 @@
 
 #include <algorithm>
 #include <pugixml.hpp>
-#include <sstream>
 
 #undef ERROR
 
@@ -75,11 +70,11 @@ void get_modules_list(GuiState &gui, EmuEnvState &emuenv) {
     if (fs::exists(modules_path) && !fs::is_empty(modules_path)) {
         for (const auto &module : fs::directory_iterator(modules_path)) {
             if (module.path().extension() == ".suprx")
-                gui.modules.push_back({ module.path().filename().replace_extension().string(), false });
+                gui.modules.emplace_back(module.path().filename().replace_extension().string(), false);
         }
 
         for (auto &m : gui.modules)
-            m.second = std::find(config.lle_modules.begin(), config.lle_modules.end(), m.first) != config.lle_modules.end();
+            m.second = vector_utils::contains(config.lle_modules, m.first);
 
         std::sort(gui.modules.begin(), gui.modules.end(), [](const auto &ma, const auto &mb) {
             if (ma.second == mb.second)
@@ -116,7 +111,7 @@ static void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) {
 
     if (result == host::dialog::filesystem::Result::SUCCESS && emulator_path.native() != emuenv.pref_path.native()) {
         // Refresh the working paths
-        emuenv.pref_path = fs::path(emulator_path.native()) / "";
+        emuenv.pref_path = emulator_path / "";
         auto tmp = fs::path(emuenv.pref_path / ".nomedia");
         if(!fs::exists(tmp)){
             fs::ofstream( emuenv.pref_path / "tmp.txt" );
@@ -165,7 +160,7 @@ static bool get_custom_config(EmuEnvState &emuenv, const std::string &app_path) 
                 const auto core_child = config_child.child("core");
                 config.modules_mode = core_child.attribute("modules-mode").as_int();
                 for (auto &m : core_child.child("lle-modules"))
-                    config.lle_modules.push_back(m.text().as_string());
+                    config.lle_modules.emplace_back(m.text().as_string());
             }
 
             // Load CPU Config
@@ -292,7 +287,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     list_user_lang.push_back("ua");
 #endif
 
-    current_user_lang = emuenv.cfg.user_lang.empty() ? 0 : (std::distance(list_user_lang.begin(), std::find(list_user_lang.begin(), list_user_lang.end(), emuenv.cfg.user_lang))) + 1;
+    current_user_lang = emuenv.cfg.user_lang.empty() ? 0 : (vector_utils::find_index(list_user_lang, emuenv.cfg.user_lang) + 1);
 
     get_modules_list(gui, emuenv);
     config.stretch_the_display_area = emuenv.cfg.stretch_the_display_area;
@@ -537,6 +532,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     auto &lang = gui.lang.settings_dialog;
+    auto &common = emuenv.common_dialog.lang.common;
     auto &firmware_font = gui.lang.install_dialog.firmware_install;
 
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
@@ -723,7 +719,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 #endif
         const bool has_integer_multiplier = static_cast<int>(config.resolution_multiplier * 4.0f) % 4 == 0;
         // OpenGL does not support surface sync with a non-integer resolution multiplier
-        if (!is_vulkan && has_integer_multiplier)
+
+        if (!is_vulkan && !has_integer_multiplier)
             has_surface_sync = false;
 
         if (!has_surface_sync)
@@ -998,13 +995,13 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     // Audio
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem("Audio")) {
+    if (ImGui::BeginTabItem(lang.audio["title"].c_str())) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
         if (!emuenv.io.app_path.empty())
             ImGui::BeginDisabled();
         static const char *LIST_BACKEND_AUDIO[] = { "SDL", "Cubeb" };
-        if (ImGui::Combo(lang.audio["audio_backend"].c_str(), reinterpret_cast<int *>(&audio_backend_idx), LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
+        if (ImGui::Combo(lang.audio["audio_backend"].c_str(), &audio_backend_idx, LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
             emuenv.cfg.audio_backend = LIST_BACKEND_AUDIO[audio_backend_idx];
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", lang.audio["select_audio_backend"].c_str());
@@ -1168,6 +1165,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Separator();
 
         ImGui::Spacing();
+#ifdef ANDROID
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", "Using a different path requires additional permissions");
+        ImGui::Spacing();
+#endif
         ImGui::Separator();
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(lang.emulator["custom_config_settings"].c_str()).x / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.emulator["custom_config_settings"].c_str());
@@ -1194,28 +1195,27 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", lang.gui["info_bar_description"].c_str());
         ImGui::Spacing();
-        
-        const std::string system_lang_name = fmt::format("System: {}", get_sys_lang_name(emuenv.cfg.sys_lang));
+
+        const std::string system_lang_name = fmt::format("{}: {}", lang.system["title"], get_sys_lang_name(emuenv.cfg.sys_lang));
         std::vector<const char *> list_user_lang_str{ system_lang_name.c_str() };
         static std::map<std::string, std::string> static_list_user_lang_names = {
-               { "id", "Indonesia" },
-               { "ms", "Malaysia" },
-               { "ua", "Ukraina" },
-           };
-        
-           for (const auto &l : list_user_lang)
-               list_user_lang_str.push_back(static_list_user_lang_names.contains(l) ? static_list_user_lang_names[l].c_str() : l.c_str());
-           if (ImGui::Combo(lang.gui["user_lang"].c_str(), &current_user_lang, list_user_lang_str.data(), static_cast<int>(list_user_lang_str.size()), 4)) {
-               if (current_user_lang != 0)
-                   emuenv.cfg.user_lang = list_user_lang[current_user_lang - 1];
-               else
-                   emuenv.cfg.user_lang.clear();
-               
-               lang::init_lang(gui.lang, emuenv);
-           }
-          if (ImGui::IsItemHovered())
-               ImGui::SetTooltip("%s", lang.gui["select_user_lang"].c_str());
-        
+            { "id", "Indonesia" },
+            { "ms", "Malaysia" },
+            { "ua", reinterpret_cast<const char *>(u8"Українська") },
+        };
+        for (const auto &l : list_user_lang)
+            list_user_lang_str.push_back(static_list_user_lang_names.contains(l) ? static_list_user_lang_names[l].c_str() : l.c_str());
+        if (ImGui::Combo(lang.gui["user_lang"].c_str(), &current_user_lang, list_user_lang_str.data(), static_cast<int>(list_user_lang_str.size()), 4)) {
+            if (current_user_lang != 0)
+                emuenv.cfg.user_lang = list_user_lang[current_user_lang - 1];
+            else
+                emuenv.cfg.user_lang.clear();
+
+            lang::init_lang(gui.lang, emuenv);
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", lang.gui["select_user_lang"].c_str());
+
         ImGui::Spacing();
         ImGui::Checkbox(lang.gui["display_info_message"].c_str(), &emuenv.cfg.display_info_message);
         if (ImGui::IsItemHovered())
@@ -1501,7 +1501,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     static const auto BUTTON_SIZE = ImVec2(120.f * SCALE.x, 0.f);
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * SCALE.x));
-    if (ImGui::Button(lang.main_window["close"].c_str(), BUTTON_SIZE))
+    if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
         settings_dialog = false;
     ImGui::SameLine(0, 20.f * SCALE.x);
     const auto is_apply = !emuenv.io.app_path.empty() && (!is_custom_config || (emuenv.app_path == emuenv.io.app_path));

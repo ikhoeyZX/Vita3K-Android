@@ -241,8 +241,8 @@ void convert_f32m_to_f32(void *dest, const void *data, const uint32_t width, con
 
     for (uint32_t row = 0; row < height; ++row) {
         for (uint32_t col = 0; col < width; ++col) {
-            const uint32_t src_value = src[row * width + height];
-            dst[row * width + height] = src_value & 0x7FFFFFFF;
+            const uint32_t src_value = src[row * width + col];
+            dst[row * width + col] = src_value & 0x7FFFFFFF;
         }
     }
 }
@@ -271,7 +271,7 @@ void convert_u2f10f10f10_to_f16f16f16f16(void *dest, const void *data, const uin
 
     // f16 values for u2 channel
     constexpr uint16_t u2_to_f16[4] = { 0, 0x3555, 0x3955, 0x3c00 }; /*{0,1/3,2/3,1}*/
-    
+
     for (uint32_t row = 0; row < height; ++row) {
         for (uint32_t col = 0; col < width; ++col) {
             uint32_t src_value = src[row * width + height];

@@ -1,6 +1,11 @@
 plugins {
+<<<<<<< HEAD
 	id 'com.android.application' version '8.1.2' apply false
 	id 'com.android.library' version '8.1.2' apply false
+=======
+	id 'com.android.application' version '8.4.1' apply false
+	id 'com.android.library' version '8.4.1' apply false
+>>>>>>> a62e232024d21ca4a74d16a5d5cacedf66bd39ea
 }
 
 task clean(type: Delete) {

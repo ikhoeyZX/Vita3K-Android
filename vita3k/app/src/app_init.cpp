@@ -31,7 +31,6 @@
 #include <ngs/state.h>
 #include <renderer/state.h>
 
-#include <nids/functions.h>
 #include <renderer/functions.h>
 #include <rtc/rtc.h>
 #include <util/fs.h>
@@ -46,7 +45,6 @@
 #include <gdbstub/functions.h>
 
 #include <renderer/vulkan/functions.h>
-#include <util/string_utils.h>
 
 #include <SDL.h>
 #include <SDL_video.h>
@@ -212,13 +210,11 @@ void init_paths(Root &root_paths) {
     root_paths.set_config_path(storage_path);
     root_paths.set_shared_path(storage_path);
     root_paths.set_cache_path(storage_path / "cache" / "");
+
     auto fscheck = storage_path / "vita3k.log";
-    if(fs::exists(fscheck) && !fs::is_empty(fscheck)){
+    if(fs::exists(fscheck) && !fs::is_empty(fscheck))
        fs::copy_file(fscheck , storage_path / "vita3k.log.old", fs::copy_options::overwrite_existing);
-     //   LOG_INFO("Old log moved");
-    }else{
-     //   LOG_INFO("Log empty, skip copy");
-    }
+
 #else
     auto sdl_base_path = SDL_GetBasePath();
     auto base_path = fs_utils::utf8_to_path(sdl_base_path);
@@ -371,14 +367,13 @@ bool init(EmuEnvState &state, const Root &root_paths) {
 #ifdef ANDROID
         fs::create_directories(root_paths.get_shared_path() / "lang"); 
         fs::create_directories(root_paths.get_shared_path() / "lang" / "user");
-      //  fs::create_directories(state.cfg.get_pref_path() / "vita");
         fs::create_directories(state.cfg.get_pref_path() / "logs");
         fs::create_directories(state.cfg.get_pref_path() / "shared");
+
         auto fscheck = fs::path(root_paths.get_base_path()) / "vita3k.log.old";
-       
         state.log_path = fs::path(state.cfg.get_pref_path() / "logs" / "");
         state.shared_path = fs::path(state.cfg.get_pref_path() / "shared" / "");
-   //     state.pref_path = fs::path(state.cfg.get_pref_path() / "vita" / "");
+
         if(fs::exists(fscheck)){
            // LOG_INFO("Vita3k.log exist!");
             if(!fs::equivalent(state.log_path, root_paths.get_base_path())){
@@ -388,8 +383,6 @@ bool init(EmuEnvState &state, const Root &root_paths) {
             }else{
                 LOG_INFO("Vita3K.Log not copied because it's using default folder!");
             }
-        }else{
-        //    LOG_INFO("Vita3k.log is empty!");
         }
 #endif
 

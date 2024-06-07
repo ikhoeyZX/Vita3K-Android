@@ -217,14 +217,6 @@ FILE *resolve_host_handle(const fs::path &path) {
     return result;
 }
 
-std::string resolve_path_string(const fs::path &path){
-    return path.string();
-}
-
-std::string resolve_filename(const fs::path &path){
-    return path.filename().string();
-}
-
 } // namespace filesystem
 } // namespace dialog
 } // namespace host

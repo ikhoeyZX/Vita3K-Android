@@ -110,6 +110,7 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
     // only for double buffer, do we need to sync the two views?
     bool need_buffer_sync = false;
 
+    ColorSurfaceCacheInfo() = default;
     ~ColorSurfaceCacheInfo();
 };
 

@@ -116,7 +116,7 @@ void set_controller_overlay_opacity(int opacity);
 int get_overlay_display_mask(const Config &cfg);
 
 void draw_begin(GuiState &gui, EmuEnvState &emuenv);
-void draw_end(GuiState &emuenv, SDL_Window *window);
+void draw_end(GuiState &emuenv);
 void draw_vita_area(GuiState &gui, EmuEnvState &emuenv);
 void draw_ui(GuiState &gui, EmuEnvState &emuenv);
 
@@ -133,7 +133,7 @@ void draw_trophies_unlocked(GuiState &gui, EmuEnvState &emuenv);
 void draw_touchpad_cursor(EmuEnvState &emuenv);
 void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv);
 
-ImTextureID load_image(GuiState &gui, const char *data, const std::uint32_t size);
+ImTextureID load_image(GuiState &gui, const uint8_t *data, const std::uint32_t size);
 
 } // namespace gui
 

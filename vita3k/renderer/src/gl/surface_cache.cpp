@@ -503,7 +503,7 @@ GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void>
     GLenum surface_data_type = color::translate_type(info.format);
 
     if (!info.gl_ping_pong_texture[0]) {
-       if (!info.gl_ping_pong_texture.init(glGenTextures, glDeleteTextures)) {
+        if (!info.gl_ping_pong_texture.init(glGenTextures, glDeleteTextures)) {
             LOG_ERROR("Failed to initialise ping pong surface texture!");
             return 0;
         }

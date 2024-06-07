@@ -291,8 +291,8 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
         }
 
         case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10: {
-            const uint16_t *src = static_cast<const uint16_t *>(pixels);
-            for (uint32_t i = 0; i < nb_pixels * nb_comp; i++){
+            const uint32_t *src = static_cast<const uint32_t *>(pixels);
+            for (uint32_t i = 0; i < nb_pixels; i++) {
                 uint32_t r = src[i] & 0x3FF;
                 uint32_t g = (src[i] >> 10) & 0x3FF;
                 uint32_t b = (src[i] >> 20) & 0x3FF;
@@ -308,8 +308,8 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
         case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
         case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
         case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16: {
-            const uint16_t *src = reinterpret_cast<const uint16_t *>(pixels);
-            for (int i = 0; i < nb_pixels * nb_comp; i++)
+            const uint16_t *src = static_cast<const uint16_t *>(pixels);
+            for (uint32_t i = 0; i < nb_pixels * nb_comp; i++)
                 converted_data[i] = src[i] >> 8;
             break;
         }

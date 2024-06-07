@@ -18,6 +18,7 @@
 #pragma once
 
 #include <kernel/thread/thread_state.h>
+
 #include <algorithm>
 #include <list>
 #include <set>

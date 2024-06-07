@@ -52,6 +52,7 @@ void end_single_time_command(vk::Device device, vk::Queue queue, vk::CommandPool
 
 vk::ShaderModule load_shader(vk::Device device, const fs::path &path) {
     const std::vector<uint8_t> shader_code = fs_utils::read_asset_raw(fs::path(path));
+
     return load_shader(device, shader_code.data(), shader_code.size());
 }
 

@@ -48,7 +48,6 @@
 // SDL,GL3W
 #include <SDL.h>
 #include <SDL_syswm.h>
-#include <glutil/gl.h>
 #include <renderer/state.h>
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
@@ -128,7 +127,7 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Setup viewport, orthographic projection matrix
-    glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
+    glViewport(0, 0, fb_width, fb_height);
     const float ortho_projection[4][4] = {
         { 2.0f / io.DisplaySize.x, 0.0f, 0.0f, 0.0f },
         { 0.0f, 2.0f / -io.DisplaySize.y, 0.0f, 0.0f },

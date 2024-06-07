@@ -29,10 +29,9 @@
 #include <util/fs.h>
 #include <util/string_utils.h>
 
-#include <fmt/xchar.h>
-
 #include <algorithm>
 #include <fstream>
+#include <map>
 
 // Credits to TeamMolecule for their original work on this https://github.com/TeamMolecule/sceutils
 
@@ -92,7 +91,7 @@ static std::string make_filename(unsigned char *hdr, int64_t filetype) {
 
     if (magic == SCE_MAGIC && version == 3 && flags == 0x30040) {
         std::vector meta = std::vector<unsigned char>(&hdr[0] + metaoffs, &hdr[0] + (HEADER_LENGTH - metaoffs));
-        char t = 0;
+        unsigned char t = 0;
         memcpy(&t, &meta[4], 1);
 
         static int typecount = 0;

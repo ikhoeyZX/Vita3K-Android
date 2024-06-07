@@ -17,7 +17,6 @@
 
 #include "private.h"
 
-#include <SDL_scancode.h>
 #include <config/functions.h>
 #include <config/state.h>
 #include <emuenv/state.h>
@@ -164,7 +163,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     }
     ImGui::Spacing();
     ImGui::Separator();
-    
+
     if(emuenv.cfg.enable_gamepad_overlay && ImGui::Checkbox("Show front/back touchscreen switch button.", &emuenv.cfg.overlay_show_touch_switch)){
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), overlay_editing);
@@ -263,7 +262,7 @@ static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, con
             *button = gui.captured_key;
             if (*button < 0 || *button > 231)
                 *button = 0;
-            else if (gui.is_key_capture_dropped || (!gui.is_capturing_keys && *button != key_association && exists_in_array(original_state.data(), *button, original_state.size()))) {
+            else if (gui.is_key_capture_dropped || (!gui.is_capturing_keys && *button != key_association && vector_utils::contains(original_state, *button))) {
                 // undo the changes
                 *button = key_association;
                 gui.is_key_capture_dropped = false;
@@ -276,16 +275,29 @@ static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, con
 }
 
 void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    auto &lang = gui.lang.controls;
+    const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
+
     float height = emuenv.viewport_size.y / emuenv.dpi_scale;
     if (ImGui::BeginMainMenuBar()) {
         height = height - ImGui::GetWindowHeight() * 2;
         ImGui::EndMainMenuBar();
     }
 
+    auto &lang = gui.lang.controls;
+    auto &common = emuenv.common_dialog.lang.common;
+
     ImGui::SetNextWindowSize(ImVec2(0, height));
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::Begin(lang["title"].c_str(), &gui.controls_menu.controls_dialog);
+    ImGui::Begin("##controls", &gui.controls_menu.controls_dialog, ImGuiWindowFlags_NoTitleBar);
+    ImGui::SetWindowFontScale(RES_SCALE.x);
+    auto title_str = lang["title"].c_str();
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title_str).x / 2.f));
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title_str);
+    ImGui::Spacing();
+    ImGui::Separator();
+
     if (ImGui::BeginTable("main", 2)) {
         ImGui::TableSetupColumn("button");
         ImGui::TableSetupColumn("mapped_button");
@@ -362,14 +374,20 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal(lang["error"].c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("%s", lang["error_duplicate_key"].c_str());
-        ImGui::NewLine();
-        static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
-        if (ImGui::Button(emuenv.common_dialog.lang.common["ok"].c_str(), BUTTON_SIZE)) {
+        if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE))
             ImGui::CloseCurrentPopup();
-        }
         ImGui::EndPopup();
     }
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
+    if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
+        gui.controls_menu.controls_dialog = false;
 
     ImGui::End();
 }

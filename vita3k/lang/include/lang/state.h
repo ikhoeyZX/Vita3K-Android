@@ -808,8 +808,7 @@ struct LangState {
         { "welcome_contribution", "Contributions are welcome!" },
         { "discord_help", "Additional support can be found in the #help channel of the" },
         { "no_piracy", "Vita3K does not condone piracy. You must dump your own games." },
-        { "show_next_time", "Show next time" },
-        { "close", "Close" }
+        { "show_next_time", "Show next time" }
     };
     struct Common {
         std::vector<std::string> wday = {

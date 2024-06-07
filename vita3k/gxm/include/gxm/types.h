@@ -1507,6 +1507,7 @@ struct SceGxmProgramParameter {
         uint8_t container_index : 4; // applicable for constants, not applicable for samplers (buffer, default, texture)
     };
 
+    // Note, for uniform buffers, it looks like a semantic of 3 means it is being written to
     SceGxmParameterSemantic semantic; // applicable only for for vertex attributes, for everything else it's 0
     uint8_t semantic_index;
     uint32_t array_size;

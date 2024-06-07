@@ -99,7 +99,7 @@ struct StartParam {
     ImVec2 clock_pos = ImVec2(880.f, 146.f);
 };
 
-static ImU32 convert_hex_color(const std::string src_color) {
+static ImU32 convert_hex_color(const std::string &src_color) {
     std::string result = src_color.substr(src_color.length() - 6, 6);
     result.insert(0, "ff");
 
@@ -250,7 +250,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                 for (const auto &param : home_property.child("m_bgParam")) {
                     // Theme Background
                     if (!param.child("m_imageFilePath").text().empty())
-                        theme_bg_name.push_back(param.child("m_imageFilePath").text().as_string());
+                        theme_bg_name.emplace_back(param.child("m_imageFilePath").text().as_string());
 
                     // Font Color
                     if (!param.child("m_fontColor").text().empty()) {

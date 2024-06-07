@@ -543,7 +543,7 @@ void new_frame(VKContext &context) {
     if (context.state.features.enable_memory_mapping) {
         FrameDoneRequest request = { context.frame_timestamp };
         context.state.request_queue.push(request);
-        
+
         context.state.surface_cache.clear_surfaces_changed();
     }
 

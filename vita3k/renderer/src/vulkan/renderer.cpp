@@ -232,7 +232,7 @@ static bool select_queues(VKState &vk_state,
             found_transfer = true;
         }
         // for now use the same queue for graphics and transfer, to be improved on later
-        /* else if (!found_transfer && queue_family.queueFlags & vk::QueueFlagBits::eTransfer) {
+        /* else if (!found_transfer && queue_family.queueFlags&vk::QueueFlagBits::eTransfer) {
             vk::DeviceQueueCreateInfo queue_create_info{
                 .queueFamilyIndex = i,
                 .queueCount = queue_family.queueCount,
@@ -706,7 +706,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         general_command_pool = device.createCommandPool(general_pool_info);
         transfer_command_pool = device.createCommandPool(transfer_pool_info);
-        
+
         general_pool_info.flags |= vk::CommandPoolCreateFlagBits::eTransient;
         multithread_command_pool = device.createCommandPool(general_pool_info);
     }
@@ -1355,6 +1355,10 @@ std::vector<std::string> VKState::get_gpu_list() {
 
 uint32_t VKState::get_gpu_version() {
     return physical_device_properties.driverVersion;
+}
+
+std::string_view VKState::get_gpu_name() {
+    return physical_device_properties.deviceName.data();
 }
 
 void VKState::precompile_shader(const ShadersHash &hash) {

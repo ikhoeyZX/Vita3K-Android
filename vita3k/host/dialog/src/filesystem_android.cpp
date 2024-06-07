@@ -33,28 +33,23 @@
 #include <SDL.h>
 #include <jni.h>
 
-static bool file_dialog_running = false;
+static std::atomic<bool> file_dialog_running = false;
 
 // the result from the dialog, this is an UTF-8 string
-static std::string dialog_result_uri = "";
+static fs::path dialog_result_path = "";
 // the resulting file descriptor from the dialog
 static int dialog_result_fd = -1;
-static std::string dialog_result_filename = "";
 
-static std::map<fs::path, std::pair<int, std::string>> path_mapping;
+static std::map<fs::path, int> path_mapping;
 
 extern "C" JNIEXPORT void JNICALL
-Java_org_vita3k_emulator_Emulator_filedialogReturn(JNIEnv *env, jobject thiz, jstring result_uri, jint result_fd, jstring filename) {
-    const char *result_ptr = env->GetStringUTFChars(result_uri, nullptr);
-    dialog_result_uri = std::string(result_ptr);
-    env->ReleaseStringUTFChars(result_uri, result_ptr);
-
-    result_ptr = env->GetStringUTFChars(filename, nullptr);
-    dialog_result_filename = std::string(result_ptr);
-    env->ReleaseStringUTFChars(filename, result_ptr);
-
+Java_org_vita3k_emulator_Emulator_filedialogReturn(JNIEnv *env, jobject thiz, jstring result_path, jint result_fd) {
+    const char *result_ptr = env->GetStringUTFChars(result_path, nullptr);
+    dialog_result_path = fs::path(result_ptr);
+    env->ReleaseStringUTFChars(result_path, result_ptr);
     dialog_result_fd = result_fd;
-    file_dialog_running = false;
+
+    file_dialog_running.store(false, std::memory_order_release);
 }
 
 /**
@@ -64,7 +59,7 @@ Java_org_vita3k_emulator_Emulator_filedialogReturn(JNIEnv *env, jobject thiz, js
  * @param file_extensions_list File extensions list
  * @return std::string A string containing the properly formatted file extension list
  */
-std::string format_file_filter_extension_list(std::vector<std::string> &file_extensions_list) {
+std::string format_file_filter_extension_list(const std::vector<std::string> &file_extensions_list) {
     // Formatted string containing the properly formatted file extension list
     //
     // In the case of nativefiledialog, the expected file extension is a single
@@ -86,11 +81,15 @@ std::string format_file_filter_extension_list(std::vector<std::string> &file_ext
     return formatted_string;
 };
 
-namespace host {
-namespace dialog {
-namespace filesystem {
-Result open_file(fs::path &resulting_path, const std::vector<FileFilter> &file_filters, const fs::path &default_path) {
-    SDL_AndroidRequestPermission("android.permission.READ_EXTERNAL_STORAGE");
+static void call_dialog_java_function(const char* name, bool need_write){
+    // These permissions are not needed on Android 11+
+    if(SDL_GetAndroidSDKVersion() < 30) {
+        SDL_AndroidRequestPermission("android.permission.READ_EXTERNAL_STORAGE");
+
+        if(need_write) {
+            SDL_AndroidRequestPermission("android.permission.WRITE_EXTERNAL_STORAGE");
+        }
+    }
 
     // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
@@ -102,7 +101,7 @@ Result open_file(fs::path &resulting_path, const std::vector<FileFilter> &file_f
     jclass clazz(env->GetObjectClass(activity));
 
     // find the identifier of the method to call
-    jmethodID method_id = env->GetMethodID(clazz, "showFileDialog", "()V");
+    jmethodID method_id = env->GetMethodID(clazz, name, "()V");
 
     file_dialog_running = true;
     // effectively call the Java method
@@ -112,53 +111,36 @@ Result open_file(fs::path &resulting_path, const std::vector<FileFilter> &file_f
     env->DeleteLocalRef(activity);
     env->DeleteLocalRef(clazz);
 
-    while (file_dialog_running)
+    while (file_dialog_running.load(std::memory_order_acquire))
         SDL_Delay(10);
+}
 
-    if (dialog_result_uri.empty())
+namespace host {
+namespace dialog {
+namespace filesystem {
+Result open_file(fs::path &resulting_path, const std::vector<FileFilter>& file_filters, const fs::path& default_path) {
+    call_dialog_java_function("showFileDialog", false);
+
+    if (dialog_result_path.empty())
         return Result::CANCEL;
 
-    resulting_path = fs::path(dialog_result_uri);
-    // if dialog_result_fd is -1, it means the file was copied and we can open it with the usual io functions
-    if (dialog_result_fd != -1)
-        path_mapping[resulting_path] = {dialog_result_fd, dialog_result_filename};
+    if(dialog_result_fd > 0)
+        path_mapping[dialog_result_path] = dialog_result_fd;
+
+    resulting_path = std::move(dialog_result_path);
 
     return Result::SUCCESS;
 };
 
-Result pick_folder(fs::path &resulting_path, const fs::path &default_path) {
-    SDL_AndroidRequestPermission("android.permission.MANAGE_EXTERNAL_STORAGE");
-    
-    // retrieve the JNI environment.
-    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+Result pick_folder(fs::path &resulting_path, const fs::path& default_path) {
+    call_dialog_java_function("showFolderDialog", true);
 
-    // retrieve the Java instance of the SDLActivity
-    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
-
-    // find the Java class of the activity. It should be SDLActivity or a subclass of it.
-    jclass clazz(env->GetObjectClass(activity));
-
-    // find the identifier of the method to call
-    jmethodID method_id = env->GetMethodID(clazz, "changeDir", "()V");
-
-    file_dialog_running = true;
-    // effectively call the Java method
-    env->CallVoidMethod(activity, method_id);
-
-    // clean up the local references.
-    env->DeleteLocalRef(activity);
-    env->DeleteLocalRef(clazz);
-
-    while (file_dialog_running)
-        SDL_Delay(10);
-
-    if (dialog_result_uri.empty())
+    if(dialog_result_path.empty())
         return Result::CANCEL;
-            
-    resulting_path = fs::path(dialog_result_uri);
-    return Result::SUCCESS;
+
+    resulting_path = std::move(dialog_result_path);
     
-    // return Result::ERROR;
+    return Result::SUCCESS;
 };
 
 std::string get_error() {
@@ -174,30 +156,12 @@ std::string get_error() {
 
 FILE *resolve_host_handle(const fs::path &path) {
     auto it = path_mapping.find(path);
-    if (it != path_mapping.end() && it->second.first != -1) {
-        int fd = it->second.first;
+    
+    if (it != path_mapping.end()) {
+        int fd = it->second;
         return fdopen(fd, "rb");
     } else {
         return fopen(path.c_str(), "rb");
-    }
-}
-
-std::string resolve_path_string(const fs::path &path){
-    auto it = path_mapping.find(path);
-    if (it != path_mapping.end()) {
-        // this is only the filename but that's still better than giving the Uri
-        return it->second.second;
-    } else {
-        return std::string(path.c_str());
-    }
-}
-
-std::string resolve_filename(const fs::path &path){
-    auto it = path_mapping.find(path);
-    if (it != path_mapping.end()) {
-        return it->second.second;
-    } else {
-        return std::string(path.filename().c_str());
     }
 }
 

@@ -121,6 +121,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
         }
         if (SDL_IsGameController(joystick_index)) {
             const SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(joystick_index);
+
 #ifdef ANDROID
             // for whatever reasons, fingerprint sensors are detected as controllers, filter them out
             const char *controller_name = SDL_GameControllerNameForIndex(joystick_index);
@@ -129,6 +130,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 || std::string_view(controller_name).starts_with("gf_")))
                 continue;
 #endif
+
             if (!state.controllers.contains(guid)) {
                 Controller new_controller;
                 const GameControllerPtr controller(SDL_GameControllerOpen(joystick_index), SDL_GameControllerClose);

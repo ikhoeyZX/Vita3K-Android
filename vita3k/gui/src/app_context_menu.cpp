@@ -20,7 +20,10 @@
 #include <config/state.h>
 #include <config/version.h>
 #include <gui/functions.h>
+#include <include/cpu.h>
+#include <include/environment.h>
 #include <io/state.h>
+#include <renderer/state.h>
 
 #include <util/log.h>
 #include <util/safe_time.h>
@@ -83,7 +86,6 @@ static bool get_update_history(GuiState &gui, EmuEnvState &emuenv, const std::st
         update_history_infos[info.attribute("app_ver").as_double()] = info.text().as_string();
 
     for (auto &update : update_history_infos) {
-
         if (update.second.find_first_of('\n') != std::string::npos)
             update.second.erase(update.second.begin() + update.second.find_first_of('\n'));
 
@@ -348,6 +350,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     auto &savedata_str = gui.lang.content_manager.saved_data;
     auto &common = emuenv.common_dialog.lang.common;
     auto &lang_compat = gui.lang.compatibility;
+    auto &textures = gui.lang.settings_dialog.gpu;
 
     const auto is_commercial_app = title_id.starts_with("PCS") || (title_id == "NPXS10007");
     const auto is_system_app = title_id.starts_with("NPXS") && (title_id != "NPXS10007");
@@ -442,8 +445,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
 
                             // Test environment summary
                             const auto test_env_summary = fmt::format(
-                                "%23 Test environment summary%0A- Tested by: {} <!-- Change your username if is needed -->%0A- OS: Windows 10/macOS/Linux Distro, Kernel Version?%0A- CPU: AMD/Intel?%0A- GPU: AMD/NVIDIA/Intel?%0A- RAM: {} GB",
-                                user ? user : "?", SDL_GetSystemRAM() / 1000);
+                                "%23 Test environment summary%0A- Tested by: {} <!-- Change your username if is needed -->%0A- OS: {}%0A- CPU: {}%0A- GPU: {}%0A- RAM: {} GB",
+                                user ? user : "?", CppCommon::Environment::OSVersion(), CppCommon::CPU::Architecture(), emuenv.renderer->get_gpu_name(), SDL_GetSystemRAM() / 1000);
 
                             const auto rest_of_body = "%23 Issues%0A<!-- Summary of problems -->%0A%0A%23 Screenshots%0A![image](https://?)%0A%0A%23 Log%0A%0A%23 Recommended labels%0A<!-- See https://github.com/Vita3K/compatibility/labels -->%0A- A?%0A- B?%0A- C?";
 
@@ -507,9 +510,9 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     open_path(SHADER_CACHE_PATH.string());
                 if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang.main["shaders_log"].c_str()))
                     open_path(SHADER_LOG_PATH.string());
-                if (fs::exists(EXPORT_TEXTURES_PATH) && ImGui::MenuItem(lang.main["export_textures"].c_str()))
+                if (fs::exists(EXPORT_TEXTURES_PATH) && ImGui::MenuItem(textures["export_textures"].c_str()))
                     open_path(EXPORT_TEXTURES_PATH.string());
-                if (fs::exists(IMPORT_TEXTURES_PATH) && ImGui::MenuItem(lang.main["import_textures"].c_str()))
+                if (fs::exists(IMPORT_TEXTURES_PATH) && ImGui::MenuItem(textures["import_textures"].c_str()))
                     open_path(IMPORT_TEXTURES_PATH.string());
                 ImGui::EndMenu();
             }
@@ -543,9 +546,9 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     fs::remove_all(SHADER_CACHE_PATH);
                 if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang.main["shaders_log"].c_str()))
                     fs::remove_all(SHADER_LOG_PATH);
-                if (fs::exists(EXPORT_TEXTURES_PATH) && ImGui::MenuItem(lang.main["export_textures"].c_str()))
+                if (fs::exists(EXPORT_TEXTURES_PATH) && ImGui::MenuItem(textures["export_textures"].c_str()))
                     fs::remove_all(EXPORT_TEXTURES_PATH);
-                if (fs::exists(IMPORT_TEXTURES_PATH) && ImGui::MenuItem(lang.main["import_textures"].c_str()))
+                if (fs::exists(IMPORT_TEXTURES_PATH) && ImGui::MenuItem(textures["import_textures"].c_str()))
                     fs::remove_all(IMPORT_TEXTURES_PATH);
                 ImGui::EndMenu();
             }

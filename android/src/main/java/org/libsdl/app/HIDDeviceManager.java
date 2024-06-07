@@ -66,15 +66,12 @@ public class HIDDeviceManager {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (action.equals(UsbManager.ACTION_USB_DEVICE_ATTACHED)) {
-                Log.i(TAG,"CALL INTENT : ACTION_USB_DEVICE_ATTACHED");
                 UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                 handleUsbDeviceAttached(usbDevice);
             } else if (action.equals(UsbManager.ACTION_USB_DEVICE_DETACHED)) {
-                Log.i(TAG,"CALL INTENT : ACTION_USB_DEVICE_DETACHED");
                 UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                 handleUsbDeviceDetached(usbDevice);
             } else if (action.equals(HIDDeviceManager.ACTION_USB_PERMISSION)) {
-                Log.i(TAG,"CALL INTENT : ACTION_USB_PERMISSION");
                 UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                 handleUsbDevicePermission(usbDevice, intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false));
             }
@@ -148,7 +145,7 @@ public class HIDDeviceManager {
             return;
         }
 
-        
+        /*
         // Logging
         for (UsbDevice device : mUsbManager.getDeviceList().values()) {
             Log.i(TAG,"Path: " + device.getDeviceName());
@@ -189,13 +186,15 @@ public class HIDDeviceManager {
             }
         }
         Log.i(TAG," No more devices connected.");
-        
+        */
+
 
         // Register for USB broadcasts and permission completions
         IntentFilter filter = new IntentFilter();
         filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
         filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
         filter.addAction(HIDDeviceManager.ACTION_USB_PERMISSION);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             mContext.registerReceiver(mUsbBroadcast, filter, Context.RECEIVER_EXPORTED);
         } else {
@@ -369,11 +368,6 @@ public class HIDDeviceManager {
         if (Build.VERSION.SDK_INT <= 30 /* Android 11.0 (R) */ &&
             mContext.getPackageManager().checkPermission(android.Manifest.permission.BLUETOOTH, mContext.getPackageName()) != PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "Couldn't initialize Bluetooth, missing android.permission.BLUETOOTH");
-            return;
-        }
-
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE) || (Build.VERSION.SDK_INT < 18 /* Android 4.3 (JELLY_BEAN_MR2) */)) {
-            Log.d(TAG, "Couldn't initialize Bluetooth, this version of Android does not support Bluetooth LE");
             return;
         }
 

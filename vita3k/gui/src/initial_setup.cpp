@@ -22,8 +22,6 @@
 #include <host/dialog/filesystem.h>
 #include <lang/functions.h>
 
-#include <util/string_utils.h>
-
 namespace gui {
 
 enum InitialSetup {
@@ -108,6 +106,9 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Text("%s", title_str.c_str());
     ImGui::SetCursorPosY(94.f * SCALE.y);
     ImGui::Separator();
+#ifdef ANDROID
+        const char* path_warning = "Using a different path requires additional permissions";
+#endif
     switch (setup) {
     case SELECT_LANGUAGE:
         title_str = lang["select_language"];
@@ -144,12 +145,15 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopStyleVar();
         break;
 
-//#ifndef ANDROID
     case SELECT_PREF_PATH:
         title_str = lang["select_pref_path"];
         ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["current_emu_path"].c_str()).x / 2.f), (WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize()));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["current_emu_path"].c_str());
         ImGui::Spacing();
+#ifdef ANDROID
+        ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(path_warning).x / 2.f));
+        ImGui::TextColored(ImVec4(0.98f, 0.01f, 0.20f, 1.0f), "%s", path_warning);
+#endif
         ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(emuenv.cfg.pref_path.c_str()).x / 2.f));
         ImGui::TextWrapped("%s", emuenv.cfg.pref_path.c_str());
         ImGui::SetCursorPos(!is_default_path ? ImVec2((WINDOW_SIZE.x / 2.f) - BIG_BUTTON_SIZE.x - (20.f * SCALE.x), BIG_BUTTON_POS.y) : BIG_BUTTON_POS);
@@ -174,7 +178,6 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
             }
         }
         break;
-//#endif
 
     case INSTALL_FIRMWARE:
         title_str = lang["install_firmware"];

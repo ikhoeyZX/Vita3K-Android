@@ -143,7 +143,9 @@ struct KernelState {
     CPUBackend cpu_backend;
     CorenumAllocator corenum_allocator;
     CPUProtocolPtr cpu_protocol;
+#ifdef USE_DYNARMIC
     ExclusiveMonitorPtr exclusive_monitor;
+#endif
 
     ObjectStore obj_store;
 

@@ -252,6 +252,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         EVP_DecryptFinal_ex(cipher_ctx, data + dec_len, &dec_len);
     };
 
+    std::vector<uint8_t> buffer(0x10000);
     for (uint32_t i = 0; i < byte_swap(pkg_header.file_count); i++) {
         PkgEntry entry;
         uint64_t file_offset = items_offset + i * 32;
@@ -289,16 +290,14 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
             EVP_DecryptInit_ex(cipher_ctx, cipher_CTR, nullptr, main_key, counter);
             EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
 
-            std::vector<uint8_t> buffer(0x10000);
+            fseek(infile, byte_swap(pkg_header.data_offset) + offset, SEEK_SET);
             while (data_size != 0) {
-                auto size = data_size < sizeof(buffer) ? data_size : sizeof(buffer);
-                fseek(infile, byte_swap(pkg_header.data_offset) + offset, SEEK_SET);
+                size_t size = data_size < buffer.size() ? data_size : buffer.size();
                 fread(buffer.data(), size, 1, infile);
 
                 EVP_DecryptUpdate(cipher_ctx, buffer.data(), &dec_len, buffer.data(), size);
 
                 outfile.write(reinterpret_cast<char *>(buffer.data()), dec_len);
-                offset += size;
                 data_size -= size;
             }
 

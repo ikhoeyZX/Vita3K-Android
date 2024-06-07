@@ -26,7 +26,6 @@
 #include <renderer/vulkan/state.h>
 
 #include <gxm/functions.h>
-#include <gxm/types.h>
 #include <renderer/functions.h>
 #include <util/align.h>
 #include <util/log.h>

@@ -70,7 +70,7 @@ void AudioAdapter::audio_callback(uint8_t *stream, int len_bytes) {
     tracy::SetThreadName("Host audio thread"); // Tracy - Declare belonging of this function to the audio thread
     ZoneScopedC(0xF6C2FF); // Tracy - Track function scope with color thistle
 #endif
-    
+
     std::vector<AudioOutPortPtr> ports;
     {
         // Read from shared state.

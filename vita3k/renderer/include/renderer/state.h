@@ -138,6 +138,8 @@ struct State {
         return 0;
     }
 
+    virtual std::string_view get_gpu_name() = 0;
+
     virtual void precompile_shader(const ShadersHash &hash) = 0;
     virtual void preclose_action() = 0;
 

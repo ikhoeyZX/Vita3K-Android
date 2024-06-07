@@ -27,7 +27,6 @@
 #include <cpu/impl/unicorn_cpu.h>
 #endif
 
-#include <functional>
 #include <memory>
 
 class ArmDynarmicCallback;

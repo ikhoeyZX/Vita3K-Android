@@ -25,6 +25,30 @@
 #include <SDL.h>
 #include <SDL_gamecontroller.h>
 
+#ifdef ANDROID
+
+#include <jni.h>
+
+static bool is_device_landscape = false;
+
+static void init_device_orientation(){
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+    jclass clazz(env->GetObjectClass(activity));
+
+    jmethodID method_id = env->GetMethodID(clazz, "isDefaultOrientationLandscape", "()Z");
+
+    is_device_landscape = env->CallBooleanMethod(activity, method_id);
+
+    // clean up the local references.
+    env->DeleteLocalRef(activity);
+    env->DeleteLocalRef(clazz);
+}
+
+#else 
+constexpr bool is_device_landscape = true;
+#endif
+
 static void init_device_sensors(MotionState& state){
     const int num_sensors = SDL_NumSensors();
     for(int idx = 0; idx < num_sensors; idx++){
@@ -48,6 +72,10 @@ static void init_device_sensors(MotionState& state){
             SDL_SensorClose(sensor);
     }
     state.has_device_motion_support = (state.device_accel && state.device_gyro);
+
+#ifdef ANDROID
+    init_device_orientation();
+#endif
 }
 
 void MotionState::init(){
@@ -135,7 +163,7 @@ void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
         const bool can_use_timestamp_fn = sdl_version.minor >= 26;
 
         std::lock_guard<std::mutex> guard(ctrl_state.mutex);
-        for (auto controller : ctrl_state.controllers) {
+        for (const auto &controller : ctrl_state.controllers) {
             if (!found_gyro && controller.second.has_gyro) {
                 if (can_use_timestamp_fn && SDL_GameControllerGetSensorDataWithTimestamp(controller.second.controller.get(), SDL_SENSOR_GYRO, &gyro_timestamp, reinterpret_cast<float *>(&gyro), 3) == 0)
                     found_gyro = true;
@@ -189,16 +217,15 @@ void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
     }
 
     gyro /= static_cast<float>(2.0 * M_PI);
-    if(gyro_from_device)
-        std::tie(gyro.x, gyro.y, gyro.z) = std::make_tuple(-gyro.y, gyro.z, -gyro.x);
-    std::swap(gyro.y, gyro.z);
-    gyro.y *= -1;
-
     accel /= -SDL_STANDARD_GRAVITY;
-    if(accel_from_device)
-        std::tie(accel.x, accel.y, accel.z) = std::make_tuple(-accel.y, accel.z, -accel.x);
-    std::swap(accel.y, accel.z);
-    accel.y *= -1;
+
+    if(gyro_from_device && !is_device_landscape){
+        std::tie(gyro.x, gyro.y, gyro.z) = std::make_tuple(-gyro.y, gyro.x, gyro.z);
+        std::tie(accel.x, accel.y, accel.z) = std::make_tuple(-accel.y, accel.x, accel.z);
+    } else if (!gyro_from_device) {
+        std::tie(gyro.x, gyro.y, gyro.z) = std::make_tuple(gyro.x, -gyro.z, gyro.y);
+        std::tie(accel.x, accel.y, accel.z) = std::make_tuple(accel.x, -accel.z, accel.y);
+    }
 
     std::lock_guard<std::mutex> guard(state.mutex);
 

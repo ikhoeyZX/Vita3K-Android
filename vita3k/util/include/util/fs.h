@@ -20,7 +20,11 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <fmt/format.h>
-#include <fmt/std.h>
+
+#ifdef WIN32
+#define fseek _fseeki64
+#define ftell _ftelli64
+#endif
 
 #ifdef WIN32
 #define fseek _fseeki64

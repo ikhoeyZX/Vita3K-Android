@@ -74,7 +74,7 @@
 	url = https://github.com/Cyan4973/xxHash
 [submodule "external/dynarmic"]
 	path = external/dynarmic
-	url = https://github.com/ikhoeyZX/dynarmic.git
+	url = https://github.com/Vita3K/dynarmic.git
 	branch = aarch64
 [submodule "external/fmt"]
 	path = external/fmt
