@@ -136,7 +136,6 @@ static void run_execv(char *argv[], EmuEnvState &emuenv) {
 };
 #else
 static void run_execv(char *argv[], EmuEnvState &emuenv) {
->>>>>>> origin/android
     char const *args[10];
     args[0] = argv[0];
     args[1] = "-a";
