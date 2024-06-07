@@ -1179,7 +1179,6 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
 
         buffer = copy_buffer.buffer;
         offset = 0;
-
         last_written_surface->need_buffer_sync = false;
         last_written_surface->need_post_surface_sync = true;
     } else {

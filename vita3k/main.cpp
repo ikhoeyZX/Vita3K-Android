@@ -87,6 +87,54 @@ static void set_current_game_id(const std::string_view game_id) {
     env->DeleteLocalRef(clazz);
 }
 
+#ifdef ANDROID
+
+static void set_current_game_id(const std::string_view game_id) {
+    // retrieve the JNI environment.
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+
+    // retrieve the Java instance of the SDLActivity
+    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+
+    // find the Java class of the activity. It should be SDLActivity or a subclass of it.
+    jclass clazz(env->GetObjectClass(activity));
+
+    // find the identifier of the method to call
+    jmethodID method_id = env->GetMethodID(clazz, "setCurrentGameId", "(Ljava/lang/String;)V");
+    jstring j_game_id = env->NewStringUTF(game_id.data());
+    env->CallVoidMethod(activity, method_id, j_game_id);
+
+    // clean up the local references.
+    env->DeleteLocalRef(j_game_id);
+    env->DeleteLocalRef(activity);
+    env->DeleteLocalRef(clazz);
+}
+
+static void run_execv(char *argv[], EmuEnvState &emuenv) {
+    // retrieve the JNI environment.
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+
+    // retrieve the Java instance of the SDLActivity
+    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+
+    // find the Java class of the activity. It should be SDLActivity or a subclass of it.
+    jclass clazz(env->GetObjectClass(activity));
+
+    // find the identifier of the method to call
+    jmethodID method_id = env->GetMethodID(clazz, "restartApp", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+
+    // create the java string for the different parameters
+    jstring app_path = env->NewStringUTF(emuenv.load_app_path.c_str());
+    jstring exec_path = env->NewStringUTF(emuenv.load_exec_path.c_str());
+    jstring exec_args = env->NewStringUTF(emuenv.load_exec_argv.c_str());
+
+    env->CallVoidMethod(activity, method_id, app_path, exec_path, exec_args);
+
+    // The function call above will exit with some delay
+    // Exit now to match the behavior on PC
+    exit(0);
+};
+#else
 static void run_execv(char *argv[], EmuEnvState &emuenv) {
     // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
@@ -261,12 +309,21 @@ int main(int argc, char *argv[]) {
         std::atexit(SDL_Quit);
 
         // Enable HIDAPI rumble for DS4/DS
+        SDL_SetHint(SDL_HINT_TV_REMOTE_AS_JOYSTICK, "0");    	
+    	SDL_SetHint(SDL_HINT_JOYSTICK_ROG_CHAKRAM, "1");
+    	SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI, "1");
+    	SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_STEAM, "1");
+    	SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_WII, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS3, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE, "1");
-
+        
         // Enable Switch controller
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS, "0");
 
 #ifdef ANDROID
         // The AAudio driver (used by default) is really really bad

@@ -67,7 +67,7 @@ std::string format_file_filter_extension_list(const std::vector<std::string> &fi
 namespace host {
 namespace dialog {
 namespace filesystem {
-Result open_file(fs::path &resulting_path, const std::vector<FileFilter>& file_filters, const fs::path& default_path) {
+Result open_file(fs::path &resulting_path, const std::vector<FileFilter> &file_filters, const fs::path &default_path) {
     // Initialize NFD
     NFD::Guard nfd_guard;
 
@@ -155,7 +155,7 @@ Result open_file(fs::path &resulting_path, const std::vector<FileFilter>& file_f
     }
 };
 
-Result pick_folder(fs::path &resulting_path, const fs::path& default_path) {
+Result pick_folder(fs::path &resulting_path, const fs::path &default_path) {
     // Initialize NFD
     NFD::Guard nfd_guard;
 

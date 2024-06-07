@@ -19,6 +19,7 @@
 
 #include <mem/ptr.h>
 #include <util/align.h>
+#include <algorithm>
 
 #include <algorithm>
 

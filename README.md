@@ -1,3 +1,7 @@
+# THIS IS NOT MAIN REPO VITA3K!
+if you find issue go to main repo, not in here
+
+
 # Vita3K
 
 ![C/C++ CI](https://github.com/Vita3K/Vita3K/workflows/C/C++%20CI/badge.svg)
@@ -72,12 +76,12 @@ For more detailed instructions on running/installing apps on Vita3K, please read
 The project is in an early stage, so please be mindful when opening new issues. Expect crashes, glitches, low compatibility and poor performance.
 
 ## Thanks
-Thanks go out to the developer team and [everyone who has contributed](https://github.com/Vita3K/Vita3K/graphs/contributors). 
+Thanks go out to the developer team and [everyone who has contributed](https://github.com/Vita3K/Vita3K/graphs/contributors).
 * These are people like **petmac, frangarcj, VelocityRa, 1whatleytay, EXtremeExploit, HolyMcDiver, HorrorTroll, IllusionMan1212, KorewaWatchful, scribam, sunho, wfscans, Macdu, bookmist, pent0 and Zangetsu38**.
 
 ## Supporters
 Thank you to the supporters and to all those who support us on our [ko-fi](https://ko-fi.com/vita3K).
-* Among them, those who subscribed to the Nibble Tier and upper: **j0hnnybrav0, Mored4u, TacoOblivion, Undeadbob and uplush**
+* Among them, those who subscribed to the Nibble Tier and upper: **j0hnnybrav0, Mored4u, TacoOblivion, Undeadbob, uplush**
 
 ## Note
 The purpose of this emulator is not to enable illegal activity. You can dump games from a Vita by using [NoNpDrm](https://github.com/TheOfficialFloW/NoNpDrm) or [FAGDec](https://github.com/CelesteBlue-dev/PSVita-RE-tools/tree/master/FAGDec/build). You can get homebrew programs from [VitaDB](https://vitadb.rinnegatamante.it/).

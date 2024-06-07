@@ -706,7 +706,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         general_command_pool = device.createCommandPool(general_pool_info);
         transfer_command_pool = device.createCommandPool(transfer_pool_info);
-
         general_pool_info.flags |= vk::CommandPoolCreateFlagBits::eTransient;
         multithread_command_pool = device.createCommandPool(general_pool_info);
     }
@@ -1360,6 +1359,7 @@ uint32_t VKState::get_gpu_version() {
 std::string_view VKState::get_gpu_name() {
     return physical_device_properties.deviceName.data();
 }
+
 
 void VKState::precompile_shader(const ShadersHash &hash) {
     Sha256Hash empty_hash{};

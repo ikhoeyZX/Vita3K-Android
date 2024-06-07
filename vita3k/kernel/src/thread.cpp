@@ -246,7 +246,6 @@ bool ThreadState::run_loop() {
                 if (to_do == ThreadToDo::step) {
                     res = step(*cpu);
                     to_do = ThreadToDo::suspend;
-
                 } else
                     res = run(*cpu);
 

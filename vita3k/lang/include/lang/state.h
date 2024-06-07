@@ -514,6 +514,7 @@ struct LangState {
             { "title", "Settings" },
             { "save_reboot", "Save & Reboot" },
             { "save_apply", "Save & Apply" },
+            { "close", "Close" },
             { "save", "Save" },
             { "keep_changes", "Click on Save to keep your changes." }
         };
@@ -644,6 +645,10 @@ struct LangState {
             { "change_emu_path_description", "Change Vita3K emulator folder path.\nYou will need to move your old folder to the new location manually." },
             { "reset_emu_path", "Reset Emulator Path" },
             { "reset_emu_path_description", "Reset Vita3K emulator path to the default.\nYou will need to move your old folder to the new location manually." },
+            { "sensor_settings", "Built-In Sensor settings" },
+            { "sensor_enable", "Enable HW acceleration and gyroscope" },
+            { "sensor_emu_pos", "Emulate acceleration position sensor" },
+            { "sensor_degrees", "degrees" },
             { "custom_config_settings", "Custom Config Settings" },
             { "clear_custom_config", "Clear Custom Config" }
         };

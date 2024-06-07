@@ -112,6 +112,8 @@ void AudioState::set_backend(const std::string &adapter_name) {
         adapter = std::make_unique<SDLAudioAdapter>(*this);
     } else if (adapter_name == "Cubeb") {
         adapter = std::make_unique<CubebAudioAdapter>(*this);
+    } else if (adapter_name == "None") {
+        LOG_DEBUG("Audio disable!");
     } else {
         LOG_ERROR("Unknown audio adapter {}", adapter_name);
         return;

@@ -174,6 +174,7 @@ else()
 endif()
 
 target_link_libraries(vita3k PRIVATE app config cppcommon ctrl display gdbstub gui gxm host_dialog io miniz modules packages renderer shader touch)
+
 if(USE_DISCORD_RICH_PRESENCE)
 	target_link_libraries(vita3k PRIVATE discord-rpc)
 endif()

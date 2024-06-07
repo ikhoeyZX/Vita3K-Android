@@ -566,7 +566,7 @@ void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
         texture_size = renderer::texture::get_compressed_size(base_format, width, height);
     } else {
         const size_t bpp = gxm::bits_per_pixel(base_format);
-        texture_size = static_cast<uint32_t>((align(width, 4) * align(height, 4) * bpp) / 8);
+        const uint32_t texture_size = align(width, 4) * align(height, 4) * bpp / 8;
     }
     current_texture->memory_needed = align(texture_size, 16);
 

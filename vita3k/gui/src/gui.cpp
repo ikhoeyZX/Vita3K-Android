@@ -265,7 +265,11 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
 
             const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
             if (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S) {
-                const std::vector<uint8_t> font_source = fs_utils::read_asset_raw(default_font_path / "SourceHanSansSC-Bold-Min.ttf");
+				auto fontpath = fs::path(default_font_path / "SourceHanSansSC-Bold-Min.ttf");
+				if(!fs::exists(fontpath))
+					fontpath = fs::path(default_font_path / "NotoSerifCJK-Regular.ttc");
+                
+				const std::vector<uint8_t> font_source = fs_utils::read_asset_raw(fontpath);
 
                 if (!font_source.empty()) {
                     font_data = malloc(font_source.size());
@@ -650,14 +654,14 @@ void get_sys_apps_title(GuiState &gui, EmuEnvState &emuenv) {
             emuenv.app_info.app_version = "1.00";
             emuenv.app_info.app_category = "gda";
             emuenv.app_info.app_title_id = app;
-            if (app == "NPXS10003") {
-                emuenv.app_info.app_short_title = lang["browser"];
-                emuenv.app_info.app_title = lang["internet_browser"];
-            } else if (app == "NPXS10008") {
-                emuenv.app_info.app_short_title = lang["trophies"];
-                emuenv.app_info.app_title = lang["trophy_collection"];
-            } else if (app == "NPXS10015")
-                emuenv.app_info.app_short_title = emuenv.app_info.app_title = lang["settings"];
+            if (strcmp(app, "NPXS10003") == 0) {
+                emuenv.app_info.app_short_title = lang["browser"].c_str();
+                emuenv.app_info.app_title = lang["internet_browser"].c_str();
+            } else if (strcmp(app, "NPXS10008") == 0) {
+                emuenv.app_info.app_short_title = lang["trophies"].c_str();
+                emuenv.app_info.app_title = lang["trophy_collection"].c_str();
+            } else if (strcmp(app, "NPXS10015") == 0)
+                emuenv.app_info.app_short_title = emuenv.app_info.app_title = lang["settings"].c_str();
             else
                 emuenv.app_info.app_short_title = emuenv.app_info.app_title = lang["content_manager"];
         }

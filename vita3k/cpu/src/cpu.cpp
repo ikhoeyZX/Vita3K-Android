@@ -75,14 +75,12 @@ CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, SceUID thread_id, std::si
         break;
     }
 #endif
-
 #ifdef USE_UNICORN
     case CPUBackend::Unicorn: {
         state->cpu = std::make_unique<UnicornCPU>(state.get());
         break;
     }
 #endif
-
     default:
         return nullptr;
     }

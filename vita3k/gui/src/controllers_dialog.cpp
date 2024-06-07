@@ -374,7 +374,12 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
     } else
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", lang["not_connected"].c_str());
 
-    if (emuenv.ctrl.has_motion_support) {
+    if(!emuenv.cfg.tiltsens){
+        ImGui::Spacing();
+        ImGui::PushTextWrapPos(ImGui::GetWindowWidth() - (ImGui::GetStyle().WindowPadding.x * 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", "Builtin device motion sensors are disabled!, to enable it goto configuration > settings > emulator");
+        ImGui::PopTextWrapPos();
+    }else if (emuenv.ctrl.has_motion_support) {
         ImGui::Spacing();
         ImGui::PushTextWrapPos(ImGui::GetWindowWidth() - (ImGui::GetStyle().WindowPadding.x * 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["motion_support"].c_str());

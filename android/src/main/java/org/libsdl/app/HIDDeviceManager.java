@@ -193,7 +193,11 @@ public class HIDDeviceManager {
         filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
         filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
         filter.addAction(HIDDeviceManager.ACTION_USB_PERMISSION);
-        mContext.registerReceiver(mUsbBroadcast, filter);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            mContext.registerReceiver(mUsbBroadcast, filter, Context.RECEIVER_EXPORTED);
+        } else {
+            mContext.registerReceiver(mUsbBroadcast, filter);
+        }
 
         for (UsbDevice usbDevice : mUsbManager.getDeviceList().values()) {
             handleUsbDeviceAttached(usbDevice);
@@ -227,6 +231,7 @@ public class HIDDeviceManager {
         final int XB360_IFACE_PROTOCOL = 1; // Wired
         final int XB360W_IFACE_PROTOCOL = 129; // Wireless
         final int[] SUPPORTED_VENDORS = {
+            0x03f0, // HP
             0x0079, // GPD Win 2
             0x044f, // Thrustmaster
             0x045e, // Microsoft
@@ -253,6 +258,7 @@ public class HIDDeviceManager {
             0x2c22, // Qanba
             0x2dc8, // 8BitDo
             0x9886, // ASTRO Gaming
+            0x3537, // GameSir
         };
 
         if (usbInterface.getInterfaceClass() == UsbConstants.USB_CLASS_VENDOR_SPEC &&
@@ -395,7 +401,11 @@ public class HIDDeviceManager {
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
         filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
-        mContext.registerReceiver(mBluetoothBroadcast, filter);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            mContext.registerReceiver(mBluetoothBroadcast, filter, Context.RECEIVER_EXPORTED);
+        } else {
+            mContext.registerReceiver(mBluetoothBroadcast, filter);
+        }
 
         if (mIsChromebook) {
             mHandler = new Handler(Looper.getMainLooper());

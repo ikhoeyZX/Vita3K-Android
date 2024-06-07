@@ -335,7 +335,6 @@ int DynarmicCPU::run() {
     do {
         halt_reason = jit->Run();
     } while (halt_reason == Dynarmic::HaltReason::Step || halt_reason == Dynarmic::HaltReason::CacheInvalidation);
-
     return halted;
 }
 

@@ -11,15 +11,15 @@ jobs:
       VCPKG_ROOT: /usr/local/share/vcpkg
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: recursive
- 
+
       - uses: hendrikmuhs/ccache-action@v1.2
 
       - name: Restore Gradle Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/
@@ -41,6 +41,9 @@ jobs:
           KEYSTORE_ENCODED: ${{ secrets.KEYSTORE }}
         run: echo $KEYSTORE_ENCODED | base64 --decode > "/home/runner/keystore.jks"
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+
       - name: Gradle build
         env:
           SIGNING_STORE_PATH: "/home/runner/keystore.jks"
@@ -52,13 +55,30 @@ jobs:
           cp -r lang android/assets
           cp -r vita3k/shaders-builtin android/assets
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
-          ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease
+          ./gradlew --info --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease  assembleDebug
+
+      - if : failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vita3k-${{ env.git_short_sha }}-build-report.zip
+          path: /home/runner/work/Vita3K-Android/Vita3K-Android/build/reports/*
 
       - name: Compute git short sha
         shell: bash
         run: echo "git_short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-      - uses: actions/upload-artifact@v3
+      - name: List all files in output folder
+        run: |
+          ls -l android/build/outputs/apk/
+          echo "-----------------------------"
+          ls -l android/build/outputs/apk/*/*
+
+      - uses: actions/upload-artifact@v4
         with:
           name: vita3k-${{ env.git_short_sha }}-release.apk
           path: android/build/outputs/apk/release/android-release.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vita3k-${{ env.git_short_sha }}-debug.apk
+          path: android/build/outputs/apk/debug/android-debug.apk

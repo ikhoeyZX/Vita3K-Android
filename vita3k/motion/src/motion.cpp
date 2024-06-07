@@ -218,7 +218,6 @@ void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
 
     gyro /= static_cast<float>(2.0 * M_PI);
     accel /= -SDL_STANDARD_GRAVITY;
-
     if(gyro_from_device && !is_device_landscape){
         std::tie(gyro.x, gyro.y, gyro.z) = std::make_tuple(-gyro.y, gyro.x, gyro.z);
         std::tie(accel.x, accel.y, accel.z) = std::make_tuple(-accel.y, accel.x, accel.z);
@@ -226,7 +225,6 @@ void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
         std::tie(gyro.x, gyro.y, gyro.z) = std::make_tuple(gyro.x, -gyro.z, gyro.y);
         std::tie(accel.x, accel.y, accel.z) = std::make_tuple(accel.x, -accel.z, accel.y);
     }
-
     std::lock_guard<std::mutex> guard(state.mutex);
 
     state.motion_data.SetGyroscope(gyro);

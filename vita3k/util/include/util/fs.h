@@ -26,6 +26,11 @@
 #define ftell _ftelli64
 #endif
 
+#ifdef WIN32
+#define fseek _fseeki64
+#define ftell _ftelli64
+#endif
+
 namespace fs = boost::filesystem;
 
 #ifdef _WIN32
@@ -125,7 +130,7 @@ void write_escaped_path(basic_memory_buffer<Char> &quoted,
 template <typename Char>
 struct formatter<fs::path, Char> {
 private:
-    format_specs<Char> specs_;
+    format_specs specs_;
     detail::arg_ref<Char> width_ref_;
     bool debug_ = false;
     char path_type_ = 'n';

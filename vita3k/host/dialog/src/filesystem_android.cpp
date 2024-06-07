@@ -139,7 +139,6 @@ Result pick_folder(fs::path &resulting_path, const fs::path& default_path) {
         return Result::CANCEL;
 
     resulting_path = std::move(dialog_result_path);
-    
     return Result::SUCCESS;
 };
 
@@ -156,7 +155,6 @@ std::string get_error() {
 
 FILE *resolve_host_handle(const fs::path &path) {
     auto it = path_mapping.find(path);
-    
     if (it != path_mapping.end()) {
         int fd = it->second;
         return fdopen(fd, "rb");

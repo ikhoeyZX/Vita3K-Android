@@ -112,6 +112,12 @@ static void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) {
     if (result == host::dialog::filesystem::Result::SUCCESS && emulator_path.native() != emuenv.pref_path.native()) {
         // Refresh the working paths
         emuenv.pref_path = emulator_path / "";
+        auto tmp = fs::path(emuenv.pref_path / ".nomedia");
+        if(!fs::exists(tmp)){
+            fs::ofstream( emuenv.pref_path / "tmp.txt" );
+            fs::rename( emuenv.pref_path / "tmp.txt", tmp );
+            LOG_INFO(".nomedia created");
+        }
 
         // TODO: Move app old to new path
         reset_emulator(gui, emuenv);
@@ -278,6 +284,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     // files are not in a folder
     list_user_lang.push_back("id");
     list_user_lang.push_back("ms");
+    list_user_lang.push_back("ua");
 #endif
 
     current_user_lang = emuenv.cfg.user_lang.empty() ? 0 : (vector_utils::find_index(list_user_lang, emuenv.cfg.user_lang) + 1);
@@ -767,45 +774,74 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(lang.gpu["internal_resolution_upscaling"].c_str()).x / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.gpu["internal_resolution_upscaling"].c_str());
         ImGui::Spacing();
-        ImGui::PushID("Res scal");
-        if (config.resolution_multiplier == 0.5f)
-            ImGui::BeginDisabled();
-        if (ImGui::Button("<", ImVec2(20.f * SCALE.x, 0)))
-            config.resolution_multiplier -= 0.25f;
-        if (config.resolution_multiplier == 0.5f)
-            ImGui::EndDisabled();
-        ImGui::SameLine(0, 5.f * SCALE.x);
-        ImGui::PushItemWidth(-100.f * SCALE.x);
-        int slider_position = static_cast<int>(config.resolution_multiplier * 4);
-        if (ImGui::SliderInt("##res_scal", &slider_position, 2, 32, fmt::format("{}x", config.resolution_multiplier).c_str(), ImGuiSliderFlags_None)) {
-            config.resolution_multiplier = static_cast<float>(slider_position) / 4.0f;
-            if (config.resolution_multiplier != 1.0f && !is_vulkan)
-                config.disable_surface_sync = true;
-        }
-        ImGui::PopItemWidth();
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", lang.gpu["internal_resolution_upscaling_description"].c_str());
-        ImGui::SameLine(0, 5 * SCALE.x);
-        if (config.resolution_multiplier == 8.0f)
-            ImGui::BeginDisabled();
-        if (ImGui::Button(">", ImVec2(20.f * SCALE.x, 0)))
-            config.resolution_multiplier += 0.25f;
-        if (config.resolution_multiplier == 8.0f)
-            ImGui::EndDisabled();
-        ImGui::SameLine();
-        if ((config.resolution_multiplier == 1.0f) && !config.disable_surface_sync)
-            ImGui::BeginDisabled();
-        if (ImGui::Button(lang.gpu["reset"].c_str(), ImVec2(60.f * SCALE.x, 0)))
-            config.resolution_multiplier = 1.0f;
+        static bool manual;
 
-        if ((config.resolution_multiplier == 1.0f) && !config.disable_surface_sync)
-            ImGui::EndDisabled();
-        ImGui::Spacing();
+        if (ImGui::Button("Screen Size mode")){
+            manual = !manual;
+        }
+        ImGui::SameLine();
+
+        if(manual==false){
+           ImGui::Text(": Slider");
+           ImGui::Spacing();
+           ImGui::PushID("Res scal");
+           if (config.resolution_multiplier <= 0.01f)
+               ImGui::BeginDisabled();
+           if (ImGui::Button("<", ImVec2(20.f * SCALE.x, 0)))
+               config.resolution_multiplier -= 0.25f;
+           if (config.resolution_multiplier <= 0.5f)
+               ImGui::EndDisabled();
+           ImGui::SameLine(0, 5.f * SCALE.x);
+           ImGui::PushItemWidth(-100.f * SCALE.x);
+           int slider_position = static_cast<uint8_t>(config.resolution_multiplier * 4);
+           if (ImGui::SliderInt("##res_scal", &slider_position, 2, 32, fmt::format("{}x", config.resolution_multiplier).c_str(), ImGuiSliderFlags_None)) {
+               config.resolution_multiplier = static_cast<float>(slider_position) / 4.0f;
+               if (config.resolution_multiplier != 1.0f && !is_vulkan)
+                   config.disable_surface_sync = true;
+           }
+           ImGui::PopItemWidth();
+           if (ImGui::IsItemHovered())
+               ImGui::SetTooltip("%s", lang.gpu["internal_resolution_upscaling_description"].c_str());
+           ImGui::SameLine(0, 5 * SCALE.x);
+           if (config.resolution_multiplier >= 8.0f)
+               ImGui::BeginDisabled();
+           if (ImGui::Button(">", ImVec2(20.f * SCALE.x, 0)))
+               config.resolution_multiplier += 0.25f;
+           if (config.resolution_multiplier == 8.0f)
+               ImGui::EndDisabled();
+           ImGui::SameLine();
+           if ((config.resolution_multiplier == 1.0f) && !config.disable_surface_sync)
+               ImGui::BeginDisabled();
+           if (ImGui::Button(lang.gpu["reset"].c_str(), ImVec2(60.f * SCALE.x, 0)))
+               config.resolution_multiplier = 1.0f;
+
+           if ((config.resolution_multiplier == 1.0f) && !config.disable_surface_sync)
+               ImGui::EndDisabled();
+           ImGui::Spacing();
+        }else{
+          ImGui::Text(": Manual Input");
+          ImGui::Spacing();
+          static int setdph = static_cast<int>(544 * config.resolution_multiplier);
+          ImGui::Text("Insert screen height ");
+          ImGui::InputInt(": ", &setdph);
+          if (ImGui::IsItemHovered())
+              ImGui::SetTooltip("Not all games support manual screen size");
+                    
+          if(setdph < 144){
+             setdph = 144;
+          }else if(setdph > 4352){
+             setdph = 4352;
+          }
+          
+          float tmp =  (float(setdph) / 544);
+          config.resolution_multiplier = tmp;
+          ImGui::Spacing();
+        }
         const auto res_scal = fmt::format("{}x{}", static_cast<int>(960 * config.resolution_multiplier), static_cast<int>(544 * config.resolution_multiplier));
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(res_scal.c_str()).x / 2.f) - (35.f * SCALE.x));
         ImGui::Text("%s", res_scal.c_str());
+        ImGui::Spacing();
         ImGui::PopID();
-
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
@@ -1107,6 +1143,29 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("%s", lang.emulator["reset_emu_path_description"].c_str());
         }
+
+#ifdef ANDROID
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", "Using a different path requires additional permissions");
+        ImGui::Spacing();
+#endif
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(lang.emulator["sensor_settings"].c_str()).x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.emulator["sensor_settings"].c_str());
+        ImGui::Spacing();
+        if (ImGui::Checkbox(lang.emulator["sensor_enable"].c_str(), &emuenv.cfg.tiltsens))
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+
+        if (!emuenv.cfg.tiltsens){
+            ImGui::Spacing();
+            ImGui::Text("%s", lang.emulator["sensor_emu_pos"].c_str());
+            ImGui::RadioButton("0 degrees", &emuenv.cfg.tiltpos, 0);
+            ImGui::RadioButton("90 degrees", &emuenv.cfg.tiltpos, 1);
+            ImGui::RadioButton("-90 degrees", &emuenv.cfg.tiltpos, -1);
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        }
+        ImGui::Spacing();
+        ImGui::Separator();
 
         ImGui::Spacing();
 #ifdef ANDROID
