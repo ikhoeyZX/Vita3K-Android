@@ -373,6 +373,7 @@ target_include_directories(libatrac9 PUBLIC LibAtrac9/C/src)
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(XXHASH_BUILD_XXHSUM "Build the xxhsum binary" OFF)
 option(XXH_X86DISPATCH_ALLOW_AVX "Allow building XXH3 with AVX even if it crashes on SSE2-Only CPUs" OFF)
+
 if((NOT APPLE) AND (ARCHITECTURE STREQUAL "x86_64"))
 	set(DISPATCH 1)
 endif()

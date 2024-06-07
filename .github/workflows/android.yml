@@ -15,7 +15,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
- 
+
       - uses: hendrikmuhs/ccache-action@v1.2
 
       - name: Restore Gradle Cache
@@ -43,7 +43,7 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
-  
+
       - name: Gradle build
         env:
           SIGNING_STORE_PATH: "/home/runner/keystore.jks"
@@ -56,13 +56,13 @@ jobs:
           cp -r vita3k/shaders-builtin android/assets
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
           ./gradlew --info --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease  assembleDebug
-          
+
       - if : failure()
         uses: actions/upload-artifact@v4
         with:
           name: vita3k-${{ env.git_short_sha }}-build-report.zip
           path: /home/runner/work/Vita3K-Android/Vita3K-Android/build/reports/*
-        
+
       - name: Compute git short sha
         shell: bash
         run: echo "git_short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
@@ -72,7 +72,7 @@ jobs:
           ls -l android/build/outputs/apk/
           echo "-----------------------------"
           ls -l android/build/outputs/apk/*/*
-          
+
       - uses: actions/upload-artifact@v4
         with:
           name: vita3k-${{ env.git_short_sha }}-release.apk

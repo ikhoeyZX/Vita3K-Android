@@ -810,6 +810,10 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                     const spv::Id gamma = utils::make_uniform_vector_from_type(b, v3, 2.2f);
                     rgb = b.createBuiltinCall(v3, utils.std_builtins, GLSLstd450Pow, { rgb, gamma });
                     b.setPrecision(rgb, precision);
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/android
                     source = b.createOp(spv::OpVectorShuffle, v4, { { true, rgb }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 }, { false, 6 } });
 
                     store_source_result();
@@ -1103,7 +1107,10 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, translation_state.is_vulkan ? 1 : 3);
         if (translation_state.is_vulkan)
             b.addDecoration(translation_state.render_info_id, spv::DecorationDescriptorSet, 0);
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/android
         if (program.is_frag_color_used() && features.should_use_shader_interlock() && translation_state.is_vulkan) {
             // specialization constant for shader interlock:
             // layout (constant_id = GAMMA_CORRECTION_SPECIALIZATION_ID) const bool is_srgb = false;

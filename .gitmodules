@@ -35,10 +35,6 @@
 [submodule "external/pugixml"]
 	path = external/pugixml
 	url = https://github.com/zeux/pugixml
-[submodule "external/sdl"]
-	path = external/sdl
-	url = https://github.com/ikhoeyZX/sdl-Android.git
-	branch = android
 [submodule "external/sdl2-cmake-scripts"]
 	path = external/sdl2-cmake-scripts
 	url = https://github.com/tcbrindle/sdl2-cmake-scripts
@@ -69,28 +65,18 @@
 [submodule "external/xxHash"]
 	path = external/xxHash
 	url = https://github.com/Cyan4973/xxHash
-[submodule "external/dynarmic"]
-	path = external/dynarmic
-	url = https://github.com/ikhoeyZX/dynarmic.git
-	branch = aarch64
 [submodule "external/fmt"]
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt.git
 [submodule "external/LibAtrac9"]
 	path = external/LibAtrac9
 	url = https://github.com/Vita3K/LibAtrac9.git
-[submodule "external/tracy"]
-	path = external/tracy
-	url = https://github.com/wolfpld/tracy.git
 [submodule "external/nativefiledialog-extended"]
 	path = external/nativefiledialog-extended
 	url = https://github.com/btzy/nativefiledialog-extended.git
 [submodule "external/unicorn"]
 	path = external/unicorn
 	url = https://github.com/Vita3K/unicorn
-[submodule "external/libadrenotools"]
-	path = external/libadrenotools
-	url = https://github.com/bylaws/libadrenotools.git
 [submodule "external/cubeb"]
 	path = external/cubeb
 	url = https://github.com/mozilla/cubeb.git
@@ -104,3 +90,18 @@
 	path = external/ffmpeg
 	url = https://github.com/Macdu/ffmpeg-core.git
 	branch = android
+[submodule "external/dynarmic"]
+	path = external/dynarmic
+	url = https://github.com/Vita3K/dynarmic.git
+[submodule "external/ffmpeg-core"]
+	path = external/ffmpeg
+	url = https://github.com/Macdu/ffmpeg-core.git
+[submodule "external/libadrenotools"]
+	path = external/libadrenotools
+	url = https://github.com/bylaws/libadrenotools.git
+[submodule "external/tracy"]
+	path = external/tracy
+	url = https://github.com/wolfpld/tracy.git
+[submodule "external/sdl-Android"]
+	path = external/sdl
+	url = https://github.com/ikhoeyZX/sdl-Android.git
