@@ -1,9 +1,9 @@
 apply plugin: 'com.android.application'
 
 android {
-	namespace "org.vita3k.emulator"
+	namespace "org.vita3k.emulator.ikhoeyZX"
 	compileSdk 34
-	ndkVersion "26.3.11579264"
+	ndkVersion "27.0.11902837-rc1"
 	buildFeatures {
 		buildConfig true
 	}
@@ -13,7 +13,7 @@ android {
 		minSdk 28
 		targetSdk 34
 		versionCode 12
-		versionName "0.2.0-12.5-ikhoeyZX"
+		versionName "0.2.0-12-ikhoeyZX"
 
 		externalNativeBuild {
 			cmake {
@@ -62,8 +62,8 @@ android {
 			}
 			minifyEnabled true
 			shrinkResources true
-			signingConfig = signingConfigs.ci
 			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+			signingConfig = signingConfigs.ci
 		}
 	}
 
@@ -105,5 +105,4 @@ dependencies {
 	implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 	implementation 'com.getkeepsafe.relinker:relinker:1.4.5'
 	implementation 'com.jakewharton:process-phoenix:2.1.2'
-	implementation 'androidx.documentfile:documentfile:1.0.1'
 }
