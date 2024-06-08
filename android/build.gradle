@@ -4,6 +4,7 @@ android {
 	namespace "org.vita3k.emulator.ikhoeyZX"
 	compileSdk 34
 	ndkVersion "27.0.11902837-rc1"
+	ndkPath "/usr/local/lib/android/sdk/ndk/27.0.11902837"
 	buildFeatures {
 		buildConfig true
 	}
