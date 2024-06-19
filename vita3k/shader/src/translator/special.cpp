@@ -88,7 +88,7 @@ bool USSETranslatorVisitor::depthf(
         disasm::operand_to_str(inst.opr.src0, 0b0001, 0), disasm::operand_to_str(inst.opr.src1, 0b0001, 0),
         disasm::operand_to_str(inst.opr.src2, 0b0001, 0));
 
-    m_b.setLine(m_recompiler.cur_pc);
+   
 
     if (frag_depth_id == 0) {
         frag_depth_id = m_b.createVariable(spv::NoPrecision, spv::StorageClassOutput, type_f32, "gl_FragDepth");
@@ -154,7 +154,7 @@ bool USSETranslatorVisitor::smbo(Imm1 nosched,
     Imm12 src2_offset) {
     LOG_DISASM("{:016x}: SMBO {}, {}, {}, {}", m_instr, dest_offset, src0_offset, src1_offset, src2_offset);
 
-    m_b.setLine(m_recompiler.cur_pc);
+   
 
     auto parse_offset = [&](const int idx, Imm12 offset) {
         for (int i = 0; i < 17; i++) {
@@ -173,7 +173,7 @@ bool USSETranslatorVisitor::kill(
     ShortPredicate pred) {
     LOG_DISASM("{:016x}: KILL {}", m_instr, disasm::s_predicate_str(pred));
 
-    m_b.setLine(m_recompiler.cur_pc);
+   
     m_b.makeStatementTerminator(spv::OpKill, "kill");
 
     return true;
