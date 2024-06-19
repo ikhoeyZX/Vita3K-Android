@@ -127,7 +127,7 @@ bool USSETranslatorVisitor::vmad(
         inst.opr.src2.flags |= RegisterFlags::Negative;
     }
 
-    m_b.setLine(m_recompiler.cur_pc);
+   
 
     set_repeat_multiplier(2, 2, 2, 4);
 
@@ -263,7 +263,7 @@ bool USSETranslatorVisitor::vmad2(
     LOG_DISASM("{:016x}: {}{}2 {} {} {} {}", m_instr, disasm::e_predicate_str(static_cast<ExtPredicate>(pred)), disasm::opcode_str(op), disasm::operand_to_str(inst.opr.dest, dest_mask),
         disasm::operand_to_str(inst.opr.src0, dest_mask), disasm::operand_to_str(inst.opr.src1, dest_mask), disasm::operand_to_str(inst.opr.src2, dest_mask));
 
-    m_b.setLine(m_recompiler.cur_pc);
+   
 
     // Translate the instruction
     spv::Id vsrc0 = load(inst.opr.src0, dest_mask, 0);
@@ -359,7 +359,7 @@ bool USSETranslatorVisitor::vdp(
         inst.opr.src2.flags |= RegisterFlags::Absolute;
     }
 
-    m_b.setLine(m_recompiler.cur_pc);
+   
 
     // Decoding done
     BEGIN_REPEAT(repeat_count)
@@ -606,7 +606,7 @@ bool USSETranslatorVisitor::v32nmad(
         disasm::operand_to_str(inst.opr.src1, source_mask), disasm::operand_to_str(inst.opr.src2, source_mask));
 
     // Recompile
-    m_b.setLine(m_recompiler.cur_pc);
+   
     spv::Id result = do_alu_op(inst, source_mask, dest_mask);
 
     if (result != spv::NoResult) {
@@ -728,7 +728,7 @@ bool USSETranslatorVisitor::vcomp(
     // (upper bound on the) number of components to set in the destination
     const uint32_t nb_components = std::bit_width(write_mask);
 
-    m_b.setLine(m_recompiler.cur_pc);
+   
 
     // TODO: Log
     BEGIN_REPEAT(repeat_count)
