@@ -170,11 +170,11 @@ static spv::Function *make_fx10_unpack_func(spv::Builder &b, const SpirvUtilFunc
     spv::Block *fx10_unpack_func_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
-    spv::Id type_i32 = b.makeIntType(32);
-    spv::Id ivec3 = b.makeVectorType(type_i32, 3);
-    spv::Id uvec3 = b.makeVectorType(b.makeUintType(32), 3);
-    spv::Id type_f32 = b.makeFloatType(32);
-    spv::Id type_f32_v3 = b.makeVectorType(type_f32, 3);
+    std::vector<spv::Id> type_i32 = b.makeIntType(32);
+    std::vector<spv::Id> ivec3 = b.makeVectorType(type_i32, 3);
+    std::vector<spv::Id> uvec3 = b.makeVectorType(b.makeUintType(32), 3);
+    std::vector<spv::Id> type_f32 = b.makeFloatType(32);
+    std::vector<spv::Id> type_f32_v3 = b.makeVectorType(type_f32, 3);
 
     spv::Function *fx10_unpack_func = b.makeFunctionEntry(
         spv::NoPrecision, type_f32_v3, "unpack3xFX10", { type_f32 }, { "to_unpack" },
