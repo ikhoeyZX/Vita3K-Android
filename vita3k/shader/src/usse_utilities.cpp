@@ -177,7 +177,7 @@ static spv::Function *make_fx10_unpack_func(spv::Builder &b, const SpirvUtilFunc
     spv::Id type_f32_v3 = b.makeVectorType(type_f32, 3);
 
     spv::Function *fx10_unpack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32_v3, "unpack3xFX10", convertGlslangLinkageToSpv(type_f32), { "to_unpack" },
+        spv::NoPrecision, type_f32_v3, "unpack3xFX10", type_f32->getLinkType(), { "to_unpack" },
         decorations, &fx10_unpack_func_block);
     fx10_unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
 
@@ -259,7 +259,7 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
     }
 
     spv::Function *unpack_func = b.makeFunctionEntry(
-        spv::NoPrecision, output_type, func_name.c_str(), convertGlslangLinkageToSpv(type_f32), { "to_unpack" },
+        spv::NoPrecision, output_type, func_name.c_str(), type_f32->getLinkType(), { "to_unpack" },
         decorations, &unpack_func_block);
     unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
     spv::Id extracted = unpack_func->getParamId(0);
@@ -336,7 +336,7 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
     }
 
     spv::Function *pack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32, func_name.c_str(), convertGlslangLinkageToSpv(input_type), { "to_pack" },
+        spv::NoPrecision, type_f32, func_name.c_str(), input_type->getLinkType(), { "to_pack" },
         decorations, &pack_func_block);
 
     pack_func->addParamPrecision(0, spv::DecorationRelaxedPrecision);
@@ -370,7 +370,7 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const SpirvUtilFunct
     spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
 
     spv::Function *f16_unpack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32_v2, "unpack2xF16", convertGlslangLinkageToSpv(type_f32), { "to_unpack" },
+        spv::NoPrecision, type_f32_v2, "unpack2xF16", type_f32->getLinkType(), { "to_unpack" },
         decorations, &f16_unpack_func_block);
     f16_unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
 
@@ -396,7 +396,7 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const SpirvUtilFunctio
     spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
 
     spv::Function *f16_pack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32, "pack2xF16", convertGlslangLinkageToSpv(type_f32_v2), { "to_pack" },
+        spv::NoPrecision, type_f32, "pack2xF16", type_f32_v2->getLinkType(), { "to_pack" },
         decorations, &f16_pack_func_block);
 
     f16_pack_func->addParamPrecision(0, spv::DecorationRelaxedPrecision);
@@ -428,7 +428,7 @@ static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, spv::Id 
 
     const std::string func_name = fmt::format("fetchMemoryForBuffer{}Base{}", buffer_index, info.base);
 
-    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), convertGlslangLinkageToSpv(type_i32), { "addr" },
+    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), type_i32->getLinkType(), { "addr" },
         {}, &func_block);
 
     spv::Id sixteen_cst = b.makeIntConstant(16);
@@ -484,7 +484,7 @@ static spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderP
     spv::Block *func_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
-    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "fetchMemory", convertGlslangLinkageToSpv(type_i32), { "addr" },
+    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "fetchMemory", type_i32->getLinkType(), { "addr" },
         {}, &func_block);
     spv::Id addr = fetch_func->getParamId(0);
 
