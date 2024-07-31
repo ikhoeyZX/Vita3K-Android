@@ -715,6 +715,7 @@ struct LangState {
             { "dump_elfs_description", "Dump loaded code as ELFs." },
             { "validation_layer", "Validation Layer (Reboot required)" },
             { "validation_layer_description", "Enable Vulkan validation layer." },
+            { "debug_menu", "Enable debug menu in menubar" },
             { "unwatch_code", "Unwatch Code" },
             { "watch_code", "Watch Code" },
             { "unwatch_memory", "Unwatch Memory" },
