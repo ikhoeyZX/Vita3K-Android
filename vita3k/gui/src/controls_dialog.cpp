@@ -119,8 +119,10 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     static bool overlay_editing = false;
 
     const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const ImVec2 center_pos = ImGui::GetMainViewport()->GetCenter(); // Always center this window when appearing
+    const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
-    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowPos(center_pos, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("Overlay", &gui.controls_menu.controls_dialog, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(RES_SCALE.x);
 
@@ -139,6 +141,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 
     const char *overlay_edit_text = overlay_editing ? "Hide Gamepad Overlay" : "Modify Gamepad Overlay";
+    ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (gmpd / 2.f)); // recenter button
     if (ImGui::Button(overlay_edit_text)) {
         overlay_editing = !overlay_editing;
         set_controller_overlay_state(overlay_editing ? get_overlay_display_mask(emuenv.cfg) : 0, overlay_editing);
@@ -153,6 +156,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
+    ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (gmpd / 2.f));
     if (overlay_editing && ImGui::Button("Reset Gamepad")) {
         set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true, true);
         emuenv.cfg.overlay_scale = 1.0f;
@@ -169,6 +173,14 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     }
     ImGui::Text("L2/R2 triggers will be displayed only if PSTV mode is enabled.");
 
+    auto &common = emuenv.common_dialog.lang.common;
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
+    if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE)){
+        overlay_editing = false;
+        set_controller_overlay_state(0);
+        gui.controls_menu.controls_dialog = false;
+    }
+    ImGui::ScrollWhenDragging();
     ImGui::End();
 }
 
