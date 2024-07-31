@@ -366,6 +366,9 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
                         rebinds_is_open = false;
 
+#ifdef ANDROID
+                    ImGui::ScrollWhenDragging(); // because only in Android was hard to press scroll slider
+#endif
                     ImGui::End();
                 }
             }
