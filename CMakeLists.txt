@@ -29,8 +29,8 @@ if(ANDROID)
     NO_SYSTEM_FROM_IMPORTED ON
     )
 
-	string(APPEND CMAKE_CXX_FLAGS " -Wl,-Bsymbolic -Wno-unused-command-line-argument, -z, max-page-size=16384")
-	string(APPEND CMAKE_C_FLAGS " -Wl,-Bsymbolic -Wno-unused-command-line-argument")
+	string(APPEND CMAKE_CXX_FLAGS " -Wl,-Bsymbolic -Wno-unused-command-line-argument")
+	string(APPEND CMAKE_C_FLAGS " -Wl,-Bsymbolic -Wno-unused-command-line-argument, max-page-size=16384")
 
 	if(CMAKE_BUILD_TYPE STREQUAL "Release")
         set(CMAKE_C_VISIBILITY_PRESET hidden)
