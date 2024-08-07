@@ -51,11 +51,18 @@ bool SDLAudioAdapter::init() {
     // we only allow the samples amount to be changed
     // if resampling or format change has to be done, it is better
     // to do it after all channels have been merged
-    device_id = SDL_OpenAudioDevice(nullptr, false, &desired, &spec, SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
+    auto devicetype = SDL_GetCurrentAudioDriver();
+    if (devicetype == "AAudio") {
+        device_id = SDL_OpenAudioDevice(nullptr, false, &desired, &spec, 0);
+        LOG_WARNING("SDL doesn't support SDL_AUDIO_ALLOW_SAMPLES_CHANGE when using AAudio");
+    } else {
+        device_id = SDL_OpenAudioDevice(nullptr, false, &desired, &spec, SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
+    }
     if (device_id <= 0) {
         LOG_ERROR("SDL audio error: {}", SDL_GetError());
         return false;
     }
+    
 
     state.spec = {
         .freq = spec.freq,
