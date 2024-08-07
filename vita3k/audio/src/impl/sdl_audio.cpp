@@ -52,9 +52,9 @@ bool SDLAudioAdapter::init() {
     // if resampling or format change has to be done, it is better
     // to do it after all channels have been merged
     auto devicetype = SDL_GetCurrentAudioDriver();
-    if (devicetype == "AAudio") {
+    if (strcmp(devicetype, "AAudio") == 0 || strcmp(devicetype, "disk") == 0) {
         device_id = SDL_OpenAudioDevice(nullptr, false, &desired, &spec, 0);
-        LOG_WARNING("SDL doesn't support SDL_AUDIO_ALLOW_SAMPLES_CHANGE when using AAudio");
+        LOG_WARN("SDL doesn't support SDL_AUDIO_ALLOW_SAMPLES_CHANGE when using AAudio");
     } else {
         device_id = SDL_OpenAudioDevice(nullptr, false, &desired, &spec, SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
     }
