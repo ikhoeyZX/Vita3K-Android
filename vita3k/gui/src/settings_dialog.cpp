@@ -1039,15 +1039,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         SetTooltipEx(lang.audio["ngs_description"].c_str());
         ImGui::Spacing();
 
-        std::vector<std::string> audiodrv_list_str;
-        const int numbersdrv = SDL_GetNumAudioDrivers()-1;
-        for (int list=0; list < numbersdrv; list++){
-             audiodrv_list_str.push_back(SDL_GetAudioDriver(list));
-        }
-        // must convert to a vector of char*
         std::vector<const char *> audiodrv_list;
-        for (const auto &audiodrv : audiodrv_list_str)
-            audiodrv_list.push_back(audiodrv.c_str());
+        for (int list=0; list < (SDL_GetNumAudioDrivers()-1); list++){
+             audiodrv_list.push_back(SDL_GetAudioDriver(list).c_str());
+        }
 
         static int current_audio_driver = std::find(audiodrv_list_str.begin(), audiodrv_list_str.end(), emuenv.cfg.audio_drv) - audiodrv_list_str.begin();
         if(ImGui::Combo(lang.audio["audio_driver"].c_str(), &current_audio_driver, audiodrv_list.data(), static_cast<int>(audiodrv_list.size()))) {
