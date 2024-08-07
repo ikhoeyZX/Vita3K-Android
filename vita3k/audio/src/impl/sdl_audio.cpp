@@ -41,8 +41,8 @@ SDLAudioAdapter::~SDLAudioAdapter() {
 
 bool SDLAudioAdapter::init() {
     SDL_AudioSpec desired = {};
-    desired.freq = 48000;
-    desired.format = AUDIO_S16LSB;
+    desired.freq = 44100;
+    desired.format = AUDIO_S16SYS;
     desired.channels = 2;
     desired.samples = 512;
     desired.callback = sdl_audio_callback;
@@ -51,15 +51,8 @@ bool SDLAudioAdapter::init() {
     // we only allow the samples amount to be changed
     // if resampling or format change has to be done, it is better
     // to do it after all channels have been merged
-    auto devicetype = SDL_GetCurrentAudioDriver();
-    if (strcmp(devicetype, "AAudio") == 0 || strcmp(devicetype, "disk") == 0) {
-        desired.format = AUDIO_F32;
-        desired.samples = 1024;
-        device_id = SDL_OpenAudioDevice(nullptr, false, &desired, &spec, 0);
-        LOG_WARN("SDL doesn't support SDL_AUDIO_ALLOW_SAMPLES_CHANGE when using AAudio");
-    } else {
-        device_id = SDL_OpenAudioDevice(nullptr, false, &desired, &spec, SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
-    }
+    device_id = SDL_OpenAudioDevice(nullptr, false, &desired, &spec, SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
+    
     if (device_id <= 0) {
         LOG_ERROR("SDL audio error: {}", SDL_GetError());
         return false;
