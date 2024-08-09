@@ -42,6 +42,12 @@ enum PerfomanceOverleyPosition {
     BOTTOM_RIGHT,
 };
 
+enum ScreenshotFormat {
+    None,
+    JPEG,
+    PNG,
+};
+
 // clang-format off
 // Singular options produced in config file
 // Order is code(option_type, option_name, option_default, member_name)
@@ -69,7 +75,7 @@ enum PerfomanceOverleyPosition {
     code(std::string, "custom-driver-name", "", custom_driver_name)                                     \
     code(bool, "turbo-mode", false, turbo_mode)                                                         \
     code(int, "gpu-idx", 0, gpu_idx)                                                                    \
-    code(bool, "high-accuracy", false, high_accuracy)                                                    \
+    code(bool, "high-accuracy", false, high_accuracy)                                                   \
     code(float, "resolution-multiplier", 1.0f, resolution_multiplier)                                   \
     code(bool, "disable-surface-sync", true, disable_surface_sync)                                      \
     code(std::string, "screen-filter", "Bilinear", screen_filter)                                       \
@@ -110,6 +116,7 @@ enum PerfomanceOverleyPosition {
     code(bool, "performance-overlay", false, performance_overlay)                                       \
     code(int, "perfomance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)       \
     code(int, "perfomance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position)  \
+    code(int, "screenshot-format", static_cast<int>(JPEG), screenshot_format)                           \
     code(bool, "enable-gamepad-overlay", true, enable_gamepad_overlay)                                  \
     code(bool, "overlay-show-touch-switch", false, overlay_show_touch_switch)                           \
     code(float, "overlay-scale", 1.0f, overlay_scale)                                                   \
@@ -156,7 +163,7 @@ enum PerfomanceOverleyPosition {
     code(bool, "fps-hack", false, fps_hack)                                                             \
     code(bool, "acceleration-and-gyroscope", true, tiltsens)                                            \
     code(int, "acceleration-pos", 0, tiltpos)                                                           \
-    code(bool, "invert-gyro", false, invert_gyro)                                                            \
+    code(bool, "invert-gyro", false, invert_gyro)                                                       \
     code(int, "screenmode-pos", 0, screenmode_pos)                                                      \
     code(uint64_t, "current-ime-lang", 4, current_ime_lang)                                             \
     code(int, "psn-signed-in", false, psn_signed_in)                                                    \
