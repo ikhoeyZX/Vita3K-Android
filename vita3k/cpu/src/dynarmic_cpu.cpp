@@ -258,7 +258,6 @@ public:
         case Dynarmic::A32::Exception::SendEvent:
         case Dynarmic::A32::Exception::SendEventLocal:
         case Dynarmic::A32::Exception::WaitForEvent:
-            break;
         case Dynarmic::A32::Exception::Yield:
             break;
         case Dynarmic::A32::Exception::UndefinedInstruction:
@@ -298,12 +297,12 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
     config.callbacks = cb.get();
     if (parent->mem->use_page_table) {
-        config.page_table = (log_mem || !cpu_opt) ? nullptr : std::bit_cast<decltype(config.page_table)>(parent->mem->page_table.get());
-        config.absolute_offset_page_table = false;
+        config.page_table = (log_mem || !cpu_opt) ? nullptr : reinterpret_cast<decltype(config.page_table)>(parent->mem->page_table.get());
+        config.absolute_offset_page_table = true;
         config.detect_misaligned_access_via_page_table = 4;
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
     } else if (!log_mem && cpu_opt) {
-        config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
+//        config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
     }
     config.hook_hint_instructions = true;
     config.enable_cycle_counting = false;
@@ -311,9 +310,9 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.coprocessors[15] = cp15;
     config.processor_id = core_id;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;  
-   // config.recompile_on_fastmem_failure = false;
+    config.recompile_on_fastmem_failure = false;
     config.wall_clock_cntpct = true;
-  //  config.fastmem_exclusive_access = true;
+    config.fastmem_exclusive_access = true;
     config.define_unpredictable_behaviour = true;
 
     return std::make_unique<Dynarmic::A32::Jit>(config);
