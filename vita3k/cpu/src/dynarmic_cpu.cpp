@@ -117,9 +117,9 @@ public:
     }
 
     void PreCodeTranslationHook(bool is_thumb, Dynarmic::A32::VAddr pc, Dynarmic::A32::IREmitter &ir) override {
-        if (cpu->log_code) {
-            //ir.CallHostFunction(&TraceInstruction, ir.Imm64((uint64_t)this), ir.Imm64(pc), ir.Imm64(is_thumb));
-        }
+       // if (cpu->log_code) {
+       //     ir.CallHostFunction(&TraceInstruction, ir.Imm64((uint64_t)this), ir.Imm64(pc), ir.Imm64(is_thumb));
+       // }
     }
 
     template <typename T>
@@ -302,7 +302,7 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
         config.detect_misaligned_access_via_page_table = 4;
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
     } else if (!log_mem && cpu_opt) {
-//        config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
+        config.fastmem_pointer = reinterpret_cast<uintptr_t>(parent->mem->memory.get());
     }
     config.hook_hint_instructions = true;
     config.enable_cycle_counting = false;
@@ -310,10 +310,10 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.coprocessors[15] = cp15;
     config.processor_id = core_id;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;  
-    config.recompile_on_fastmem_failure = false;
+    config.recompile_on_fastmem_failure = true;
     config.wall_clock_cntpct = true;
     config.fastmem_exclusive_access = true;
-    config.define_unpredictable_behaviour = true;
+    config.define_unpredictable_behaviour = false;
 
     return std::make_unique<Dynarmic::A32::Jit>(config);
 }
