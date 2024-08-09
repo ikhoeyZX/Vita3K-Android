@@ -171,19 +171,19 @@ void update_viewport(EmuEnvState &state) {
         const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
         if (state.cfg.stretch_the_display_area) {
             // Match the aspect ratio to the screen size.
-            state.viewport_size.x = static_cast<SceFloat>(w);
-            state.viewport_size.y = static_cast<SceFloat>(h);
+            state.viewport_size.x = static_cast<SceUInt32>(w);
+            state.viewport_size.y = static_cast<SceUInt32>(h);
             state.viewport_pos.x = 0;
             state.viewport_pos.y = 0;
         } else if (window_aspect > vita_aspect) {
             // Window is wide. Pin top and bottom.
             state.viewport_size.x = h * vita_aspect;
-            state.viewport_size.y = static_cast<SceFloat>(h);
+            state.viewport_size.y = static_cast<SceUInt32>(h);
             state.viewport_pos.x = (w - state.viewport_size.x) / 2;
             state.viewport_pos.y = 0;
         } else {
             // Window is tall. Pin left and right.
-            state.viewport_size.x = static_cast<SceFloat>(w);
+            state.viewport_size.x = static_cast<SceUInt32>(w);
             state.viewport_size.y = w / vita_aspect;
             state.viewport_pos.x = 0;
             state.viewport_pos.y = state.viewport_size.y / 4;
