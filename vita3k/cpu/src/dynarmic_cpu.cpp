@@ -299,17 +299,21 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     if (parent->mem->use_page_table) {
         config.page_table = (log_mem || !cpu_opt) ? nullptr : reinterpret_cast<decltype(config.page_table)>(parent->mem->page_table.get());
         config.absolute_offset_page_table = true;
-        config.detect_misaligned_access_via_page_table = 4;
+        config.detect_misaligned_access_via_page_table = 8;
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
     } else if (!log_mem && cpu_opt) {
         config.fastmem_pointer = reinterpret_cast<uintptr_t>(parent->mem->memory.get());
         config.recompile_on_fastmem_failure = false;
+#ifdef ANDROID
+        config.fastmem_exclusive_access = false;
+#else
         config.fastmem_exclusive_access = true;
+#endif
         config.recompile_on_exclusive_fastmem_failure = false;
-        config.fastmem_address_space_bits = 64;
         config.silently_mirror_fastmem = false;
         config.define_unpredictable_behaviour = true;
     }
+    config.page_table_pointer_mask_bits = true;
     config.hook_hint_instructions = true;
     config.enable_cycle_counting = false;
     config.global_monitor = monitor;
