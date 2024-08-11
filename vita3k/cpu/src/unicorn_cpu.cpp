@@ -108,6 +108,7 @@ void UnicornCPU::intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
 static void enable_vfp_fpu(uc_engine *uc) {
     uint64_t c1_c0_2 = 0;
     uc_err err = uc_reg_read(uc, UC_ARM_REG_C1_C0_2, &c1_c0_2);
+    LOG_DEBUG("uc_open() status returned: {}", err);
     assert(err == UC_ERR_OK);
 
     c1_c0_2 |= (0xf << 20);
@@ -136,6 +137,7 @@ UnicornCPU::UnicornCPU(CPUState *state)
     : parent(state) {
     uc_engine *temp_uc = nullptr;
     uc_err err = uc_open(UC_ARCH_ARM, UC_MODE_ARM, &temp_uc);
+    LOG_DEBUG("uc_open->UC_ARCH_ARM status returned: {}", err);
     assert(err == UC_ERR_OK);
 
     uc = UnicornPtr(temp_uc, uc_close);
@@ -144,11 +146,13 @@ UnicornCPU::UnicornCPU(CPUState *state)
     uc_hook hh = 0;
 
     err = uc_hook_add(uc.get(), &hh, UC_HOOK_INTR, reinterpret_cast<void *>(&intr_hook), this, 1, 0);
+        LOG_DEBUG("uc_hook_add status returned: {}", err);
     assert(err == UC_ERR_OK);
 
     // Don't map the null page into unicorn so that unicorn returns access error instead of
     // crashing the whole emulator on invalid access
-    err = uc_mem_map_ptr(uc.get(), state->mem->page_size, GiB(4) - state->mem->page_size, UC_PROT_ALL, &state->mem->memory[state->mem->page_size]);
+    err = uc_mem_map_ptr(uc.get(), state->mem->page_size, GiB(2) - state->mem->page_size, UC_PROT_ALL, &state->mem->memory[state->mem->page_size]);
+     LOG_DEBUG("uc_mem_map_ptr status returned: {}", err);   
     assert(err == UC_ERR_OK);
 
     enable_vfp_fpu(uc.get());
