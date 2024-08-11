@@ -310,7 +310,6 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
         config.fastmem_exclusive_access = true;
 #endif
         config.recompile_on_exclusive_fastmem_failure = false;
-        config.silently_mirror_fastmem = false;
         config.define_unpredictable_behaviour = true;
     }
     config.page_table_pointer_mask_bits = true;
