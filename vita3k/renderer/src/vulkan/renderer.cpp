@@ -1060,24 +1060,27 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             .format = AHARDWAREBUFFER_FORMAT_BLOB,
             .usage = AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER | AHARDWAREBUFFER_USAGE_CPU_READ_MASK | AHARDWAREBUFFER_USAGE_CPU_WRITE_MASK,
         };
+        LOG_DEBUG("AHardwareBuffer_Desc buffer_desc OK");
         AHardwareBuffer *buffer;
         int err = _AHardwareBuffer_allocate(&buffer_desc, &buffer);
         if (err != 0) {
             LOG_ERROR("Failed to allocate Android hardware buffer, error {}", err);
             return false;
         }
+        LOG_DEBUG("Android _AHardwareBuffer_allocate hardware buffer status: {}", err);
         void *mapped_location;
         err = _AHardwareBuffer_lock(buffer, AHARDWAREBUFFER_USAGE_CPU_READ_MASK | AHARDWAREBUFFER_USAGE_CPU_WRITE_MASK, -1, nullptr, &mapped_location);
         if (err != 0) {
             LOG_ERROR("Failed to lock Android hardware buffer, error {}", err);
             return false;
         }
+        LOG_DEBUG("Android _AHardwareBuffer_lock hardware buffer status: {}", err);
 
         vk::DeviceMemory device_memory;
         // prefer this extension
         if (support_android_buffer_import) {
             const vk::AndroidHardwareBufferPropertiesANDROID hardware_props = device.getAndroidHardwareBufferPropertiesANDROID(*buffer);
-
+            LOG_DEBUG("vk::AndroidHardwareBufferPropertiesANDROID OK");
             uint32_t mapped_memory_type = find_suitable_mapped_type(hardware_props.memoryTypeBits);
             vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportAndroidHardwareBufferInfoANDROID, vk::MemoryAllocateFlagsInfo> alloc_info{
                 vk::MemoryAllocateInfo{
@@ -1088,17 +1091,22 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                 vk::MemoryAllocateFlagsInfo{
                     .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
             };
+            LOG_DEBUG("vk::StructureChain<vk::MemoryAllocateInfo OK");
             device_memory = device.allocateMemory(alloc_info.get());
+            LOG_DEBUG("device.allocateMemory OK");
         } else {
             const native_handle_t *handle = _AHardwareBuffer_getNativeHandle(buffer);
             if (handle == nullptr || handle->numFds == 0 || handle->data[0] == -1) {
                 LOG_ERROR("Failed to get native handle");
                 return false;
             }
+            LOG_DEBUG("native_handle_t OK");
 
             int fd = handle->data[0];
             const vk::MemoryFdPropertiesKHR fd_props = device.getMemoryFdPropertiesKHR(vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd, fd);
+            LOG_DEBUG("vk::MemoryFdPropertiesKHR OK");
             uint32_t mapped_memory_type = find_suitable_mapped_type(fd_props.memoryTypeBits);
+            LOG_DEBUG("find_suitable_mapped_type OK");
             vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportMemoryFdInfoKHR, vk::MemoryAllocateFlagsInfo> alloc_info{
                 vk::MemoryAllocateInfo{
                     .allocationSize = size + KiB(4),
@@ -1109,7 +1117,9 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                 vk::MemoryAllocateFlagsInfo{
                     .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
             };
+            LOG_DEBUG("vk::StructureChain<vk::MemoryAllocateInfo handle OK");
             device_memory = device.allocateMemory(alloc_info.get());
+            LOG_DEBUG("device.allocateMemory handle OK");
         }
 
         vk::StructureChain<vk::BufferCreateInfo, vk::ExternalMemoryBufferCreateInfoKHR> buffer_info{
@@ -1120,16 +1130,21 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             vk::ExternalMemoryBufferCreateInfoKHR{
                 .handleTypes = support_android_buffer_import ? vk::ExternalMemoryHandleTypeFlagBits::eAndroidHardwareBufferANDROID : vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd }
         };
+         LOG_DEBUG("vk::StructureChain<vk::BufferCreateInfo OK");
         const vk::Buffer mapped_buffer = device.createBuffer(buffer_info.get());
+        LOG_DEBUG("device.createBuffer OK");
         device.bindBufferMemory(mapped_buffer, device_memory, 0);
-
+        LOG_DEBUG("device.bindBufferMemory OK");
         vk::BufferDeviceAddressInfoKHR address_info{
             .buffer = mapped_buffer
         };
+        LOG_DEBUG("vk::BufferDeviceAddressInfoKHR OK");
         const uint64_t buffer_address = device.getBufferAddress(address_info);
-
+        LOG_DEBUG("device.getBufferAddress OK");
         add_external_mapping(mem, address.address(), size, reinterpret_cast<uint8_t *>(mapped_location));
+        LOG_DEBUG("add_external_mapping OK");
         mapped_memories[address.address()] = { address.address(), ExternalBuffer{ device_memory, buffer }, mapped_buffer, size, buffer_address };
+        LOG_DEBUG("mapped_memories OK");
 #else
         LOG_ERROR("Native buffer is only supported on Android!\n");
 #endif
@@ -1272,15 +1287,24 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
 #ifdef ANDROID
     case MappingMethod::NativeBuffer: {
         remove_external_mapping(mem, address.cast<uint8_t>().get(mem), ite->second.size);
+        LOG_DEBUG("remove_external_mapping NativeBuffer OK");
         device.destroyBuffer(ite->second.buffer);
+        LOG_DEBUG("device.destroyBuffer OK");
         ExternalBuffer &buffer = std::get<ExternalBuffer>(ite->second.buffer_impl);
+        LOG_DEBUG("std::get<ExternalBuffer> OK");
         device.freeMemory(buffer.memory);
-
+        LOG_DEBUG("device.freeMemory OK");
+        
         AHardwareBuffer *hardware_buffer = reinterpret_cast<AHardwareBuffer *>(buffer.extra);
+        LOG_DEBUG("reinterpret_cast<AHardwareBuffer *> OK");
         _AHardwareBuffer_unlock(hardware_buffer, nullptr);
         // When using external fd, it takes ownership of the handle, so don't release it in this case
-        if (support_android_buffer_import)
+        if (support_android_buffer_import){
             _AHardwareBuffer_release(hardware_buffer);
+            LOG_DEBUG("_AHardwareBuffer_release OK");
+        }else{
+            LOG_DEBUG("_AHardwareBuffer_release failed");
+        }
         break;
     }
 #endif
