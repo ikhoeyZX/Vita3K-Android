@@ -303,6 +303,12 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
     } else if (!log_mem && cpu_opt) {
         config.fastmem_pointer = reinterpret_cast<uintptr_t>(parent->mem->memory.get());
+        config.recompile_on_fastmem_failure = false;
+        config.fastmem_exclusive_access = true;
+        config.recompile_on_exclusive_fastmem_failure = false;
+        config.fastmem_address_space_bits = 64;
+        config.silently_mirror_fastmem = false;
+        config.define_unpredictable_behaviour = true;
     }
     config.hook_hint_instructions = true;
     config.enable_cycle_counting = false;
@@ -310,11 +316,8 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.coprocessors[15] = cp15;
     config.processor_id = core_id;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;  
-    config.recompile_on_fastmem_failure = true;
     config.wall_clock_cntpct = true;
-    config.fastmem_exclusive_access = true;
-    config.define_unpredictable_behaviour = false;
-
+    
     return std::make_unique<Dynarmic::A32::Jit>(config);
 }
 
