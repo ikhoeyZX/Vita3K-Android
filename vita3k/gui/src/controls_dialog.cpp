@@ -73,7 +73,7 @@ void set_controller_overlay_state(int overlay_mask, bool edit, bool reset, bool 
     env->DeleteLocalRef(clazz);
 }
 
-void set_controller_overlay_scale(float scale, float intjoystick, float outjoystick) {
+void set_controller_overlay_scale(float scale, float injoystick, float outjoystick) {
     // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
 
