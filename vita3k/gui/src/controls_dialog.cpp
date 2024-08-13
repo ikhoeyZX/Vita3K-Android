@@ -174,15 +174,15 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         
         ImGui::Spacing();
         if (ImGui::Button("+")) {
-            emuenv.cfg.overlay_scale_injoystick += 0.02f;
+            emuenv.cfg.overlay_scale_injoystick += 0.1f;
             setvalue = true;
         }
         ImGui::SameLine();
         if (ImGui::Button("-")) {
-            emuenv.cfg.overlay_scale_injoystick -= 0.02f;
+            emuenv.cfg.overlay_scale_injoystick -= 0.1f;
             setvalue = true;
         }
-        if (ImGui::SliderFloat("Overlay scale inbound joystick", &emuenv.cfg.overlay_scale_injoystick, 0.40f, 3.8f, "%.2f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+        if (ImGui::SliderFloat("Overlay scale inbound joystick", &emuenv.cfg.overlay_scale_injoystick, 0.60f, 2.4f, "%.2f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
             setvalue = true;
         }
         
