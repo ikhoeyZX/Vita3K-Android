@@ -615,9 +615,13 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   }
 
   public void setScale(float scale, float scaleoutjoy, float scaleinjoy){
-    if(scale != mGlobalScale || scaleoutjoy != mOutJoyScale || scaleinjoy != mInJoyScale){
+    if(scale != mGlobalScale){
       mGlobalScale = scale;
+      refreshControls();
+    }else if(scaleoutjoy != mOutJoyScale){
       mOutJoyScale = scaleoutjoy;
+      refreshControls();
+    }else if(scaleinjoy != mInJoyScale){
       mInJoyScale = scaleinjoy;
       refreshControls();
     }
@@ -831,7 +835,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     // Decide scale based on user preference
     float scale = 0.275f;
-    scale *= mOutJoyScale;
+    //float scale *= mOutJoyScale;
 
     // Initialize the InputOverlayDrawableJoystick.
     final Bitmap bitmapOuter =
@@ -846,7 +850,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     // Decide inner scale based on joystick ID
     float innerScale = 1.375f;
-    innerScale *= mInJoyScale;
+    //float innerScale *= mInJoyScale;
 
     // Now set the bounds for the InputOverlayDrawableJoystick.
     // This will dictate where on the screen (and the what the size) the InputOverlayDrawableJoystick will be.
