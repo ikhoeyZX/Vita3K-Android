@@ -94,7 +94,7 @@ enum ScreenshotFormat {
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(int, "audio-volume", 100, audio_volume)                                                        \
     code(bool, "ngs-enable", true, ngs_enable)                                                          \
-    code(std::string, "audio-drv", "auto", audio_drv)                                               \
+    code(std::string, "audio-drv", "auto", audio_drv)                                                   \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
     code(int, "sys-date-format", (int)SCE_SYSTEM_PARAM_DATE_FORMAT_MMDDYYYY, sys_date_format)           \
@@ -120,7 +120,7 @@ enum ScreenshotFormat {
     code(bool, "overlay-show-touch-switch", false, overlay_show_touch_switch)                           \
     code(float, "overlay-scale", 1.0f, overlay_scale)                                                   \
     code(float, "overlay-scale-outjoystick", 1.0f, overlay_scale_outjoystick)                           \
-    code(float, "overlay-scale-intjoystick", 0.7f, overlay_scale_intjoystick)                           \
+    code(float, "overlay-scale-injoystick", 0.7f, overlay_scale_injoystick)                             \
     code(int, "overlay-opacity", 100, overlay_opacity)                                                  \
     code(int, "keyboard-button-select", 229, keyboard_button_select)                                    \
     code(int, "keyboard-button-start", 40, keyboard_button_start)                                       \

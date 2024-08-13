@@ -758,7 +758,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 SELECTABLE_APP_SIZE = emuenv.cfg.apps_list_grid ? ICON_SIZE : list_selectable_size;
 
     // grid mode is broken, just disable it for portrait mode
-    if(emuenv.cfg.apps_list_grid == 3 && emuenv.cfg.apps_list_grid){
+    if(emuenv.cfg.screenmode_pos == 3 && emuenv.cfg.apps_list_grid){
         emuenv.cfg.apps_list_grid = !emuenv.cfg.apps_list_grid;
     }
     
