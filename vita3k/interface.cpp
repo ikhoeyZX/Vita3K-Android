@@ -48,6 +48,7 @@
 #include <regex>
 
 #include <SDL.h>
+#include <SDL_system.h>
 #include <fmt/chrono.h>
 #include <stb_image_write.h>
 
