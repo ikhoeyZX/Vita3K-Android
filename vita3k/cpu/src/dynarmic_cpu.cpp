@@ -298,14 +298,14 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.callbacks = cb.get();
     if (parent->mem->use_page_table) {
         config.page_table = (log_mem || !cpu_opt) ? nullptr : reinterpret_cast<decltype(config.page_table)>(parent->mem->page_table.get());
-        config.absolute_offset_page_table = true;
-        config.detect_misaligned_access_via_page_table = 32;
+        config.absolute_offset_page_table = false;
+        config.detect_misaligned_access_via_page_table = 8;
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
     } else if (!log_mem && cpu_opt) {
         config.fastmem_pointer = reinterpret_cast<uintptr_t>(parent->mem->memory.get());
     }
     config.page_table_pointer_mask_bits = true;
-    config.hook_hint_instructions = true;
+    config.hook_hint_instructions = false;
     config.enable_cycle_counting = false;
     config.global_monitor = monitor;
     config.coprocessors[15] = cp15;

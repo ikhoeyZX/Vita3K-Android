@@ -1040,6 +1040,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
 
         std::vector<const char *> audiodrv_list;
+        audiodrv_list.push_back("auto");
         for (int list=0; list < (SDL_GetNumAudioDrivers()-1); list++){
              audiodrv_list.push_back(SDL_GetAudioDriver(list));
         }

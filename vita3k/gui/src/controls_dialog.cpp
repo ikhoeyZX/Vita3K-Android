@@ -84,7 +84,7 @@ void set_controller_overlay_scale(float scale) {
     jclass clazz(env->GetObjectClass(activity));
 
     // find the identifier of the method to call
-    jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayScale", "(F)V");
+    jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayScale", "(FFF)V");
 
     // effectively call the Java method
     env->CallVoidMethod(activity, method_id, scale);
@@ -157,6 +157,16 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
     ImGui::Spacing();
+    if (overlay_editing && ImGui::SliderFloat("Overlay scale outbound joystick", &emuenv.cfg.overlay_scale_outjoystick, 0.50f, 4.5f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+        set_controller_overlay_scale(emuenv.cfg.overlay_scale_outjoystick);
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+    }
+    ImGui::Spacing();
+    if (overlay_editing && ImGui::SliderFloat("Overlay scale inbound joystick", &emuenv.cfg.overlay_scale_injoystick, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+        set_controller_overlay_scale(emuenv.cfg.overlay_scale_injoystick);
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+    }
+    ImGui::Spacing();
     if (overlay_editing && ImGui::SliderInt("Overlay opacity", &emuenv.cfg.overlay_opacity, 0, 100, "%d%%")) {
         set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
@@ -176,6 +186,11 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     }
     ImGui::Spacing();
     ImGui::Separator();
+
+
+
+    ImGui::Spacing();
+    ImGui::Separator();
     if(emuenv.cfg.enable_gamepad_overlay && ImGui::Checkbox("Show front/back touchscreen switch button.", &emuenv.cfg.overlay_show_touch_switch)){
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), overlay_editing);
@@ -189,6 +204,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         set_controller_overlay_state(0);
         gui.controls_menu.controls_dialog = false;
     }
+
     ImGui::ScrollWhenDragging();
     ImGui::End();
 }
