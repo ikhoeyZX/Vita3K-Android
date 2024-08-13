@@ -206,7 +206,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
             set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true, true, false);  // landscape
         }
         emuenv.cfg.overlay_scale = 1.0f;
-        emuenv.cfg.overlay_scale_outjoystic = 0.275f;
+        emuenv.cfg.overlay_scale_outjoystick = 0.275f;
         emuenv.cfg.overlay_scale_injoystick = 1.375f;
         emuenv.cfg.overlay_opacity = 80;
         set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_outjoystick, emuenv.cfg.overlay_scale_injoystick);
