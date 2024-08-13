@@ -572,16 +572,16 @@ static void take_screenshot(EmuEnvState &emuenv) {
             screenshot_ok = true;
     }
     if (screenshot_ok){
-        auto tmp = "Successfully saved screenshot to " + save_file;
-        LOG_INFO("{}", tmp);
+        std::string tmp = "Successfully saved screenshot to {}" + save_file;
+        LOG_INFO("{}", tmp.c_str());
 #ifdef ANDROID
-        SDL_AndroidShowToast(tmp, 1, -1, 0, 0);
+        SDL_AndroidShowToast(tmp.c_str(), 1, -1, 0, 0);
 #endif
     }else{
-        auto tmp = "Failed to save screenshot";
-        LOG_INFO("{}", tmp);
+        std::string tmp = "Failed to save screenshot";
+        LOG_INFO("{}", tmp.c_str());
 #ifdef ANDROID
-        SDL_AndroidShowToast(tmp, 1, -1, 0, 0);
+        SDL_AndroidShowToast(tmp.c_str(), 1, -1, 0, 0);
 #endif
     }
 }
