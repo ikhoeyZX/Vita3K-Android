@@ -152,56 +152,64 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         set_controller_overlay_state(overlay_editing ? get_overlay_display_mask(emuenv.cfg) : 0, overlay_editing);
     }
     ImGui::Spacing();
-    if (overlay_editing && ImGui::SliderFloat("Overlay scale", &emuenv.cfg.overlay_scale, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
-        set_controller_overlay_scale(emuenv.cfg.overlay_scale);
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-    }
-    ImGui::Spacing();
-    if (overlay_editing && ImGui::SliderFloat("Overlay scale outbound joystick", &emuenv.cfg.overlay_scale_outjoystick, 0.02f, 2.0f, "%.1f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
-        set_controller_overlay_scale(emuenv.cfg.overlay_scale_outjoystick);
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("+")) {
-        emuenv.cfg.overlay_scale_outjoystick += 0.1f;
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("-")) {
-        emuenv.cfg.overlay_scale_outjoystick -= 0.1f;
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-    }
+    if(overlay_editing){
+        bool setvalue=false;
+        if (ImGui::SliderFloat("Overlay scale", &emuenv.cfg.overlay_scale, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+            setvalue = true;
+        }
+        ImGui::Spacing();
+        if (ImGui::SliderFloat("Overlay scale outbound joystick", &emuenv.cfg.overlay_scale_outjoystick, 0.04f, 2.0f, "%.2f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+            setvalue = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("+")) {
+            emuenv.cfg.overlay_scale_outjoystick += 0.02f;
+            setvalue = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("-")) {
+            emuenv.cfg.overlay_scale_outjoystick -= 0.02f;
+            setvalue = true;
+        }
 
-    ImGui::Spacing();
-    if (overlay_editing && ImGui::SliderFloat("Overlay scale inbound joystick", &emuenv.cfg.overlay_scale_injoystick, 0.01f, 1.8f, "%.1f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
-        set_controller_overlay_scale(emuenv.cfg.overlay_scale_injoystick);
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("+")) {
-        emuenv.cfg.overlay_scale_injoystick += 0.1f;
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("-")) {
-        emuenv.cfg.overlay_scale_injoystick -= 0.1f;
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-    }
-    ImGui::Spacing();
-    if (overlay_editing && ImGui::SliderInt("Overlay opacity", &emuenv.cfg.overlay_opacity, 0, 100, "%d%%")) {
-        set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        ImGui::Spacing();
+        if (ImGui::SliderFloat("Overlay scale inbound joystick", &emuenv.cfg.overlay_scale_injoystick, 0.02f, 1.8f, "%.2f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+            setvalue = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("+")) {
+            emuenv.cfg.overlay_scale_injoystick += 0.02f;
+            setvalue = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("-")) {
+            emuenv.cfg.overlay_scale_injoystick -= 0.02f;
+            setvalue = true;
+        }
+        ImGui::Spacing();
+        if (overlay_editing && ImGui::SliderInt("Overlay opacity", &emuenv.cfg.overlay_opacity, 0, 100, "%d%%")) {
+            setvalue = true;
+
+        }
+
+        if(setvalue){
+            set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_outjoystick, emuenv.cfg.overlay_scale_injoystick);
+            set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        }
     }
     ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (gmpd / 2.f));
      if (overlay_editing && ImGui::Button("Reset Gamepad")) {
         if(emuenv.cfg.screenmode_pos == 3){
-            set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true, true, true);
+            set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true, true, true);   // portrait
         }else{
-            set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true, true, false);
+            set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true, true, false);  // landscape
         }
         emuenv.cfg.overlay_scale = 1.0f;
+        emuenv.cfg.overlay_scale_outjoystic = 0.275f;
+        emuenv.cfg.overlay_scale_injoystick = 1.375f;
         emuenv.cfg.overlay_opacity = 80;
-        set_controller_overlay_scale(emuenv.cfg.overlay_scale);
+        set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_outjoystick, emuenv.cfg.overlay_scale_injoystick);
         set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
