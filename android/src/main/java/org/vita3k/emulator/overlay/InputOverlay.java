@@ -830,7 +830,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     final SharedPreferences sPrefs = PreferenceManager.getDefaultSharedPreferences(context);
 
     // Decide scale based on user preference
-    // float scale = 0.275f;
+    float scale = 0.275f;
     scale *= mOutJoyScale;
 
     // Initialize the InputOverlayDrawableJoystick.
