@@ -267,7 +267,7 @@ public class Emulator extends SDLActivity
 
     @Keep
     public void setControllerOverlayScale(float scale, float scaleoutjoy, float scaleinjoy){
-        getmOverlay().setScale(scale, scalejoy, scaleinjoy);
+        getmOverlay().setScale(scale, scaleoutjoy, scaleinjoy);
     }
 
     @Keep
