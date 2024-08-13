@@ -87,7 +87,7 @@ void set_controller_overlay_scale(float scale, float outjoystick, float injoysti
     jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayScale", "(FFF)V");
 
     // effectively call the Java method
-    env->CallVoidMethod(activity, method_id, scale);
+    env->CallVoidMethod(activity, method_id, scale, outjoystick, injoystick);
 
     // clean up the local references.
     env->DeleteLocalRef(activity);
