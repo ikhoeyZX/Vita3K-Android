@@ -73,7 +73,7 @@ void set_controller_overlay_state(int overlay_mask, bool edit, bool reset, bool 
     env->DeleteLocalRef(clazz);
 }
 
-void set_controller_overlay_scale(float scale, float outjoystick, float injoystick) {
+void set_controller_overlay_scale(float scale, float intjoystick, float outjoystick) {
     // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
 
@@ -87,7 +87,7 @@ void set_controller_overlay_scale(float scale, float outjoystick, float injoysti
     jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayScale", "(FFF)V");
 
     // effectively call the Java method
-    env->CallVoidMethod(activity, method_id, scale, outjoystick, injoystick);
+    env->CallVoidMethod(activity, method_id, scale, injoystick, outjoystick);
 
     // clean up the local references.
     env->DeleteLocalRef(activity);
@@ -158,25 +158,21 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
             setvalue = true;
         }
         ImGui::Spacing();
-        if (ImGui::SliderFloat("Overlay scale outbound joystick", &emuenv.cfg.overlay_scale_outjoystick, 0.04f, 2.0f, "%.2f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
-            setvalue = true;
-        }
-        ImGui::SameLine();
         if (ImGui::Button("+")) {
-            emuenv.cfg.overlay_scale_outjoystick += 0.02f;
+            emuenv.cfg.overlay_scale_outjoystick += 0.1f;
             setvalue = true;
         }
         ImGui::SameLine();
         if (ImGui::Button("-")) {
-            emuenv.cfg.overlay_scale_outjoystick -= 0.02f;
-            setvalue = true;
-        }
-
-        ImGui::Spacing();
-        if (ImGui::SliderFloat("Overlay scale inbound joystick", &emuenv.cfg.overlay_scale_injoystick, 0.02f, 1.8f, "%.2f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+            emuenv.cfg.overlay_scale_outjoystick -= 0.1f;
             setvalue = true;
         }
         ImGui::SameLine();
+        if (ImGui::SliderFloat("Overlay scale outbound joystick", &emuenv.cfg.overlay_scale_outjoystick, 0.44f, 4.0f, "%.2f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+            setvalue = true;
+        }
+        
+        ImGui::Spacing();
         if (ImGui::Button("+")) {
             emuenv.cfg.overlay_scale_injoystick += 0.02f;
             setvalue = true;
@@ -186,10 +182,13 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
             emuenv.cfg.overlay_scale_injoystick -= 0.02f;
             setvalue = true;
         }
-        ImGui::Spacing();
-        if (overlay_editing && ImGui::SliderInt("Overlay opacity", &emuenv.cfg.overlay_opacity, 0, 100, "%d%%")) {
+        if (ImGui::SliderFloat("Overlay scale inbound joystick", &emuenv.cfg.overlay_scale_injoystick, 0.40f, 3.8f, "%.2f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
             setvalue = true;
-
+        }
+        
+        ImGui::Spacing();
+        if (ImGui::SliderInt("Overlay opacity", &emuenv.cfg.overlay_opacity, 0, 100, "%d%%")) {
+            setvalue = true;
         }
 
         if(setvalue){
@@ -206,7 +205,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
             set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true, true, false);  // landscape
         }
         emuenv.cfg.overlay_scale = 1.0f;
-        emuenv.cfg.overlay_scale_outjoystick = 0.275f;
+        emuenv.cfg.overlay_scale_outjoystick = 1.275f;
         emuenv.cfg.overlay_scale_injoystick = 1.375f;
         emuenv.cfg.overlay_opacity = 80;
         set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_outjoystick, emuenv.cfg.overlay_scale_injoystick);
