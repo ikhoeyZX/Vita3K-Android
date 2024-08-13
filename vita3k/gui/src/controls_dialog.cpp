@@ -154,36 +154,36 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     if(overlay_editing){
         bool setvalue=false;
+        ImGui::Spacing();
+        if (ImGui::Button(" + ")) {
+            emuenv.cfg.overlay_scale += 0.1f;
+            setvalue = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(" - ")) {
+            emuenv.cfg.overlay_scale -= 0.1f;
+            setvalue = true;
+        }
+        ImGui::SameLine();
         if (ImGui::SliderFloat("Overlay scale", &emuenv.cfg.overlay_scale, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
             setvalue = true;
         }
+        
         ImGui::Spacing();
-        if (ImGui::Button("+")) {
+        if (ImGui::Button(" + ")) {
             emuenv.cfg.overlay_scale_outjoystick += 0.1f;
             setvalue = true;
         }
         ImGui::SameLine();
-        if (ImGui::Button("-")) {
+        if (ImGui::Button(" - ")) {
             emuenv.cfg.overlay_scale_outjoystick -= 0.1f;
             setvalue = true;
         }
         ImGui::SameLine();
         if (ImGui::SliderFloat("Overlay scale outbound joystick", &emuenv.cfg.overlay_scale_outjoystick, 0.44f, 4.0f, "%.2f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
             setvalue = true;
-        }
-        
-        ImGui::Spacing();
-        if (ImGui::Button("+")) {
-            emuenv.cfg.overlay_scale_injoystick += 0.1f;
-            setvalue = true;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("-")) {
-            emuenv.cfg.overlay_scale_injoystick -= 0.1f;
-            setvalue = true;
-        }
-        if (ImGui::SliderFloat("Overlay scale inbound joystick", &emuenv.cfg.overlay_scale_injoystick, 0.60f, 2.4f, "%.2f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
-            setvalue = true;
+           // if(emuenv.cfg.overlay_scale_outjoystick > 1)
+            emuenv.cfg.overlay_scale_injoystick = emuenv.cfg.overlay_scale_outjoystick / 1.5f;
         }
         
         ImGui::Spacing();
