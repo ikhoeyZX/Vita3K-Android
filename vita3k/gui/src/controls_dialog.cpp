@@ -162,12 +162,12 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
     ImGui::SameLine();
-    if (ImGui::Button('+')) {
+    if (ImGui::Button("+")) {
         emuenv.cfg.overlay_scale_outjoystick += 0.1f;
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
     ImGui::SameLine();
-    if (ImGui::Button('-')) {
+    if (ImGui::Button("-")) {
         emuenv.cfg.overlay_scale_outjoystick -= 0.1f;
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
@@ -178,12 +178,12 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
     ImGui::SameLine();
-    if (ImGui::Button('+')) {
+    if (ImGui::Button("+")) {
         emuenv.cfg.overlay_scale_injoystick += 0.1f;
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
     ImGui::SameLine();
-    if (ImGui::Button('-')) {
+    if (ImGui::Button("-")) {
         emuenv.cfg.overlay_scale_injoystick -= 0.1f;
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
