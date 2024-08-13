@@ -156,12 +156,12 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         bool setvalue=false;
         ImGui::Spacing();
         if (ImGui::Button(" + ")) {
-            emuenv.cfg.overlay_scale += 0.1f;
+            emuenv.cfg.overlay_scale += 0.01f;
             setvalue = true;
         }
         ImGui::SameLine();
         if (ImGui::Button(" - ")) {
-            emuenv.cfg.overlay_scale -= 0.1f;
+            emuenv.cfg.overlay_scale -= 0.01f;
             setvalue = true;
         }
         ImGui::SameLine();
@@ -169,21 +169,9 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
             setvalue = true;
         }
         
-        ImGui::Spacing();
-        if (ImGui::Button(" + ")) {
-            emuenv.cfg.overlay_scale_outjoystick += 0.1f;
-            setvalue = true;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button(" - ")) {
-            emuenv.cfg.overlay_scale_outjoystick -= 0.1f;
-            setvalue = true;
-        }
-        ImGui::SameLine();
         if (ImGui::SliderFloat("Overlay scale outbound joystick", &emuenv.cfg.overlay_scale_outjoystick, 0.44f, 4.0f, "%.2f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+            emuenv.cfg.overlay_scale_injoystick = emuenv.cfg.overlay_scale_outjoystick / 3.5f;
             setvalue = true;
-           // if(emuenv.cfg.overlay_scale_outjoystick > 1)
-            emuenv.cfg.overlay_scale_injoystick = emuenv.cfg.overlay_scale_outjoystick / 1.5f;
         }
         
         ImGui::Spacing();
