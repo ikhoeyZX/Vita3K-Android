@@ -845,8 +845,8 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     int drawableY = (int) sPrefs.getFloat(getYKey(legacyId, orientation), 0f);
 
     // Decide inner scale based on joystick ID
-    // float innerScale = 1.375f;
-    scale *= mInJoyScale;
+    float innerScale = 1.375f;
+    innerScale *= mInJoyScale;
 
     // Now set the bounds for the InputOverlayDrawableJoystick.
     // This will dictate where on the screen (and the what the size) the InputOverlayDrawableJoystick will be.
