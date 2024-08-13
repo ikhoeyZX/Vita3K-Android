@@ -159,8 +159,11 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
             config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         }
         ImGui::Spacing();
-        if (ImGui::SliderFloat("Overlay scale joystick", &emuenv.cfg.overlay_scale_outjoystick, 0.66f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
-            emuenv.cfg.overlay_scale_injoystick = emuenv.cfg.overlay_scale_outjoystick * 0.6f;
+        if (ImGui::SliderFloat("Overlay scale outer joystick", &emuenv.cfg.overlay_scale_outjoystick, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+            set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_outjoystick, emuenv.cfg.overlay_scale_injoystick);
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        }
+        if (ImGui::SliderFloat("Overlay scale inner joystick", &emuenv.cfg.overlay_scale_injoystick, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
             set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_outjoystick, emuenv.cfg.overlay_scale_injoystick);
             config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         }
@@ -180,7 +183,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
            }
            emuenv.cfg.overlay_scale = 1.0f;
            emuenv.cfg.overlay_scale_outjoystick = 1.0f;
-           emuenv.cfg.overlay_scale_injoystick = emuenv.cfg.overlay_scale_outjoystick * 0.6f;
+           emuenv.cfg.overlay_scale_injoystick = 0.6f;
            emuenv.cfg.overlay_opacity = 80;
            set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_outjoystick, emuenv.cfg.overlay_scale_injoystick);
            set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
