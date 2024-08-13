@@ -563,18 +563,27 @@ static void take_screenshot(EmuEnvState &emuenv) {
     const auto img_format = emuenv.cfg.screenshot_format == JPEG ? ".jpg" : ".png";
     const fs::path save_file = save_folder / fmt::format("{}_{:%Y-%m-%d-%H%M%OS}{}", string_utils::remove_special_chars(emuenv.current_app_title), fmt::localtime(std::time(nullptr)), img_format);
     constexpr int quality = 85; // google recommended value
-    bool screenshotok = false;
+    bool screenshot_ok = false;
     if (emuenv.cfg.screenshot_format == JPEG) {
         if (stbi_write_jpg(fs_utils::path_to_utf8(save_file).c_str(), width, height, 4, frame.data(), quality) == 1)
-            screenshotok = true;
+            screenshot_ok = true;
     } else {
         if (stbi_write_png(fs_utils::path_to_utf8(save_file).c_str(), width, height, 4, frame.data(), width * 4) == 1)
-            screenshotok = true;
+            screenshot_ok = true;
     }
-    if (screenshotok)
-        LOG_INFO("Successfully saved screenshot to {}", save_file);
-    else
-        LOG_INFO("Failed to save screenshot");
+    if (screenshot_ok){
+        auto tmp = "Successfully saved screenshot to " + save_file;
+        LOG_INFO("{}", tmp);
+#ifdef ANDROID
+        SDL_AndroidShowToast(tmp, 1, -1, 0, 0);
+#endif
+    }else{
+        auto tmp = "Failed to save screenshot";
+        LOG_INFO("{}", tmp);
+#ifdef ANDROID
+        SDL_AndroidShowToast(tmp, 1, -1, 0, 0);
+#endif
+    }
 }
 
 bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
