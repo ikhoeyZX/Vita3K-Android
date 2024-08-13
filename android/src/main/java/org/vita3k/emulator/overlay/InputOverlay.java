@@ -59,6 +59,8 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   private InputOverlayDrawableDpad mDpadBeingConfigured;
   private InputOverlayDrawableJoystick mJoystickBeingConfigured;
   private static float mGlobalScale = 1.0f;
+  private static float mOutJoyScale = 0.275f;
+  private static float mInJoyScale  = 1.375f;
   private static int mGlobalOpacity = 100;
 
   private Timer mTimer;
@@ -828,7 +830,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     final SharedPreferences sPrefs = PreferenceManager.getDefaultSharedPreferences(context);
 
     // Decide scale based on user preference
-    float scale = 0.275f;
+    // float scale = 0.275f;
     scale *= mOutJoyScale;
 
     // Initialize the InputOverlayDrawableJoystick.
@@ -843,7 +845,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     int drawableY = (int) sPrefs.getFloat(getYKey(legacyId, orientation), 0f);
 
     // Decide inner scale based on joystick ID
-    float innerScale = 1.375f;
+    // float innerScale = 1.375f;
     scale *= mInJoyScale;
 
     // Now set the bounds for the InputOverlayDrawableJoystick.
