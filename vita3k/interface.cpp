@@ -575,7 +575,7 @@ static void take_screenshot(EmuEnvState &emuenv) {
         const auto tmp = fmt::format("Successfully saved screenshot to {:s}", save_file);
         LOG_INFO("{}", tmp);
 #ifdef ANDROID
-        SDL_AndroidShowToast(tmp, 1, -1, 0, 0);
+        SDL_AndroidShowToast(tmp.data(), 1, -1, 0, 0);
 #endif
     }else{
         const auto tmp = "Failed to save screenshot";
