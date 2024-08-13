@@ -572,7 +572,7 @@ static void take_screenshot(EmuEnvState &emuenv) {
             screenshot_ok = true;
     }
     if (screenshot_ok){
-        auto tmp = fmt::print("Successfully saved screenshot to {}", save_file);
+        auto tmp = fmt::format("Successfully saved screenshot to {:s}", save_file);
         LOG_INFO("{}", tmp);
 #ifdef ANDROID
         SDL_AndroidShowToast(tmp, 1, -1, 0, 0);
