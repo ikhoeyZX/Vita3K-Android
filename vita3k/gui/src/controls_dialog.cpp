@@ -115,7 +115,7 @@ void set_controller_overlay_opacity(int opacity) {
     env->DeleteLocalRef(clazz);
 }
 
-bool tune_button(const char* cfg, float val){
+bool tune_button(float cfg, float val){
     ImGui::Spacing();
         if (ImGui::Button(" + ")) {
             cfg += val;
@@ -128,7 +128,7 @@ bool tune_button(const char* cfg, float val){
         }
         ImGui::SameLine();
         
-    return false
+    return false;
 }
 
 void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
@@ -188,7 +188,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
 
         ImGui::Spacing();
-        if (ImGui::Button(" + ")) {
+/*        if (ImGui::Button(" + ")) {
             emuenv.cfg.overlay_scale_outjoystick += 0.02f;
             setvalue = true;
         }
@@ -198,13 +198,15 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
             setvalue = true;
         }
         ImGui::SameLine();
+        */
+        setvalue = tune_button(emuenv.cfg.overlay_scale_outjoystick, 0.02f);
         if (ImGui::SliderFloat("Overlay scale joystick", &emuenv.cfg.overlay_scale_outjoystick, 0.66f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
             emuenv.cfg.overlay_scale_injoystick = emuenv.cfg.overlay_scale_outjoystick / 3.5f;
             setvalue = true;
         }
         
         ImGui::Spacing();
-        if (ImGui::Button(" + ")) {
+/*        if (ImGui::Button(" + ")) {
             emuenv.cfg.overlay_opacity += 2;
             setvalue = true;
         }
@@ -214,6 +216,8 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
             setvalue = true;
         }
         ImGui::SameLine();
+*/
+        setvalue = tune_button(static_cast<float>(emuenv.cfg.overlay_scale), 2.0f);
         if (ImGui::SliderInt("Overlay opacity", &emuenv.cfg.overlay_opacity, 0, 100, "%d%%")) {
             setvalue = true;
         }
