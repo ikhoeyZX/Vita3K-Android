@@ -613,7 +613,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   }
 
   public void setScale(float scale, float scaleoutjoy, float scaleinjoy){
-    if(scale != mGlobalScale || scaleoutjoy != mOutJoyScale || scaleinjoy != scaleoutjoy){
+    if(scale != mGlobalScale || scaleoutjoy != mOutJoyScale || scaleinjoy != mInJoyScale){
       mGlobalScale = scale;
       mOutJoyScale = scaleoutjoy;
       mInJoyScale = scaleinjoy;
