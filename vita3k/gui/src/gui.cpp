@@ -765,8 +765,8 @@ void init(GuiState &gui, EmuEnvState &emuenv) {
 
 #ifdef ANDROID
     // must be called once for the java side to get the scale
-    set_controller_overlay_scale(emuenv.cfg.overlay_scale);
-    set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
+       set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_outjoystick, emuenv.cfg.overlay_scale_injoystick);
+       set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
 #endif
 }
 
