@@ -711,9 +711,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       scale = 0.25f;
     else if(legacyId == ButtonType.BUTTON_TOUCH_SWITCH)
       scale = 0.11f;
-    else if(legacyId == ButtonType.STICK_LEFT
-            || legacyId == ButtonType.STICK_RIGHT)
-
+    
     scale *= mGlobalScale;
 
     // Initialize the InputOverlayDrawableButton.
