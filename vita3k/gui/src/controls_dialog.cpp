@@ -73,7 +73,7 @@ void set_controller_overlay_state(int overlay_mask, bool edit, bool reset, bool 
     env->DeleteLocalRef(clazz);
 }
 
-void set_controller_overlay_scale(float scale) {
+void set_controller_overlay_scale(float scale, float outjoystick, float injoystick) {
     // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
 
@@ -157,13 +157,34 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
     ImGui::Spacing();
-    if (overlay_editing && ImGui::SliderFloat("Overlay scale outbound joystick", &emuenv.cfg.overlay_scale_outjoystick, 0.50f, 4.5f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+    if (overlay_editing && ImGui::SliderFloat("Overlay scale outbound joystick", &emuenv.cfg.overlay_scale_outjoystick, 0.02f, 2.0f, "%.1f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
         set_controller_overlay_scale(emuenv.cfg.overlay_scale_outjoystick);
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
+    ImGui::SameLine();
+    if (ImGui::Button('+')) {
+        emuenv.cfg.overlay_scale_outjoystick += 0.1f;
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button('-')) {
+        emuenv.cfg.overlay_scale_outjoystick -= 0.1f;
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+    }
+
     ImGui::Spacing();
-    if (overlay_editing && ImGui::SliderFloat("Overlay scale inbound joystick", &emuenv.cfg.overlay_scale_injoystick, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+    if (overlay_editing && ImGui::SliderFloat("Overlay scale inbound joystick", &emuenv.cfg.overlay_scale_injoystick, 0.01f, 1.8f, "%.1f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
         set_controller_overlay_scale(emuenv.cfg.overlay_scale_injoystick);
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button('+')) {
+        emuenv.cfg.overlay_scale_injoystick += 0.1f;
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button('-')) {
+        emuenv.cfg.overlay_scale_injoystick -= 0.1f;
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
     ImGui::Spacing();
