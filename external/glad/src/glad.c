@@ -1333,6 +1333,16 @@ PFNGLVIEWPORTARRAYVPROC glad_glViewportArrayv = NULL;
 PFNGLVIEWPORTINDEXEDFPROC glad_glViewportIndexedf = NULL;
 PFNGLVIEWPORTINDEXEDFVPROC glad_glViewportIndexedfv = NULL;
 PFNGLWAITSYNCPROC glad_glWaitSync = NULL;
+int GLAD_GL_ARB_fragment_shader_interlock = 0;
+int GLAD_GL_ARB_gl_spirv = 0;
+int GLAD_GL_ARB_shading_language_420pack = 0;
+int GLAD_GL_ARB_texture_barrier = 0;
+int GLAD_GL_ARM_shader_framebuffer_fetch = 0;
+int GLAD_GL_EXT_shader_framebuffer_fetch = 0;
+int GLAD_GL_EXT_texture_compression_s3tc = 0;
+int GLAD_GL_EXT_texture_filter_anisotropic = 0;
+PFNGLSPECIALIZESHADERARBPROC glad_glSpecializeShaderARB = NULL;
+
 PFNGLWINDOWPOS2DPROC glad_glWindowPos2d = NULL;
 PFNGLWINDOWPOS2DVPROC glad_glWindowPos2dv = NULL;
 PFNGLWINDOWPOS2FPROC glad_glWindowPos2f = NULL;
@@ -2459,9 +2469,25 @@ static void load_GL_VERSION_4_6(GLADloadproc load) {
 	glad_glMultiDrawElementsIndirectCount = (PFNGLMULTIDRAWELEMENTSINDIRECTCOUNTPROC)load("glMultiDrawElementsIndirectCount");
 	glad_glPolygonOffsetClamp = (PFNGLPOLYGONOFFSETCLAMPPROC)load("glPolygonOffsetClamp");
 }
+
+static void load_GL_ARB_gl_spirv(GLADloadproc load) {
+	if(!GLAD_GL_ARB_gl_spirv) return;
+	glad_glSpecializeShaderARB = (PFNGLSPECIALIZESHADERARBPROC)load("glSpecializeShaderARB");
+}
+static void load_GL_ARB_texture_barrier(GLADloadproc load) {
+	if(!GLAD_GL_ARB_texture_barrier) return;
+	glad_glTextureBarrier = (PFNGLTEXTUREBARRIERPROC)load("glTextureBarrier");
+}
+
 static int find_extensionsGL(void) {
 	if (!get_exts()) return 0;
-	(void)&has_ext;
+	GLAD_GL_ARB_fragment_shader_interlock = has_ext("GL_ARB_fragment_shader_interlock");
+	GLAD_GL_ARB_gl_spirv = has_ext("GL_ARB_gl_spirv");
+	GLAD_GL_ARB_shading_language_420pack = has_ext("GL_ARB_shading_language_420pack");
+	GLAD_GL_ARB_texture_barrier = has_ext("GL_ARB_texture_barrier");
+	GLAD_GL_EXT_shader_framebuffer_fetch = has_ext("GL_EXT_shader_framebuffer_fetch");
+	GLAD_GL_EXT_texture_compression_s3tc = has_ext("GL_EXT_texture_compression_s3tc");
+	GLAD_GL_EXT_texture_filter_anisotropic = has_ext("GL_EXT_texture_filter_anisotropic");
 	free_exts();
 	return 1;
 }
@@ -2929,7 +2955,10 @@ static void load_GL_ES_VERSION_3_2(GLADloadproc load) {
 }
 static int find_extensionsGLES2(void) {
 	if (!get_exts()) return 0;
-	(void)&has_ext;
+	GLAD_GL_ARM_shader_framebuffer_fetch = has_ext("GL_ARM_shader_framebuffer_fetch");
+	GLAD_GL_EXT_shader_framebuffer_fetch = has_ext("GL_EXT_shader_framebuffer_fetch");
+	GLAD_GL_EXT_texture_compression_s3tc = has_ext("GL_EXT_texture_compression_s3tc");
+	GLAD_GL_EXT_texture_filter_anisotropic = has_ext("GL_EXT_texture_filter_anisotropic");
 	free_exts();
 	return 1;
 }
