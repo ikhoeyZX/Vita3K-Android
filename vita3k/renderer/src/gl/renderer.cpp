@@ -230,7 +230,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     std::unordered_map<std::string, bool *> check_extensions = {
         { "GL_ARB_fragment_shader_interlock", &gl_state.features.support_shader_interlock },
         { "GL_ARB_texture_barrier", &gl_state.features.support_texture_barrier },
-        { "GL_EXT_shader_framebuffer_fetch", &gl_state.features.direct_fragcolor },
+        { "GL_ARM_shader_framebuffer_fetch", &gl_state.features.direct_fragcolor },
         { "GL_ARB_gl_spirv", &gl_state.features.spirv_shader },
         { "GL_ARB_get_texture_sub_image", &gl_state.features.support_get_texture_sub_image },
         { "GL_EXT_shader_image_load_formatted", &gl_state.features.support_unknown_format }
@@ -246,13 +246,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
         }
     }
 
-    // using the find() function, checking if the given substring is present in the main string or not
-    bool isMali = gpu_name.find("Mali") != std::string::npos;
-    if(isMali){
-       gl_state.features.direct_fragcolor = false;
-       LOG_ERROR("Your GPU is Mali!, OpenGLES doesn't support SSBO!");
-    }
-
+    
     if (gl_state.features.direct_fragcolor) {
         LOG_INFO("Your GPU supports direct access to last fragment color. Your performance with programmable blending games will be optimized.");
     } else if (gl_state.features.support_shader_interlock) {
