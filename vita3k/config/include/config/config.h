@@ -119,8 +119,7 @@ enum ScreenshotFormat {
     code(bool, "enable-gamepad-overlay", true, enable_gamepad_overlay)                                  \
     code(bool, "overlay-show-touch-switch", false, overlay_show_touch_switch)                           \
     code(float, "overlay-scale", 1.0f, overlay_scale)                                                   \
-    code(float, "overlay-scale-outjoystick", 1.0f, overlay_scale_outjoystick)                           \
-    code(float, "overlay-scale-injoystick", 0.7f, overlay_scale_injoystick)                             \
+    code(float, "overlay-scale-joystick", 1.0f, overlay_scale_joystick)                                 \
     code(int, "overlay-opacity", 100, overlay_opacity)                                                  \
     code(int, "keyboard-button-select", 229, keyboard_button_select)                                    \
     code(int, "keyboard-button-start", 40, keyboard_button_start)                                       \
