@@ -247,7 +247,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     }
 
     // using the find() function, checking if the given substring is present in the main string or not
-    bool isMali = gpu_name.find("Mali") != string::npos;
+    bool isMali = gpu_name.find("Mali") != std::string::npos;
     if(isMali){
        gl_state.features.direct_fragcolor = false;
        LOG_ERROR("Your GPU is Mali!, OpenGLES doesn't support SSBO!");
