@@ -5527,7 +5527,64 @@ typedef void (APIENTRYP PFNGLPRIMITIVEBOUNDINGBOXPROC)(GLfloat minX, GLfloat min
 GLAPI PFNGLPRIMITIVEBOUNDINGBOXPROC glad_glPrimitiveBoundingBox;
 #define glPrimitiveBoundingBox glad_glPrimitiveBoundingBox
 #endif
-
+#define GL_SHADER_BINARY_FORMAT_SPIR_V_ARB 0x9551
+#define GL_SPIR_V_BINARY_ARB 0x9552
+#define GL_FRAGMENT_SHADER_DISCARDS_SAMPLES_EXT 0x8A52
+#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT 0x83F0
+#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
+#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
+#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
+#define GL_TEXTURE_MAX_ANISOTROPY_EXT 0x84FE
+#define GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT 0x84FF
+#define GL_FETCH_PER_SAMPLE_ARM 0x8F65
+#define GL_FRAGMENT_SHADER_FRAMEBUFFER_FETCH_MRT_ARM 0x8F66
+#ifndef GL_ARB_fragment_shader_interlock
+#define GL_ARB_fragment_shader_interlock 1
+GLAPI int GLAD_GL_ARB_fragment_shader_interlock;
+#endif
+#ifndef GL_ARB_gl_spirv
+#define GL_ARB_gl_spirv 1
+GLAPI int GLAD_GL_ARB_gl_spirv;
+typedef void (APIENTRYP PFNGLSPECIALIZESHADERARBPROC)(GLuint shader, const GLchar *pEntryPoint, GLuint numSpecializationConstants, const GLuint *pConstantIndex, const GLuint *pConstantValue);
+GLAPI PFNGLSPECIALIZESHADERARBPROC glad_glSpecializeShaderARB;
+#define glSpecializeShaderARB glad_glSpecializeShaderARB
+#endif
+#ifndef GL_ARB_shading_language_420pack
+#define GL_ARB_shading_language_420pack 1
+GLAPI int GLAD_GL_ARB_shading_language_420pack;
+#endif
+#ifndef GL_ARB_texture_barrier
+#define GL_ARB_texture_barrier 1
+GLAPI int GLAD_GL_ARB_texture_barrier;
+#endif
+#ifndef GL_EXT_shader_framebuffer_fetch
+#define GL_EXT_shader_framebuffer_fetch 1
+GLAPI int GLAD_GL_EXT_shader_framebuffer_fetch;
+#endif
+#ifndef GL_EXT_texture_compression_s3tc
+#define GL_EXT_texture_compression_s3tc 1
+GLAPI int GLAD_GL_EXT_texture_compression_s3tc;
+#endif
+#ifndef GL_EXT_texture_filter_anisotropic
+#define GL_EXT_texture_filter_anisotropic 1
+GLAPI int GLAD_GL_EXT_texture_filter_anisotropic;
+#endif
+#ifndef GL_ARM_shader_framebuffer_fetch
+#define GL_ARM_shader_framebuffer_fetch 1
+GLAPI int GLAD_GL_ARM_shader_framebuffer_fetch;
+#endif
+#ifndef GL_EXT_shader_framebuffer_fetch
+#define GL_EXT_shader_framebuffer_fetch 1
+GLAPI int GLAD_GL_EXT_shader_framebuffer_fetch;
+#endif
+#ifndef GL_EXT_texture_compression_s3tc
+#define GL_EXT_texture_compression_s3tc 1
+GLAPI int GLAD_GL_EXT_texture_compression_s3tc;
+#endif
+#ifndef GL_EXT_texture_filter_anisotropic
+#define GL_EXT_texture_filter_anisotropic 1
+GLAPI int GLAD_GL_EXT_texture_filter_anisotropic;
+#endif
 #ifdef __cplusplus
 }
 #endif
