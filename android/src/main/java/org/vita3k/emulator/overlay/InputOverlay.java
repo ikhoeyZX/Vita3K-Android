@@ -59,8 +59,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   private InputOverlayDrawableDpad mDpadBeingConfigured;
   private InputOverlayDrawableJoystick mJoystickBeingConfigured;
   private static float mGlobalScale = 1.0f;
-  private static float mOutJoyScale = 0.275f;
-  private static float mInJoyScale  = 1.375f;
+  private static float mJoyScale = 1.0f;
   private static int mGlobalOpacity = 100;
 
   private Timer mTimer;
@@ -614,15 +613,10 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     refreshControls();
   }
 
-  public void setScale(float scale, float scaleoutjoy, float scaleinjoy){
-    if(scale != mGlobalScale){
+  public void setScale(float scale, float scale_joystick){
+    if(scale != mGlobalScale || scale_joystick != mJoyScale){
       mGlobalScale = scale;
-      refreshControls();
-    }else if(scaleoutjoy != mOutJoyScale){
-      mOutJoyScale = scaleoutjoy;
-      refreshControls();
-    }else if(scaleinjoy != mInJoyScale){
-      mInJoyScale = scaleinjoy;
+      mJoyScale = scale_joystick;
       refreshControls();
     }
   }
@@ -835,7 +829,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     // Decide scale based on user preference
     float scale = 0.275f;
-    scale *= mOutJoyScale;
+    scale *= mJoyScale;
 
     // Initialize the InputOverlayDrawableJoystick.
     final Bitmap bitmapOuter =
@@ -850,7 +844,6 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     // Decide inner scale based on joystick ID
     float innerScale = 1.375f;
-    innerScale *= mInJoyScale;
 
     // Now set the bounds for the InputOverlayDrawableJoystick.
     // This will dictate where on the screen (and the what the size) the InputOverlayDrawableJoystick will be.
