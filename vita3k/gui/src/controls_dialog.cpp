@@ -73,7 +73,7 @@ void set_controller_overlay_state(int overlay_mask, bool edit, bool reset, bool 
     env->DeleteLocalRef(clazz);
 }
 
-void set_controller_overlay_scale(float scale, float injoystick, float outjoystick) {
+void set_controller_overlay_scale(float scale, float joystick) {
     // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
 
@@ -84,10 +84,10 @@ void set_controller_overlay_scale(float scale, float injoystick, float outjoysti
     jclass clazz(env->GetObjectClass(activity));
 
     // find the identifier of the method to call
-    jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayScale", "(FFF)V");
+    jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayScale", "(FF)V");
 
     // effectively call the Java method
-    env->CallVoidMethod(activity, method_id, scale, injoystick, outjoystick);
+    env->CallVoidMethod(activity, method_id, scale, joystick);
 
     // clean up the local references.
     env->DeleteLocalRef(activity);
@@ -155,16 +155,12 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if(overlay_editing){
         ImGui::Spacing();
         if (ImGui::SliderFloat("Overlay scale", &emuenv.cfg.overlay_scale, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
-            set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_outjoystick, emuenv.cfg.overlay_scale_injoystick);
+            set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_joystick);
             config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         }
         ImGui::Spacing();
-        if (ImGui::SliderFloat("Overlay scale outer joystick", &emuenv.cfg.overlay_scale_outjoystick, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
-            set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_outjoystick, emuenv.cfg.overlay_scale_injoystick);
-            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-        }
-        if (ImGui::SliderFloat("Overlay scale inner joystick", &emuenv.cfg.overlay_scale_injoystick, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
-            set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_outjoystick, emuenv.cfg.overlay_scale_injoystick);
+        if (ImGui::SliderFloat("Overlay scale joystick", &emuenv.cfg.overlay_scale_joystick, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+            set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_joystick);
             config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         }
         ImGui::Spacing();
@@ -182,10 +178,9 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
                set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true, true, false);  // landscape
            }
            emuenv.cfg.overlay_scale = 1.0f;
-           emuenv.cfg.overlay_scale_outjoystick = 1.0f;
-           emuenv.cfg.overlay_scale_injoystick = 0.6f;
+           emuenv.cfg.overlay_scale_joystick = 1.0f;
            emuenv.cfg.overlay_opacity = 80;
-           set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_outjoystick, emuenv.cfg.overlay_scale_injoystick);
+           set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_joystick);
            set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
        }
@@ -213,7 +208,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
 #else
 
 void set_controller_overlay_state(int overlay_mask, bool edit, bool reset, bool portrait) {}
-void set_controller_overlay_scale(float scale) {}
+void set_controller_overlay_scale(float scale, float joystick) {}
 void set_controller_overlay_opacity(int opacity) {}
 
 static constexpr std::array<const char *, 256> SDL_key_to_string{ "[unset]", "[unknown]", "[unknown]", "[unknown]", "A", "B", "C", "D", "E", "F", "G",
