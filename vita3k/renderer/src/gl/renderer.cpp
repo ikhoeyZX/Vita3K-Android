@@ -246,6 +246,13 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
         }
     }
 
+    // using the find() function, checking if the given substring is present in the main string or not
+    bool isMali = gpu_name.find("Mali") != string::npos;
+    if(isMali){
+       gl_state.features.direct_fragcolor = false;
+       LOG_ERROR("Your GPU is Mali!, OpenGLES doesn't support SSBO!");
+    }
+
     if (gl_state.features.direct_fragcolor) {
         LOG_INFO("Your GPU supports direct access to last fragment color. Your performance with programmable blending games will be optimized.");
     } else if (gl_state.features.support_shader_interlock) {
