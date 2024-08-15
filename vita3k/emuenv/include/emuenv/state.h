@@ -108,6 +108,7 @@ public:
     // App info contained in its `param.sfo` file
     sfo::SfoAppInfo &app_info;
     std::string app_path{};
+    std::string app_device{};
     int32_t app_sku_flag{};
     std::string license_content_id{};
     std::string license_title_id{};
@@ -124,6 +125,7 @@ public:
     std::string load_app_path{};
     std::string load_exec_argv{};
     std::string load_exec_path{};
+    std::string load_app_device{};
     std::string self_name{};
     std::string self_path{};
     Config &cfg;
