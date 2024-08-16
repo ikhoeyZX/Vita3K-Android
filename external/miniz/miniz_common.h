@@ -1,10 +1,11 @@
+#ifndef MINIZ_EXPORT
+#define MINIZ_EXPORT
+#endif
 #pragma once
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "miniz_export.h"
 
 /* ------------------- Types and macros */
 typedef unsigned char mz_uint8;
