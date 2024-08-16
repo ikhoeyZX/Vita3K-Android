@@ -1,8 +1,4 @@
-#include "miniz.h"
-/**************************************************************************
- *
- * Copyright 2013-2014 RAD Game Tools and Valve Software
- * Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC
+/************************************************************************ * * Copyright 2013-2014 RAD Game Tools and Valve Software * Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC
  * All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
