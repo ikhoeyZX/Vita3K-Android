@@ -91,21 +91,11 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
     }
 
-    const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
-    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
-    const ImVec2 WINDOW_SIZE(616.f * SCALE.x, 264.f * SCALE.y);
-    const ImVec2 BUTTON_SIZE(160.f * SCALE.x, 45.f * SCALE.y);
-
-    ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2), emuenv.viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(WINDOW_SIZE);
-    
     if (!finished_installing) {
         ImGui::OpenPopup("firmware_installation");
         if (ImGui::BeginPopupModal("firmware_installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration)) {
             ImGui::SetWindowFontScale(RES_SCALE.x);
-            ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["firmware_installing"].c_str()).x / 2.f), ImGui::GetCursorPosY() + (54.f * SCALE.y)));
-            
+            ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["firmware_installation"].c_str()).x / 2.f));
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["firmware_installation"].c_str());
             ImGui::Spacing();
             ImGui::Separator();
@@ -117,8 +107,8 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (PROGRESS_BAR_WIDTH / 2.f), ImGui::GetCursorPosY() + 30.f * SCALE.y));
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
             ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.x), "");
-            const auto progress_str = std::to_string(uint32_t(progress)).append("%");
-            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + (16.f * SCALE.y)));
+            const auto progress_str = std::to_string(progress).append("%");
+            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + 16.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", progress_str.c_str());
             ImGui::PopStyleColor();
         }

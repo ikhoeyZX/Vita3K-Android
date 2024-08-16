@@ -260,7 +260,6 @@ static void prepare_map_array(EmuEnvState &emuenv, std::array<int, total_key_ent
     map[25] = emuenv.cfg.keyboard_gui_toggle_gui;
     map[26] = emuenv.cfg.keyboard_gui_fullscreen;
     map[27] = emuenv.cfg.keyboard_gui_toggle_touch;
-    map[28] = emuenv.cfg.keyboard_button_psbutton_shell;
 }
 
 bool need_open_error_duplicate_key_popup = false;
@@ -352,7 +351,6 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_psbutton, lang["ps_button"].c_str());
         remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_l1, lang["l1_button"].c_str());
         remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_r1, lang["r1_button"].c_str());
-        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_l3, (lang["ps_button"] + " PS Vita OS").c_str());
         ImGui::EndTable();
     }
 

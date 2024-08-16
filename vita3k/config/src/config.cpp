@@ -143,8 +143,6 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     auto input = app.add_option_group("Input", "Special options for Vita3K");
     input->add_flag("--console,-z", command_line.console, "Start the emulator in console mode.")
        ->default_val(false)->group("Input");
-    input->add_option("--app-device,-D", command_line.app_device, "App device")
-        ->default_val("ux0")->group("Input");
     input->add_option("--app-args,-Z", command_line.app_args, "Argument for app, use ', ' to separate arguments.")
         ->default_str("")->group("Input");
     input->add_option("--load-app-list,-a", command_line.load_app_list, "Starts the emulator with load app list.")
@@ -209,23 +207,6 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     if (!ver->empty()) {
         std::cout << window_title << std::endl;
         return QuitRequested;
-    }
-
-    if (command_line.run_app_path.has_value()) {
-        const std::string app_path = command_line.run_app_path.value();
-        if ((app_path != "NPXS10062") && (app_path != "NPXS19999")) {
-            std::set<std::string> exist_apps = get_file_set(fs::path(cfg.pref_path) / command_line.app_device / "app");
-            if (exist_apps.find(app_path) == exist_apps.end()) {
-                std::cout << "--installed-path: " << app_path << " no in {";
-                for (auto &app : exist_apps) {
-                    std::cout << app;
-                    if (app != *exist_apps.rbegin())
-                        std::cout << ", ";
-                }
-                std::cout << "}\n";
-                return InitConfigFailed;
-            }
-        }
     }
 
     if (command_line.recompile_shader_path.has_value()) {
