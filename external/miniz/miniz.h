@@ -527,5 +527,3 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* MINIZ_NO_ARCHIVE_APIS */
