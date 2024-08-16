@@ -28,7 +28,7 @@
 	url = https://github.com/ocornut/imgui_club
 [submodule "external/libfat16"]
 	path = external/libfat16
-	url = https://github.com/Vita3K/libfat16
+	url = https://github.com/ikhoeyZX/libfat16
 [submodule "external/printf"]
 	path = external/printf
 	url = https://github.com/Vita3K/printf
