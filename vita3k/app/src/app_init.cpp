@@ -215,12 +215,9 @@ void init_paths(Root &root_paths) {
     root_paths.set_shared_path(storage_path);
     root_paths.set_cache_path(storage_path / "cache" / "");
     auto fscheck = storage_path / "vita3k.log";
-    if(fs::exists(fscheck) && !fs::is_empty(fscheck)){
+    if(fs::exists(fscheck) && !fs::is_empty(fscheck))
        fs::copy_file(fscheck , storage_path / "vita3k.log.old", fs::copy_options::overwrite_existing);
-     //   LOG_INFO("Old log moved");
-    }else{
-     //   LOG_INFO("Log empty, skip copy");
-    }
+    
 #else
     auto sdl_base_path = SDL_GetBasePath();
     auto base_path = fs_utils::utf8_to_path(sdl_base_path);
@@ -345,6 +342,7 @@ void init_paths(Root &root_paths) {
 #endif
 
     // Create default preference and cache path for safety
+    fs::create_directories(root_paths.get_base_path() / "driver"); // adreno driver storage
     fs::create_directories(root_paths.get_config_path());
     fs::create_directories(root_paths.get_cache_path());
     fs::create_directories(root_paths.get_log_path() / "shaderlog");
@@ -390,7 +388,6 @@ bool init(EmuEnvState &state, const Root &root_paths) {
             if(!fs::equivalent(state.log_path, root_paths.get_base_path())){
                 fs::copy_file(fscheck , state.log_path / "vita3k.log.txt", fs::copy_options::overwrite_existing);
                 fs::remove(fscheck);
-                LOG_INFO("Last Vita3k.log stored at: {}", state.log_path);
             }
         }
 #endif
