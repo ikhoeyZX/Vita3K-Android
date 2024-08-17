@@ -134,7 +134,7 @@ static bool load_custom_driver(const std::string &driver_name) {
         return false;
     }
 
-    if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(vulkan_handle)) < 0) {
+    if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(dlsym(vulkan_handle, "vkGetInstanceProcAddr"))) < 0) {
         LOG_ERROR("Could not load custom driver, error {}", SDL_GetError());
         return false;
     }
