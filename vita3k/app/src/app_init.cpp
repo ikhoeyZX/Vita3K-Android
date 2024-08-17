@@ -113,7 +113,7 @@ static bool load_custom_driver(const std::string &driver_name) {
     auto driver_file_dir = fs::create_directory(driver_path / "file_redirect");
 
     void *vulkan_handle = adrenotools_open_libvulkan(
-        RTLD_NOW,
+        RTLD_NOW | RTLD_LOCAL,
         ADRENOTOOLS_DRIVER_FILE_REDIRECT | ADRENOTOOLS_DRIVER_CUSTOM,
         temp_dir,
         lib_dir.c_str(),
@@ -133,19 +133,25 @@ static bool load_custom_driver(const std::string &driver_name) {
         return false;
     }
 
+    if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(&vulkan_handle)) < 0) {
+        LOG_ERROR("Could not load custom driver, error {}", SDL_GetError());
+        return false;
+    }
+    
     // we use a custom sdl build, if the path starts with this magic number, it uses the following handle instead
-    struct {
+    /*struct {
         uint64_t magic;
         void *handle;
     } load_library_parameter;
     load_library_parameter.magic = 0xFEEDC0DE;
     load_library_parameter.handle = vulkan_handle;
-    LOG_ERROR("Custom driver, load_library_parameter {}", vulkan_handle);
+    LOG_ERROR("Custom driver, load_library_parameter {}", *vulkan_handle);
 
     if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(&load_library_parameter)) < 0) {
         LOG_ERROR("Could not load custom driver, error {}", SDL_GetError());
         return false;
     }
+    */
 
     return true;
 }
