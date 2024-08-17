@@ -115,26 +115,35 @@ static bool load_custom_driver(const std::string &driver_name) {
 
     void *vulkan_handle = adrenotools_open_libvulkan(
         RTLD_NOW | RTLD_LOCAL,
-        ADRENOTOOLS_DRIVER_FILE_REDIRECT | ADRENOTOOLS_DRIVER_CUSTOM,
+        ADRENOTOOLS_DRIVER_CUSTOM /* | ADRENOTOOLS_DRIVER_FILE_REDIRECT */,
         temp_dir,
         lib_dir.c_str(),
         driver_path.c_str(),
         main_so_name.c_str(),
-        driver_file_dir.c_str(),
+        nullptr, //redirectDir.c_str(),
         nullptr);
 
-    LOG_DEBUG("Custom driver driver temp_dir: {}", temp_dir);
+//    LOG_DEBUG("Custom driver driver temp_dir: {}", temp_dir);
     LOG_DEBUG("Custom driver driver lib_dir: {}", lib_dir);
     LOG_DEBUG("Custom driver driver driver_path: {}", driver_path);
     LOG_DEBUG("Custom driver driver main_so_name: {}", main_so_name);
-    LOG_DEBUG("Custom driver driver main_so_name: {}", driver_file_dir);
+//    LOG_DEBUG("Custom driver driver driver_file_dir: {}", driver_file_dir);
     
     if (!vulkan_handle) {
         LOG_ERROR("Could not open handle for custom driver {}", driver_name);
-        return false;
+        vulkan_handle = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
+		if (vulkan_handle == nullptr)
+		{
+			char *error = dlerror();
+			WARN_LOG(RENDERER, "Failed to load system Vulkan driver: %s", error ? error : "");
+			 return false;
+		}else{
+            LOG_WARNING("Load system Vulkan driver instead");
+        }
+       
     }
 
-    if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(dlsym(vulkan_handle, "vkGetInstanceProcAddr"))) < 0) {
+    if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(dlsym(&vulkan_handle, "vkGetInstanceProcAddr"))) < 0) {
         LOG_ERROR("Could not load custom driver, error {}", SDL_GetError());
         return false;
     }
