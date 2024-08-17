@@ -59,6 +59,7 @@
 static bool load_custom_driver(const std::string &driver_name) {
     fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver_name / "/";
 
+    LOG_DEBUG("Custom driver path: {}", driver_path);
     if (!fs::exists(driver_path)) {
         LOG_ERROR("Could not find driver {}", driver_name);
         return false;
@@ -77,6 +78,7 @@ static bool load_custom_driver(const std::string &driver_name) {
         name_file.close();
     }
 
+    LOG_DEBUG("Custom driver library file: {}", main_so_name);
     const char *temp_dir = nullptr;
     fs::path temp_dir_path;
     if (SDL_GetAndroidSDKVersion() < 29) {
@@ -84,7 +86,7 @@ static bool load_custom_driver(const std::string &driver_name) {
         fs::create_directory(temp_dir_path);
         temp_dir = temp_dir_path.c_str();
     }
-
+    LOG_DEBUG("Custom driver temp dir: {}", temp_dir_path);
     fs::path lib_dir;
     // retrieve the app lib dir using jni
     {
@@ -111,6 +113,7 @@ static bool load_custom_driver(const std::string &driver_name) {
     }
 
     fs::create_directory(driver_path / "file_redirect");
+    LOG_DEBUG("Custom driver driver dir path: {}", driver_path / "file_redirect");
 
     void *vulkan_handle = adrenotools_open_libvulkan(
         RTLD_NOW,
@@ -134,9 +137,10 @@ static bool load_custom_driver(const std::string &driver_name) {
     } load_library_parameter;
     load_library_parameter.magic = 0xFEEDC0DE;
     load_library_parameter.handle = vulkan_handle;
+    LOG_ERROR("Custom driver, load_library_parameter {}", &vulkan_handle);
 
     if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(&load_library_parameter)) < 0) {
-        LOG_ERROR("Could not load custom diver, error {}", SDL_GetError());
+        LOG_ERROR("Could not load custom driver, error {}", SDL_GetError());
         return false;
     }
 
