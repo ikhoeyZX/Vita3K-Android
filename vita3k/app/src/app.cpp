@@ -92,6 +92,7 @@ void add_custom_driver(EmuEnvState &emuenv) {
     std::string driver = file_path.filename().stem().string();
 
     fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver;
+    LOG_ERROR("Installing driver at dir: {}", driver_path);
 
     if (fs::exists(driver_path)) {
         LOG_ERROR("Driver {} already exists", driver);
