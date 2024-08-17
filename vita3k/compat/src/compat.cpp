@@ -26,7 +26,9 @@
 
 #include <util/net_utils.h>
 
+#include <miniz.h>
 #include <miniz_zip.h>
+
 #include <pugixml.hpp>
 
 enum LabelIdState {
