@@ -135,7 +135,7 @@ static bool load_custom_driver(const std::string &driver_name) {
 		if (vulkan_handle == nullptr)
 		{
 			char *error = dlerror();
-			WARN_LOG(RENDERER, "Failed to load system Vulkan driver: %s", error ? error : "");
+			WARN_LOG( "Failed to load system Vulkan driver: %s", error ? error : "");
 			 return false;
 		}else{
             LOG_WARNING("Load system Vulkan driver instead");
