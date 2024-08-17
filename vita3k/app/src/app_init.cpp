@@ -59,7 +59,6 @@
 static bool load_custom_driver(const std::string &driver_name) {
     fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver_name / "/";
 
-    LOG_DEBUG("Custom driver path: {}", driver_path);
     if (!fs::exists(driver_path)) {
         LOG_ERROR("Could not find driver {}", driver_name);
         return false;
@@ -78,7 +77,6 @@ static bool load_custom_driver(const std::string &driver_name) {
         name_file.close();
     }
 
-    LOG_DEBUG("Custom driver library file: {}", main_so_name);
     const char *temp_dir = nullptr;
     fs::path temp_dir_path;
     if (SDL_GetAndroidSDKVersion() < 29) {
@@ -86,7 +84,7 @@ static bool load_custom_driver(const std::string &driver_name) {
         fs::create_directory(temp_dir_path);
         temp_dir = temp_dir_path.c_str();
     }
-    LOG_DEBUG("Custom driver temp dir: {}", temp_dir_path);
+    
     fs::path lib_dir;
     // retrieve the app lib dir using jni
     {
@@ -112,8 +110,7 @@ static bool load_custom_driver(const std::string &driver_name) {
         env->PopLocalFrame(nullptr);
     }
 
-    fs::create_directory(driver_path / "file_redirect");
-    LOG_DEBUG("Custom driver driver dir path: {}", driver_path / "file_redirect");
+    auto driver_file_dir = fs::create_directory(driver_path / "file_redirect");
 
     void *vulkan_handle = adrenotools_open_libvulkan(
         RTLD_NOW,
@@ -122,9 +119,15 @@ static bool load_custom_driver(const std::string &driver_name) {
         lib_dir.c_str(),
         driver_path.c_str(),
         main_so_name.c_str(),
-        (driver_path / "file_redirect/").c_str(),
+        driver_file_dir.c_str(),
         nullptr);
 
+    LOG_DEBUG("Custom driver driver temp_dir: {}", temp_dir);
+    LOG_DEBUG("Custom driver driver lib_dir: {}", lib_dir);
+    LOG_DEBUG("Custom driver driver driver_path: {}", driver_path);
+    LOG_DEBUG("Custom driver driver main_so_name: {}", main_so_name);
+    LOG_DEBUG("Custom driver driver main_so_name: {}", driver_file_dir);
+    
     if (!vulkan_handle) {
         LOG_ERROR("Could not open handle for custom driver {}", driver_name);
         return false;
