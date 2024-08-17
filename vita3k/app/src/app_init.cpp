@@ -110,7 +110,8 @@ static bool load_custom_driver(const std::string &driver_name) {
         env->PopLocalFrame(nullptr);
     }
 
-    std::string driver_file_dir = fs::create_directory(driver_path / "file_redirect");
+    std::string driver_file_dir = fs::path(driver_path / "file_redirect");
+    fs::create_directory(driver_file_dir);
 
     void *vulkan_handle = adrenotools_open_libvulkan(
         RTLD_NOW | RTLD_LOCAL,
