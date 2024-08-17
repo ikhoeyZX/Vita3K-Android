@@ -1,3 +1,6 @@
+#ifdef MINIZ_NO_STDIO
+#undef MINIZ_NO_STDIO
+#endif
 /**************************************************************************
  *
  * Copyright 2013-2014 RAD Game Tools and Valve Software
@@ -25,6 +28,7 @@
  *
  **************************************************************************/
 #include "miniz.h"
+#include "miniz_common.h"
 
 #ifndef MINIZ_NO_ARCHIVE_APIS
 
