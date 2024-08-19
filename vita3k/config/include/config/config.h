@@ -107,6 +107,7 @@ enum ScreenshotFormat {
     code(int, "log-level", static_cast<int>(spdlog::level::off), log_level)                             \
     code(std::string, "cpu-backend", "Dynarmic", cpu_backend)                                           \
     code(bool, "cpu-opt", true, cpu_opt)                                                                \
+    code(bool, "cpu-unsafe", false, cpu_unsafe)                                                         \
     code(std::string, "pref-path", std::string{}, pref_path)                                            \
     code(bool, "discord-rich-presence", true, discord_rich_presence)                                    \
     code(bool, "wait-for-debugger", false, wait_for_debugger)                                           \
