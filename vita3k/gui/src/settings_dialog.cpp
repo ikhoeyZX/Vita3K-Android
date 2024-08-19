@@ -644,6 +644,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
             ImGui::Checkbox(lang.cpu["cpu_opt"].c_str(), &config.cpu_opt);
             SetTooltipEx(lang.cpu["cpu_opt_description"].c_str());
+            ImGui::Spacing();
+            ImGui::Checkbox(lang.cpu["cpu_unsafe"].c_str(), &config.cpu_unsafe);
+            SetTooltipEx(lang.cpu["cpu_unsafe_description"].c_str());
+        
         }
         ImGui::EndTabItem();
     } else
