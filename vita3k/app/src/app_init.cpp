@@ -135,15 +135,15 @@ static bool load_custom_driver(const std::string &driver_name) {
 		if (vulkan_handle == nullptr)
 		{
 			char *error = dlerror();
-			WARN_LOG( "Failed to load system Vulkan driver: %s", error ? error : "");
+			LOG_WARN( "Failed to load system Vulkan driver: %s", error ? error : "");
 			 return false;
 		}else{
-            LOG_WARNING("Load system Vulkan driver instead");
+            LOG_WARN("Load system Vulkan driver instead");
         }
        
     }
 
-    if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(dlsym(&vulkan_handle, "vkGetInstanceProcAddr"))) < 0) {
+    if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(dlsym(vulkan_handle))) < 0) {
         LOG_ERROR("Could not load custom driver, error {}", SDL_GetError());
         return false;
     }
