@@ -282,7 +282,7 @@ int main(int argc, char *argv[]) {
             SDL_SetHint(SDL_HINT_AUDIODRIVER, audio_mode.c_str());
 
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_SENSOR) < 0) {
-            auto fail_text = fmt::format("SDL initialisation failed.\n Reason: {}", SDL_GetError());
+            auto fail_text = fmt::format("SDL initialization failed.\n Reason: {}", SDL_GetError());
             LOG_ERROR("{}", fail_text);
             app::error_dialog(fail_text);
             return SDLInitFailed;
