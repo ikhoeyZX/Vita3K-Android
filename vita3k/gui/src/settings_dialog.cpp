@@ -168,6 +168,7 @@ static bool get_custom_config(EmuEnvState &emuenv, const std::string &app_path) 
                 const auto cpu_child = config_child.child("cpu");
                 config.cpu_backend = cpu_child.attribute("cpu-backend").as_string();
                 config.cpu_opt = cpu_child.attribute("cpu-opt").as_bool();
+                config.cpu_unsafe = cpu_child.attribute("cpu-unsafe").as_bool();
             }
 
             // Load GPU Config
@@ -245,6 +246,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     if (!get_custom_config(emuenv, app_path)) {
         config.cpu_backend = emuenv.cfg.cpu_backend;
         config.cpu_opt = emuenv.cfg.cpu_opt;
+        config.cpu_unsafe = emuenv.cfg.cpu_unsafe;
         config.modules_mode = emuenv.cfg.modules_mode;
         config.lle_modules = emuenv.cfg.lle_modules;
         config.backend_renderer = emuenv.cfg.backend_renderer;
@@ -345,7 +347,8 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         auto cpu_child = config_child.append_child("cpu");
         cpu_child.append_attribute("cpu-backend") = config.cpu_backend.c_str();
         cpu_child.append_attribute("cpu-opt") = config.cpu_opt;
-
+        cpu_child.append_attribute("cpu-unsafe") = config.cpu_unsafe;
+        
         // GPU
         auto gpu_child = config_child.append_child("gpu");
         gpu_child.append_attribute("backend-renderer") = config.backend_renderer.c_str();
@@ -387,6 +390,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
     } else {
         emuenv.cfg.cpu_backend = config.cpu_backend;
         emuenv.cfg.cpu_opt = config.cpu_opt;
+        emuenv.cfg.cpu_unsafe = config.cpu_unsafe;
         emuenv.cfg.modules_mode = config.modules_mode;
         emuenv.cfg.lle_modules = config.lle_modules;
         emuenv.cfg.high_accuracy = config.high_accuracy;
@@ -456,6 +460,7 @@ void set_config(EmuEnvState &emuenv, const std::string &app_path, bool custom) {
         // Else inherit the values from the global emulator config
         emuenv.cfg.current_config.cpu_backend = emuenv.cfg.cpu_backend;
         emuenv.cfg.current_config.cpu_opt = emuenv.cfg.cpu_opt;
+        emuenv.cfg.current_config.cpu_unsafe = emuenv.cfg.cpu_unsafe;
         emuenv.cfg.current_config.modules_mode = emuenv.cfg.modules_mode;
         emuenv.cfg.current_config.lle_modules = emuenv.cfg.lle_modules;
         emuenv.cfg.current_config.backend_renderer = emuenv.cfg.backend_renderer;
@@ -525,6 +530,7 @@ void set_config(EmuEnvState &emuenv, const std::string &app_path, bool custom) {
     if (emuenv.io.title_id.empty()) {
         emuenv.kernel.cpu_backend = set_cpu_backend(emuenv.cfg.current_config.cpu_backend);
         emuenv.kernel.cpu_opt = emuenv.cfg.current_config.cpu_opt;
+        emuenv.kernel.cpu_unsafe = emuenv.cfg.current_config.cpu_unsafe;
         emuenv.audio.set_backend(emuenv.cfg.audio_backend);
     }
 
