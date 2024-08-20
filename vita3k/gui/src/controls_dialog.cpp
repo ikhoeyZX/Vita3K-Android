@@ -73,7 +73,7 @@ void set_controller_overlay_state(int overlay_mask, bool edit, bool reset) {
     env->DeleteLocalRef(clazz);
 }
 
-void set_controller_overlay_scale(float scale) {
+void set_controller_overlay_scale(float scale, float joystick) {
     // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
 
@@ -84,10 +84,10 @@ void set_controller_overlay_scale(float scale) {
     jclass clazz(env->GetObjectClass(activity));
 
     // find the identifier of the method to call
-    jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayScale", "(F)V");
+    jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayScale", "(FF)V");
 
     // effectively call the Java method
-    env->CallVoidMethod(activity, method_id, scale);
+    env->CallVoidMethod(activity, method_id, scale, joystick);
 
     // clean up the local references.
     env->DeleteLocalRef(activity);
@@ -147,21 +147,28 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         set_controller_overlay_state(overlay_editing ? get_overlay_display_mask(emuenv.cfg) : 0, overlay_editing);
     }
     ImGui::Spacing();
-    if (overlay_editing && ImGui::SliderFloat("Overlay scale", &emuenv.cfg.overlay_scale, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
-        set_controller_overlay_scale(emuenv.cfg.overlay_scale);
+    if (ImGui::SliderFloat("Overlay scale", &emuenv.cfg.overlay_scale, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+        set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_joystick);
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
     ImGui::Spacing();
-    if (overlay_editing && ImGui::SliderInt("Overlay opacity", &emuenv.cfg.overlay_opacity, 0, 100, "%d%%")) {
+    if (ImGui::SliderFloat("Overlay scale joystick", &emuenv.cfg.overlay_scale_joystick, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+        set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_joystick);
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+    }
+    ImGui::Spacing();
+    if (ImGui::SliderInt("Overlay opacity", &emuenv.cfg.overlay_opacity, 0, 100, "%d%%")) {
         set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
+    ImGui::Spacing();
     ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (gmpd / 2.f));
     if (overlay_editing && ImGui::Button("Reset Gamepad")) {
         set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true, true);
         emuenv.cfg.overlay_scale = 1.0f;
+        emuenv.cfg.overlay_scale_joystick = 1.0f;
         emuenv.cfg.overlay_opacity = 100;
-        set_controller_overlay_scale(emuenv.cfg.overlay_scale);
+        set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_joystick);
         set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
