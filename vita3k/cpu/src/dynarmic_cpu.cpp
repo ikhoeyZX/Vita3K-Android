@@ -318,9 +318,10 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     if(cpu_unsafe){
         config.recompile_on_exclusive_fastmem_failure = true;
         config.recompile_on_fastmem_failure = true;
-    //    config.unsafe_optimizations = true;
+        config.page_table_pointer_mask_bits = 3;
         config.absolute_offset_page_table = true;
-        config.check_halt_on_memory_access = true;
+    //    config.unsafe_optimizations = true;
+    //    config.check_halt_on_memory_access = true;
     }
     
     return std::make_unique<Dynarmic::A32::Jit>(config);
