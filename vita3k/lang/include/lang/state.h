@@ -534,8 +534,8 @@ struct LangState {
             { "select_cpu_backend", "Select your preferred CPU backend." },
             { "cpu_opt", "Enable optimizations" },
             { "cpu_opt_description", "Check the box to enable additional CPU JIT optimizations." },
-            { "cpu_unsafe", "unsafe optimizations" },
-            { "cpu_unsafe_description", "Check the box to enable unsafe optimizations." }
+            { "cpu_unsafe", "Unsafe optimizations" },
+            { "cpu_unsafe_description", "Fast but can cause softlock or break some games." }
         };
         std::map<std::string, std::string> gpu = {
             { "reset", "Reset" },
