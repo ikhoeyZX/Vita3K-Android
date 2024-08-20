@@ -318,7 +318,7 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     if(cpu_unsafe && cpu_opt){
         config.unsafe_optimizations = true;
         config.check_halt_on_memory_access = true;
-        config.always_little_endian = true;
+       // config.always_little_endian = true;
     }
     
     return std::make_unique<Dynarmic::A32::Jit>(config);
