@@ -140,6 +140,7 @@ struct KernelState {
     ModuleUidByNid module_uid_by_nid;
 
     bool cpu_opt;
+    bool cpu_unsafe;
     CPUBackend cpu_backend;
     CorenumAllocator corenum_allocator;
     CPUProtocolPtr cpu_protocol;
