@@ -112,56 +112,47 @@ static bool load_custom_driver(const std::string &driver_name) {
 
     auto driver_file_dir = fs::path(driver_path / "file_redirect");
     fs::create_directory(driver_file_dir.c_str());
-
+	
     void *vulkan_handle = adrenotools_open_libvulkan(
-        RTLD_NOW | RTLD_LOCAL,
-        ADRENOTOOLS_DRIVER_CUSTOM /* | ADRENOTOOLS_DRIVER_FILE_REDIRECT */,
+        RTLD_NOW,
+        ADRENOTOOLS_DRIVER_FILE_REDIRECT | ADRENOTOOLS_DRIVER_CUSTOM,
         temp_dir,
         lib_dir.c_str(),
         driver_path.c_str(),
         main_so_name.c_str(),
-        nullptr, //redirectDir.c_str(),
+        (driver_path / "file_redirect/").c_str(),
         nullptr);
 
-//    LOG_DEBUG("Custom driver driver temp_dir: {}", temp_dir);
-    LOG_DEBUG("Custom driver driver lib_dir: {}", lib_dir);
-    LOG_DEBUG("Custom driver driver driver_path: {}", driver_path);
-    LOG_DEBUG("Custom driver driver main_so_name: {}", main_so_name);
-//    LOG_DEBUG("Custom driver driver driver_file_dir: {}", driver_file_dir);
-    
-    if (!vulkan_handle) {
-        LOG_ERROR("Could not open handle for custom driver {}", driver_name);
-        vulkan_handle = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
-		if (vulkan_handle == nullptr)
-		{
-			char *error = dlerror();
-			LOG_WARN( "Failed to load system Vulkan driver: %s", error ? error : "");
-			 return false;
-		}else{
-            LOG_WARN("Load system Vulkan driver instead");
-        }
-       
-    }
-
-    if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(vulkan_handle)) < 0) {
-        LOG_ERROR("Could not load custom driver, error {}", SDL_GetError());
-        return false;
-    }
-    
     // we use a custom sdl build, if the path starts with this magic number, it uses the following handle instead
-    /*struct {
+    if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(vulkan_handle.data())) < 0) {
+        LOG_ERROR("Could not load custom driver, error {}", SDL_GetError());
+	vulkan_handle = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
+	if (vulkan_handle == nullptr)
+	{
+	   char *error = dlerror();
+	   LOG_WARN( "Failed to load system Vulkan driver: %s", error ? error : "");
+	   return false;
+	}else{
+	    LOG_WARN("Load system Vulkan driver instead");
+	}
+   //     return false;
+    }
+    
+    /*
+    // we use a custom sdl build, if the path starts with this magic number, it uses the following handle instead
+    struct {
         uint64_t magic;
         void *handle;
     } load_library_parameter;
     load_library_parameter.magic = 0xFEEDC0DE;
     load_library_parameter.handle = vulkan_handle;
-    LOG_ERROR("Custom driver, load_library_parameter {}", *vulkan_handle);
 
     if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(&load_library_parameter)) < 0) {
-        LOG_ERROR("Could not load custom driver, error {}", SDL_GetError());
+        LOG_ERROR("Could not load custom diver, error {}", SDL_GetError());
         return false;
     }
     */
+    
 
     return true;
 }
