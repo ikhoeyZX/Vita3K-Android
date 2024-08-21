@@ -39,7 +39,7 @@
 #endif
 
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
-constexpr size_t TOTAL_MEM_SIZE = GiB(3);
+constexpr size_t TOTAL_MEM_SIZE = GiB(4);
 constexpr bool LOG_PROTECT = false;
 constexpr bool PAGE_NAME_TRACKING = false;
 
@@ -121,13 +121,6 @@ bool init(MemState &state, const bool use_page_table) {
     // const int ret = mprotect(state.memory.get(), state.page_size, PROT_NONE);
     // LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
 #endif
-
-    state.use_page_table = use_page_table;
-    if (use_page_table) {
-        state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / KiB(4)]);
-        // we use an absolute offset (it is faster), so each entry is the same
-        std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE / KiB(4), state.memory.get());
-    }
 
     state.use_page_table = use_page_table;
     if (use_page_table) {
