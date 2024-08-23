@@ -136,8 +136,15 @@ static bool load_custom_driver(const std::string &driver_name) {
     load_library_parameter.handle = vulkan_handle;
 
     if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(&load_library_parameter)) < 0) {
-        LOG_ERROR("Could not load custom diver, error {}", SDL_GetError());
-        return false;
+        LOG_ERROR("Could not load custom driver, error {}", SDL_GetError());
+        app::error_dialog("Could not load custom driver.\napp will use system driver instead");
+            vulkan_handle = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
+        if (vulkan_handle == nullptr) {
+            char *error = dlerror();
+            LOG_WARN( "Failed to load system Vulkan driver: %s", error ? error : "");
+            app::error_dialog("Could not load built-in vulkan driver");
+            return false;
+        }
     }
 
     return true;
@@ -186,7 +193,11 @@ void update_viewport(EmuEnvState &state) {
             state.viewport_size.x = static_cast<SceFloat>(w);
             state.viewport_size.y = w / vita_aspect;
             state.viewport_pos.x = 0;
-            state.viewport_pos.y = (h - state.viewport_size.y) / 2;
+            if (state.cfg.screenmode_pos == 3) {
+                state.viewport_pos.y = state.viewport_size.y / 4;
+            } else {
+                state.viewport_pos.y = (h - state.viewport_size.y) / 2;
+            }
         }
     } else {
         state.viewport_pos.x = 0;
@@ -210,6 +221,10 @@ void init_paths(Root &root_paths) {
     root_paths.set_config_path(storage_path);
     root_paths.set_shared_path(storage_path);
     root_paths.set_cache_path(storage_path / "cache" / "");
+
+    auto fscheck = storage_path / "vita3k.log";
+    if(fs::exists(fscheck) && !fs::is_empty(fscheck))
+       fs::copy_file(fscheck , storage_path / "vita3k.log.old", fs::copy_options::overwrite_existing);
 #else
     auto sdl_base_path = SDL_GetBasePath();
     auto base_path = fs_utils::utf8_to_path(sdl_base_path);
@@ -359,14 +374,42 @@ bool init(EmuEnvState &state, const Root &root_paths) {
         state.pref_path = state.cfg.get_pref_path();
     }
 
-    LOG_INFO("Base path: {}", state.base_path);
-#if defined(__linux__) && !defined(__ANDROID__) && !defined(__APPLE__)
+#ifdef ANDROID
+    fs::create_directories(state.cfg.get_pref_path() / "logs");
+    fs::create_directories(state.cfg.get_pref_path() / "shared");
+
+    state.log_path = fs::path(state.cfg.get_pref_path() / "logs" / "");
+    state.shared_path = fs::path(state.cfg.get_pref_path() / "shared" / "");
+
+    fs::create_directories(state.cfg.get_pref_path() / "shared" / "screenshots");
+    fs::create_directories(state.cfg.get_pref_path() / "shared" / "textures");
+    fs::create_directories(state.cfg.get_pref_path() / "shared" / "textures" / "export");
+    fs::create_directories(state.cfg.get_pref_path() / "shared" / "textures" / "import");
+    fs::create_directories(root_paths.get_shared_path() / "lang");
+    fs::create_directories(root_paths.get_shared_path() / "lang" / "user");
+
+    auto fscheck = fs::path(root_paths.get_base_path()) / "vita3k.log.old";
+    if(fs::exists(fscheck)){
+        if(!fs::equivalent(state.log_path, root_paths.get_base_path())){
+            fs::copy_file(fscheck , state.log_path / "vita3k.log.txt", fs::copy_options::overwrite_existing);
+            fs::remove(fscheck);
+        }
+    }
+
+    LOG_INFO("\nBase path: {}", state.base_path);
+    LOG_INFO("User pref path: {}", state.pref_path);
+    LOG_INFO("Log path: {}", state.log_path);
+    LOG_INFO("Shared path: {}\n", state.shared_path);
+#endif
+
+#if defined(__linux__) && !defined(__APPLE__)
     LOG_INFO("Static assets path: {}", state.static_assets_path);
     LOG_INFO("Shared path: {}", state.shared_path);
     LOG_INFO("Log path: {}", state.log_path);
     LOG_INFO("User config path: {}", state.config_path);
     LOG_INFO("User cache path: {}", state.cache_path);
 #endif
+    LOG_INFO("Base path: {}", state.base_path);
     LOG_INFO("User pref path: {}", state.pref_path);
 
     if (ImGui::GetCurrentContext() == NULL) {
@@ -402,7 +445,20 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     }
 
 #ifdef ANDROID
-    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+    switch(state.cfg.screenmode_pos){
+    case 1:
+        SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft");
+        break;
+    case 2:
+        SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeRight");
+        break;
+    case 3:
+        SDL_SetHint(SDL_HINT_ORIENTATIONS, "Portrait");
+        break;
+    default:
+        SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+        break;
+    }
     state.display.fullscreen = true;
     window_type |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 #else

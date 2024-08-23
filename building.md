@@ -1,6 +1,6 @@
 # Build Vita3K
 
-Vita3K uses CMake for its project configuration and generation. In theory, it should be compatible with any project generator supported by CMake, C++17 compatible compiler and an IDE with CMake support. 
+Vita3K uses CMake for its project configuration and generation. In theory, it should be compatible with any project generator supported by CMake, C++17 compatible compiler and an IDE with CMake support.
 
 The project provides [CMake presets](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html) to allow configuring and building Vita3K without having to deal with adding the needed arguments through a command-line interface or using the user interface of your IDE. As long as your IDE or code editor supports CMake, the software should immediately detect the presets and let you choose which configuration settings you want to use to generate the program. Reference on how to use CMake presets with various IDEs and code editors can be found here:
 
@@ -146,6 +146,11 @@ Note: The CMake preset `linux-ninja-clang` makes use of the LLD linker, which wi
   You will also need to set the environment variable VCPKG_ROOT to its proper location.
 
 - Building can be done with Android studio: select the Vita3K Android folder and click on the build icon or by command line:
+  ```sh
+  ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease
+  ```
+
+  or if you dont have "keystore.kjs", you can build using debug version (but file become large than release version) use this command line:
   ```sh
   ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assembleReldebug
   ```

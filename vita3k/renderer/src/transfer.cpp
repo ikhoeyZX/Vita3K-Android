@@ -162,6 +162,12 @@ COMMAND(handle_transfer_copy) {
 
         // use a specialized function for each type (more optimized)
         switch (bpp) {
+        case 1:
+            LOG_TRACE_ONCE("Perform transfer copy with 1 color");
+            perform_transfer_copy_src_type<bool, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
+            break;
+        case 2:
+        case 4:
         case 8:
             perform_transfer_copy_src_type<uint8_t, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
             break;
@@ -173,6 +179,9 @@ COMMAND(handle_transfer_copy) {
             break;
         case 32:
             perform_transfer_copy_mode<uint32_t>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask, colorKeyMode);
+            break;
+        case 48:
+            perform_transfer_copy_src_type<std::array<uint16_t, 3>, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
             break;
         case 64:
             perform_transfer_copy_src_type<uint64_t, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
@@ -223,6 +232,9 @@ COMMAND(handle_transfer_downscale) {
         case SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR:
             pixel_fmt = AV_PIX_FMT_RGBA;
             break;
+        case SCE_GXM_TRANSFER_FORMAT_U4U4U4U4_ABGR:
+            pixel_fmt = AV_PIX_FMT_RGB444LE;
+            break;
         default:
             break;
         }
@@ -255,6 +267,11 @@ COMMAND(handle_transfer_downscale) {
                 }
             };
             switch (gxm::get_bits_per_pixel(src->format)) {
+            case 1:
+                perform_downscale(bool());
+                break;
+            case 2:
+            case 4:
             case 8:
                 perform_downscale(uint8_t());
                 break;
@@ -267,6 +284,13 @@ COMMAND(handle_transfer_downscale) {
             case 32:
                 perform_downscale(uint32_t());
                 break;
+            case 48:
+                LOG_TRACE_ONCE("SW downscaling type is 48");
+                perform_downscale(std::array<uint16_t, 3>());
+                break;
+            case 64:
+                LOG_TRACE_ONCE("SW downscaling type is 64, slow!");
+                perform_downscale(uint64_t());
             default:
                 // should not happen
                 LOG_ERROR("Unhandled format {}", log_hex(fmt::underlying(src->format)));

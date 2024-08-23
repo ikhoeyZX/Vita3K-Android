@@ -39,7 +39,7 @@ if(ANDROID)
 	endif()
 else()
 	option(USE_DISCORD_RICH_PRESENCE "Build Vita3K with Discord Rich Presence" ON)
-	option(USE_VITA3K_UPDATE "Build Vita3K with updater." ON)
+	option(USE_VITA3K_UPDATE "Build Vita3K with updater." OFF)
 	option(BUILD_APPIMAGE "Build an AppImage." OFF)
 endif()
 

@@ -62,7 +62,7 @@ bool ScreenRenderer::create(SDL_Window *window) {
     return true;
 }
 
-bool ScreenRenderer::setup() {
+bool ScreenRenderer::setup(uint8_t vk_idx) {
     const auto surface_formats = state.physical_device.getSurfaceFormatsKHR(surface);
     bool surface_format_found = false;
     for (const auto &format : surface_formats) {
@@ -78,6 +78,7 @@ bool ScreenRenderer::setup() {
     if (!surface_format_found)
         surface_format = surface_formats[0];
 
+/*
     // preferred order : mailbox > fifo_relaxed > fifo > whatever
     // the only drawback for mailbox is that it draws more power, so maybe on a portable device use something else
     const auto present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
@@ -99,6 +100,27 @@ bool ScreenRenderer::setup() {
             present_mode = mode;
         }
     }
+*/
+
+    // preferred order : mailbox > fifo_relaxed > fifo > whatever
+    // the only drawback for mailbox is that it draws more power, so maybe on a portable device use something else
+    auto present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
+
+    switch(vk_idx){
+        case 1:
+            present_mode = vk::PresentModeKHR::eMailbox;
+            break;
+        case 2:
+            present_mode = vk::PresentModeKHR::eFifoRelaxed;
+            break;
+        case 3:
+            present_mode = vk::PresentModeKHR::eFifo;
+            break;
+        default:
+            present_mode = vk::PresentModeKHR::eImmediate;
+            break;
+    }
+
     LOG_INFO("Present mode: {}", vk::to_string(present_mode));
 
     create_render_pass();

@@ -468,6 +468,8 @@ DataType get_texture_component_type(SceGxmTextureFormat format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
         return DataType::UINT8;
+    default:
+        return DataType::UNK;
     }
     return DataType::UNK;
 }

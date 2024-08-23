@@ -337,6 +337,21 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
                 // tiles are 32x32
                 stride_in_pixels = align(stride_in_pixels, 32);
                 break;
+            case SCE_GXM_TEXTURE_SWIZZLED:
+                LOG_ERROR_ONCE("Unsupported SCE_GXM_TEXTURE_SWIZZLED");
+                stride_in_pixels = static_cast<std::uint16_t>(stride_in_pixels / gxm::bits_per_pixel(base_format));
+                break;
+            case SCE_GXM_TEXTURE_CUBE:
+                LOG_ERROR_ONCE("Unsupported SCE_GXM_TEXTURE_CUBE");
+                stride_in_pixels = align(stride_in_pixels, 16);
+                break;
+            case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY:
+                LOG_ERROR_ONCE("Unsupported SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY");
+                stride_in_pixels = align(static_cast<std::uint16_t>(stride_in_pixels / gxm::bits_per_pixel(base_format)), 4);
+                break;
+            default:
+                LOG_ERROR_ONCE("Unsupported texture_type!");
+                break;
             }
 
             std::uint32_t swizz_raw = 0;

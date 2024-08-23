@@ -136,7 +136,8 @@ AudioOutPortPtr AudioState::open_port(int nb_channels, int freq, int nb_sample) 
             return nullptr;
 
         AudioOutPortPtr port = std::make_shared<AudioOutPort>();
-        port->len_bytes = nb_sample * nb_channels * sizeof(int16_t);
+        port->len_microseconds = (nb_sample * 1'000'000ULL) / freq;
+        port->len_bytes = static_cast<int>(nb_sample) * nb_channels * sizeof(uint16_t);
         port->stream = stream;
 
         return port;
@@ -172,6 +173,23 @@ void AudioState::audio_output(ThreadState &thread, AudioOutPort &out_port, const
         }
     } else {
         adapter->audio_output(thread, out_port, buffer);
+    }
+
+    uint64_t now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    uint64_t diff = now - out_port.last_output;
+    uint64_t to_wait = out_port.len_microseconds - diff;
+    if (diff < out_port.len_microseconds && to_wait > 1000) {
+        // This is what we should be waiting to be perfectly accurate
+        // However, doing so would cause the host audio buffer to often lack samples to output
+        // This is because the PS Vita and the host audio parameters do not match exactly
+        // So instead only wait 50% of the time
+        // also don't sleep for less than 0.5 ms
+        // to_wait /= 2;
+        to_wait /= 4;
+        std::this_thread::sleep_for(std::chrono::microseconds(to_wait));
+        out_port.last_output = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    } else {
+        out_port.last_output = now;
     }
 }
 

@@ -110,8 +110,8 @@ void update_live_area_current_open_apps_list(GuiState &gui, EmuEnvState &emuenv,
 void update_notice_info(GuiState &gui, EmuEnvState &emuenv, const std::string &type);
 void update_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app);
 void save_notice_list(EmuEnvState &emuenv);
-void set_controller_overlay_state(int overlay_mask, bool edit = false, bool reset = false);
-void set_controller_overlay_scale(float scale);
+void set_controller_overlay_state(int overlay_mask, bool edit = false, bool reset = false, bool portrait = false);
+void set_controller_overlay_scale(float scale, float joystick);
 void set_controller_overlay_opacity(int opacity);
 int get_overlay_display_mask(const Config &cfg);
 

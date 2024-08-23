@@ -99,16 +99,17 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
     bool found_gyro = false;
     bool found_accel = false;
     for (ControllerList::iterator controller = state.controllers.begin(); controller != state.controllers.end();) {
-        if (SDL_GameControllerGetAttached(controller->second.controller.get())) {
-            found_accel |= controller->second.has_accel;
-            found_gyro |= controller->second.has_gyro;
-
-            ++controller;
-        } else {
-            state.free_ports[controller->second.port - 1] = true;
-            controller = state.controllers.erase(controller);
-            state.controllers_num--;
-        }
+            if (SDL_GameControllerGetAttached(controller->second.controller.get())) {
+                if(emuenv.cfg.tiltsens){
+                   found_accel |= controller->second.has_accel;
+                   found_gyro |= controller->second.has_gyro;
+                }
+                ++controller;
+            } else {
+                state.free_ports[controller->second.port - 1] = true;
+                controller = state.controllers.erase(controller);
+                state.controllers_num--;
+            }
     }
 
     // Add new controllers
@@ -119,7 +120,6 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
         }
         if (SDL_IsGameController(joystick_index)) {
             const SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(joystick_index);
-
 #ifdef ANDROID
             // for whatever reasons, fingerprint sensors are detected as controllers, filter them out
             const char *controller_name = SDL_GameControllerNameForIndex(joystick_index);
@@ -128,19 +128,20 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 || std::string_view(controller_name).starts_with("gf_")))
                 continue;
 #endif
-
             if (!state.controllers.contains(guid)) {
                 Controller new_controller;
                 const GameControllerPtr controller(SDL_GameControllerOpen(joystick_index), SDL_GameControllerClose);
                 new_controller.controller = controller;
                 new_controller.port = reserve_port(state);
 
-                new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
-                if (new_controller.has_gyro)
-                    SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_TRUE);
-                new_controller.has_accel = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_ACCEL);
-                if (new_controller.has_accel)
-                    SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_TRUE);
+                if(emuenv.cfg.tiltsens){
+                   new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
+                   if (new_controller.has_gyro)
+                       SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_TRUE);
+                   new_controller.has_accel = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_ACCEL);
+                   if (new_controller.has_accel)
+                       SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_TRUE);
+                }
 
                 new_controller.has_led = SDL_GameControllerHasLED(controller.get());
                 if (new_controller.has_led) {
@@ -151,9 +152,16 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                     }
                 }
 
-                found_gyro |= new_controller.has_gyro;
-                found_accel |= new_controller.has_accel;
-
+                if(emuenv.cfg.tiltsens){
+                   found_gyro |= new_controller.has_gyro;
+                   found_accel |= new_controller.has_accel;
+                   LOG_INFO("Built-in accel and gyro sensor enabled");
+                }else{
+                   found_gyro = false;
+                   found_accel = false;
+                   LOG_INFO("Built-in accel and gyro sensor disabled in settings!, goto configuration > settings > emulator menu to enable it");
+                }
+                
                 state.controllers.emplace(guid, new_controller);
                 state.controllers_name[joystick_index] = SDL_GameControllerNameForIndex(joystick_index);
                 state.controllers_num++;

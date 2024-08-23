@@ -116,12 +116,10 @@ public class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
         int nDeviceHeight = height;
         try
         {
-            if (Build.VERSION.SDK_INT >= 17 /* Android 4.2 (JELLY_BEAN_MR1) */) {
-                DisplayMetrics realMetrics = new DisplayMetrics();
-                mDisplay.getRealMetrics( realMetrics );
-                nDeviceWidth = realMetrics.widthPixels;
-                nDeviceHeight = realMetrics.heightPixels;
-            }
+            DisplayMetrics realMetrics = new DisplayMetrics();
+            mDisplay.getRealMetrics( realMetrics );
+            nDeviceWidth = realMetrics.widthPixels;
+            nDeviceHeight = realMetrics.heightPixels;
         } catch(Exception ignored) {
         }
 
@@ -163,18 +161,14 @@ public class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
 
         // Don't skip in MultiWindow.
         if (skip) {
-            if (Build.VERSION.SDK_INT >= 24 /* Android 7.0 (N) */) {
-                if (SDLActivity.mSingleton.isInMultiWindowMode()) {
-                    Log.v("SDL", "Don't skip in Multi-Window");
-                    skip = false;
-                }
+            if (SDLActivity.mSingleton.isInMultiWindowMode()) {
+                Log.v("SDL", "Don't skip in Multi-Window");
+                skip = false;
+            }else{
+                Log.v("SDL", "Skip .. Surface is not ready.");
+               mIsSurfaceReady = false;
+               return;
             }
-        }
-
-        if (skip) {
-           Log.v("SDL", "Skip .. Surface is not ready.");
-           mIsSurfaceReady = false;
-           return;
         }
 
         /* If the surface has been previously destroyed by onNativeSurfaceDestroyed, recreate it here */

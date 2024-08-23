@@ -448,15 +448,14 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             }
         }
 
-        physical_device_properties = physical_device.getProperties();
-        physical_device_features = physical_device.getFeatures();
-        physical_device_memory = physical_device.getMemoryProperties();
-        physical_device_queue_families = physical_device.getQueueFamilyProperties();
-
         if (!physical_device) {
             LOG_ERROR("Failed to select Vulkan physical device.");
             return false;
         }
+        physical_device_properties = physical_device.getProperties();
+        physical_device_features = physical_device.getFeatures();
+        physical_device_memory = physical_device.getMemoryProperties();
+        physical_device_queue_families = physical_device.getQueueFamilyProperties();
 
         LOG_INFO("Vulkan device: {}", physical_device_properties.deviceName.data());
         LOG_INFO("Driver version: {}", get_driver_version(physical_device_properties.vendorID, physical_device_properties.driverVersion));
@@ -787,7 +786,18 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         frame.destroy_queue.init(device);
     }
 
-    if (!screen_renderer.setup())
+    auto &config_vk_mapping = config.vk_mapping;
+    uint8_t vk_idx;
+    if (config_vk_mapping == "mailbox"){
+        vk_idx = 1;
+    }else if (config_vk_mapping == "fifo-relaxed"){
+        vk_idx = 2;
+    }else if (config_vk_mapping == "fifo"){
+        vk_idx = 3;
+    }else {
+        vk_idx = 0; // Immediate
+    }
+    if (!screen_renderer.setup(vk_idx))
         return false;
 
     support_fsr &= static_cast<bool>(screen_renderer.surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage);

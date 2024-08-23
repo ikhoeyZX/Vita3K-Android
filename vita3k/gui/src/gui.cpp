@@ -142,7 +142,7 @@ static void init_style(EmuEnvState &emuenv) {
     style->Colors[ImGuiCol_ResizeGripActive] = ImVec4(0.32f, 0.32f, 0.32f, 1.00f);
     style->Colors[ImGuiCol_Tab] = ImVec4(0.80f, 0.80f, 0.83f, 0.31f);
     style->Colors[ImGuiCol_TabHovered] = ImVec4(0.32f, 0.30f, 0.23f, 1.00f);
-    style->Colors[ImGuiCol_TabActive] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
+    style->Colors[ImGuiCol_TabSelected] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
     style->Colors[ImGuiCol_PlotLines] = ImVec4(1.f, 0.49f, 0.f, 1.f);
     style->Colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
     style->Colors[ImGuiCol_PlotHistogram] = ImVec4(0.40f, 0.39f, 0.38f, 0.63f);
@@ -265,7 +265,11 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
 
             const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
             if (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S) {
-                const std::vector<uint8_t> font_source = fs_utils::read_asset_raw(default_font_path / "SourceHanSansSC-Bold-Min.ttf");
+				auto fontpath = fs::path(default_font_path / "SourceHanSansSC-Bold-Min.ttf");
+				if(!fs::exists(fontpath))
+					fontpath = fs::path(default_font_path / "NotoSerifCJK-Regular.ttc");
+                
+				const std::vector<uint8_t> font_source = fs_utils::read_asset_raw(fontpath);
 
                 if (!font_source.empty()) {
                     font_data = malloc(font_source.size());
@@ -631,7 +635,7 @@ void get_user_apps_title(GuiState &gui, EmuEnvState &emuenv) {
 
 void get_sys_apps_title(GuiState &gui, EmuEnvState &emuenv) {
     gui.app_selector.sys_apps.clear();
-    constexpr std::array<const char *, 4> sys_apps_list = { "NPXS10003", "NPXS10008", "NPXS10015", "NPXS10026" };
+    constexpr std::array<const std::string_view, 4> sys_apps_list = { "NPXS10003", "NPXS10008", "NPXS10015", "NPXS10026" };
     for (const auto &app : sys_apps_list) {
         vfs::FileBuffer params;
         if (vfs::read_file(VitaIoDevice::vs0, params, emuenv.pref_path, fmt::format("app/{}/sce_sys/param.sfo", app))) {
@@ -651,17 +655,17 @@ void get_sys_apps_title(GuiState &gui, EmuEnvState &emuenv) {
             emuenv.app_info.app_category = "gda";
             emuenv.app_info.app_title_id = app;
             if (app == "NPXS10003") {
-                emuenv.app_info.app_short_title = lang["browser"];
-                emuenv.app_info.app_title = lang["internet_browser"];
+                emuenv.app_info.app_short_title = lang["browser"].c_str();
+                emuenv.app_info.app_title = lang["internet_browser"].c_str();
             } else if (app == "NPXS10008") {
-                emuenv.app_info.app_short_title = lang["trophies"];
-                emuenv.app_info.app_title = lang["trophy_collection"];
+                emuenv.app_info.app_short_title = lang["trophies"].c_str();
+                emuenv.app_info.app_title = lang["trophy_collection"].c_str();
             } else if (app == "NPXS10015")
-                emuenv.app_info.app_short_title = emuenv.app_info.app_title = lang["settings"];
+                emuenv.app_info.app_short_title = emuenv.app_info.app_title = lang["settings"].c_str();
             else
                 emuenv.app_info.app_short_title = emuenv.app_info.app_title = lang["content_manager"];
         }
-        gui.app_selector.sys_apps.push_back({ emuenv.app_info.app_version, emuenv.app_info.app_category, {}, {}, {}, {}, emuenv.app_info.app_short_title, emuenv.app_info.app_title, emuenv.app_info.app_title_id, app });
+        gui.app_selector.sys_apps.push_back({ emuenv.app_info.app_version, emuenv.app_info.app_category, {}, {}, {}, {}, emuenv.app_info.app_short_title, emuenv.app_info.app_title, emuenv.app_info.app_title_id, app.data() });
     }
 
     std::sort(gui.app_selector.sys_apps.begin(), gui.app_selector.sys_apps.end(), [](const App &lhs, const App &rhs) {
@@ -761,8 +765,8 @@ void init(GuiState &gui, EmuEnvState &emuenv) {
 
 #ifdef ANDROID
     // must be called once for the java side to get the scale
-    set_controller_overlay_scale(emuenv.cfg.overlay_scale);
-    set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
+       set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_joystick);
+       set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
 #endif
 }
 
@@ -906,6 +910,17 @@ void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
         draw_disassembly_dialog(gui, emuenv);
 
     ImGui::PopFont();
+}
+
+void SetTooltipEx(const char *tooltip) {
+    if (ImGui::IsItemHovered()) {
+        if (!ImGui::BeginTooltip())
+            return;
+        ImGui::PushTextWrapPos(ImGui::GetIO().DisplaySize.x - ImGui::GetStyle().WindowPadding.x * 2);
+        ImGui::Text("%s", tooltip);
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+    }
 }
 
 } // namespace gui

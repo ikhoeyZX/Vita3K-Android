@@ -36,7 +36,7 @@ static constexpr std::array contributors_list = {
     "Creeot", "CreepNT", "Croden1999", "d3m3vilurr", "Danik2343", "darkash",
     "DerRM", "devnoname120", "dima-xd", "dracc", "edwinr", "FantasyGmm",
     "Felipefpl", "FlotterCodername", "Frain-Breeze", "francois-berder", "FromAlaska",
-    "Ghabry", "hobyst", "HuanJiCanShang", "ichisadashioko", "illusion0001",
+    "Ghabry", "hobyst", "HuanJiCanShang", "ichisadashioko", "illusion0001", "ikhoeyZX",
     "isJuhn", "jdoe0000000", "jlachniet", "Johnnynator", "johnothwolo", "Kaitul",
     "KaneDbD", "kd-11", "KhoraLee", "Kitakatarashima", "lephilousophe",
     "Lupiax", "lybxlpsv", "MaddTheSane", "Margen67", "mavethee", "merryhime",
@@ -62,7 +62,11 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     auto &lang = gui.lang.about;
     auto &common = emuenv.common_dialog.lang.common;
 
-    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    // Always center this window when appearing
+    const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+
+
+    ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("##about", &gui.help_menu.about_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(RES_SCALE.x);
     auto title_str = lang["title"].c_str();
@@ -81,7 +85,7 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Text("%s", lang["vita3k"].c_str());
 #ifdef ANDROID
     ImGui::Spacing();
-    ImGui::TextWrapped("%s", "If you did not download this emulator from Vita3K's official discord, paid for it or it contains ads, uninstall it immediatly.");
+    ImGui::TextWrapped("%s", "Note: This is not an Official release!, this is a custom preview that i will create PR / manually merge from PC version in main repo. If you see this contains ads or paid for it BLAME SOMEONE WHO MODIFIED IT!, because i NEVER DO THAT!");
 #endif
     ImGui::Spacing();
     ImGui::TextWrapped("%s", lang["about_vita3k"].c_str());

@@ -575,7 +575,7 @@ Hapus centang untuk menonaktifkan fitur ini.</shader_cache_description>
 			<spirv_shader_description>Berikan shader Spir-V yang dihasilkan langsung ke pengemudi.
 Perhatikan bahwa beberapa ekstensi bermanfaat akan dinonaktifkan,
 dan tidak semua GPU kompatibel dengan ini.</spirv_shader_description>
-      <mapping_method>Pemetaan memory</mapping_method>
+			<mapping_method>Pemetaan memory</mapping_method>
       <mapping_method_description>Pemetaan memory itu bisa naikkan performanya. 
 kurangi pemakaian memory dan kebanyakan fix di bug grafis nya 
 selain itu banyak perangkat gak sama stabilnya di bahkan sesama cpu.</mapping_method_description>
@@ -637,6 +637,7 @@ Anda perlu memindahkan folder lama ke lokasi baru secara manual.</change_emu_pat
 Kamu perlu memindahkan folder lama ke lokasi baru secara manual.</reset_emu_path_description>
 			<custom_config_settings>Pengaturan Konfigurasi Kustom</custom_config_settings>
 			<clear_custom_config>Bersihkan Konfigurasi Kustom</clear_custom_config>
+			<sensor_settings>Pengaturan Sensor bawaan perangkat</sensor_settings>
 		</emulator>
 		<gui name="GUI">
 			<show_gui>GUI Terlihat</show_gui>

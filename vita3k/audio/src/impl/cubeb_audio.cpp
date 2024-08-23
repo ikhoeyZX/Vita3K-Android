@@ -115,7 +115,7 @@ AudioOutPortPtr CubebAudioAdapter::open_port(int nb_channels, int freq, int nb_s
         return nullptr;
     }
 
-    port->len_bytes = nb_sample * nb_channels * sizeof(uint16_t);
+    port->len_bytes = static_cast<int>(nb_sample) * nb_channels * sizeof(uint16_t);
 
     // allocate enough buffers to be able to satisfy a callback (+1 to make sure one buffer can be ready)
     const int nb_buffers = (latency + nb_sample - 1) / nb_sample + 1;

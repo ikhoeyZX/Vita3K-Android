@@ -206,6 +206,12 @@ public class Emulator extends SDLActivity
             int result_fd = -1;
             if(resultCode == RESULT_OK){
                 Uri result_uri = data.getData();
+                result_path = result_uri.toString();
+                java.nio.file.Path normalized =
+                    java.nio.file.FileSystems.getDefault().getPath(result_path).normalize();
+                if (normalized.startsWith("/data"))
+                   throw new SecurityException();
+                
                 try (AssetFileDescriptor asset_fd = getContentResolver().openAssetFileDescriptor(result_uri, "r")){
                     // if the file is less than 4 KB, make a temporary copy
                     if(asset_fd.getLength() >= 4*1024) {
@@ -251,17 +257,17 @@ public class Emulator extends SDLActivity
     }
 
     @Keep
-    public void setControllerOverlayState(int overlay_mask, boolean edit, boolean reset){
+    public void setControllerOverlayState(int overlay_mask, boolean edit, boolean reset, boolean portrait){
         getmOverlay().setState(overlay_mask);
         getmOverlay().setIsInEditMode(edit);
 
         if(reset)
-            getmOverlay().resetButtonPlacement();
+            getmOverlay().resetButtonPlacement(portrait);
     }
 
     @Keep
-    public void setControllerOverlayScale(float scale){
-        getmOverlay().setScale(scale);
+    public void setControllerOverlayScale(float scale, float scale_joystick){
+        getmOverlay().setScale(scale, scale_joystick);
     }
 
     @Keep

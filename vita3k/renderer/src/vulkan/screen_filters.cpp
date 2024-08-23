@@ -295,7 +295,7 @@ void SinglePassScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_im
             viewport.width = static_cast<float>(screen.extent.width);
             viewport.height = screen.extent.width / vita_aspect;
             viewport.x = 0.0f;
-            viewport.y = (screen.extent.height - viewport.height) / 2;
+            viewport.y = viewport.height / 4;
         }
         screen.current_cmd_buffer.setViewport(0, viewport);
     }

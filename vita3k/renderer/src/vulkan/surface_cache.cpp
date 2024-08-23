@@ -1256,6 +1256,9 @@ void swizzle_text_T(T *pixels, uint32_t nb_pixel, ColorSurfaceCacheInfo *surface
             // ARGB
             swizzle_text_T_4<T, 2>(pixels, nb_pixel);
             break;
+        default:
+            LOG_ERROR_ONCE("Unknown swizzle Text!");
+            break;
         }
     }
 }

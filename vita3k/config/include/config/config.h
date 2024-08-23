@@ -42,6 +42,12 @@ enum PerfomanceOverleyPosition {
     BOTTOM_RIGHT,
 };
 
+enum ScreenshotFormat {
+    None,
+    JPEG,
+    PNG,
+};
+
 // clang-format off
 // Singular options produced in config file
 // Order is code(option_type, option_name, option_default, member_name)
@@ -53,6 +59,7 @@ enum PerfomanceOverleyPosition {
     code(bool, "log-uniforms", false, log_uniforms)                                                     \
     code(bool, "log-compat-warn", false, log_compat_warn)                                               \
     code(bool, "validation-layer", true, validation_layer)                                              \
+    code(bool, "debug-menu", false, debug_menu)                                                         \
     code(bool, "pstv-mode", false, pstv_mode)                                                           \
     code(bool, "show-mode", false, show_mode)                                                           \
     code(bool, "demo-mode", false, demo_mode)                                                           \
@@ -68,7 +75,7 @@ enum PerfomanceOverleyPosition {
     code(std::string, "custom-driver-name", "", custom_driver_name)                                     \
     code(bool, "turbo-mode", false, turbo_mode)                                                         \
     code(int, "gpu-idx", 0, gpu_idx)                                                                    \
-    code(bool, "high-accuracy", false, high_accuracy)                                                    \
+    code(bool, "high-accuracy", false, high_accuracy)                                                   \
     code(float, "resolution-multiplier", 1.0f, resolution_multiplier)                                   \
     code(bool, "disable-surface-sync", true, disable_surface_sync)                                      \
     code(std::string, "screen-filter", "Bilinear", screen_filter)                                       \
@@ -82,10 +89,12 @@ enum PerfomanceOverleyPosition {
     code(bool, "export-textures", false, export_textures)                                               \
     code(bool, "export-as-png", true, export_as_png)                                                    \
     code(std::string, "memory-mapping", "double-buffer", memory_mapping)                                \
+    code(std::string, "vk-mapping", "mailbox", vk_mapping)                                              \
     code(bool, "boot-apps-full-screen", false, boot_apps_full_screen)                                   \
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(int, "audio-volume", 100, audio_volume)                                                        \
     code(bool, "ngs-enable", true, ngs_enable)                                                          \
+    code(std::string, "audio-drv", "auto", audio_drv)                                                   \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
     code(int, "sys-date-format", (int)SCE_SYSTEM_PARAM_DATE_FORMAT_MMDDYYYY, sys_date_format)           \
@@ -98,6 +107,7 @@ enum PerfomanceOverleyPosition {
     code(int, "log-level", static_cast<int>(spdlog::level::off), log_level)                             \
     code(std::string, "cpu-backend", "Dynarmic", cpu_backend)                                           \
     code(bool, "cpu-opt", true, cpu_opt)                                                                \
+    code(bool, "cpu-unsafe", false, cpu_unsafe)                                                         \
     code(std::string, "pref-path", std::string{}, pref_path)                                            \
     code(bool, "discord-rich-presence", true, discord_rich_presence)                                    \
     code(bool, "wait-for-debugger", false, wait_for_debugger)                                           \
@@ -106,9 +116,11 @@ enum PerfomanceOverleyPosition {
     code(bool, "performance-overlay", false, performance_overlay)                                       \
     code(int, "perfomance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)       \
     code(int, "perfomance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position)  \
+    code(int, "screenshot-format", static_cast<int>(JPEG), screenshot_format)                           \
     code(bool, "enable-gamepad-overlay", true, enable_gamepad_overlay)                                  \
     code(bool, "overlay-show-touch-switch", false, overlay_show_touch_switch)                           \
     code(float, "overlay-scale", 1.0f, overlay_scale)                                                   \
+    code(float, "overlay-scale-joystick", 1.0f, overlay_scale_joystick)                                 \
     code(int, "overlay-opacity", 100, overlay_opacity)                                                  \
     code(int, "keyboard-button-select", 229, keyboard_button_select)                                    \
     code(int, "keyboard-button-start", 40, keyboard_button_start)                                       \
@@ -150,6 +162,10 @@ enum PerfomanceOverleyPosition {
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(bool, "fps-hack", false, fps_hack)                                                             \
+    code(bool, "acceleration-and-gyroscope", true, tiltsens)                                            \
+    code(int, "acceleration-pos", 0, tiltpos)                                                           \
+    code(bool, "invert-gyro", false, invert_gyro)                                                       \
+    code(int, "screenmode-pos", 0, screenmode_pos)                                                      \
     code(uint64_t, "current-ime-lang", 4, current_ime_lang)                                             \
     code(int, "psn-signed-in", false, psn_signed_in)                                                    \
     code(bool, "http-enable", true, http_enable)                                                        \

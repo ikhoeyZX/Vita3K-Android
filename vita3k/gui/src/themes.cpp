@@ -419,6 +419,14 @@ void draw_background(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
+   if(emuenv.cfg.screenmode_pos == 3){ // bypass lockscreen
+        gui.vita_area.start_screen = false;
+        gui.vita_area.home_screen = true;
+        if (emuenv.cfg.show_info_bar)
+            gui.vita_area.information_bar = true;
+        
+   }else{
+    
     const ImVec2 VIEWPORT_SIZE = ImGui::GetIO().DisplaySize;
     const ImVec2 VIEWPORT_POS = {0,0};
     const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
@@ -478,8 +486,12 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto &CLOCK_STR = DATE_TIME[DateTime::CLOCK];
     const auto CALC_CLOCK_SIZE = ImGui::CalcTextSize(CLOCK_STR.c_str());
-    const auto CLOCK_SIZE = ImVec2(CALC_CLOCK_SIZE.x * RES_SCALE.x, CALC_CLOCK_SIZE.y * PIX_LARGE_FONT_SCALE);
-
+    ImVec2 CLOCK_SIZE;
+    if(emuenv.cfg.screenmode_pos != 3){
+        CLOCK_SIZE = ImVec2(CALC_CLOCK_SIZE.x * RES_SCALE.x, CALC_CLOCK_SIZE.x * PIX_LARGE_FONT_SCALE);
+    }else{
+        CLOCK_SIZE = ImVec2(CALC_CLOCK_SIZE.x * RES_SCALE.x, CALC_CLOCK_SIZE.y * PIX_LARGE_FONT_SCALE);
+    }
     const auto &DAY_MOMENT_STR = DATE_TIME[DateTime::DAY_MOMENT];
     const auto CALC_DAY_MOMENT_SIZE = ImGui::CalcTextSize(DAY_MOMENT_STR.c_str());
     const auto DAY_MOMENT_LARGE_FONT_SIZE = (56.f * SCALE.x) * DEFAULT_LARGE_FONT_SCALE;
@@ -508,6 +520,7 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::End();
     ImGui::PopStyleVar(3);
+   }
 }
 
 } // namespace gui

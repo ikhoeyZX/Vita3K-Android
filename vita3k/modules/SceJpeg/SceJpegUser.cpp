@@ -242,6 +242,15 @@ EXPORT(int, sceJpegGetOutputInfo, const uint8_t *pJpeg, SceSize isize,
             output->pitch[2] = output->pitch[1];
             break;
         }
+        case SCE_JPEG_COLORSPACE_YUV:
+            LOG_ERROR("Unsupported color_space: SCE_JPEG_COLORSPACE_YUV");
+            output->output_size = size.width * size.height * 0.5;
+            output->pitch[1] = output->pitch[0];
+            output->pitch[2] = output->pitch[0];
+            break;
+        default:
+            LOG_ERROR("Unknown color_space!");
+            break;
     }
 
     if (decodeMode & SCE_JPEG_MJPEG_DOWNSCALE_ANY)

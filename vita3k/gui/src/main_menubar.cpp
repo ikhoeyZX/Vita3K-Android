@@ -24,11 +24,12 @@
 namespace gui {
 
 static void draw_file_menu(GuiState &gui, EmuEnvState &emuenv) {
-    const auto textures_path{ emuenv.shared_path / "textures" };
+    
 
     auto &lang = gui.lang.main_menubar.file;
     if (ImGui::BeginMenu(lang["title"].c_str())) {
 #ifndef ANDROID
+        const auto textures_path{ emuenv.shared_path / "textures" };
         if (ImGui::MenuItem(lang["open_pref_path"].c_str()))
             open_path(emuenv.pref_path.string());
         if (ImGui::MenuItem(lang["open_textures_path"].c_str())) {
@@ -167,12 +168,18 @@ void draw_main_menu_bar(GuiState &gui, EmuEnvState &emuenv) {
         const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
         const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
 
-        ImGui::SetWindowFontScale(RES_SCALE.x * 1.3f);
+        if(emuenv.cfg.screenmode_pos == 3){
+           ImGui::SetWindowFontScale(RES_SCALE.x * 1.6f);
+        }else{
+           ImGui::SetWindowFontScale(RES_SCALE.x * 1.3f);
+        }
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
 
         draw_file_menu(gui, emuenv);
         draw_emulation_menu(gui, emuenv);
-        draw_debug_menu(gui, gui.debug_menu);
+        if(emuenv.cfg.debug_menu){
+           draw_debug_menu(gui, gui.debug_menu);
+        }
         draw_config_menu(gui, emuenv);
         draw_controls_menu(gui);
         draw_help_menu(gui);

@@ -49,7 +49,7 @@ SceUID get_thread_id(CPUState &state) {
     return state.thread_id;
 }
 
-CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem, CPUProtocolBase *protocol) {
+CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, bool cpu_unsafe, SceUID thread_id, std::size_t processor_id, MemState &mem, CPUProtocolBase *protocol) {
     CPUStatePtr state(new CPUState(), delete_cpu_state);
     state->mem = &mem;
     state->protocol = protocol;
@@ -71,18 +71,16 @@ CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, SceUID thread_id, std::si
 #ifdef USE_DYNARMIC
     case CPUBackend::Dynarmic: {
         Dynarmic::ExclusiveMonitor *monitor = static_cast<Dynarmic::ExclusiveMonitor *>(protocol->get_exlusive_monitor());
-        state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, monitor, cpu_opt);
+        state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, monitor, cpu_opt, cpu_unsafe);
         break;
     }
 #endif
-
 #ifdef USE_UNICORN
     case CPUBackend::Unicorn: {
         state->cpu = std::make_unique<UnicornCPU>(state.get());
         break;
     }
 #endif
-
     default:
         return nullptr;
     }

@@ -359,8 +359,9 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
             // we need to convert srgb to linear
             bool cant_overwrite_data = data_unswizzled.empty() && converted_data.empty() && data_comp3.empty();
             if (cant_overwrite_data) {
-                converted_data.resize(nb_pixels * nb_comp);
-                memcpy(converted_data.data(), data, nb_pixels * nb_comp);
+                const auto nbpix = static_cast<uint32_t>(nb_pixels * nb_comp);
+                converted_data.resize(nbpix);
+                memcpy(converted_data.data(), data, nbpix);
                 data = converted_data.data();
             }
             uint8_t *pixels = const_cast<uint8_t *>(data);
@@ -622,7 +623,7 @@ void TextureCache::refresh_available_textures() {
                 continue;
 
             uint64_t hash;
-            if (sscanf(file.filename().string().c_str(), "%llX", &hash) != 1)
+            if (sscanf(file.filename().string().c_str(), "%lX", &hash) != 1)
                 continue;
 
             if (file.extension() != ".png" && file.extension() != ".dds")

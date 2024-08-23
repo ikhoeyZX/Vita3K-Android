@@ -514,6 +514,7 @@ struct LangState {
             { "title", "Settings" },
             { "save_reboot", "Save & Reboot" },
             { "save_apply", "Save & Apply" },
+            { "close", "Close" },
             { "save", "Save" },
             { "keep_changes", "Click on Save to keep your changes." }
         };
@@ -532,7 +533,9 @@ struct LangState {
             { "cpu_backend", "CPU Backend" },
             { "select_cpu_backend", "Select your preferred CPU backend." },
             { "cpu_opt", "Enable optimizations" },
-            { "cpu_opt_description", "Check the box to enable additional CPU JIT optimizations." }
+            { "cpu_opt_description", "Check the box to enable additional CPU JIT optimizations." },
+            { "cpu_unsafe", "Unsafe optimizations" },
+            { "cpu_unsafe_description", "Use extra optimizations, maybe break in games." }
         };
         std::map<std::string, std::string> gpu = {
             { "reset", "Reset" },
@@ -567,6 +570,8 @@ struct LangState {
             { "shader_cache_description", "Check the box to enable shader cache to pre-compile it at game startup.\nUncheck to disable this feature." },
             { "mapping_method", "Memory mapping method" },
             { "mapping_method_description", "Memory mapping improved performances, reduces memory usage and fixes many graphical issues.\nHowever, it may be unstable on some GPUs" },
+            { "surface_format_method", "Change vulkan sync method" },
+            { "surface_format_method_description", "Change how GPu sync behaviour" },
             { "spirv_shader", "Use Spir-V Shader (deprecated)" },
             { "spirv_shader_description", "Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled,\nand not all GPUs are compatible with this." },
             { "clean_shaders", "Clean Shaders Cache and Log" },
@@ -580,8 +585,9 @@ struct LangState {
             { "audio_volume", "Audio Volume" },
             { "audio_volume_description", "Adjusts the volume percentage of all audio outputs." },
             { "enable_ngs_support", "Enable NGS support" },
-            { "ngs_description", "Uncheck the box to disable support for advanced audio library NGS." }
-
+            { "ngs_description", "Uncheck the box to disable support for advanced audio library NGS." },
+            { "audio_driver", "Use spesific audio driver output (need restart app)" },
+            { "select_audio_driver", "Select audio driver to find better audio quality and latency control." }
         };
         std::map<std::string, std::string> system = {
             { "title", "System" },
@@ -644,6 +650,18 @@ struct LangState {
             { "change_emu_path_description", "Change Vita3K emulator folder path.\nYou will need to move your old folder to the new location manually." },
             { "reset_emu_path", "Reset Emulator Path" },
             { "reset_emu_path_description", "Reset Vita3K emulator path to the default.\nYou will need to move your old folder to the new location manually." },
+            { "sensor_settings", "Built-In Sensor settings" },
+            { "sensor_enable", "Enable HW acceleration and gyroscope" },
+            { "sensor_emu_pos", "Emulate acceleration position sensor" },
+            { "sensors_description", "Enable built-in sensor or disable sensor and lock specific sensor position" },
+            { "invert_gyro", "Invert gyroscope sensor input" },
+            { "invert_gyro_description", "Change logic of gyroscope sensor to inverse type" },
+            { "screenmode_pos", "Change screen position (restart app to take effect)" },
+            { "screenmode_auto", "Auto landscape" },
+            { "screenmode_Left", "Lock to landscape left" },
+            { "screenmode_right", "Lock to landscape right" },
+            { "screenmode_up", "Lock to portrait" },
+            { "screenmode_up_description", "WIP, GUI still buggy" },
             { "custom_config_settings", "Custom Config Settings" },
             { "clear_custom_config", "Clear Custom Config" }
         };
@@ -715,6 +733,7 @@ struct LangState {
             { "dump_elfs_description", "Dump loaded code as ELFs." },
             { "validation_layer", "Validation Layer (Reboot required)" },
             { "validation_layer_description", "Enable Vulkan validation layer." },
+            { "debug_menu", "Enable debug menu in menubar" },
             { "unwatch_code", "Unwatch Code" },
             { "watch_code", "Watch Code" },
             { "unwatch_memory", "Unwatch Memory" },

@@ -51,11 +51,12 @@ class DynarmicCPU : public CPUInterface {
     bool log_mem = false;
     bool log_code = false;
     bool cpu_opt;
+    bool cpu_unsafe;
 
     std::unique_ptr<Dynarmic::A32::Jit> make_jit();
 
 public:
-    DynarmicCPU(CPUState *state, std::size_t processor_id, Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt);
+    DynarmicCPU(CPUState *state, std::size_t processor_id, Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt, bool cpu_unsafe);
     ~DynarmicCPU() override;
     int run() override;
     void stop() override;

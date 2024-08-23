@@ -261,30 +261,46 @@ int main(int argc, char *argv[]) {
         std::atexit(SDL_Quit);
 
         // Enable HIDAPI rumble for DS4/DS
+        SDL_SetHint(SDL_HINT_TV_REMOTE_AS_JOYSTICK, "0");    	
+    	SDL_SetHint(SDL_HINT_JOYSTICK_ROG_CHAKRAM, "1");
+    	SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI, "1");
+    	SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_STEAM, "1");
+    	SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_WII, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS3, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE, "1");
-
+        
         // Enable Switch controller
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS, "0");
 
-#ifdef ANDROID
-        // The AAudio driver (used by default) is really really bad
-        SDL_SetHint(SDL_HINT_AUDIODRIVER, "openslES");
-#endif
+        auto audio_mode = emuenv.cfg.audio_drv;
+        if (audio_mode != "auto")
+            SDL_SetHint(SDL_HINT_AUDIODRIVER, audio_mode.c_str());
 
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_SENSOR) < 0) {
-            app::error_dialog("SDL initialisation failed.");
+            auto fail_text = fmt::format("SDL initialization failed.\n Reason: {}", SDL_GetError());
+            LOG_ERROR("{}", fail_text);
+            app::error_dialog(fail_text);
             return SDLInitFailed;
         }
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     }
 
     LOG_INFO("{}", window_title);
+#ifndef ANDROID
     LOG_INFO("OS: {}", CppCommon::Environment::OSVersion());
     LOG_INFO("CPU: {} | {} Threads | {} GHz", CppCommon::CPU::Architecture(), CppCommon::CPU::LogicalCores(), static_cast<float>(CppCommon::CPU::ClockSpeed()) / 1000.f);
-    LOG_INFO("Available ram memory: {} MiB", SDL_GetSystemRAM());
-
+#else
+    LOG_INFO("System OS: {}, API: {}", SDL_GetPlatform(), SDL_GetAndroidSDKVersion());
+    LOG_INFO("Total of CPU Cores: {}", SDL_GetCPUCount());
+#endif
+    LOG_INFO("Available RAM memory: {} MiB", SDL_GetSystemRAM());
+    LOG_INFO("Audio driver: {}", SDL_GetCurrentAudioDriver());
+    
     app::AppRunType run_type = app::AppRunType::Unknown;
     if (cfg.run_app_path) {
         run_type = app::AppRunType::Extracted;

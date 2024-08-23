@@ -24,7 +24,7 @@
 
 #include <cstdint>
 
-CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem, CPUProtocolBase *protocol);
+CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, bool cpu_unsafe, SceUID thread_id, std::size_t processor_id, MemState &mem, CPUProtocolBase *protocol);
 int run(CPUState &state);
 int step(CPUState &state);
 void stop(CPUState &state);

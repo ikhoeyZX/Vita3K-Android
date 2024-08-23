@@ -587,7 +587,7 @@ Nyahtanda untuk melumpuhkan ciri ini.</shader_cache_description>
 			<spirv_shader_description>Hantarkan shader Spir-V yang dijana terus kepada pemandu.
 Ambil perhatian bahawa beberapa sambungan berfaedah akan dilumpuhkan,
 dan tidak semua GPU serasi dengan ini.</spirv_shader_description>
-      <mapping_method>Pemetaan memory</mapping_method>
+			<mapping_method>Pemetaan memory</mapping_method>
       <mapping_method_description>Pemetaan memori boleh meningkatkan prestasi. 
 mengurangkan penggunaan memori dan kebanyakannya membetulkan pepijat grafik.
 Selain itu, banyak peranti tidak begitu stabil pada CPU.</mapping_method_description>
@@ -647,6 +647,7 @@ Anda perlu mengalihkan folder lama anda ke lokasi baharu secara manual.</change_
 Awak perlu mengalihkan folder lama awak ke lokasi baharu secara manual.</reset_emu_path_description>
 			<custom_config_settings>Tetapan Konfigurasi Tersuai</custom_config_settings>
 			<clear_custom_config>Bersihkan Konfigurasi Tersuai</clear_custom_config>
+			<sensor_settings>Pengaturan Sensor bawaan perangkat</sensor_settings>
 		</emulator>
 		<gui name="GUI">
 			<show_gui>GUI Yang Boleh Dilihat</show_gui>

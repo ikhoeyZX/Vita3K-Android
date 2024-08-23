@@ -264,9 +264,9 @@ void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         const auto PATCH_PATH{ emuenv.pref_path / "ux0/patch" / title_id };
         if (fs::exists(PATCH_PATH))
             fs::remove_all(PATCH_PATH);
-        const auto SAVE_DATA_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / APP_INDEX->savedata };
-        if (fs::exists(SAVE_DATA_PATH))
-            fs::remove_all(SAVE_DATA_PATH);
+//        const auto SAVE_DATA_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / APP_INDEX->savedata };
+//        if (fs::exists(SAVE_DATA_PATH))
+//            fs::remove_all(SAVE_DATA_PATH);
         const auto SHADER_CACHE_PATH{ emuenv.cache_path / "shaders" / title_id };
         if (fs::exists(SHADER_CACHE_PATH))
             fs::remove_all(SHADER_CACHE_PATH);

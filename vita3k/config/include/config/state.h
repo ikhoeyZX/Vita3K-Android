@@ -124,6 +124,7 @@ public:
     struct CurrentConfig {
         std::string cpu_backend;
         bool cpu_opt = true;
+        bool cpu_unsafe = false;
         int modules_mode = ModulesMode::AUTOMATIC;
         std::vector<std::string> lle_modules = {};
         int audio_volume = 100;
@@ -136,6 +137,7 @@ public:
         bool disable_surface_sync = false;
         std::string screen_filter = "Bilinear";
         std::string memory_mapping = "double-buffer";
+        std::string vk_mapping = "mailbox";
         bool v_sync = true;
         int anisotropic_filtering = 1;
         bool async_pipeline_compilation = true;
