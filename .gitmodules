@@ -84,9 +84,6 @@
 [submodule "external/concurrentqueue"]
 	path = external/concurrentqueue
 	url = https://github.com/cameron314/concurrentqueue.git
-[submodule "external/SPIRV-Tools"]
-	path = external/SPIRV-Tools
-	url = https://github.com/KhronosGroup/SPIRV-Tools.git
 [submodule "external/ffmpeg-core"]
 	path = external/ffmpeg
 	url = https://github.com/Macdu/ffmpeg-core.git
