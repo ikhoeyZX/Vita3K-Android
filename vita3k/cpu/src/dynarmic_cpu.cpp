@@ -305,10 +305,10 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     }
     if (!log_mem && cpu_opt) {
         config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
-        config.fastmem_exclusive_access = false;
+        config.fastmem_exclusive_access = config.fastmem_pointer;
         LOG_TRACE("config.fastmem_pointer IS FALSE");
     } else {
-        config.fastmem_exclusive_access = true;
+        config.fastmem_exclusive_access = nullptr;
         LOG_TRACE("config.fastmem_exclusive_access IS TRUE");
     }
     config.hook_hint_instructions = true;
