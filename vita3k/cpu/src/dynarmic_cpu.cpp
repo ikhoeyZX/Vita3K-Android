@@ -298,7 +298,6 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.callbacks = cb.get();
     if (parent->mem->use_page_table) {
         config.page_table = (log_mem || !cpu_opt) ? nullptr : reinterpret_cast<decltype(config.page_table)>(parent->mem->page_table.get());
-        LOG_TRACE("config.page_table value: {}", config.page_table);
         LOG_TRACE("mem page_table value: {}", parent->mem->page_table.get());
     }
     if (cpu_opt) {
