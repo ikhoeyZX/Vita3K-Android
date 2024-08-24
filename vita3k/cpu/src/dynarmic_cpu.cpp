@@ -302,10 +302,11 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
         config.detect_misaligned_access_via_page_table = 8 | 16 | 32 | 64 | 128;
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
         LOG_TRACE("config.page_table mode");
-    } else if (!log_mem && cpu_opt) {
+    }
+    if (!log_mem && cpu_opt) {
         config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
         config.fastmem_exclusive_access = false;
-        LOG_TRACE("config.fastmem_pointer");
+        LOG_TRACE("config.fastmem_pointer IS FALSE");
     } else {
         config.fastmem_exclusive_access = true;
         LOG_TRACE("config.fastmem_exclusive_access IS TRUE");
