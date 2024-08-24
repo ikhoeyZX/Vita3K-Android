@@ -302,10 +302,13 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
         config.detect_misaligned_access_via_page_table = 8 | 16 | 32 | 64 | 128;
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
     }
-    if (cpu_opt) {
+    if (!log_mem && cpu_opt) {
         config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
+    } else {
+        config.fastmem_pointer = nullptr;
     }
     config.fastmem_exclusive_access = false; // if this set true native buffer works but only 1-3 fps, weird
+    config.recompile_on_exclusive_fastmem_failure = false;
     config.hook_hint_instructions = true;
   //  config.enable_cycle_counting = false;
     config.global_monitor = monitor;
@@ -315,7 +318,6 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.wall_clock_cntpct = true;
     
     if(cpu_unsafe){
-        config.recompile_on_exclusive_fastmem_failure = true;
         config.recompile_on_fastmem_failure = true;
         config.page_table_pointer_mask_bits = 3;
         config.absolute_offset_page_table = false;
