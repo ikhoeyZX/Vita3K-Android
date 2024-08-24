@@ -396,13 +396,11 @@ bool init(EmuEnvState &state, const Root &root_paths) {
         }
     }
 
-    LOG_INFO("\nBase path: {}", state.base_path);
-    LOG_INFO("User pref path: {}", state.pref_path);
     LOG_INFO("Log path: {}", state.log_path);
     LOG_INFO("Shared path: {}\n", state.shared_path);
 #endif
 
-#if defined(__linux__) && !defined(__APPLE__)
+#if defined(__linux__) && !defined(__ANDROID__) && !defined(__APPLE__)
     LOG_INFO("Static assets path: {}", state.static_assets_path);
     LOG_INFO("Shared path: {}", state.shared_path);
     LOG_INFO("Log path: {}", state.log_path);
