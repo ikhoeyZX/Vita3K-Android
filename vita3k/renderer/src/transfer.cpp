@@ -163,7 +163,7 @@ COMMAND(handle_transfer_copy) {
         // use a specialized function for each type (more optimized)
         switch (bpp) {
         case 1:
-            LOG_TRACE_ONCE("Perform transfer copy with 1 color");
+            LOG_TRACE("Perform transfer copy with 1 color");
             perform_transfer_copy_src_type<bool, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
             break;
         case 2:
@@ -285,11 +285,11 @@ COMMAND(handle_transfer_downscale) {
                 perform_downscale(uint32_t());
                 break;
             case 48:
-                LOG_TRACE_ONCE("SW downscaling type is 48");
+                LOG_TRACE("SW downscaling type is 48");
                 perform_downscale(std::array<uint16_t, 3>());
                 break;
             case 64:
-                LOG_TRACE_ONCE("SW downscaling type is 64, slow!");
+                LOG_TRACE("SW downscaling type is 64, slow!");
                 perform_downscale(uint64_t());
             default:
                 // should not happen
