@@ -1381,7 +1381,7 @@ void VKState::precompile_shader(const ShadersHash &hash) {
     }
 
     programs_count_pre_compiled++;
-    LOG_INFO("Program Compiled {}/{}", programs_count_pre_compiled, shaders_cache_hashs.size());
+    // LOG_DEBUG("Program Compiled {}/{}", programs_count_pre_compiled, shaders_cache_hashs.size());
 }
 
 void VKState::preclose_action() {
