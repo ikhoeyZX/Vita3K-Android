@@ -57,8 +57,13 @@ jobs:
       - name: Compute git short sha
         shell: bash
         run: echo "git_short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-
-      - uses: actions/upload-artifact@v3
+        
+      - name: Gradle build
+        run: |
+          mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-${{ env.git_short_sha }}-release.apk
+          ls -l
+          
+      - uses: actions/upload-artifact@v4
         with:
-          name: vita3k-${{ env.git_short_sha }}-release.apk
-          path: android/build/outputs/apk/release/android-release.apk
+          name: vita3k-${{ env.git_short_sha }}-release.zip
+          path: android/build/outputs/apk/release/vita3k-${{ env.git_short_sha }}-release.apk
