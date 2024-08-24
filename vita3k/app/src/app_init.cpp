@@ -396,7 +396,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
         }
     }
 
-    LOG_INFO("\nLog path: {}", state.log_path);
+    LOG_INFO("Log path: {}", state.log_path);
     LOG_INFO("Shared path: {}", state.shared_path);
 #endif
 
@@ -408,7 +408,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     LOG_INFO("User cache path: {}", state.cache_path);
 #endif
     LOG_INFO("Base path: {}", state.base_path);
-    LOG_INFO("User pref path: {}\n", state.pref_path);
+    LOG_INFO("User pref path: {}", state.pref_path);
 
     if (ImGui::GetCurrentContext() == NULL) {
         ImGui::CreateContext();
