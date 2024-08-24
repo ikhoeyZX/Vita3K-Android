@@ -11,7 +11,7 @@ jobs:
       VCPKG_ROOT: /usr/local/share/vcpkg
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: recursive
