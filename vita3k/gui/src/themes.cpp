@@ -424,8 +424,9 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
         gui.vita_area.home_screen = true;
         if (emuenv.cfg.show_info_bar)
             gui.vita_area.information_bar = true;
-        
-   }else{
+       
+        return;
+   }
     
     const ImVec2 VIEWPORT_SIZE = ImGui::GetIO().DisplaySize;
     const ImVec2 VIEWPORT_POS = {0,0};
@@ -521,6 +522,5 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::End();
     ImGui::PopStyleVar(3);
    }
-}
 
 } // namespace gui
