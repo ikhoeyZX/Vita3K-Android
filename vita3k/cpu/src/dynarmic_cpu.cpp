@@ -298,12 +298,13 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.callbacks = cb.get();
     if (parent->mem->use_page_table) {
         config.page_table = (log_mem || !cpu_opt) ? nullptr : std::bit_cast<decltype(config.page_table)>(parent->mem->page_table.get());
-        config.absolute_offset_page_table = true;
-        config.detect_misaligned_access_via_page_table = 8 | 16 | 32 | 64 | 128;
-        config.only_detect_misalignment_via_page_table_on_page_boundary = true;
+  //      config.absolute_offset_page_table = true;
+  //      config.detect_misaligned_access_via_page_table = 8 | 16 | 32 | 64 | 128;
+  //      config.only_detect_misalignment_via_page_table_on_page_boundary = true;
     }
     if (cpu_opt) {
         config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
+        config.fastmem_exclusive_access = true;
     }else{
         config.fastmem_exclusive_access = false;
     }
@@ -316,7 +317,6 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.wall_clock_cntpct = true;
     config.recompile_on_exclusive_fastmem_failure = false;
     config.recompile_on_fastmem_failure = false;
-    config.fastmem_exclusive_access = true;
     
     if(cpu_unsafe){
         config.recompile_on_exclusive_fastmem_failure = true;
