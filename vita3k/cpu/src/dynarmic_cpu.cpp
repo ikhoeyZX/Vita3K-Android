@@ -301,7 +301,8 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
         config.absolute_offset_page_table = true;
         config.detect_misaligned_access_via_page_table = 8;
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
-    } else if (!log_mem && cpu_opt) {
+    }
+    if (cpu_opt) {
         config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
     }
     config.hook_hint_instructions = true;
