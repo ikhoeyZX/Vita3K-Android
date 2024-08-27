@@ -459,7 +459,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         if (mHIDDeviceManager != null) {
             mHIDDeviceManager.setFrozen(true);
         }
-        }
     }
 
     @Override
