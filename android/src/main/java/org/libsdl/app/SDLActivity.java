@@ -171,8 +171,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 */
 
     public static boolean mIsResumedCalled, mHasFocus;
-    public static final boolean mHasMultiWindow = (Build.VERSION.SDK_INT >= 24  /* Android 7.0 (N) */);
-
+   
     // Cursor types
     // private static final int SDL_SYSTEM_CURSOR_NONE = -1;
     private static final int SDL_SYSTEM_CURSOR_ARROW = 0;
@@ -460,8 +459,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         if (mHIDDeviceManager != null) {
             mHIDDeviceManager.setFrozen(true);
         }
-        if (!mHasMultiWindow) {
-            pauseNativeThread();
         }
     }
 
@@ -473,27 +470,20 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         if (mHIDDeviceManager != null) {
             mHIDDeviceManager.setFrozen(false);
         }
-        if (!mHasMultiWindow) {
-            resumeNativeThread();
-        }
     }
 
     @Override
     protected void onStop() {
         Log.v(TAG, "onStop()");
         super.onStop();
-        if (mHasMultiWindow) {
-            pauseNativeThread();
-        }
+        pauseNativeThread();
     }
 
     @Override
     protected void onStart() {
         Log.v(TAG, "onStart()");
         super.onStart();
-        if (mHasMultiWindow) {
-            resumeNativeThread();
-        }
+        resumeNativeThread();
     }
 
     public static int getCurrentOrientation() {
@@ -545,10 +535,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
         } else {
            nativeFocusChanged(false);
-           if (!mHasMultiWindow) {
-               mNextNativeState = NativeState.PAUSED;
-               SDLActivity.handleNativeState();
-           }
         }
     }
 
