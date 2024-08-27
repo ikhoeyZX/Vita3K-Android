@@ -138,9 +138,9 @@ public class Emulator extends SDLActivity
         ProcessPhoenix.triggerRebirth(getContext(), restart_intent);
     }
 
-    final uint8_t FILE_DIALOG_CODE = 545;
-    final uint8_t FOLDER_DIALOG_CODE = 546;
-    final uint8_t STORAGE_MANAGER_DIALOG_CODE = 547;
+    final int FILE_DIALOG_CODE = 545;
+    final int FOLDER_DIALOG_CODE = 546;
+    final int STORAGE_MANAGER_DIALOG_CODE = 547;
 
     @Keep
     public void showFileDialog() {
