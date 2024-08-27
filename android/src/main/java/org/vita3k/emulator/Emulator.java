@@ -84,7 +84,7 @@ public class Emulator extends SDLActivity
         layout.addView(getmOverlay());
     }
 
-    static private final String APP_RESTART_PARAMETERS = "AppStartParameters";
+    private final String APP_RESTART_PARAMETERS = "AppStartParameters";
 
     @Override
     protected String[] getArguments() {
@@ -138,9 +138,9 @@ public class Emulator extends SDLActivity
         ProcessPhoenix.triggerRebirth(getContext(), restart_intent);
     }
 
-    static final int FILE_DIALOG_CODE = 545;
-    static final int FOLDER_DIALOG_CODE = 546;
-    static final int STORAGE_MANAGER_DIALOG_CODE = 547;
+    final uint8_t FILE_DIALOG_CODE = 545;
+    final uint8_t FOLDER_DIALOG_CODE = 546;
+    final uint8_t STORAGE_MANAGER_DIALOG_CODE = 547;
 
     @Keep
     public void showFileDialog() {
