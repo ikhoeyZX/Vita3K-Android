@@ -8,6 +8,10 @@ if you find issue go to main repo, not in here
 - At least 4GB of RAM
 - 6GB Free storage
 
+# Known Issue
+- Custom driver didn't work in v12 build 2 or newer since it's **NOT** using custom SDL2 (becuase it's close source)
+- Vulkan 1.0 didn't run well and most phone with it not run well, use OpenGL(ES) instead (adreno only, mali didn't support openGLES in this emu for now) 
+
 # Vita3K
 
 ![C/C++ CI](https://github.com/Vita3K/Vita3K/workflows/C/C++%20CI/badge.svg)
