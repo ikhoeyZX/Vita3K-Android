@@ -102,7 +102,7 @@
             android:launchMode="singleInstance"
             android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
             android:preferMinimalPostProcessing="true"
-            android:theme="@style/Theme.Design.NoActionBar"
+            android:theme="@style/AppTheme"
             android:exported="true"
             tools:targetApi="r">
 
