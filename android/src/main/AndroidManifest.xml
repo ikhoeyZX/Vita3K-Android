@@ -94,7 +94,9 @@
         <!-- Example of setting SDL hints from AndroidManifest.xml:
         <meta-data android:name="SDL_ENV.SDL_ACCELEROMETER_AS_JOYSTICK" android:value="0"/>
          -->
-
+        <meta-data android:name="android.game_mode_config"
+             android:resource="@xml/game_mode_config" />
+        
         <activity android:name="Emulator"
             android:alwaysRetainTaskState="true"
             android:launchMode="singleInstance"
@@ -103,6 +105,7 @@
             android:theme="@style/Theme.Design.NoActionBar"
             android:exported="true"
             tools:targetApi="r">
+
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
