@@ -1,6 +1,7 @@
 <resources>
 
     <style name="AppTheme" parent="android:Theme.Holo.Light.DarkActionBar">
+        <item name="android:windowLayoutInDisplayCutoutMode">always</item>
     </style>
 
 </resources>
