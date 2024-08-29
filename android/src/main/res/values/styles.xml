@@ -1,7 +1,9 @@
 <resources>
 
-    <style name="ActivityTheme">
-        <item name="android:windowLayoutInDisplayCutoutMode">always</item>
-    </style>
+<style name="ActivityTheme">
+  <item name="android:windowLayoutInDisplayCutoutMode">
+    shortEdges <!-- default, shortEdges, or never -->
+  </item>
+</style>
 
 </resources>
