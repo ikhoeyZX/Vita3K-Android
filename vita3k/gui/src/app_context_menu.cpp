@@ -519,7 +519,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             }
 #else
             if(ImGui::MenuItem("Create Shortcut")){
-                create_shortcut(emuenv.pref_path, title_id, APP_INDEX->title);
+                create_shortcut(emuenv.pref_path.string(), title_id, APP_INDEX->title);
             }
 #endif
 
