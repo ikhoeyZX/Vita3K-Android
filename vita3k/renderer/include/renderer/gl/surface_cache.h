@@ -25,6 +25,7 @@
 #include <array>
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 #include <glad/glad.h>
 
