@@ -15,6 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#ifdef USE_VITA3K_UPDATE
+
 #include "private.h"
 
 #include <boost/algorithm/string.hpp>
@@ -274,7 +276,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 4.f * SCALE.x);
         ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 15.f * SCALE.x);
         ImGui::SetNextWindowBgAlpha(0.f);
-        ImGui::BeginChild("##description_child", ImVec2(860 * SCALE.x, 334.f * SCALE.y), true, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("##description_child", ImVec2(860 * SCALE.x, 334.f * SCALE.y), ImGuiChildFlags_Border, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetWindowFontScale(0.8f);
         ImGui::Columns(2, "commit_columns", true);
         ImGui::SetColumnWidth(0, 200 * SCALE.x);
@@ -399,3 +401,4 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 } // namespace gui
+#endif
