@@ -141,7 +141,7 @@ static void run_execv(char *argv[], EmuEnvState &emuenv) {
 #elif defined(__unix__) || defined(__APPLE__) && defined(__MACH__)
     execv(argv[0], const_cast<char *const *>(args));
 #endif
-};
+}
 #endif
 
 int main(int argc, char *argv[]) {
