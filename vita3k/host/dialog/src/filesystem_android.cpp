@@ -152,7 +152,7 @@ std::string get_error() {
 #endif
 
     return error;
-};
+}
 
 FILE *resolve_host_handle(const fs::path &path) {
     auto it = path_mapping.find(path);
