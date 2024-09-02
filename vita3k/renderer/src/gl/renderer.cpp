@@ -183,7 +183,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     choosen_minor_version = 6;
 #else
     // Recursively create GL version until one accepts
-    // Major 4 is mandantory
+        // Major 4 is mandatory
     // We use glBufferStorage which needs OpenGL 4.4
     constexpr std::array accept_gl_minor_versions = {
         6, // OpenGL 4.6
