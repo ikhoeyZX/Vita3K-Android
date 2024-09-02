@@ -64,7 +64,7 @@ Address CPUProtocol::get_watch_memory_addr(Address addr) {
 }
 
 #ifdef USE_DYNARMIC
-ExclusiveMonitorPtr CPUProtocol::get_exlusive_monitor() {
+ExclusiveMonitorPtr CPUProtocol::get_exclusive_monitor() {
     return kernel->exclusive_monitor;
 }
 #endif
