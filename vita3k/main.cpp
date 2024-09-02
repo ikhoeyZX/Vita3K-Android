@@ -66,7 +66,7 @@
 
 #ifdef ANDROID
 
-static void set_current_game_id(const std::string_view game_id) {
+void set_current_game_id(const std::string_view game_id) {
     // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
 
@@ -87,7 +87,7 @@ static void set_current_game_id(const std::string_view game_id) {
     env->DeleteLocalRef(clazz);
 }
 
-static void run_execv(char *argv[], EmuEnvState &emuenv) {
+void run_execv(char *argv[], EmuEnvState &emuenv) {
     // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
 
@@ -112,7 +112,7 @@ static void run_execv(char *argv[], EmuEnvState &emuenv) {
     exit(0);
 };
 #else
-static void run_execv(char *argv[], EmuEnvState &emuenv) {
+void run_execv(char *argv[], EmuEnvState &emuenv) {
     char const *args[10];
     args[0] = argv[0];
     args[1] = "-a";
@@ -191,6 +191,8 @@ int main(int argc, char *argv[]) {
     if (hToken) {
         CloseHandle(hToken);
     }
+#elif defined(ANDROID)
+    // skip
 #else
     auto uid = getuid();
     auto euid = geteuid();
@@ -277,7 +279,7 @@ int main(int argc, char *argv[]) {
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS, "0");
 
-        auto audio_mode = emuenv.cfg.audio_drv;
+        const auto audio_mode = emuenv.cfg.audio_drv;
         if (audio_mode != "auto")
             SDL_SetHint(SDL_HINT_AUDIODRIVER, audio_mode.c_str());
 
@@ -381,7 +383,7 @@ int main(int argc, char *argv[]) {
 
     std::chrono::system_clock::time_point present = std::chrono::system_clock::now();
     std::chrono::system_clock::time_point later = std::chrono::system_clock::now();
-    constexpr double frame_time = 1000.0 / 60.0;
+    constexpr double frame_time = 16.667; // 1000 / 60
 
     auto wait_for_frame_done = [&]() {
         // get the current time & get the time we worked for
