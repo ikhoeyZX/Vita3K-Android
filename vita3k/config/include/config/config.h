@@ -26,14 +26,14 @@ enum ModulesMode {
     MANUAL
 };
 
-enum PerfomanceOverleyDetail {
+enum PerformanceOverlayDetail {
     MINIMUM,
     LOW,
     MEDIUM,
     MAXIMUM,
 };
 
-enum PerfomanceOverleyPosition {
+enum PerformanceOverlayPosition {
     TOP_LEFT,
     TOP_CENTER,
     TOP_RIGHT,
@@ -114,8 +114,8 @@ enum ScreenshotFormat {
     code(bool, "color-surface-debug", false, color_surface_debug)                                       \
     code(bool, "show-touchpad-cursor", true, show_touchpad_cursor)                                      \
     code(bool, "performance-overlay", false, performance_overlay)                                       \
-    code(int, "perfomance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)       \
-    code(int, "perfomance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position)  \
+    code(int, "performance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)      \
+    code(int, "performance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position) \
     code(int, "screenshot-format", static_cast<int>(JPEG), screenshot_format)                           \
     code(bool, "enable-gamepad-overlay", true, enable_gamepad_overlay)                                  \
     code(bool, "overlay-show-touch-switch", false, overlay_show_touch_switch)                           \
