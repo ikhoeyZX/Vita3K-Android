@@ -79,7 +79,7 @@ std::string format_file_filter_extension_list(const std::vector<std::string> &fi
     }
 
     return formatted_string;
-};
+}
 
 static void call_dialog_java_function(const char* name, bool need_write){
     // These permissions are not needed on Android 11+
