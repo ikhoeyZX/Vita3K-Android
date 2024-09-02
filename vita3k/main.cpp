@@ -66,7 +66,7 @@
 
 #ifdef ANDROID
 
-void set_current_game_id(const std::string_view game_id) {
+static void set_current_game_id(const std::string_view game_id) {
     // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
 
@@ -87,7 +87,7 @@ void set_current_game_id(const std::string_view game_id) {
     env->DeleteLocalRef(clazz);
 }
 
-void run_execv(char *argv[], EmuEnvState &emuenv) {
+static void run_execv(char *argv[], EmuEnvState &emuenv) {
     // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
 
@@ -112,7 +112,7 @@ void run_execv(char *argv[], EmuEnvState &emuenv) {
     exit(0);
 };
 #else
-void run_execv(char *argv[], EmuEnvState &emuenv) {
+static void run_execv(char *argv[], EmuEnvState &emuenv) {
     char const *args[10];
     args[0] = argv[0];
     args[1] = "-a";
@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
         CloseHandle(hToken);
     }
 #elif defined(ANDROID)
-    // skip
+    // skip check since no effect
 #else
     auto uid = getuid();
     auto euid = geteuid();
@@ -383,7 +383,7 @@ int main(int argc, char *argv[]) {
 
     std::chrono::system_clock::time_point present = std::chrono::system_clock::now();
     std::chrono::system_clock::time_point later = std::chrono::system_clock::now();
-    constexpr double frame_time = 16.667; // 1000 / 60
+    constexpr float frame_time = 16.667f; // 1000.0 / 60.0;
 
     auto wait_for_frame_done = [&]() {
         // get the current time & get the time we worked for
@@ -500,9 +500,9 @@ int main(int argc, char *argv[]) {
 
     int32_t main_module_id;
     {
-        const auto err = load_app(main_module_id, emuenv);
-        if (err != Success)
-            return err;
+       const auto err = load_app(main_module_id, emuenv);
+       if (err != Success)
+           return err;
     }
     gui.vita_area.information_bar = false;
 
