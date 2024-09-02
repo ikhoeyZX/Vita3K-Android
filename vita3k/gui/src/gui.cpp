@@ -846,10 +846,10 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
 
     if (gui.vita_area.trophy_collection)
         draw_trophy_collection(gui, emuenv);
-
+#ifdef USE_VITA3K_UPDATE
     if (gui.help_menu.vita3k_update)
         draw_vita3k_update(gui, emuenv);
-
+#endif
     if ((emuenv.cfg.show_info_bar || !emuenv.display.imgui_render || !gui.vita_area.home_screen) && gui.vita_area.information_bar)
         draw_information_bar(gui, emuenv);
 
