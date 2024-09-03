@@ -113,7 +113,7 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
         glTexParameteri(texture_bind_type, GL_TEXTURE_MAX_LEVEL, mip_count - 1);
 
 #ifdef ANDROID
-    for(int i = 0; i < 4; i++){
+    for(uint8_t i = 0; i < 4; i++){
         glTexParameteri(texture_bind_type, GL_TEXTURE_SWIZZLE_R + i, swizzle[i]);
     }
 #else
@@ -240,7 +240,7 @@ void GLTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
     glTexParameteri(texture_bind_type, GL_TEXTURE_MAX_LEVEL, mipcount - 1);
 
 #ifdef ANDROID
-    for(int i = 0; i < 4; i++){
+    for(uint8_t i = 0; i < 4; i++){
         glTexParameteri(texture_bind_type, GL_TEXTURE_SWIZZLE_R + i, swizzle[i]);
     }
 #else
