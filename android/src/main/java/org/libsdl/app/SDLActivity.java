@@ -1346,6 +1346,13 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         if (SDLActivity.mSurface == null) {
             return null;
         }
+        
+        Surface targetSurface = SDLActivity.mSurface.getNativeSurface();
+        if (VERSION.SDK_INT >= VERSION_CODES.R) {
+            targetSurface.setFrameRate(60, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT); // force 60fps
+            return targetSurface;
+        }
+        
         return SDLActivity.mSurface.getNativeSurface();
     }
 
