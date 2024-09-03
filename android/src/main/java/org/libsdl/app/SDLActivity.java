@@ -1348,7 +1348,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         }
         
         Surface targetSurface = SDLActivity.mSurface.getNativeSurface();
-        if (VERSION.SDK_INT >= VERSION_CODES.R) {
+        if (Build.VERSION.SDK_INT >= 30) {
             targetSurface.setFrameRate(60, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT); // force 60fps
             return targetSurface;
         }
