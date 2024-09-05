@@ -52,7 +52,7 @@
 	url = https://github.com/vitasdk/vita-toolchain.git
 [submodule "external/VulkanMemoryAllocator-Hpp"]
 	path = external/VulkanMemoryAllocator-Hpp
-	url = https://github.com/YaaZ/VulkanMemoryAllocator-Hpp.git
+	url = https://github.com/ikhoeyZX/VulkanMemoryAllocator-Hpp.git
         branch = master
 [submodule "external/Vulkan-Headers"]
 	path = external/Vulkan-Headers
