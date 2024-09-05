@@ -3,14 +3,14 @@ if you find issue go to main repo, not in here
 
 # Minimum system requirement
 - Android 9, 64 bit CPU for Snapdragon variant
-- Android 11, 64 bit CPU for Mediatek / Exynos / Rockchip (kirin not supported, still unknow why)
+- Android 11, 64 bit CPU for Mediatek / Exynos / Rockchip (kirin not supported, idk why and since i dont have that phone variant there is no way to find out)
 - **PowerVR GPU NOT SUPPORTED** because it's have limited Vulkan feature (not yet find workaround since i dont have PowerVR phones)
 - At least 4GB of RAM
 - 6GB Free storage
 
 # Known Issue
-- Custom driver didn't work in v12 build 2 or newer since it's **NOT** using custom SDL2 (becuase it's close source)
-- Vulkan 1.0 didn't run well and most phone with it not run well, use OpenGL(ES) instead (adreno only, mali didn't support openGLES in this emu for now) 
+- Custom driver didn't work in v12 build 2 or newer since it's **NOT** using custom SDL2 (because it's close source)
+- Vulkan 1.0 can run but it didn't run well, use OpenGL(ES) instead (adreno only, mali didn't support openGLES in this emu for now) 
 
 # Vita3K
 
