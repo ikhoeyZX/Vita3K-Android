@@ -331,9 +331,9 @@ IMGUI_API void ImGui_ImplSdl_Shutdown(ImGui_State *state) {
     }
     
     // Destroy SDL mouse cursors
-    for (auto &mouse_cursor : state->mouse_cursors)
+    for (auto &mouse_cursor : state->MouseCursors)
         SDL_FreeCursor(mouse_cursor);
-    memset(state->mouse_cursors, 0, sizeof(state->mouse_cursors));
+    memset(state->MouseCursors, 0, sizeof(state->MouseCursors));
     
     if (clipboard_text_data)
         SDL_free(clipboard_text_data);
