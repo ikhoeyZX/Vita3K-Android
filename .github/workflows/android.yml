@@ -48,6 +48,7 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
+          cp -r data/image android/assets/image
           cp -r lang android/assets
           cp -r vita3k/shaders-builtin android/assets
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
@@ -60,7 +61,6 @@ jobs:
       - name: Rename APK
         run: |
           mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-${{ env.git_short_sha }}-release.apk
-          ls -l
           
       - uses: actions/upload-artifact@v4
         with:
