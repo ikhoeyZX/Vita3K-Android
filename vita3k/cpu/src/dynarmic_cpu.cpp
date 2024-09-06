@@ -306,28 +306,28 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     if (!log_mem && cpu_opt) {
         config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
     }
-
+    // config.fastmem_exclusive_access = false; // if this and below set true native buffer works but only 1-3 fps, weird
+    // config.recompile_on_exclusive_fastmem_failure = false; // this one
     config.hook_hint_instructions = true;
-    config.enable_cycle_counting = true;
-    
+  //  config.enable_cycle_counting = false;
+    config.global_monitor = monitor;
     config.coprocessors[15] = cp15;
     config.processor_id = core_id;
     config.wall_clock_cntpct = true;
     
     if(cpu_unsafe){
-       // config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_UnfuseFMA;
-       // config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_IgnoreStandardFPCRValue;
-       // config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_InaccurateNaN;
-       // config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_IgnoreGlobalMonitor;
-        config.recompile_on_exclusive_fastmem_failure = true;
-        config.recompile_on_fastmem_failure = true;
+    //    config.recompile_on_exclusive_fastmem_failure = true;
+    //    config.recompile_on_fastmem_failure = true;
+        
+        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_UnfuseFMA;
+        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_IgnoreStandardFPCRValue;
+        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_InaccurateNaN;
+        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_IgnoreGlobalMonitor;
+        
         config.page_table_pointer_mask_bits = true;
         config.absolute_offset_page_table = false;
         config.unsafe_optimizations = true;
     } else {
-        config.fastmem_exclusive_access = false; // if this and below set true native buffer works but only 1-3 fps, weird
-        config.recompile_on_exclusive_fastmem_failure = false; // this one
-        config.global_monitor = monitor;
         config.recompile_on_fastmem_failure = false;
         config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;  
         config.unsafe_optimizations = false;
