@@ -302,12 +302,13 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
         config.absolute_offset_page_table = true;
         config.detect_misaligned_access_via_page_table = 8 | 16 | 32 | 64 | 128;
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
-    }else if (!log_mem && cpu_opt) {
-        config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
-    //    config.fastmem_exclusive_access = config.fastmem_pointer != std::nullopt;
-    //    config.recompile_on_exclusive_fastmem_failure = true;
     }
-     config.hook_hint_instructions = true;
+    if (!log_mem && cpu_opt) {
+        config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
+    }
+    // config.fastmem_exclusive_access = false; // if this and below set true native buffer works but only 1-3 fps, weird
+    // config.recompile_on_exclusive_fastmem_failure = false; // this one
+    config.hook_hint_instructions = true;
   //  config.enable_cycle_counting = false;
     config.global_monitor = monitor;
     config.coprocessors[15] = cp15;
@@ -315,8 +316,8 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.wall_clock_cntpct = true;
     
     if(cpu_unsafe){
-     //   config.recompile_on_exclusive_fastmem_failure = true;
-     //   config.recompile_on_fastmem_failure = true;
+    //    config.recompile_on_exclusive_fastmem_failure = true;
+    //    config.recompile_on_fastmem_failure = true;
         
         config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_UnfuseFMA;
         config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_IgnoreStandardFPCRValue;
@@ -327,6 +328,7 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
         config.absolute_offset_page_table = false;
         config.unsafe_optimizations = true;
     } else {
+        config.recompile_on_fastmem_failure = false;
         config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;  
         config.unsafe_optimizations = false;
     }
