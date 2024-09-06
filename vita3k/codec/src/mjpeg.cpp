@@ -29,6 +29,85 @@ extern "C" {
 
 #include <cassert>
 
+namespace {
+
+struct JpegInfo {
+    uint32_t mcu_width;
+    uint32_t mcu_height;
+    uint32_t width;
+    uint32_t height;
+};
+
+struct ChannelInfo {
+    uint32_t width_divisor;
+    uint32_t height_divisor;
+    uint32_t offset;
+};
+
+JpegInfo parse_jpeg_header(const uint8_t *data, uint32_t size) {
+    // JPEG marker codes
+    constexpr uint8_t MARKER_SOI = 0xD8;
+    constexpr uint8_t MARKER_EOI = 0xD9;
+    constexpr uint8_t MARKER_SOS = 0xDA;
+    constexpr uint8_t MARKER_SOF0 = 0xC0;
+
+    JpegInfo info = { 0 };
+
+    if (size < 2 || data[0] != 0xFF || data[1] != MARKER_SOI) {
+        return info;
+    }
+
+    uint32_t offset = 2;
+    while (offset < size - 1) {
+        if (data[offset] != 0xFF) {
+            offset++;
+            continue;
+        }
+
+        uint8_t marker = data[offset + 1];
+        offset += 2;
+
+        if (marker == MARKER_EOI || marker == MARKER_SOS) {
+            break;
+        }
+
+        if (marker == MARKER_SOF0) {
+            if (offset + 8 > size)
+                break;
+
+            info.height = (data[offset + 3] << 8) | data[offset + 4];
+            info.width = (data[offset + 5] << 8) | data[offset + 6];
+            uint32_t components = data[offset + 7];
+
+            uint32_t max_h_factor = 0, max_v_factor = 0;
+            for (uint32_t i = 0; i < components; i++) {
+                uint32_t h_factor = (data[offset + 8 + i * 3 + 1] >> 4) & 0xF;
+                uint32_t v_factor = data[offset + 8 + i * 3 + 1] & 0xF;
+                max_h_factor = (h_factor > max_h_factor) ? h_factor : max_h_factor;
+                max_v_factor = (v_factor > max_v_factor) ? v_factor : max_v_factor;
+            }
+
+            info.mcu_width = max_h_factor * 8;
+            info.mcu_height = max_v_factor * 8;
+
+            break;
+        }
+
+        if (offset + 2 > size)
+            break;
+        uint16_t segment_length = (data[offset] << 8) | data[offset + 1];
+        offset += segment_length;
+    }
+
+    return info;
+}
+
+uint32_t align_dimension(uint32_t dimension, uint32_t mcu_size) {
+    return ((dimension + mcu_size - 1) / mcu_size) * mcu_size;
+}
+
+} // anonymous namespace
+
 void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height, const DecoderColorSpace color_space) {
     AVPixelFormat format = AV_PIX_FMT_YUVJ444P;
     int strides_divisor = 1;
@@ -50,7 +129,7 @@ void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint3
         strides_divisor = 2;
         slice_position = 5; // 1.25
         break;
-        case COLORSPACE_GRAYSCALE:
+    case COLORSPACE_GRAYSCALE:
         LOG_ERROR("Unsupported type: COLORSPACE_GRAYSCALE");
         format = AV_PIX_FMT_GRAY16;
         strides_divisor = 1;
@@ -275,6 +354,12 @@ bool MjpegDecoderState::send(const uint8_t *data, uint32_t size) {
         LOG_WARN("Error sending Mjpeg packet: {}.", codec_error_name(error));
         return false;
     }
+
+    // Parse JPEG header to get MCU size
+    JpegInfo jpeg_info = parse_jpeg_header(data, size);
+    this->mcu_height = jpeg_info.mcu_height;
+    this->mcu_width = jpeg_info.mcu_width;
+
     return true;
 }
 
@@ -287,81 +372,76 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
         return false;
     }
 
-    if (data) {
-        switch (frame->format) {
-        case AV_PIX_FMT_YUVJ444P: {
-            uint8_t *channels[] = {
-                &data[0], // y
-                &data[frame->width * frame->height], // u
-                &data[frame->width * frame->height * 2], // v
-            };
-
-            // Copy YUV444 data.
-            for (uint32_t a = 0; a < 3; a++) {
-                for (int b = 0; b < frame->height; b++) {
-                    std::memcpy(&channels[a][b * frame->width], &frame->data[a][b * frame->linesize[a]], frame->width);
-                }
-            }
-            break;
-        }
-        case AV_PIX_FMT_YUVJ422P: {
-            uint8_t *channels[] = {
-                &data[0], // y
-                &data[frame->width * frame->height], // u
-                &data[frame->width * frame->height * 3 / 2], // v
-            };
-
-            // Copy YUV422 data.
-            for (uint32_t a = 0; a < 3; a++) {
-                for (int b = 0; b < frame->height; b++) {
-                    std::memcpy(&channels[a][b * frame->width / (a ? 2 : 1)], &frame->data[a][b * frame->linesize[a]], frame->width / (a ? 2 : 1));
-                }
-            }
-            break;
-        }
-        case AV_PIX_FMT_YUVJ420P: {
-            uint8_t *channels[] = {
-                &data[0], // y
-                &data[frame->width * frame->height], // u
-                &data[frame->width * frame->height * 5 / 4], // v
-            };
-
-            // Copy YUV420 data.
-            for (uint32_t a = 0; a < 3; a++) {
-                for (int b = 0; b < frame->height / (a ? 2 : 1); b++) {
-                    std::memcpy(&channels[a][b * frame->width / (a ? 2 : 1)], &frame->data[a][b * frame->linesize[a]], frame->width / (a ? 2 : 1));
-                }
-            }
-            break;
-        }
-        case COLORSPACE_GRAYSCALE:
-            LOG_ERROR("Unsupported type: COLORSPACE_GRAYSCALE");
-            break;
-        default:
-            LOG_ERROR("Unsupported type: COLORSPACE_UNKNOWN");
-            break;
-        }
+    if (mcu_width == 0 || mcu_height == 0) {
+        LOG_WARN("Mjpeg MCU size is not set. Falling back to 1x1.");
+        mcu_width = mcu_height = 1;
     }
 
-    switch (frame->format) {
-    case AV_PIX_FMT_YUVJ444P:
-        this->color_space_out = COLORSPACE_YUV444P;
-        break;
-    case AV_PIX_FMT_YUVJ422P:
-        this->color_space_out = COLORSPACE_YUV422P;
-        break;
-    case AV_PIX_FMT_YUVJ420P:
-        this->color_space_out = COLORSPACE_YUV420P;
-        break;
-    default:
-        LOG_WARN("Mjpeg frame is in unimplemented format {}.", frame->format);
-        av_frame_free(&frame);
-        return false;
+    // Calculate MCU-aligned dimensions
+    uint32_t aligned_width = align_dimension(frame->width, mcu_width);
+    uint32_t aligned_height = align_dimension(frame->height, mcu_height);
+
+    if (frame->width != aligned_width || frame->height != aligned_height) {
+        LOG_INFO("Mjpeg frame dimensions are not MCU-aligned. MCU size: {}x{}, frame size: {}x{} -> aligned size: {}x{}.",
+            mcu_width, mcu_height, frame->width, frame->height, aligned_width, aligned_height);
+    }
+
+    if (data) {
+        ChannelInfo channel_info[3];
+        uint32_t total_size = aligned_width * aligned_height;
+
+        switch (frame->format) {
+        case AV_PIX_FMT_YUVJ444P:
+            for (int i = 0; i < 3; i++) {
+                channel_info[i] = { 1, 1, total_size * i };
+            }
+            this->color_space_out = COLORSPACE_YUV444P;
+            break;
+        case AV_PIX_FMT_YUVJ422P:
+            channel_info[0] = { 1, 1, 0 };
+            channel_info[1] = { 2, 1, total_size };
+            channel_info[2] = { 2, 1, total_size * 3 / 2 };
+            this->color_space_out = COLORSPACE_YUV422P;
+            break;
+        case AV_PIX_FMT_YUVJ420P:
+            channel_info[0] = { 1, 1, 0 };
+            channel_info[1] = { 2, 2, total_size };
+            channel_info[2] = { 2, 2, total_size * 5 / 4 };
+            this->color_space_out = COLORSPACE_YUV420P;
+            break;
+        default:
+            LOG_WARN("Mjpeg frame is in unimplemented format {}.", frame->format);
+            av_frame_free(&frame);
+            return false;
+        }
+
+        for (uint8_t a = 0; a < 3; a++) {
+            uint32_t component_width = aligned_width / channel_info[a].width_divisor;
+            uint32_t component_height = aligned_height / channel_info[a].height_divisor;
+            uint32_t frame_component_width = frame->width / channel_info[a].width_divisor;
+            uint32_t frame_component_height = frame->height / channel_info[a].height_divisor;
+
+            for (uint32_t y = 0; y < component_height; y++) {
+                uint8_t *dst = &data[channel_info[a].offset + y * component_width];
+                const uint8_t *src = frame->data[a] + (y < frame_component_height ? y * frame->linesize[a] : (frame_component_height - 1) * frame->linesize[a]);
+
+                if (y < frame_component_height) {
+                    std::memcpy(dst, src, frame_component_width);
+                    // Pad the rest with the last pixel value
+                    std::memset(dst + frame_component_width, dst[frame_component_width - 1], component_width - frame_component_width);
+                } else {
+                    // Copy the last row for padding
+                    std::memcpy(dst, dst - component_width, component_width);
+                }
+            }
+        }
     }
 
     if (size) {
         size->width = frame->width;
         size->height = frame->height;
+        size->pitch_width = aligned_width;
+        size->pitch_height = aligned_height;
     }
 
     av_frame_free(&frame);
