@@ -315,10 +315,10 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.wall_clock_cntpct = true;
     
     if(cpu_unsafe){
-        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_UnfuseFMA;
-        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_IgnoreStandardFPCRValue;
-       // config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_InaccurateNaN;
-       // config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_IgnoreGlobalMonitor;
+       // config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_UnfuseFMA;
+       // config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_IgnoreStandardFPCRValue;
+        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_InaccurateNaN;
+        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_IgnoreGlobalMonitor;
         config.recompile_on_exclusive_fastmem_failure = true;
         config.recompile_on_fastmem_failure = true;
         config.page_table_pointer_mask_bits = true;
