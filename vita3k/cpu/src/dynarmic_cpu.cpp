@@ -314,6 +314,8 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.coprocessors[15] = cp15;
     config.processor_id = core_id;
     config.wall_clock_cntpct = true;
+
+    config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;  
     
     if(cpu_unsafe){
     //    config.recompile_on_exclusive_fastmem_failure = true;
@@ -329,7 +331,6 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
         config.unsafe_optimizations = true;
     } else {
         config.recompile_on_fastmem_failure = false;
-        config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;  
         config.unsafe_optimizations = false;
     }
     
