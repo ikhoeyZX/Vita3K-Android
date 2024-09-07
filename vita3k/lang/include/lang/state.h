@@ -365,6 +365,8 @@ struct LangState {
         { "live_area_screen_description", "Check the box to open Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it." },
         { "apps_list_grid", "Grid Mode" },
         { "apps_list_grid_description", "Check the box to set the app list to grid mode like of PS Vita." },
+        { "skip_lockscreen", "Skip lockscreen area" },
+        { "skip_lockscreen_description", "Check the box to skip lockscreen gui." },
         { "icon_size", "App Icon Size" },
         { "select_icon_size", "Select your preferred icon size." },
         { "completed", "Completed." },
