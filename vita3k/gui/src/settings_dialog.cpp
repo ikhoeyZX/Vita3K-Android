@@ -1283,6 +1283,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::SliderInt(lang.gui["icon_size"].c_str(), &emuenv.cfg.icon_size, 64, 128);
                 SetTooltipEx(lang.gui["select_icon_size"].c_str());
             }
+            ImGui::SameLine();
+            ImGui::Checkbox(lang.gui["skip_lockscreen"].c_str(), &config.skip_lockscreen);
+            SetTooltipEx(lang.gui["skip_lockscreen_description"].c_str());
         }
         ImGui::Spacing();
         ImGui::Separator();
