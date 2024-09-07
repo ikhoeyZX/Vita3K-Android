@@ -419,7 +419,7 @@ void draw_background(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
-   if(emuenv.cfg.screenmode_pos == 3){ // bypass lockscreen
+   if(emuenv.cfg.screenmode_pos == 3 || emuenv.cfg.skip_lockscreen){ // bypass lockscreen
         gui.vita_area.start_screen = false;
         gui.vita_area.home_screen = true;
         if (emuenv.cfg.show_info_bar)
