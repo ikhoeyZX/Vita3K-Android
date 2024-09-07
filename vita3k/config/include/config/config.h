@@ -64,6 +64,7 @@ enum ScreenshotFormat {
     code(bool, "show-mode", false, show_mode)                                                           \
     code(bool, "demo-mode", false, demo_mode)                                                           \
     code(bool, "show-gui", false, show_gui)                                                             \
+    code(bool, "skip-lockscreen", false, skip_lockscreen)                                               \
     code(bool, "show-info-bar", false, show_info_bar)                                                   \
     code(bool, "apps-list-grid", false, apps_list_grid)                                                 \
     code(bool, "display-system-apps", true, display_system_apps)                                        \
@@ -157,7 +158,7 @@ enum ScreenshotFormat {
     code(std::string, "user-lang", std::string{}, user_lang)                                            \
     code(bool, "display-info-message", true, display_info_message)                                      \
     code(bool, "show-welcome", true, show_welcome)                                                      \
-    code(bool, "check-for-updates", false, check_for_updates)                                            \
+    code(bool, "check-for-updates", false, check_for_updates)                                           \
     code(bool, "asia-font-support", false, asia_font_support)                                           \
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
