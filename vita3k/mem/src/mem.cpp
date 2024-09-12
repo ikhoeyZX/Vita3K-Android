@@ -40,7 +40,7 @@
 #include <unistd.h>
 #endif
 
-constexpr uint32_t STANDARD_PAGE_SIZE = KiB(8); // what happen when not 4kb?
+constexpr uint32_t STANDARD_PAGE_SIZE = KiB(16); // what happen when not 4kb?
 uint64_t TOTAL_MEM_SIZE = GiB(4);
 constexpr bool LOG_PROTECT = false;
 constexpr bool PAGE_NAME_TRACKING = false;
@@ -75,7 +75,7 @@ bool init(MemState &state, const bool use_page_table) {
     uint64_t mem_size_tmp = static_cast<int>(SDL_GetSystemRAM());
     mem_size_tmp = mem_size_tmp - (mem_size_tmp / 3);
      //   LOG_DEBUG("Custom Virtual Memory size: {} MB", mem_size_tmp);
-    mem_size_tmp = mem_size_tmp * MB(1);
+    mem_size_tmp = MB(mem_size_tmp);
    // LOG_DEBUG("Custom Virtual Memory size: {} Bytes", mem_size_tmp);
     if(TOTAL_MEM_SIZE > mem_size_tmp){
        LOG_DEBUG("Virtual Memory size too low!, using default value!");
@@ -168,7 +168,7 @@ bool is_valid_addr_range(const MemState &state, Address start, Address end) {
     return state.allocator.free_slot_count(start_page, end_page) == 0;
 }
 
-static Address alloc_inner(MemState &state, uint32_t start_page, int page_count, const char *name, const bool force) {
+Address alloc_inner(MemState &state, uint32_t start_page, int page_count, const char *name, const bool force) { // try remove static
     int page_num;
     if (force) {
         if (state.allocator.allocate_at(start_page, page_count) < 0) {
