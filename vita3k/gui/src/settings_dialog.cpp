@@ -84,7 +84,7 @@ void get_modules_list(GuiState &gui, EmuEnvState &emuenv) {
     }
 }
 
-static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
+void reset_emulator(GuiState &gui, EmuEnvState &emuenv) { // has static
     gui.configuration_menu.settings_dialog = false;
     gui.vita_area.home_screen = false;
 
@@ -105,7 +105,7 @@ static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
     init_home(gui, emuenv);
 }
 
-static void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) {
+void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) { // has stativ
     fs::path emulator_path = "";
     host::dialog::filesystem::Result result = host::dialog::filesystem::pick_folder(emulator_path);
 
@@ -226,12 +226,12 @@ static bool get_custom_config(EmuEnvState &emuenv, const std::string &app_path) 
     return false;
 }
 
-static CPUBackend set_cpu_backend(std::string &cpu_backend) {
+CPUBackend set_cpu_backend(std::string &cpu_backend) { // has static
     return cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
 }
 
 static int current_aniso_filter_log, max_aniso_filter_log, audio_backend_idx, current_user_lang;
-static std::vector<std::string> list_user_lang;
+std::vector<std::string> list_user_lang;  // has static
 
 /**
  * @brief Initialize the `config` struct with the values set in the global emulator config.
@@ -322,7 +322,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
  * @param gui State of the Vita3K GUI
  * @param emuenv State of the emulated PlayStation Vita environment
  */
-static void save_config(GuiState &gui, EmuEnvState &emuenv) {
+void save_config(GuiState &gui, EmuEnvState &emuenv) {  // has static
     if (gui.configuration_menu.custom_settings_dialog) {
         const auto CONFIG_PATH{ emuenv.config_path / "config" };
         const auto CUSTOM_CONFIG_PATH{ CONFIG_PATH / fmt::format("config_{}.xml", emuenv.app_path) };
@@ -430,7 +430,7 @@ std::string get_cpu_backend(GuiState &gui, EmuEnvState &emuenv, const std::strin
     return config.cpu_backend;
 }
 
-static void set_vsync_state(const bool &state) {
+void set_vsync_state(const bool &state) { // has static
     if (state) {
         // Try adaptive vsync first, falling back to regular vsync.
         if (SDL_GL_SetSwapInterval(-1) < 0) {
@@ -765,9 +765,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             "FXAA",
             "FSR"
         };
-        const int filters_available = emuenv.renderer->get_supported_filters();
+        const int8_t filters_available = emuenv.renderer->get_supported_filters();
         std::vector<const char *> filters;
-        for (int i = 0; i < possible_filters.size(); i++) {
+        for (uint8_t i = 0; i < possible_filters.size(); i++) {
             if (config.screen_filter == possible_filters[i])
                 curr_filter = filters.size();
 
@@ -794,7 +794,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
         ImGui::SameLine();
 
-        if(manual==false){
+        if(!manual){
            ImGui::Text(": Slider");
            ImGui::Spacing();
            ImGui::PushID("Res scal");
@@ -849,7 +849,6 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
           }else if(setdph > 4352){
              setdph = 4352;
           }
-          
           float tmp =  static_cast<float>(setdph / 544);
           config.resolution_multiplier = tmp;
           ImGui::Spacing();
@@ -1278,14 +1277,15 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if(emuenv.cfg.screenmode_pos != 3){
             ImGui::Checkbox(lang.gui["apps_list_grid"].c_str(), &emuenv.cfg.apps_list_grid);
             SetTooltipEx(lang.gui["apps_list_grid_description"].c_str());
+            ImGui::SameLine();
+            ImGui::Checkbox(lang.gui["skip_lockscreen"].c_str(), &emuenv.cfg.skip_lockscreen);
+            SetTooltipEx(lang.gui["skip_lockscreen_description"].c_str());
+            ImGui::Spacing();
             if (!emuenv.cfg.apps_list_grid) {
                 ImGui::Spacing();
                 ImGui::SliderInt(lang.gui["icon_size"].c_str(), &emuenv.cfg.icon_size, 64, 128);
                 SetTooltipEx(lang.gui["select_icon_size"].c_str());
             }
-            ImGui::SameLine();
-            ImGui::Checkbox(lang.gui["skip_lockscreen"].c_str(), &emuenv.cfg.skip_lockscreen);
-            SetTooltipEx(lang.gui["skip_lockscreen_description"].c_str());
         }
         ImGui::Spacing();
         ImGui::Separator();
