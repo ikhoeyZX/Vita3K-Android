@@ -40,7 +40,7 @@
 #include <unistd.h>
 #endif
 
-constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
+constexpr uint32_t STANDARD_PAGE_SIZE = KiB(8); // what happen when not 4kb?
 uint64_t TOTAL_MEM_SIZE = GiB(4);
 constexpr bool LOG_PROTECT = false;
 constexpr bool PAGE_NAME_TRACKING = false;
@@ -75,14 +75,14 @@ bool init(MemState &state, const bool use_page_table) {
     uint64_t mem_size_tmp = static_cast<int>(SDL_GetSystemRAM());
     mem_size_tmp = mem_size_tmp - (mem_size_tmp / 3);
      //   LOG_DEBUG("Custom Virtual Memory size: {} MB", mem_size_tmp);
-    mem_size_tmp = mem_size_tmp * 1000000;
+    mem_size_tmp = mem_size_tmp * MB(1);
    // LOG_DEBUG("Custom Virtual Memory size: {} Bytes", mem_size_tmp);
     if(TOTAL_MEM_SIZE > mem_size_tmp){
        LOG_DEBUG("Virtual Memory size too low!, using default value!");
     }else{
        TOTAL_MEM_SIZE = mem_size_tmp;
     }
-    mem_size_tmp = TOTAL_MEM_SIZE / 1000000;
+    mem_size_tmp = TOTAL_MEM_SIZE / MB(1);
     LOG_DEBUG("Virtual Memory size set: {} MB", mem_size_tmp);
     assert(state.page_size >= 4096); // Limit imposed by Unicorn.
     assert(!use_page_table || state.page_size == STANDARD_PAGE_SIZE);
