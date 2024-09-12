@@ -40,24 +40,24 @@
 #include <unistd.h>
 #endif
 
-constexpr uint32_t STANDARD_PAGE_SIZE = KiB(16); // what happen when not 4kb?
+constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
 uint64_t TOTAL_MEM_SIZE = GiB(4);
 constexpr bool LOG_PROTECT = false;
 constexpr bool PAGE_NAME_TRACKING = false;
 
 // TODO: support multiple handlers
-static AccessViolationHandler access_violation_handler;
-static void register_access_violation_handler(const AccessViolationHandler &handler);
+AccessViolationHandler access_violation_handler;
+void register_access_violation_handler(const AccessViolationHandler &handler);
 
-static Address alloc_inner(MemState &state, uint32_t start_page, int page_count, const char *name, const bool force);
-static void delete_memory(uint8_t *memory);
+Address alloc_inner(MemState &state, uint32_t start_page, int page_count, const char *name, const bool force);
+void delete_memory(uint8_t *memory);
 
 #ifdef WIN32
-static std::string get_error_msg() {
+std::string get_error_msg() {
     return std::system_category().message(GetLastError());
 }
 #else
-static std::string get_error_msg() {
+std::string get_error_msg() {
     return strerror(errno);
 }
 #endif
@@ -84,7 +84,7 @@ bool init(MemState &state, const bool use_page_table) {
     }
     mem_size_tmp = TOTAL_MEM_SIZE / MB(1);
     LOG_DEBUG("Virtual Memory size set: {} MB", mem_size_tmp);
-    assert(state.page_size >= 4096); // Limit imposed by Unicorn.
+    assert(state.page_size >= STANDARD_PAGE_SIZE; // Limit imposed by Unicorn.
     assert(!use_page_table || state.page_size == STANDARD_PAGE_SIZE);
 
     void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
@@ -146,7 +146,7 @@ bool init(MemState &state, const bool use_page_table) {
     return true;
 }
 
-static void delete_memory(uint8_t *memory) {
+void delete_memory(uint8_t *memory) {
     if (memory != nullptr) {
 #ifdef WIN32
         const BOOL ret = VirtualFree(memory, 0, MEM_RELEASE);
@@ -168,7 +168,7 @@ bool is_valid_addr_range(const MemState &state, Address start, Address end) {
     return state.allocator.free_slot_count(start_page, end_page) == 0;
 }
 
-Address alloc_inner(MemState &state, uint32_t start_page, int page_count, const char *name, const bool force) { // try remove static
+Address alloc_inner(MemState &state, uint32_t start_page, int page_count, const char *name, const bool force) {
     int page_num;
     if (force) {
         if (state.allocator.allocate_at(start_page, page_count) < 0) {
@@ -231,7 +231,7 @@ Address alloc_aligned(MemState &state, uint32_t size, const char *name, unsigned
     return align_addr;
 }
 
-static void align_to_page(MemState &state, Address &addr, Address &size) {
+void align_to_page(MemState &state, Address &addr, Address &size) {
     const Address end = align(addr + size, state.page_size);
     addr = align_down(addr, state.page_size);
     size = end - addr;
@@ -554,7 +554,7 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
 
 #else
 
-static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
+void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     auto context = static_cast<ucontext_t *>(uct);
 
 #ifdef __aarch64__
@@ -600,7 +600,7 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     return;
 }
 
-static void register_access_violation_handler(const AccessViolationHandler &handler) {
+void register_access_violation_handler(const AccessViolationHandler &handler) {
     access_violation_handler = handler;
     struct sigaction sa;
     sa.sa_flags = SA_SIGINFO;
