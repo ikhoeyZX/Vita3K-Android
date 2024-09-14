@@ -39,7 +39,7 @@
 #ifdef ANDROID
 #include <jni.h>
 
-static void create_shortcut(const std::string_view game_path, const std::string_view game_id, const std::string_view game_name){
+void create_shortcut(const std::string_view game_path, const std::string_view game_id, const std::string_view game_name){
     // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
 
@@ -74,7 +74,7 @@ namespace gui {
 
 static std::map<double, std::string> update_history_infos;
 
-static bool get_update_history(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+bool get_update_history(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     update_history_infos.clear();
     const auto change_info_path{ emuenv.pref_path / "ux0/app" / app_path / "sce_sys/changeinfo/" };
 
@@ -136,7 +136,7 @@ std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, EmuEnvState &em
     return time_app_index;
 }
 
-static std::string get_time_app_used(GuiState &gui, const int64_t &time_used) {
+std::string get_time_app_used(GuiState &gui, const int64_t &time_used) {
     constexpr uint32_t one_min = 60;
     constexpr uint32_t one_hour = one_min * 60;
     constexpr uint32_t twenty_four_hours = 24;
@@ -195,7 +195,7 @@ void get_time_apps(GuiState &gui, EmuEnvState &emuenv) {
     }
 }
 
-static void save_time_apps(GuiState &gui, EmuEnvState &emuenv) {
+void save_time_apps(GuiState &gui, EmuEnvState &emuenv) {
     pugi::xml_document time_xml;
     auto declarationUser = time_xml.append_child(pugi::node_declaration);
     declarationUser.append_attribute("version") = "1.0";
@@ -582,11 +582,11 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     if (!context_dialog.empty()) {
         ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
-        ImGui::BeginChild("##context_dialog_child", WINDOW_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin("##context_dialog", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetNextWindowBgAlpha(0.999f);
         ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2.f), emuenv.viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
-        ImGui::BeginChild("##context_dialog_child", WINDOW_SIZE, ImGuiChildFlags_Border, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("##context_dialog_child", WINDOW_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
         // Update History
         if (context_dialog == "history") {
