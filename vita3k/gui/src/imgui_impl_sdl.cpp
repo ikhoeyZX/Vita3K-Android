@@ -29,14 +29,14 @@
 #include <SDL_vulkan.h>
 
 static char *clipboard_text_data = nullptr;
-static const char *ImGui_ImplSdl_GetClipboardText(void *) {
+const char *ImGui_ImplSdl_GetClipboardText(ImGuiContext *) {
     if (clipboard_text_data)
         SDL_free(clipboard_text_data);
     clipboard_text_data = SDL_GetClipboardText();
     return clipboard_text_data;
 }
 
-static void ImGui_ImplSdl_SetClipboardText(void *, const char *text) {
+void ImGui_ImplSdl_SetClipboardText(ImGuiContext *, const char *text) {
     SDL_SetClipboardText(text);
 }
 
@@ -280,8 +280,11 @@ IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window 
 
     state->MouseCanUseGlobalState = mouse_can_use_global_state;
 
-    io.SetClipboardTextFn = ImGui_ImplSdl_SetClipboardText;
-    io.GetClipboardTextFn = ImGui_ImplSdl_GetClipboardText;
+    ImGuiPlatformIO &platform_io = ImGui::GetPlatformIO();
+    platform_io.Platform_SetClipboardTextFn = ImGui_ImplSdl_SetClipboardText;
+    platform_io.Platform_GetClipboardTextFn = ImGui_ImplSdl_GetClipboardText;
+    platform_io.Platform_ClipboardUserData = nullptr;
+    platform_io.Platform_SetImeDataFn = nullptr;
 
     // Load mouse cursors
     state->MouseCursors[ImGuiMouseCursor_Arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
