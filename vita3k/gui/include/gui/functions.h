@@ -116,7 +116,7 @@ void set_controller_overlay_opacity(int opacity);
 int get_overlay_display_mask(const Config &cfg);
 
 void draw_begin(GuiState &gui, EmuEnvState &emuenv);
-void draw_end(GuiState &emuenv);
+void draw_end(GuiState &gui);
 void draw_vita_area(GuiState &gui, EmuEnvState &emuenv);
 void draw_ui(GuiState &gui, EmuEnvState &emuenv);
 
