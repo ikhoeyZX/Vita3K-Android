@@ -117,9 +117,9 @@ void restride_stream(const uint8_t *&stream, uint32_t &size, uint32_t stride) {
 #endif
 
 // when needed, how many descriptor of the given size we allocate for each frame at once
-static constexpr uint32_t DESCRIPTOR_PACK_SIZE = 64;
+constexpr uint32_t DESCRIPTOR_PACK_SIZE = 64;
 
-static vk::DescriptorSet retrieve_descriptor(VKContext &context, bool is_vertex, uint16_t textures_count) {
+vk::DescriptorSet retrieve_descriptor(VKContext &context, bool is_vertex, uint16_t textures_count) {
     if (textures_count == 0)
         return context.empty_set;
 
@@ -152,7 +152,7 @@ static vk::DescriptorSet retrieve_descriptor(VKContext &context, bool is_vertex,
     auto descriptor_sets = state.device.allocateDescriptorSets(descr_set_info);
 
     // distribute them among all frames
-    for (int frame_idx = 0; frame_idx < MAX_FRAMES_RENDERING; frame_idx++) {
+    for (uint8_t frame_idx = 0; frame_idx < MAX_FRAMES_RENDERING; frame_idx++) {
         FrameObject &frame_object = state.frames[frame_idx];
         FrameDescriptor &frame_descr = is_vertex ? frame_object.vert_descriptors[textures_count - 1] : frame_object.frag_descriptors[textures_count - 1];
 
@@ -254,17 +254,17 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
     VertexProgram *vkvert = vertex_program.renderer_data.get();
 
-    int max_stream_idx = -1;
+    uint32_t max_stream_idx = 0;
 
     for (const SceGxmVertexAttribute &attribute : vertex_program.attributes) {
         if (!vkvert->attribute_infos.contains(attribute.regIndex))
             continue;
-        max_stream_idx = std::max<int>(max_stream_idx, attribute.streamIndex);
+        max_stream_idx = std::max<uint32_t>(max_stream_idx, attribute.streamIndex);
     }
     max_stream_idx++;
 
     if(context.state.mapping_method == MappingMethod::DoubleBuffer){
-        for(int i = 0; i < max_stream_idx; i++)
+        for(uint32_t i = 0; i < max_stream_idx; i++)
             state.vertex_streams[i].size = 0;
 
         // same as in SceGxm.cpp
@@ -278,7 +278,7 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
             state.vertex_streams[attribute.streamIndex].size = std::max<size_t>(state.vertex_streams[attribute.streamIndex].size, data_length);
         }
 
-        for(int i = 0; i < max_stream_idx; i++){
+        for(uint32_t i = 0; i < max_stream_idx; i++){
             if (state.vertex_streams[i].data)
                 // on the PS Vita, shader stores are used most of the time to write to a vertex buffer
                 context.state.buffer_trapping.access_buffer(state.vertex_streams[i].data.address(), static_cast<uint32_t>(state.vertex_streams[i].size), mem, context.state.has_shader_store);
@@ -288,7 +288,7 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
     if (max_stream_idx == 0)
         return;
 
-    for (int i = 0; i < max_stream_idx; i++) {
+    for (uint32_t i = 0; i < max_stream_idx; i++) {
         if (state.vertex_streams[i].data) {
             if (context.state.features.enable_memory_mapping) {
                 auto [buffer, offset] = context.state.get_matching_mapping(state.vertex_streams[i].data.cast<void>());
