@@ -29,8 +29,8 @@ namespace renderer::vulkan {
 struct VKState;
 struct VKRenderTarget;
 
-constexpr int MAX_FRAMES_RENDERING = 3;
-constexpr int NB_TEXTURE_STAGING_BUFFERS = 16;
+constexpr uint8_t MAX_FRAMES_RENDERING = 3;
+constexpr uint8_t NB_TEXTURE_STAGING_BUFFERS = 16;
 
 struct TextureStagingBuffer {
     vkutil::Buffer buffer;
