@@ -24,7 +24,6 @@
 #include <cassert>
 #include <functional>
 #include <string>
-#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -33,8 +32,7 @@
 #undef VMIN
 #endif
 
-namespace shader {
-namespace usse {
+namespace shader::usse {
 
 enum class Opcode {
 #define OPCODE(n) n,
@@ -104,6 +102,7 @@ inline ExtPredicate ext_vec_predicate_to_ext(ExtVecPredicate pred) {
         // TODO
         assert(false);
         LOG_CRITICAL("ExtVecPredicate::NEGP2 case hit, report this to devs.");
+        [[fallthrough]];
     default:
         return ExtPredicate::NONE;
     }
@@ -447,8 +446,7 @@ enum class ShaderPhase {
     Max,
 };
 
-} // namespace usse
-} // namespace shader
+} // namespace shader::usse
 
 namespace std {
 
