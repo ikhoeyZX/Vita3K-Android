@@ -27,6 +27,8 @@
 
 #include <cstdint>
 #include <io/vfs.h>
+
+#include <cstdint>
 #include <string>
 #include <utility> // pair
 #include <vector>
