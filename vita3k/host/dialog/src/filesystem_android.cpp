@@ -115,9 +115,7 @@ static void call_dialog_java_function(const char* name, bool need_write){
         SDL_Delay(10);
 }
 
-namespace host {
-namespace dialog {
-namespace filesystem {
+namespace host::dialog::filesystem {
 Result open_file(fs::path &resulting_path, const std::vector<FileFilter>& file_filters, const fs::path& default_path) {
     call_dialog_java_function("showFileDialog", false);
 
@@ -165,6 +163,4 @@ FILE *resolve_host_handle(const fs::path &path) {
     }
 }
 
-} // namespace filesystem
-} // namespace dialog
-} // namespace host
+} // namespace host::dialog::filesystem
