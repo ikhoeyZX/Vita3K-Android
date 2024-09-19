@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <codec/state.h>
-#include <codec/types.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -392,7 +391,7 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
 
         switch (frame->format) {
         case AV_PIX_FMT_YUVJ444P:
-            for (int i = 0; i < 3; i++) {
+            for (uint8_t i = 0; i < 3; i++) {
                 channel_info[i] = { 1, 1, total_size * i };
             }
             this->color_space_out = COLORSPACE_YUV444P;
