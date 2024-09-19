@@ -22,7 +22,7 @@
 #include <kernel/state.h>
 #include <kernel/thread/thread_state.h>
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 namespace gui {
 
@@ -36,7 +36,7 @@ void draw_thread_details_dialog(GuiState &gui, EmuEnvState &emuenv) {
     uint32_t sp = read_sp(cpu);
     uint32_t lr = read_lr(cpu);
     uint32_t registers[13];
-    for (size_t a = 0; a < 13; a++)
+    for (uint8_t a = 0; a < 13; a++)
         registers[a] = read_reg(cpu, a);
 
     // TODO: Add THUMB/ARM mode viewer. What arch is the cpu currently using?
@@ -48,12 +48,12 @@ void draw_thread_details_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Text("LR: %08x", lr);
     ImGui::Text("Executing: %s", disassemble(cpu, pc).c_str());
     ImGui::Separator();
-    for (int a = 0; a < 6; a++) {
+    for (uint8_t a = 0; a < 6; a++) {
         ImGui::Text("r%02i: %08x   r%02i: %08x", a, registers[a], a + 6, registers[a + 6]);
     }
     ImGui::Text("r12: %08x", registers[12]);
     ImGui::Separator();
-    for (int i = 0; i < 15; i++) {
+    for (uint8_t i = 0; i < 15; i++) {
         ImGui::Text("Stack %d: %08x", i, *Ptr<uint32_t>(sp + i * 4).get(emuenv.mem));
     }
 
@@ -67,8 +67,7 @@ void draw_threads_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
 
-    for (const auto &thread : emuenv.kernel.threads) {
-        std::shared_ptr<ThreadState> th_state = thread.second;
+    for (const auto &[id, th_state] : emuenv.kernel.threads) {
         std::string run_state;
         switch (th_state->status) {
         case ThreadStatus::run:
@@ -84,9 +83,9 @@ void draw_threads_dialog(GuiState &gui, EmuEnvState &emuenv) {
             run_state = "Suspended";
         }
         if (ImGui::Selectable(fmt::format("{:0>8X}         {:<32}   {:<16}   {:0>8X}",
-                thread.first, th_state->name, run_state, th_state->stack.get())
+                id, th_state->name, run_state, th_state->stack.get())
                                   .c_str())) {
-            gui.thread_watch_index = thread.first;
+            gui.thread_watch_index = id;
             gui.debug_menu.thread_details_dialog = true;
         }
     }
