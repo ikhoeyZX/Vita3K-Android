@@ -69,7 +69,7 @@ struct AudioInPort {
 };
 
 struct AudioSpec {
-    uint32_t freq;
+    int freq;
     // number of samples to be processed per callback per channel
     uint32_t nb_samples = 0;
     // value for silence
