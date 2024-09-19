@@ -35,9 +35,7 @@
 #undef ERROR
 #endif
 
-namespace host {
-namespace dialog {
-namespace filesystem {
+namespace host::dialog::filesystem {
 
 /**
  * @brief Result IDs for filesystem-related dialogs
@@ -115,8 +113,4 @@ FILE *resolve_host_handle(const fs::path &path);
  */
 std::string get_error();
 
-} // namespace filesystem
-
-} // namespace dialog
-
-} // namespace host
+} // namespace host::dialog::filesystem
