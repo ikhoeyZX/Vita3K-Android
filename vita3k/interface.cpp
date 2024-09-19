@@ -17,11 +17,13 @@
 
 #include "interface.h"
 
+#include <app/functions.h>
 #include "module/load_module.h"
 
 #include <config/state.h>
 #include <ctrl/functions.h>
 #include <ctrl/state.h>
+#include <dialog/state.h>
 #include <display/functions.h>
 #include <display/state.h>
 #include <gui/functions.h>
@@ -825,7 +827,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
 
 ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv) {
     if (load_app_impl(main_module_id, emuenv) != Success) {
-        std::string message = fmt::format(fmt::runtime(emuenv.common_dialog.lang.message["load_app_failed"].c_str()), emuenv.pref_path / "ux0/app" / emuenv.io.app_path / emuenv.self_path);
+        std::string message = fmt::format(fmt::runtime(emuenv.common_dialog.lang.message["load_app_failed"]), emuenv.pref_path / "ux0/app" / emuenv.io.app_path / emuenv.self_path);
         app::error_dialog(message, emuenv.window.get());
         return ModuleLoadFailed;
     }
