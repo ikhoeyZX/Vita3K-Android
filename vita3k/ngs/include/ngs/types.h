@@ -27,7 +27,6 @@ struct SwrContext;
 
 namespace ngs {
 struct Voice;
-struct Rack;
 struct VoiceDefinition;
 } // namespace ngs
 
