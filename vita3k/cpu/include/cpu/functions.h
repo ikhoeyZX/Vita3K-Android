@@ -23,6 +23,7 @@
 #include <cpu/common.h>
 
 #include <cstdint>
+struct MemState;
 
 CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, bool cpu_unsafe, SceUID thread_id, std::size_t processor_id, MemState &mem, CPUProtocolBase *protocol);
 int run(CPUState &state);
