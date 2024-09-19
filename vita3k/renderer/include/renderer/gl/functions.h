@@ -20,13 +20,11 @@
 #include <config/state.h>
 #include <glutil/object.h>
 #include <gxm/types.h>
-#include <util/hash.h>
 
 #include <renderer/gl/state.h>
 #include <renderer/gl/types.h>
 
 #include <memory>
-#include <string>
 
 struct MemState;
 struct FeatureState;
