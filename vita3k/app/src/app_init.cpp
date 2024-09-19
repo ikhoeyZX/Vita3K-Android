@@ -32,7 +32,6 @@
 #include <renderer/state.h>
 
 #include <renderer/functions.h>
-#include <rtc/rtc.h>
 #include <util/fs.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
@@ -43,8 +42,6 @@
 #endif
 
 #include <gdbstub/functions.h>
-
-#include <renderer/vulkan/functions.h>
 
 #include <SDL.h>
 #include <SDL_video.h>
