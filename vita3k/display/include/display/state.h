@@ -17,15 +17,15 @@
 
 #pragma once
 
-#include <atomic>
 #include <kernel/callback.h>
 #include <mem/ptr.h>
+#include <util/types.h>
+
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <thread>
 #include <vector>
-
-#include <util/types.h>
 
 enum SceDisplayPixelFormat {
     SCE_DISPLAY_PIXELFORMAT_A8B8G8R8 = 0x00000000U
@@ -78,7 +78,7 @@ struct DisplayState {
     // should contain the list of sync objects / swapchain images (in the order they appear in the cycle)
     std::vector<PredictedDisplayFrame> predicted_frames;
     // position in the predicted_frame cycle (the -1 is needed)
-    uint32_t predicted_frame_position = -1;
+    int32_t predicted_frame_position = -1;
     // how many times the same predicted_frames cycle has been seen (if it is below some threshold, do not predict the frame)
     uint32_t predicted_cycles_seen = 0;
     // should the next call to sceDisplaySetFrameBuf do something
