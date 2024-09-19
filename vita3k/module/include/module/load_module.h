@@ -22,9 +22,10 @@
 
 #include <array>
 #include <map>
+#include <string>
 #include <vector>
 
-static constexpr auto SYSMODULE_COUNT = 0x56;
+constexpr auto SYSMODULE_COUNT = 0x56;
 
 using SysmodulePaths = std::array<std::vector<const char *>, SYSMODULE_COUNT>;
 using SysmoduleInternalPaths = std::map<SceSysmoduleInternalModuleId, std::vector<const char *>>;
