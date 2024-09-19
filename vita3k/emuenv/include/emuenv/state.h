@@ -18,12 +18,11 @@
 #pragma once
 
 #include <emuenv/window.h>
+#include <util/fs.h>
 
 #include <memory>
 #include <set>
 #include <string>
-
-#include <util/fs.h>
 
 // forward declare everything used in EmuEnvState
 namespace sfo {
@@ -131,10 +130,10 @@ public:
     SceUID main_thread_id{};
     size_t frame_count = 0;
     uint32_t sdl_ticks = 0;
-    uint32_t fps = 0;
-    uint32_t avg_fps = 0;
-    uint32_t min_fps = 0;
-    uint32_t max_fps = 0;
+    uint16_t fps = 0;
+    uint16_t avg_fps = 0;
+    uint16_t min_fps = 0;
+    uint16_t max_fps = 0;
     float fps_values[20] = {};
     uint32_t current_fps_offset = 0;
     uint32_t ms_per_frame = 0;
