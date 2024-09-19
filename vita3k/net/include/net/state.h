@@ -23,7 +23,8 @@
 
 #include <array>
 
-struct Socket;
+#include <map>
+#include <mutex>
 
 typedef std::map<int, SocketPtr> NetSockets;
 typedef std::map<int, EpollPtr> NetEpolls;
