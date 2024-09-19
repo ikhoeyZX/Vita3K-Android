@@ -27,7 +27,6 @@
 #include <host/dialog/filesystem.h>
 #include <packages/sce_types.h>
 #include <util/fs.h>
-#include <util/string_utils.h>
 
 #include <algorithm>
 #include <fstream>
