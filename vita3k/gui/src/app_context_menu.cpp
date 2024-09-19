@@ -19,6 +19,7 @@
 
 #include <config/state.h>
 #include <config/version.h>
+#include <dialog/state.h>
 #include <gui/functions.h>
 #include <include/cpu.h>
 #include <include/environment.h>
@@ -147,26 +148,26 @@ std::string get_time_app_used(GuiState &gui, const int64_t &time_used) {
     auto &lang = gui.lang.app_context.time_used;
 
     if (time_used < one_min)
-        return fmt::format(fmt::runtime(lang["time_used_seconds"].c_str()), time_used);
+        return fmt::format(fmt::runtime(lang["time_used_seconds"]), time_used);
     else {
         const std::chrono::seconds sec(time_used);
         const uint32_t minutes = std::chrono::duration_cast<std::chrono::minutes>(sec).count() % one_min;
         const uint32_t seconds = sec.count() % one_min;
         if (time_used < one_hour)
-            return fmt::format(fmt::runtime(lang["time_used_minutes"].c_str()), minutes, seconds);
+            return fmt::format(fmt::runtime(lang["time_used_minutes"]), minutes, seconds);
         else {
             const uint32_t count_hours = std::chrono::duration_cast<std::chrono::hours>(sec).count();
             if (time_used < one_day)
-                return fmt::format(fmt::runtime(lang["time_used_hours"].c_str()), count_hours, minutes, seconds);
+                return fmt::format(fmt::runtime(lang["time_used_hours"]), count_hours, minutes, seconds);
             else {
                 const uint32_t count_days = count_hours / twenty_four_hours;
                 const uint32_t hours_per_day = count_hours - (count_days * twenty_four_hours);
                 if (time_used < one_week)
-                    return fmt::format(fmt::runtime(lang["time_used_days"].c_str()), count_days, hours_per_day, minutes, seconds);
+                    return fmt::format(fmt::runtime(lang["time_used_days"]), count_days, hours_per_day, minutes, seconds);
                 else {
                     const uint32_t count_weeks = count_days / seven_days;
                     const uint32_t count_days_week = count_days - (count_weeks * seven_days);
-                    return fmt::format(fmt::runtime(lang["time_used_weeks"].c_str()), count_weeks, count_days_week, hours_per_day, minutes, seconds);
+                    return fmt::format(fmt::runtime(lang["time_used_weeks"]), count_weeks, count_days_week, hours_per_day, minutes, seconds);
                 }
             }
         }
@@ -339,7 +340,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     const auto SHADER_LOG_PATH{ emuenv.cache_path / "shaderlog" / title_id };
     const auto EXPORT_TEXTURES_PATH{ emuenv.shared_path / "textures/export" / title_id };
     const auto IMPORT_TEXTURES_PATH{ emuenv.shared_path / "textures/import" / title_id };
-    const auto ISSUES_URL = "https://github.com/Vita3K/compatibility/issues";
+    constexpr auto ISSUES_URL = "https://github.com/Vita3K/compatibility/issues";
 
     const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
