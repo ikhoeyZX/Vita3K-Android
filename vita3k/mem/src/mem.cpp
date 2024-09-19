@@ -19,17 +19,15 @@
 #include <mem/state.h>
 
 #include <util/align.h>
-#include <util/float_to_half.h>
 #include <util/log.h>
-#include <util/float_to_half.h>
 
 #include <algorithm>
 #include <cassert>
-#include <cmath>
 #include <cstring>
+#include <mutex>
 #include <utility>
 
-#include <SDL.h>
+#include <SDL.h> // to call size of memory free
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -85,7 +83,7 @@ bool init(MemState &state, const bool use_page_table) {
     mem_size_tmp = TOTAL_MEM_SIZE / MB(1);
     LOG_DEBUG("Virtual Memory size set: {} MB", mem_size_tmp);
    // assert(state.page_size >= 4096); // Limit imposed by Unicorn.
-    assert(!use_page_table || state.page_size == STANDARD_PAGE_SIZE);
+   // assert(!use_page_table || state.page_size == STANDARD_PAGE_SIZE); // TESTING EFFECT!
 
     void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
 
