@@ -15,27 +15,21 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <cpu/functions.h>
-#include <cpu/impl/interface.h>
-
 #include <cpu/disasm/functions.h>
-#include <cpu/disasm/state.h>
-#include <mem/ptr.h>
-#include <util/log.h>
-#include <util/types.h>
+#include <cpu/functions.h>
 
 #ifdef USE_DYNARMIC
 #include <cpu/impl/dynarmic_cpu.h>
 #endif
+#include <cpu/impl/interface.h>
 #ifdef USE_UNICORN
 #include <cpu/impl/unicorn_cpu.h>
 #endif
-
-#include <cassert>
 #include <cpu/state.h>
-#include <cstring>
-
-#include <util/string_utils.h>
+#include <mem/ptr.h>
+#include <util/types.h>
+#include <memory>
+#include <string>
 
 static void delete_cpu_state(CPUState *state) {
     delete state;
