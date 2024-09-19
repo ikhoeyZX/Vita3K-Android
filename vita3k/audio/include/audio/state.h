@@ -47,10 +47,10 @@ struct AudioOutPort {
     uint64_t last_output = 0;
 
     // current config
-    int16_t type = 0;
-    int32_t len = 0;
-    uint32_t freq = 0;
-    int16_t mode = 0;
+    int type = 0;
+    int len = 0;
+    int freq = 0;
+    int mode = 0;
 
     std::mutex mutex;
     // stream to get the data
