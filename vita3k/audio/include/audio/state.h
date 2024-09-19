@@ -35,22 +35,22 @@ typedef std::function<void(SceUID)> ResumeAudioThread;
 
 struct AudioOutPort {
     // Channel range from 0 - 32768
-    int left_channel_volume = SCE_AUDIO_VOLUME_0DB;
-    int right_channel_volume = SCE_AUDIO_VOLUME_0DB;
+    uint16_t left_channel_volume = SCE_AUDIO_VOLUME_0DB;
+    uint16_t right_channel_volume = SCE_AUDIO_VOLUME_0DB;
     // Volume range from 0 to 1
     float volume = 1.0f;
     // length of the buffer for each call
-    int len_bytes = 0;
+    int32_t len_bytes = 0;
     // number of microseconds a buffer lasts for
     uint64_t len_microseconds = 0;
     // last time sceAudioOutOutput was called with this port (timestamp in microseconds)
     uint64_t last_output = 0;
 
     // current config
-    int type = 0;
-    int len = 0;
-    int freq = 0;
-    int mode = 0;
+    int16_t type = 0;
+    int32_t len = 0;
+    uint32_t freq = 0;
+    int16_t mode = 0;
 
     std::mutex mutex;
     // stream to get the data
@@ -65,13 +65,13 @@ typedef std::map<int, AudioOutPortPtr> AudioOutPortPtrs;
 struct AudioInPort {
     SDL_AudioDeviceID id;
     bool running = false;
-    int len_bytes = 0;
+    int32_t len_bytes = 0;
 };
 
 struct AudioSpec {
-    int freq;
+    uint32_t freq;
     // number of samples to be processed per callback per channel
-    int nb_samples = 0;
+    uint32_t nb_samples = 0;
     // value for silence
     uint8_t silence;
 };
@@ -113,7 +113,7 @@ struct AudioState {
     // the adapter must be before out_ports for the destructors to work correctly
     std::unique_ptr<AudioAdapter> adapter;
     std::mutex mutex;
-    int next_port_id = 1;
+    uint16_t next_port_id = 1;
     AudioOutPortPtrs out_ports;
     AudioInPort in_port;
     ResumeAudioThread resume_thread;
