@@ -14,7 +14,7 @@ add_library(
 )
 
 target_include_directories(util PUBLIC include)
-target_link_libraries(util PUBLIC ${Boost_LIBRARIES} config fmt spdlog http mem)
+target_link_libraries(util PUBLIC ${Boost_LIBRARIES} fmt spdlog http mem)
 target_link_libraries(util PRIVATE libcurl crypto)
 target_compile_definitions(util PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:TRACY_ENABLE>)
 target_link_libraries(util PRIVATE sdl2)
