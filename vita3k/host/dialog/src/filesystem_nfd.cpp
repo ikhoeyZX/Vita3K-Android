@@ -64,9 +64,7 @@ std::string format_file_filter_extension_list(const std::vector<std::string> &fi
     return formatted_string;
 }
 
-namespace host {
-namespace dialog {
-namespace filesystem {
+namespace host::dialog::filesystem {
 Result open_file(fs::path &resulting_path, const std::vector<FileFilter>& file_filters, const fs::path& default_path) {
     // Initialize NFD
     NFD::Guard nfd_guard;
@@ -217,6 +215,4 @@ FILE *resolve_host_handle(const fs::path &path) {
     return result;
 }
 
-} // namespace filesystem
-} // namespace dialog
-} // namespace host
+} // namespace host::dialog::filesystem
