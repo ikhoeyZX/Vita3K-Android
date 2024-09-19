@@ -30,7 +30,6 @@
 #include <display/state.h>
 #include <shader/spirv_recompiler.h>
 #include <util/align.h>
-#include <util/float_to_half.h>
 #include <util/log.h>
 #include <vkutil/vkutil.h>
 
