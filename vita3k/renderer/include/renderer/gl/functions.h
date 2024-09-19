@@ -72,7 +72,6 @@ void bind_fundamental(GLContext &context);
 void clear_previous_uniform_storage(GLContext &context);
 
 struct GLTextureCacheState;
-struct TextureCacheState;
 
 // Attribute formats.
 GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format);
