@@ -24,6 +24,7 @@
 
 #include <boost/algorithm/string/trim.hpp>
 #include <config/state.h>
+#include <dialog/state.h>
 #include <display/state.h>
 #include <io/VitaIoDevice.h>
 #include <io/state.h>
@@ -36,7 +37,6 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#include <SDL_video.h>
 #include <imgui_internal.h>
 
 #define STB_IMAGE_IMPLEMENTATION
