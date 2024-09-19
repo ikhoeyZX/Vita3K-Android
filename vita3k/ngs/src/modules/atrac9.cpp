@@ -17,7 +17,6 @@
 
 #include <ngs/modules/atrac9.h>
 #include <util/bytes.h>
-#include <util/log.h>
 
 extern "C" {
 #include <libswresample/swresample.h>
