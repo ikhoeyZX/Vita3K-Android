@@ -26,7 +26,6 @@
 #include <openssl/evp.h>
 #include <rif2zrif.h>
 
-#include <io/device.h>
 #include <io/functions.h>
 
 #include <config/state.h>
@@ -39,7 +38,6 @@
 
 #include <util/bytes.h>
 #include <util/log.h>
-#include <util/string_utils.h>
 
 // Credits to mmozeiko https://github.com/mmozeiko/pkg2zip
 
