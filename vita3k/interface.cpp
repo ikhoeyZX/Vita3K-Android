@@ -54,6 +54,9 @@
 
 #include <gdbstub/functions.h>
 
+#include <glad/glad.h>
+
+
 #if USE_DISCORD
 #include <app/discord.h>
 #endif
