@@ -21,8 +21,6 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 }
 
-#include <util/log.h>
-
 uint32_t DecoderState::get(DecoderQuery query) {
     return 0;
 }
