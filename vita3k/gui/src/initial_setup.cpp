@@ -18,6 +18,7 @@
 #include "private.h"
 
 #include <config/state.h>
+#include <dialog/state.h>
 #include <gui/functions.h>
 #include <host/dialog/filesystem.h>
 #include <lang/functions.h>
@@ -105,7 +106,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetCursorPosY(94.f * SCALE.y);
     ImGui::Separator();
 #ifdef ANDROID
-        const char* path_warning = "Using a different path requires additional permissions";
+        constexpr char* path_warning = "Using a different path requires additional permissions";
 #endif
     switch (setup) {
     case SELECT_LANGUAGE:
