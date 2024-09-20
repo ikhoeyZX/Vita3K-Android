@@ -24,7 +24,7 @@ extern "C" {
 #include <util/log.h>
 
 uint32_t DecoderState::get(DecoderQuery query) {
-    LOG_TRACE("DecoderQuery DATA: {}", query;
+    LOG_TRACE("DecoderQuery DATA: {}", query);
     return 0;
 }
 
