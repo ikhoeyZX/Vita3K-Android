@@ -387,7 +387,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopTextWrapPos();
     }else if (emuenv.ctrl.has_motion_support) {
         ImGui::Spacing();
-        if (ImGui::Checkbox("Disable Motion", &emuenv.cfg.disable_motion))
+        if (ImGui::Checkbox(lang["motion"].c_str(), &emuenv.cfg.disable_motion))
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         ImGui::PushTextWrapPos(ImGui::GetWindowWidth() - (ImGui::GetStyle().WindowPadding.x * 2.f));
         ImGui::PopTextWrapPos();
