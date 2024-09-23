@@ -45,7 +45,6 @@ Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobj
         LOG_CRITICAL("Could not create overlay virtual controller");
         return;
     }
-    LOG_TRACE("Virtual Joystick : {}", virtual_joystick_id );
 
     virtual_joystick = SDL_JoystickOpen(virtual_joystick_id);
     if (virtual_joystick == nullptr)
@@ -101,10 +100,8 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
     bool found_accel = false;
     for (ControllerList::iterator controller = state.controllers.begin(); controller != state.controllers.end();) {
             if (SDL_GameControllerGetAttached(controller->second.controller.get())) {
-                if(emuenv.cfg.tiltsens){
                    found_accel |= controller->second.has_accel;
                    found_gyro |= controller->second.has_gyro;
-                }
                 ++controller;
             } else {
                 state.free_ports[controller->second.port - 1] = true;
@@ -124,26 +121,33 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
 #ifdef ANDROID
             // for whatever reasons, fingerprint sensors are detected as controllers, filter them out
             const char *controller_name = SDL_GameControllerNameForIndex(joystick_index);
-            LOG_TRACE("Virtual Controller Name get: {}", controller_name);
+
             if (controller_name != nullptr && 
                 (std::string_view(controller_name).starts_with("uinput-")
                 || std::string_view(controller_name).starts_with("gf_")))
                 continue;
 #endif
+            LOG_TRACE("CONTROLLER guid: {}". guid);
+            LOG_TRACE("CONTROLLER name: {}", controller_name);
+            LOG_TRACE("Virtual CONTROLLER id: {}". virtual_joystick_id);
+            
+            
             if (!state.controllers.contains(guid)) {
                 Controller new_controller;
                 const GameControllerPtr controller(SDL_GameControllerOpen(joystick_index), SDL_GameControllerClose);
                 new_controller.controller = controller;
                 new_controller.port = reserve_port(state);
 
-                if(emuenv.cfg.tiltsens){
+               if(!emuenv.cfg.tiltsens  && (std::string_view(controller_name).starts_with("Virtual Controller"){ 
+                   // skip
+               }else{
                    new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
                    if (new_controller.has_gyro)
                        SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_TRUE);
                    new_controller.has_accel = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_ACCEL);
                    if (new_controller.has_accel)
                        SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_TRUE);
-                }
+               }
                 
                 new_controller.has_led = SDL_GameControllerHasLED(controller.get());
                 if (new_controller.has_led) {
@@ -154,14 +158,18 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                     }
                 }
 
-                if(emuenv.cfg.tiltsens){
+                if(emuenv.cfg.tiltsens  && (std::string_view(controller_name).starts_with("Virtual Controller"){ 
                    found_gyro |= new_controller.has_gyro;
                    found_accel |= new_controller.has_accel;
                    LOG_INFO("Built-in accel and gyro sensor enabled");
-                }else{
+                }else if(!emuenv.cfg.tiltsens  && (std::string_view(controller_name).starts_with("Virtual Controller"){ 
                    found_gyro = false;
                    found_accel = false;
                    LOG_INFO("Built-in accel and gyro sensor disabled in settings!, goto configuration > settings > emulator menu to enable it");
+                }else{
+                   found_gyro |= new_controller.has_gyro;
+                   found_accel |= new_controller.has_accel;
+                   LOG_INFO("USB controller accel and gyro sensor enabled");
                 }
                 
                 state.controllers.emplace(guid, new_controller);
