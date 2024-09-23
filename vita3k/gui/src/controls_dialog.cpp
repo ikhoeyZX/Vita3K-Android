@@ -149,10 +149,12 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 
     if(emuenv.cfg.enable_gamepad_overlay){
-       ImGui::Checkbox(lang["sensor_enable"].c_str(), &emuenv.cfg.tiltsens);
+       if(ImGui::Checkbox(lang["sensor_enable"].c_str(), &emuenv.cfg.tiltsens))
+           config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
        SetTooltipEx(lang["sensors_description"].c_str());
        if (emuenv.cfg.tiltsens){
-           ImGui::Checkbox(lang["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro);
+           if(ImGui::Checkbox(lang["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro))
+               config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
            SetTooltipEx(lang["invert_gyro_description"].c_str());
        }
     }
