@@ -118,7 +118,6 @@ enum ScreenshotFormat {
     code(int, "performance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)      \
     code(int, "performance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position) \
     code(int, "screenshot-format", static_cast<int>(JPEG), screenshot_format)                           \
-    code(bool, "disable-motion", false, disable_motion)                                                 \
     code(bool, "enable-gamepad-overlay", true, enable_gamepad_overlay)                                  \
     code(bool, "overlay-show-touch-switch", false, overlay_show_touch_switch)                           \
     code(float, "overlay-scale", 1.0f, overlay_scale)                                                   \
