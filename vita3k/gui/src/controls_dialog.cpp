@@ -122,7 +122,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
-    
+
     // Always center this window when appearing
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     if(emuenv.cfg.screenmode_pos == 3){
@@ -139,8 +139,6 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::Spacing();
 
-    auto &lang = gui.lang.controls;
-    
     const auto gmpd = ImGui::CalcTextSize("Gamepad Overlay").x;
     ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (gmpd / 2.f));
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Gamepad Overlay");
@@ -188,24 +186,6 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
        }
     }
-    ImGui::Spacing();
-    ImGui::Separator();
-
-    if(emuenv.cfg.enable_gamepad_overlay){
-       if(ImGui::Checkbox(lang["sensor_enable"].c_str(), &emuenv.cfg.tiltsens)){
-           config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-           set_config(emuenv, emuenv.io.app_path);
-       }
-       SetTooltipEx(lang["sensors_description"].c_str());
-       if (emuenv.cfg.tiltsens){
-           if(ImGui::Checkbox(lang["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro)){
-               config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-               set_config(emuenv, emuenv.io.app_path);
-           }
-           SetTooltipEx(lang["invert_gyro_description"].c_str());
-       }
-    }
-
     ImGui::Spacing();
     ImGui::Separator();
     if(emuenv.cfg.enable_gamepad_overlay && ImGui::Checkbox("Show front/back touchscreen switch button.", &emuenv.cfg.overlay_show_touch_switch)){
