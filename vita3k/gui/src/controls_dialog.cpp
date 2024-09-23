@@ -152,8 +152,8 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Checkbox(lang["sensor_enable"].c_str(), &emuenv.cfg.tiltsens);
     SetTooltipEx(lang["sensors_description"].c_str());
     if (emuenv.cfg.tiltsens){
-        ImGui::Checkbox(lang.emulator["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro);
-        SetTooltipEx(lang.emulator["invert_gyro_description"].c_str());
+        ImGui::Checkbox(lang["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro);
+        SetTooltipEx(lang["invert_gyro_description"].c_str());
     }        
     
     const char *overlay_edit_text = overlay_editing ? "Hide Gamepad Overlay" : "Modify Gamepad Overlay";
