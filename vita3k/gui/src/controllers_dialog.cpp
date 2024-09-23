@@ -382,7 +382,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     if (emuenv.ctrl.has_motion_support) {
         ImGui::Spacing();
-        if (ImGui::Checkbox(controls["motion"].c_str(), &emuenv.cfg.tiltsens))
+        if (ImGui::Checkbox(lang["motion"].c_str(), &emuenv.cfg.tiltsens))
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         if(emuenv.cfg.tiltsens){
            ImGui::Checkbox(controls["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro);
