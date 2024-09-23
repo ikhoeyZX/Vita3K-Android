@@ -20,12 +20,12 @@
 #include <config/state.h>
 
 namespace gui {
-static const ImVec2 PERF_OVERLAY_PAD = ImVec2(12.f, 12.f);
+static const ImVec2 PERF_OVERLAY_PAD = ImVec2(2.f, 2.f);
 static const ImVec4 PERF_OVERLAY_BG_COLOR = ImVec4(0.282f, 0.239f, 0.545f, 0.8f);
 
 static ImVec2 get_perf_pos(ImVec2 window_size, EmuEnvState &emuenv, ImVec2 scale) {
     const float TOP = PERF_OVERLAY_PAD.y * scale.y;
-    const float LEFT = (PERF_OVERLAY_PAD.x + 4.0f) * scale.x;
+    const float LEFT = PERF_OVERLAY_PAD.x * scale.x;
     const float CENTER = ImGui::GetIO().DisplaySize.x / 2.0 - (window_size.x / 2.f);
     const float RIGHT = ImGui::GetIO().DisplaySize.x - window_size.x + PERF_OVERLAY_PAD.x * scale.x;
     const float BOTTOM = ImGui::GetIO().DisplaySize.y - window_size.y + PERF_OVERLAY_PAD.y * scale.y;
