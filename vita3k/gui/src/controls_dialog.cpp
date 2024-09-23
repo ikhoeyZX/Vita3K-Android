@@ -148,17 +148,6 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::Checkbox("Show gamepad overlay ingame", &emuenv.cfg.enable_gamepad_overlay))
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 
-    if(emuenv.cfg.enable_gamepad_overlay){
-       if(ImGui::Checkbox(lang["sensor_enable"].c_str(), &emuenv.cfg.tiltsens))
-           config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-       SetTooltipEx(lang["sensors_description"].c_str());
-       if (emuenv.cfg.tiltsens){
-           if(ImGui::Checkbox(lang["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro))
-               config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-           SetTooltipEx(lang["invert_gyro_description"].c_str());
-       }
-    }
-    
     const char *overlay_edit_text = overlay_editing ? "Hide Gamepad Overlay" : "Modify Gamepad Overlay";
     ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (gmpd / 2.f));
     if (ImGui::Button(overlay_edit_text)) {
@@ -199,6 +188,24 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
        }
     }
+    ImGui::Spacing();
+    ImGui::Separator();
+
+    if(emuenv.cfg.enable_gamepad_overlay){
+       if(ImGui::Checkbox(lang["sensor_enable"].c_str(), &emuenv.cfg.tiltsens)){
+           config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+           set_config(emuenv, emuenv.io.app_path);
+       }
+       SetTooltipEx(lang["sensors_description"].c_str());
+       if (emuenv.cfg.tiltsens){
+           if(ImGui::Checkbox(lang["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro)){
+               config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+               set_config(emuenv, emuenv.io.app_path);
+           }
+           SetTooltipEx(lang["invert_gyro_description"].c_str());
+       }
+    }
+
     ImGui::Spacing();
     ImGui::Separator();
     if(emuenv.cfg.enable_gamepad_overlay && ImGui::Checkbox("Show front/back touchscreen switch button.", &emuenv.cfg.overlay_show_touch_switch)){
