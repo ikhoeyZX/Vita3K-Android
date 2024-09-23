@@ -46,8 +46,8 @@ static ImVec2 get_perf_pos(ImVec2 window_size, EmuEnvState &emuenv, ImVec2 scale
 void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
     auto lang = gui.lang.performance_overlay;
 
-    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
+    const auto VIEWPORT_SIZE = ImVec2(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const auto RES_SCALE = ImVec2(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
 
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto SCALED_FONT_SIZE = ImGui::GetFontSize() * (0.7f * RES_SCALE.y);
@@ -55,11 +55,11 @@ void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto FPS_TEXT = emuenv.cfg.performance_overlay_detail == MINIMUM ? fmt::format("FPS: {}", emuenv.fps) : fmt::format("FPS: {} {}: {}", emuenv.fps, lang["avg"], emuenv.avg_fps);
     const auto MIN_MAX_FPS_TEXT = fmt::format("{}: {} {}: {}", lang["min"], emuenv.min_fps, lang["max"], emuenv.max_fps);
-    const ImVec2 TOTAL_WINDOW_PADDING(ImGui::GetStyle().WindowPadding.x * 2, ImGui::GetStyle().WindowPadding.y * 2);
+    const auto TOTAL_WINDOW_PADDING = ImVec2(ImGui::GetStyle().WindowPadding.x * 2, ImGui::GetStyle().WindowPadding.y * 2);
     const auto MAX_TEXT_WIDTH_SCALED = std::max(ImGui::CalcTextSize(FPS_TEXT.c_str()).x, ImGui::CalcTextSize(MIN_MAX_FPS_TEXT.c_str()).x) * FONT_SCALE;
     const auto MAX_TEXT_HEIGHT_SCALED = SCALED_FONT_SIZE + (emuenv.cfg.performance_overlay_detail >= MEDIUM ? SCALED_FONT_SIZE + (ImGui::GetStyle().ItemSpacing.y * 2.f) : 0.f);
-    const ImVec2 WINDOW_SIZE(MAX_TEXT_WIDTH_SCALED + TOTAL_WINDOW_PADDING.x, MAX_TEXT_HEIGHT_SCALED + TOTAL_WINDOW_PADDING.y);
-    const ImVec2 MAIN_WINDOW_SIZE(WINDOW_SIZE.x + TOTAL_WINDOW_PADDING.x, WINDOW_SIZE.y + TOTAL_WINDOW_PADDING.y + (emuenv.cfg.performance_overlay_detail == MAXIMUM ? WINDOW_SIZE.y : 0.f));
+    const auto WINDOW_SIZE = ImVec2(MAX_TEXT_WIDTH_SCALED + TOTAL_WINDOW_PADDING.x, MAX_TEXT_HEIGHT_SCALED + TOTAL_WINDOW_PADDING.y);
+    const auto MAIN_WINDOW_SIZE = ImVec2(WINDOW_SIZE.x + TOTAL_WINDOW_PADDING.x, WINDOW_SIZE.y + TOTAL_WINDOW_PADDING.y + (emuenv.cfg.performance_overlay_detail == MAXIMUM ? WINDOW_SIZE.y : 0.f));
     const auto WINDOW_POS = get_perf_pos(MAIN_WINDOW_SIZE, emuenv, SCALE);
     
     ImGui::SetNextWindowSize(MAIN_WINDOW_SIZE);
