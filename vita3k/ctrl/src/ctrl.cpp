@@ -137,7 +137,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 new_controller.controller = controller;
                 new_controller.port = reserve_port(state);
 
-               if(!emuenv.cfg.tiltsens  && (std::string_view(controller_name).starts_with("Virtual Controller"){ 
+               if(!emuenv.cfg.tiltsens  && (std::string_view(controller_name).starts_with("Virtual Controller"))){ 
                    // skip
                }else{
                    new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
@@ -157,11 +157,11 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                     }
                 }
 
-                if(emuenv.cfg.tiltsens  && (std::string_view(controller_name).starts_with("Virtual Controller"){ 
+                if(emuenv.cfg.tiltsens  && (std::string_view(controller_name).starts_with("Virtual Controller"))){ 
                    found_gyro |= new_controller.has_gyro;
                    found_accel |= new_controller.has_accel;
                    LOG_INFO("Built-in accel and gyro sensor enabled");
-                }else if(!emuenv.cfg.tiltsens  && (std::string_view(controller_name).starts_with("Virtual Controller"){ 
+                }else if(!emuenv.cfg.tiltsens  && (std::string_view(controller_name).starts_with("Virtual Controller"))){ 
                    found_gyro = false;
                    found_accel = false;
                    LOG_INFO("Built-in accel and gyro sensor disabled in settings!, goto configuration > settings > emulator menu to enable it");
