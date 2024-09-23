@@ -45,6 +45,7 @@ Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobj
         LOG_CRITICAL("Could not create overlay virtual controller");
         return;
     }
+    LOG_TRACE("Virtual Joystick : {}", virtual_joystick_id );
 
     virtual_joystick = SDL_JoystickOpen(virtual_joystick_id);
     if (virtual_joystick == nullptr)
@@ -78,7 +79,7 @@ Java_org_vita3k_emulator_overlay_InputOverlay_setButton(JNIEnv *env, jobject thi
 static uint64_t timestamp;
 
 static int reserve_port(CtrlState &state) {
-    for (int i = 0; i < SCE_CTRL_MAX_WIRELESS_NUM; i++) {
+    for (uint8_t i = 0; i < SCE_CTRL_MAX_WIRELESS_NUM; i++) {
         if (state.free_ports[i]) {
             state.free_ports[i] = false;
             return i + 1;
@@ -123,6 +124,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
 #ifdef ANDROID
             // for whatever reasons, fingerprint sensors are detected as controllers, filter them out
             const char *controller_name = SDL_GameControllerNameForIndex(joystick_index);
+            LOG_TRACE("Virtual Controller Name get: {}", controller_name);
             if (controller_name != nullptr && 
                 (std::string_view(controller_name).starts_with("uinput-")
                 || std::string_view(controller_name).starts_with("gf_")))
@@ -142,7 +144,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                    if (new_controller.has_accel)
                        SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_TRUE);
                 }
-
+                
                 new_controller.has_led = SDL_GameControllerHasLED(controller.get());
                 if (new_controller.has_led) {
                     auto &color = emuenv.cfg.controller_led_color;
@@ -164,6 +166,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 
                 state.controllers.emplace(guid, new_controller);
                 state.controllers_name[joystick_index] = SDL_GameControllerNameForIndex(joystick_index);
+                state.controllers_has_motion_support[joystick_index] = found_gyro && found_accel;
                 state.controllers_num++;
             }
         }
