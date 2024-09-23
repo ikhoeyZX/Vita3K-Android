@@ -23,12 +23,12 @@ namespace gui {
 static const ImVec2 PERF_OVERLAY_PAD = ImVec2(12.f, 12.f);
 static const ImVec4 PERF_OVERLAY_BG_COLOR = ImVec4(0.282f, 0.239f, 0.545f, 0.8f);
 
-static ImVec2 get_perf_pos(ImVec2 window_size, EmuEnvState &emuenv, ImVec2 scale) {
-    const float TOP = PERF_OVERLAY_PAD.y * scale.y;
-    const float LEFT = PERF_OVERLAY_PAD.x * scale.x;
-    const float CENTER = ImGui::GetIO().DisplaySize.x / 2.0 - (window_size.x / 2.f);
-    const float RIGHT = ImGui::GetIO().DisplaySize.x - window_size.x + PERF_OVERLAY_PAD.x * scale.x;
-    const float BOTTOM = ImGui::GetIO().DisplaySize.y - window_size.y + PERF_OVERLAY_PAD.y * scale.y;
+static ImVec2 get_perf_pos(ImVec2 window_size, EmuEnvState &emuenv) {
+    const auto TOP = emuenv.viewport_pos.y - PERF_OVERLAY_PAD.y;
+    const auto LEFT = emuenv.viewport_pos.x - PERF_OVERLAY_PAD.x;
+    const auto CENTER = emuenv.viewport_pos.x + (emuenv.viewport_size.x / 2.f) - (window_size.x / 2.f);
+    const auto RIGHT = emuenv.viewport_pos.x + emuenv.viewport_size.x - window_size.x + PERF_OVERLAY_PAD.x;
+    const auto BOTTOM = emuenv.viewport_pos.y + emuenv.viewport_size.y - window_size.y + PERF_OVERLAY_PAD.y;
 
     switch (emuenv.cfg.performance_overlay_position) {
     case TOP_CENTER: return ImVec2(CENTER, TOP);
@@ -55,7 +55,6 @@ void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto FPS_TEXT = emuenv.cfg.performance_overlay_detail == MINIMUM ? fmt::format("FPS: {}", emuenv.fps) : fmt::format("FPS: {} {}: {}", emuenv.fps, lang["avg"], emuenv.avg_fps);
     const auto MIN_MAX_FPS_TEXT = fmt::format("{}: {} {}: {}", lang["min"], emuenv.min_fps, lang["max"], emuenv.max_fps);
-    
     const ImVec2 TOTAL_WINDOW_PADDING(ImGui::GetStyle().WindowPadding.x * 2, ImGui::GetStyle().WindowPadding.y * 2);
     const auto MAX_TEXT_WIDTH_SCALED = std::max(ImGui::CalcTextSize(FPS_TEXT.c_str()).x, ImGui::CalcTextSize(MIN_MAX_FPS_TEXT.c_str()).x) * FONT_SCALE;
     const auto MAX_TEXT_HEIGHT_SCALED = SCALED_FONT_SIZE + (emuenv.cfg.performance_overlay_detail >= MEDIUM ? SCALED_FONT_SIZE + (ImGui::GetStyle().ItemSpacing.y * 2.f) : 0.f);
