@@ -127,9 +127,9 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 || std::string_view(controller_name).starts_with("gf_")))
                 continue;
 #endif
-            LOG_TRACE("CONTROLLER guid: {}". *guid);
+            LOG_TRACE("CONTROLLER guid: {}", guid);
             LOG_TRACE("CONTROLLER name: {}", controller_name);
-            LOG_TRACE("Virtual CONTROLLER id: {}". virtual_joystick_id);
+            LOG_TRACE("Virtual CONTROLLER id: {}", virtual_joystick_id);
             
             
             if (!state.controllers.contains(guid)) {
