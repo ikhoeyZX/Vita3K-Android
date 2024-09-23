@@ -381,14 +381,14 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", lang["not_connected"].c_str());
 
     if (emuenv.ctrl.has_motion_support) {
-        auto &controls = gui.lang.controls;
+        auto &emulator = gui.lang.emulator;
         ImGui::Spacing();
         if (ImGui::Checkbox(lang["motion"].c_str(), &emuenv.cfg.tiltsens))
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         if(emuenv.cfg.tiltsens){
-           if(ImGui::Checkbox(controls["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro))
+           if(ImGui::Checkbox(emulator["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro))
                config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-           SetTooltipEx(controls["invert_gyro_description"].c_str());
+           SetTooltipEx(emulator["invert_gyro_description"].c_str());
         }
         ImGui::PushTextWrapPos(ImGui::GetWindowWidth() - (ImGui::GetStyle().WindowPadding.x * 2.f));
         ImGui::PopTextWrapPos();
