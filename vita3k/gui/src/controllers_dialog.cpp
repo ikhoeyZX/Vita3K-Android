@@ -384,8 +384,8 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         if (ImGui::Checkbox(lang["motion"].c_str(), &emuenv.cfg.disable_motion))
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-        ImGui::Checkbox(lang.emulator["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro);
-        SetTooltipEx(lang.emulator["invert_gyro_description"].c_str());
+        ImGui::Checkbox(lang["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro);
+        SetTooltipEx(lang["invert_gyro_description"].c_str());
         ImGui::PushTextWrapPos(ImGui::GetWindowWidth() - (ImGui::GetStyle().WindowPadding.x * 2.f));
         ImGui::PopTextWrapPos();
     } else if (emuenv.motion.has_device_motion_support){
