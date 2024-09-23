@@ -138,9 +138,18 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                    new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
                    if (new_controller.has_gyro)
                        SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_TRUE);
+                   
                    new_controller.has_accel = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_ACCEL);
                    if (new_controller.has_accel)
                        SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_TRUE);
+
+                   found_gyro |= new_controller.has_gyro;
+                   found_accel |= new_controller.has_accel;
+                   LOG_INFO("Built-in accel and gyro sensor enabled");
+                }else{
+                   found_gyro = false;
+                   found_accel = false;
+                   LOG_INFO("Built-in accel and gyro sensor disabled in settings!, goto configuration > settings > emulator menu to enable it");
                 }
 
                 new_controller.has_led = SDL_GameControllerHasLED(controller.get());
@@ -151,19 +160,10 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                         SDL_GameControllerSetLED(controller.get(), color[0], color[1], color[2]);
                     }
                 }
-
-                if(emuenv.cfg.tiltsens){
-                   found_gyro |= new_controller.has_gyro;
-                   found_accel |= new_controller.has_accel;
-                   LOG_INFO("Built-in accel and gyro sensor enabled");
-                }else{
-                   found_gyro = false;
-                   found_accel = false;
-                   LOG_INFO("Built-in accel and gyro sensor disabled in settings!, goto configuration > settings > emulator menu to enable it");
-                }
                 
                 state.controllers.emplace(guid, new_controller);
                 state.controllers_name[joystick_index] = SDL_GameControllerNameForIndex(joystick_index);
+                state.controllers_has_motion_support[joystick_index] = found_gyro && found_accel;
                 state.controllers_num++;
             }
         }
