@@ -259,6 +259,8 @@ struct LangState {
         { "name", "Name" },
         { "num", "Num" },
         { "motion", "Disable Motion Sensors" },
+        { "invert_gyro", "Invert gyroscope sensor input" },
+        { "invert_gyro_description", "Change logic of gyroscope sensor to inverse type" },
         { "not_connected", "No compatible controllers connected.\nConnect a controller that is compatible with SDL2." },
         { "motion_support", "Gamepad has motion support" },
         { "rebind_controls", "Rebind Controls" },
