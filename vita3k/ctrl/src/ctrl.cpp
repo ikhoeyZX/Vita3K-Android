@@ -132,24 +132,30 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 new_controller.controller = controller;
                 new_controller.port = reserve_port(state);
 
-               new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
-               if (new_controller.has_gyro)
-                   SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_TRUE);
-               new_controller.has_accel = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_ACCEL);
-               if (new_controller.has_accel)
-                   SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_TRUE);
-
-                new_controller.has_led = SDL_GameControllerHasLED(controller.get());
-                if (new_controller.has_led) {
-                    auto &color = emuenv.cfg.controller_led_color;
-                    if (!color.empty()) {
-                        color.resize(3);
-                        SDL_GameControllerSetLED(controller.get(), color[0], color[1], color[2]);
-                    }
-                }
-
-               found_gyro |= new_controller.has_gyro;
-               found_accel |= new_controller.has_accel;
+                if(std::string_view(controller_name).starts_with("Virtual") && !emuenv.cfg.tiltsens){
+                    found_gyro = false;
+                    found_accel = false;
+                    LOG_INFO("Virtual controller: Built-in phone accel and gyro sensor disabled");
+                }else{           
+                   new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
+                   if (new_controller.has_gyro)
+                       SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_TRUE);
+                   new_controller.has_accel = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_ACCEL);
+                   if (new_controller.has_accel)
+                       SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_TRUE);
+    
+                    new_controller.has_led = SDL_GameControllerHasLED(controller.get());
+                    if (new_controller.has_led) {
+                        auto &color = emuenv.cfg.controller_led_color;
+                        if (!color.empty()) {
+                            color.resize(3);
+                            SDL_GameControllerSetLED(controller.get(), color[0], color[1], color[2]);
+                        }
+                    }   
+                    
+                   found_gyro |= new_controller.has_gyro;
+                   found_accel |= new_controller.has_accel;
+               }
                 
                 state.controllers.emplace(guid, new_controller);
                 state.controllers_name[joystick_index] = SDL_GameControllerNameForIndex(joystick_index);
