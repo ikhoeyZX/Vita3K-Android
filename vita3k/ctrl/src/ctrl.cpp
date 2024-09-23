@@ -131,12 +131,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 const GameControllerPtr controller(SDL_GameControllerOpen(joystick_index), SDL_GameControllerClose);
                 new_controller.controller = controller;
                 new_controller.port = reserve_port(state);
-
-                if(std::string_view(controller_name).starts_with("Virtual") && !emuenv.cfg.tiltsens){
-                    found_gyro = false;
-                    found_accel = false;
-                    LOG_INFO("Virtual controller: Built-in phone accel and gyro sensor disabled");
-                }else{           
+       
                    new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
                    if (new_controller.has_gyro)
                        SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_TRUE);
@@ -155,7 +150,6 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                     
                    found_gyro |= new_controller.has_gyro;
                    found_accel |= new_controller.has_accel;
-               }
                 
                 state.controllers.emplace(guid, new_controller);
                 state.controllers_name[joystick_index] = SDL_GameControllerNameForIndex(joystick_index);
