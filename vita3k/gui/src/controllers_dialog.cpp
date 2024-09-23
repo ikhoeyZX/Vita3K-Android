@@ -381,7 +381,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", lang["not_connected"].c_str());
 
     if (emuenv.ctrl.has_motion_support) {
-        auto &emulator = gui.lang.emulator;
+        auto &emulator = gui.lang.settings_dialog.emulator;
         ImGui::Spacing();
         if (ImGui::Checkbox(lang["motion"].c_str(), &emuenv.cfg.tiltsens))
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
