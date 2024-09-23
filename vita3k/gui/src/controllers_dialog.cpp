@@ -380,15 +380,12 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
     } else
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", lang["not_connected"].c_str());
 
-    if(!emuenv.cfg.tiltsens){
-        ImGui::Spacing();
-        ImGui::PushTextWrapPos(ImGui::GetWindowWidth() - (ImGui::GetStyle().WindowPadding.x * 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", "Builtin device motion sensors are disabled!, to enable it goto configuration > settings > emulator");
-        ImGui::PopTextWrapPos();
-    }else if (emuenv.ctrl.has_motion_support) {
+    if (emuenv.ctrl.has_motion_support) {
         ImGui::Spacing();
         if (ImGui::Checkbox(lang["motion"].c_str(), &emuenv.cfg.disable_motion))
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        ImGui::Checkbox(lang.emulator["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro);
+        SetTooltipEx(lang.emulator["invert_gyro_description"].c_str());
         ImGui::PushTextWrapPos(ImGui::GetWindowWidth() - (ImGui::GetStyle().WindowPadding.x * 2.f));
         ImGui::PopTextWrapPos();
     } else if (emuenv.motion.has_device_motion_support){
