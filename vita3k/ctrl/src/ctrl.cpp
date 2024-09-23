@@ -132,13 +132,12 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 new_controller.controller = controller;
                 new_controller.port = reserve_port(state);
 
-                if((std::string_view(controller_name).starts_with("Virtual") && !emuenv.cfg.tiltsens)
-                {
+                if (std::string_view(controller_name).starts_with("Virtual") && !emuenv.cfg.tiltsens){
                     SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_FALSE);
                     SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_FALSE);
                   //  skip sensor check when sensor disable to reduce battery usage
                     LOG_TRACE("Virtual controller sensor disabled");
-                }else{
+                } else {
                    new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
                    if (new_controller.has_gyro)
                        SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_TRUE);
