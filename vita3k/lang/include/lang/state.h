@@ -258,7 +258,7 @@ struct LangState {
         { "connected", "{} controllers connected" },
         { "name", "Name" },
         { "num", "Num" },
-        { "motion", "Enable Motion Sensors" },
+        { "motion", "Enable Motion Sensors (restart required)" },
         { "not_connected", "No compatible controllers connected.\nConnect a controller that is compatible with SDL2." },
         { "motion_support", "Gamepad has motion support" },
         { "rebind_controls", "Rebind Controls" },
