@@ -135,25 +135,25 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 new_controller.port = reserve_port(state);
 
                // if(emuenv.cfg.tiltsens){
-                   new_controller.has_accel = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_ACCEL);
-                   new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
+                new_controller.has_accel = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_ACCEL);
+                new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
 
-                 if(emuenv.cfg.tiltsens){
+                if(emuenv.cfg.tiltsens){
                    if (new_controller.has_accel)
                        SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_TRUE);
                    if (new_controller.has_gyro)
                        SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_TRUE);
                     LOG_INFO("Accel and gyro sensor enabled");
-                 }else{
-                    SDL_SensorClose(new_controller.has_gyro);
-                    SDL_SensorClose(new_controller.has_gyro);
+                }else{
+                   if (new_controller.has_accel)
+                       SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_FALSE);
+                   if (new_controller.has_gyro)
+                       SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_FALSE);
                     LOG_INFO("Accel and gyro sensor disabled");
-                    found_gyro = false;
-                    found_accel = false;
-                 }
+                }
 
-                   found_gyro |= new_controller.has_gyro;
-                   found_accel |= new_controller.has_accel;
+               found_gyro |= new_controller.has_gyro;
+               found_accel |= new_controller.has_accel;
             /*       LOG_INFO("Built-in accel and gyro sensor enabled");
                 }else{
                    found_gyro = false;
