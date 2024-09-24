@@ -100,10 +100,10 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
     bool found_accel = false;
     for (ControllerList::iterator controller = state.controllers.begin(); controller != state.controllers.end();) {
             if (SDL_GameControllerGetAttached(controller->second.controller.get())) {
-                if(emuenv.cfg.tiltsens){
+               // if(emuenv.cfg.tiltsens){
                    found_accel |= controller->second.has_accel;
                    found_gyro |= controller->second.has_gyro;
-                }
+               // }
                 ++controller;
             } else {
                 state.free_ports[controller->second.port - 1] = true;
@@ -134,23 +134,32 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 new_controller.controller = controller;
                 new_controller.port = reserve_port(state);
 
-                if(emuenv.cfg.tiltsens){
-                   new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
-                   if (new_controller.has_gyro)
-                       SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_TRUE);
-                   
+               // if(emuenv.cfg.tiltsens){
                    new_controller.has_accel = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_ACCEL);
+                   new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
+
+                 if(emuenv.cfg.tiltsens){
                    if (new_controller.has_accel)
                        SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_TRUE);
+                   if (new_controller.has_gyro)
+                       SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_TRUE);
+                    LOG_INFO("Accel and gyro sensor enabled");
+                 }else{
+                    SDL_SensorClose(new_controller.has_gyro);
+                    SDL_SensorClose(new_controller.has_gyro);
+                    LOG_INFO("Accel and gyro sensor disabled");
+                    found_gyro = false;
+                    found_accel = false;
+                 }
 
                    found_gyro |= new_controller.has_gyro;
                    found_accel |= new_controller.has_accel;
-                   LOG_INFO("Built-in accel and gyro sensor enabled");
+            /*       LOG_INFO("Built-in accel and gyro sensor enabled");
                 }else{
                    found_gyro = false;
                    found_accel = false;
                    LOG_INFO("Built-in accel and gyro sensor disabled in settings!, goto configuration > settings > emulator menu to enable it");
-                }
+                } */
 
                 new_controller.has_led = SDL_GameControllerHasLED(controller.get());
                 if (new_controller.has_led) {
