@@ -1184,12 +1184,6 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(lang.emulator["sensor_settings"].c_str()).x / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.emulator["sensor_settings"].c_str());
         ImGui::Spacing();
-        ImGui::Checkbox(lang.emulator["sensor_enable"].c_str(), &emuenv.cfg.tiltsens);
-        SetTooltipEx(lang.emulator["sensors_description"].c_str());
-        if (!emuenv.cfg.tiltsens){
-            ImGui::Checkbox(lang.emulator["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro);
-            SetTooltipEx(lang.emulator["invert_gyro_description"].c_str());
-        }
         if (!emuenv.cfg.tiltsens){
             ImGui::Spacing();
             ImGui::Text("%s", lang.emulator["sensor_emu_pos"].c_str());
