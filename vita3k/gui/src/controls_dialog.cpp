@@ -193,7 +193,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         auto &emulator = gui.lang.settings_dialog.emulator;
         ImGui::Checkbox(emulator["sensor_enable"].c_str(), &emuenv.cfg.tiltsens);
         SetTooltipEx(emulator["sensors_description"].c_str());
-        if (!emuenv.cfg.tiltsens){
+        if (emuenv.cfg.tiltsens){
             ImGui::Checkbox(emulator["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro);
             SetTooltipEx(emulator["invert_gyro_description"].c_str());
         }
