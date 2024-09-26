@@ -56,9 +56,9 @@ bool GLTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     backend = Backend::OpenGL;
 
     // check for dxt support
-    int total_extensions = 0;
+    int16_t total_extensions = 0;
     glGetIntegerv(GL_NUM_EXTENSIONS, &total_extensions);
-    for (int i = 0; i < total_extensions; i++) {
+    for (int16_t i = 0; i < total_extensions; i++) {
         auto ext_name = reinterpret_cast<const char *>(glGetStringi(GL_EXTENSIONS, i));
         if (strcmp(ext_name, "GL_EXT_texture_compression_s3tc") == 0) {
             support_dxt = true;
