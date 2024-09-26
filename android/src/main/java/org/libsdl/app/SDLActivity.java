@@ -1351,7 +1351,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         // https://github.com/android/games-samples/blob/f78c6fcfb175d92ca1450daf2640c97d02ed0f9f/unity/power_efficiency_demo/Assets/Plugins/Android/VkQualityTestActivity.java
         // https://developer.android.com/media/optimize/performance/frame-rate
         if (Build.VERSION.SDK_INT >= 30) {
-            targetSurface.setFrameRate(60, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE); // force 60fps
+            targetSurface.setFrameRate(60, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE, CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS); // force 60fps
             return targetSurface;
         }
         
