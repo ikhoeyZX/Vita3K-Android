@@ -58,8 +58,8 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
 
     // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
     ImGuiIO &io = ImGui::GetIO();
-    int fb_width = (int)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
-    int fb_height = (int)(io.DisplaySize.y * io.DisplayFramebufferScale.y);
+    uint32_t fb_width = static_cast<uint32_t>(io.DisplaySize.x * io.DisplayFramebufferScale.x);
+    uint32_t fb_height = static_cast<uint32_t>(io.DisplaySize.y * io.DisplayFramebufferScale.y);
     if (fb_width == 0 || fb_height == 0)
         return;
     draw_data->ScaleClipRects(io.DisplayFramebufferScale);
@@ -153,7 +153,7 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
     glVertexAttribPointer(state.attribute_color_location, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid *)offsetof(ImDrawVert, col));
 
     // Draw
-    for (int n = 0; n < draw_data->CmdListsCount; n++) {
+    for (auto n = 0; n < draw_data->CmdListsCount; n++) {
         const ImDrawList *cmd_list = draw_data->CmdLists[n];
         const ImDrawIdx *idx_buffer_offset = 0;
 
@@ -163,7 +163,7 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state.elements);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx), (const GLvoid *)cmd_list->IdxBuffer.Data, GL_STREAM_DRAW);
 
-        for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++) {
+        for (auto cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++) {
             const ImDrawCmd *pcmd = &cmd_list->CmdBuffer[cmd_i];
             if (pcmd->UserCallback) {
                 pcmd->UserCallback(cmd_list, pcmd);
@@ -231,7 +231,7 @@ void ImGui_ImplSdlGL3_CreateFontsTexture(ImGui_GLState &state) {
 
     const GLint swizzle[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
 #ifdef ANDROID
-    for(int i = 0; i < 4; i++){
+    for(uint8_t i = 0; i < 4; i++){
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, swizzle[i]);
     }
 #else
