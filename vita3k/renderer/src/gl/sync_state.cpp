@@ -407,7 +407,7 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
                     } else {
                         const GLint default_rgba[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
 #ifdef ANDROID
-                        for(int i = 0; i < 4; i++){
+                        for(uint8_t i = 0; i < 4; i++){
                             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, default_rgba[i]);
                         }
 #else
@@ -420,7 +420,7 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
                     has_happened = true;
                     glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 #ifdef ANDROID
-                    for(int i = 0; i < 4; i++){
+                    for(uint8_t i = 0; i < 4; i++){
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, swizzle[i]);
                     }
 #else
