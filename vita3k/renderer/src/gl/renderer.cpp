@@ -173,7 +173,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
 
-    int choosen_minor_version = 0;
+    uint8_t choosen_minor_version = 0;
 
 #ifdef ANDROID
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
@@ -195,7 +195,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    for (int minor_version : accept_gl_minor_versions) {
+    for (uint8_t minor_version : accept_gl_minor_versions) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor_version);
         gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
         if (gl_state.context) {
@@ -237,7 +237,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
         { "GL_EXT_shader_image_load_formatted", &gl_state.features.support_unknown_format }
     };
 
-    for (int i = 0; i < total_extensions; i++) {
+    for (int16_t i = 0; i < total_extensions; i++) {
         const std::string extension = reinterpret_cast<const GLchar *>(glGetStringi(GL_EXTENSIONS, i));
         auto find_result = check_extensions.find(extension);
 
@@ -483,7 +483,7 @@ static void post_process_pixels_data(GLState &renderer, std::uint32_t *pixels, s
     const bool is_U8U8U8_RGBA = surface.colorFormat == SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA;
     const bool is_SE5M9M9M9 = (surface.colorFormat == SCE_GXM_COLOR_FORMAT_SE5M9M9M9_RGB) || (surface.colorFormat == SCE_GXM_COLOR_FORMAT_SE5M9M9M9_BGR);
 
-    const int multiplier = static_cast<int>(renderer.res_multiplier);
+    const int8_t multiplier = static_cast<int8_t>(renderer.res_multiplier);
     if (multiplier > 1 || is_U8U8U8_RGBA || is_SE5M9M9M9) {
         // TODO: do this on the GPU instead (using texture blitting?)
         const int bytes_per_output_pixel = (gxm::bits_per_pixel(gxm::get_base_format(surface.colorFormat)) + 7) >> 3;
@@ -620,7 +620,7 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
     uint32_t width = surface.width;
     uint32_t height = surface.height;
 
-    const int res_multiplier = static_cast<int>(renderer.res_multiplier);
+    const int8_t res_multiplier = static_cast<int8_t>(renderer.res_multiplier);
     if (res_multiplier == 1) {
         glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(surface.strideInPixels));
     } else {
@@ -709,7 +709,7 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
 
         glBindTexture(GL_TEXTURE_2D, surface_handle);
 #ifdef ANDROID
-        for(int i = 0; i < 4; i++){
+        for(uint8_t i = 0; i < 4; i++){
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, standard_swizzle[i]);
         }
 #else
