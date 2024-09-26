@@ -602,6 +602,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                             config.lle_modules.push_back(m.first);
                     }
                 }
+                ImGui::ScrollWhenDragging();
                 ImGui::EndListBox();
             }
             ImGui::PopItemWidth();
