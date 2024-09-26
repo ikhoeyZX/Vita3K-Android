@@ -49,8 +49,8 @@ constexpr bool is_device_landscape = true;
 #endif
 
 static void init_device_sensors(MotionState& state){
-    const int num_sensors = SDL_NumSensors();
-    for(int idx = 0; idx < num_sensors; idx++){
+    const int16_t num_sensors = SDL_NumSensors();
+    for(int16_t idx = 0; idx < num_sensors; idx++){
         SDL_Sensor* sensor = SDL_SensorOpen(idx);
         bool sensor_used = true;
         switch (SDL_SensorGetType(sensor))
