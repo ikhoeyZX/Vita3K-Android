@@ -53,6 +53,7 @@
 #include <boost/range/iterator_range.hpp>
 #include <jni.h>
 #include <dlfcn.h> // load custom driver
+#include <vulkan/vulkan.h>
 
 bool loadcustomVulkan( void *libVulkan )
 {
