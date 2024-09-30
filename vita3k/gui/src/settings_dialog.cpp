@@ -841,7 +841,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }else{
           ImGui::Text(": Manual Input");
           ImGui::Spacing();
-          static int setdph = static_cast<int>(544 * config.resolution_multiplier);
+          int setdph = static_cast<int>(544 * config.resolution_multiplier);
           ImGui::Text("Insert screen height ");
           ImGui::InputInt("  ", &setdph);
           if (ImGui::IsItemHovered())
