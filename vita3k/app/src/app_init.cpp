@@ -55,73 +55,6 @@
 #include <dlfcn.h> // load custom driver
 #include <vulkan/vulkan.h>
 
-bool loadcustomVulkan( void *libVulkan )
-{
-	PFN_vkCreateInstance vkCreateInstance =
-		reinterpret_cast<PFN_vkCreateInstance>( dlsym( libVulkan, "vkCreateInstance" ) );
-	PFN_vkDestroyInstance vkDestroyInstance =
-		reinterpret_cast<PFN_vkDestroyInstance>( dlsym( libVulkan, "vkDestroyInstance" ) );
-	/*PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr =
-		reinterpret_cast<PFN_vkGetInstanceProcAddr>( dlsym( libVulkan, "vkGetInstanceProcAddr" ) );*/
-
-	VkApplicationInfo appInfo = {};
-	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = "AdrenoDriverLoader";
-	appInfo.applicationVersion = 1;
-	appInfo.pEngineName = "AdrenoLoader";
-	appInfo.engineVersion = 1;
-	appInfo.apiVersion = VK_API_VERSION_1_0;
-
-	// Create Vulkan instance
-	VkInstanceCreateInfo instanceCreateInfo = {};
-	instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	instanceCreateInfo.pApplicationInfo = &appInfo;
-
-	//	PFN_vkEnumeratePhysicalDevices vkEnumeratePhysicalDevices =
-	// reinterpret_cast<PFN_vkEnumeratePhysicalDevices>( 			vkGetInstanceProcAddr( instance,
-	//"vkEnumeratePhysicalDevices" ) );
-	PFN_vkEnumeratePhysicalDevices vkEnumeratePhysicalDevices =
-		reinterpret_cast<PFN_vkEnumeratePhysicalDevices>(
-			dlsym( libVulkan, "vkEnumeratePhysicalDevices" ) );
-	PFN_vkGetPhysicalDeviceProperties vkGetPhysicalDeviceProperties =
-		reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(
-			dlsym( libVulkan, "vkGetPhysicalDeviceProperties" ) );
-
-	VkInstance instance;
-	vkCreateInstance( &instanceCreateInfo, nullptr, &instance );
-
-	uint32_t numDevices = 1u;
-	vkEnumeratePhysicalDevices( instance, &numDevices, NULL );
-	if( numDevices == 0 )
-	{
-		LOG_ERROR("DriverReplacer : NO VK DEVICES!" );
-	}
-	else
-	{
-		LOG_INFO("DriverReplacer : OK!" );
-        
-		std::vector<VkPhysicalDevice> pd;
-		pd.resize( numDevices );
-		vkEnumeratePhysicalDevices( instance, &numDevices, pd.data() );
-
-		for( uint32_t i = 0u; i < numDevices; ++i )
-		{
-			VkPhysicalDeviceProperties deviceProps;
-			vkGetPhysicalDeviceProperties( pd[i], &deviceProps );
-
-			// Generic version routine that matches SaschaWillems's VulkanCapsViewer
-			const uint32_t driverVersionMajor = ( deviceProps.driverVersion >> 22u ) & 0x3ff;
-			const uint32_t driverVersionMinor = ( deviceProps.driverVersion >> 12u ) & 0x3ff;
-			const uint32_t driverVersionRelease = ( deviceProps.driverVersion ) & 0xfff;
-
-            LOG_INFO("Vulkan API {}, {}, {}", VK_API_VERSION_MAJOR( deviceProps.apiVersion ), VK_API_VERSION_MINOR( deviceProps.apiVersion ), VK_API_VERSION_PATCH( deviceProps.apiVersion ));
-			LOG_INFO("Driver Version: {}, {}, {}", driverVersionMajor, driverVersionMinor, driverVersionRelease);
-		}
-        return true;
-	}
-    return false;
-}
-
 static bool load_custom_driver(const std::string &driver_name) {
     fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver_name / "/";
 
@@ -194,15 +127,26 @@ static bool load_custom_driver(const std::string &driver_name) {
     }
 
     // we use a custom sdl build, if the path starts with this magic number, it uses the following handle instead
-   /* struct {
+
+   /* IN LIBSDL -> SDL_VIDEO.C
+    struct {
+        uint64_t magic;
+        void *handle;
+    } load_library_parameter;
+    char buff[1024];
+    memcpy(&load_library_parameter, path, sizeof(buff));
+    */
+    // END OF SDL
+	
+    struct {
         uint64_t magic;
         void *handle;
     } load_library_parameter;
     load_library_parameter.magic = 0xFEEDC0DE;
     load_library_parameter.handle = vulkan_handle;
-*/
-    if(!loadcustomVulkan(vulkan_handle)){
-   // if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(&load_library_parameter)) < 0) {
+    LOG_TRACE("Size of custom driver load_library_parameter.handle: {}", sizeof(vulkan_handle));
+
+    if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(&load_library_parameter)) < 0) {
         LOG_ERROR("Could not load custom driver, error {}", SDL_GetError());
         app::error_dialog("Could not load custom driver.\napp will use system driver instead");
             vulkan_handle = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
