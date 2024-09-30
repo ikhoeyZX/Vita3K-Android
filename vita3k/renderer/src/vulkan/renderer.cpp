@@ -286,17 +286,13 @@ bool VKState::init() {
     return true;
 }
 
-bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config, void *customdriver) {
+bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config) {
     // Create Instance
     {
-#ifdef ANDROID
-        if(!customdriver){
-        PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(customdriver);
-        VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
-        }else{
-            PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
+        PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
+#ifdef ANDROID
         if (!detect_patch_bcn(&texture_cache.support_dxt))
             return false;
 #endif
