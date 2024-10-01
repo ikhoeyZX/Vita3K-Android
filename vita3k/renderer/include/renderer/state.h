@@ -95,6 +95,8 @@ struct State {
     bool is_adreno_stock = false;
     bool is_adreno_turnip = false;
 
+    void* adreno_tools_loader;
+
     virtual bool init() = 0;
     virtual void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) = 0;
 
