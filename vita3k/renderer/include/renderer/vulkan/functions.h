@@ -23,9 +23,11 @@ struct Config;
 struct MemState;
 
 namespace renderer::vulkan {
-
+#ifdef ANDROID
 bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config, const libadreno_var &adreno);
-
+#else
+bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config);
+#endif
 bool create(VKState &state, std::unique_ptr<Context> &context, MemState &mem);
 bool create(VKState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);
 void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt);
