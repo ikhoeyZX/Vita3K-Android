@@ -83,7 +83,12 @@ EmuEnvState::EmuEnvState()
     , _gdb(new GDBState)
     , gdb(*_gdb)
     , _http(new HTTPState)
-    , http(*_http) {
+    , http(*_http) 
+#ifdef ANDROID
+    , _libadreno(new libadreno_var)
+    , libadreno(*_libadreno)
+#endif
+{
 }
 
 // this is necessary to forward declare unique_ptrs (so that they can call the appropriate destructor)
