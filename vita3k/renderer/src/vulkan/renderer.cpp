@@ -18,6 +18,8 @@
 #ifdef ANDROID
 // must be first
 #define __ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__
+
+#include <emuenv/state.h>
 #endif
 
 #include <renderer/functions.h>
@@ -266,10 +268,17 @@ std::string get_driver_version(uint32_t vendor_id, uint32_t version_raw) {
     return fmt::format("{}.{}.{}", (version_raw >> 22) & 0x3ff, (version_raw >> 12) & 0x3ff, version_raw & 0xfff);
 }
 
+#ifdef ANDROID
+bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config, const libadreno_var &adreno) {
+#else
 bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config) {
+#endif
     auto &vk_state = dynamic_cast<VKState &>(*state);
-
+#ifdef ANDROID
+    return vk_state.create(window, state, config, adreno);
+#else
     return vk_state.create(window, state, config);
+#endif
 }
 
 VKState::VKState(int gpu_idx)
@@ -286,13 +295,44 @@ bool VKState::init() {
     return true;
 }
 
+#ifdef ANDROID
+bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config, const libadreno_var &adreno) {
+#else
 bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config) {
+#endif
     // Create Instance
     {
         PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
-
+        
 #ifdef ANDROID
+        if(adreno.is_adreno){
+    	    const char *temp_dir = nullptr;
+        	if (SDL_GetAndroidSDKVersion() < 29) { // ANDROID 9
+        		temp_dir = adreno_temp_dir.c_str();
+        	}
+    
+           void *vulkan_handle = adrenotools_open_libvulkan(
+                                 RTLD_NOW,
+                                 ADRENOTOOLS_DRIVER_FILE_REDIRECT | ADRENOTOOLS_DRIVER_CUSTOM,
+                                 temp_dir,
+                                 adreno.adreno_lib_dir.c_str(),
+                                 adreno.adreno_driver_path.c_str(),
+                                 adreno.adreno_main_so_name.c_str(),
+                                 adreno.adreno_inject_dir.c_str(),
+                                 nullptr);
+
+            if (!vulkan_handle) {
+                  LOG_ERROR("Could not open handle for custom driver {}",  adreno.adreno_main_so_name);
+                  LOG_INFO("Using default vulkan driver instead");
+                  SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Custom Driver Error!", fmt::format("Could not open custom driver {}\nSystem will use default driver instead", adreno.adreno_main_so_name).c_str(), window);
+            }else{
+                // Inject custom driver
+                  vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>( dlsym( vulkan_handle, "vkGetInstanceProcAddr" ) );
+    	          VULKAN_HPP_DEFAULT_DISPATCHER.init( vkGetInstanceProcAddr );
+            }
+        }
+        
         if (!detect_patch_bcn(&texture_cache.support_dxt))
             return false;
 #endif
