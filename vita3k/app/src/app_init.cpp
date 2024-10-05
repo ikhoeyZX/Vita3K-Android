@@ -458,13 +458,14 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     state.res_height_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.dpi_scale);
 
 #ifdef ANDROID
-    if(state.cfg.boot_fail && state.cfg.gpu_idx != 0){
+    if(state.cfg.boot_fail && state.cfg.current_config.gpu_idx > 0){
             error_dialog("Looks like last GPU driver not supported or broken\nApp will use default driver now", nullptr);
             state.cfg.gpu_idx = 0;
             state.cfg.custom_driver_name = "";
             state.cfg.boot_fail = false;
-    }else if (state.cfg.current_config.custom_driver_name.empty() && state.cfg.gpu_idx != 0) {
+    }else if (state.cfg.current_config.gpu_idx > 0) {
         // set path to load custom driver using libadrenotools
+            LOG_INFO("Load custom driver");
             state.libadreno = load_custom_driver(state.cfg.current_config.custom_driver_name);
             if(!state.libadreno.is_adreno){
                 error_dialog("Custom driver corrupted or you use wrong file\nApp will use default driver now", nullptr);
