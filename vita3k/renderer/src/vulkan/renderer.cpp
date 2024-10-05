@@ -20,6 +20,7 @@
 #define __ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__
 
 #include <emuenv/state.h>
+#include <SDL_messagebox.h>
 #endif
 
 #include <renderer/functions.h>
@@ -309,7 +310,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         if(adreno.is_adreno){
     	    const char *temp_dir = nullptr;
         	if (SDL_GetAndroidSDKVersion() < 29) { // ANDROID 9
-        		temp_dir = adreno_temp_dir.c_str();
+        		temp_dir = adreno.adreno_temp_dir.c_str();
         	}
     
            void *vulkan_handle = adrenotools_open_libvulkan(
