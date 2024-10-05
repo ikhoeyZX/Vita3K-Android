@@ -326,12 +326,12 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             if (!vulkan_handle) {
                   LOG_ERROR("Could not open handle for custom driver {}",  adreno.adreno_main_so_name);
                   LOG_INFO("Using default vulkan driver instead");
-                  SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Custom Driver Error!", fmt::format("Could not open custom driver {}\nSystem will use default driver instead", adreno.adreno_main_so_name).c_str(), window);
-            }else{
-                // Inject custom driver
-                  vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>( dlsym( vulkan_handle, "vkGetInstanceProcAddr" ) );
-    	          VULKAN_HPP_DEFAULT_DISPATCHER.init( vkGetInstanceProcAddr );
+                  SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Custom Driver Error!", fmt::format(" Could not open custom driver {} \n System will use default driver instead ", adreno.adreno_main_so_name).c_str(), window);
             }
+            
+            // Inject custom driver
+            vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>( dlsym( vulkan_handle, "vkGetInstanceProcAddr" ) );
+    	    VULKAN_HPP_DEFAULT_DISPATCHER.init( vkGetInstanceProcAddr );
         }
         
         if (!detect_patch_bcn(&texture_cache.support_dxt))
