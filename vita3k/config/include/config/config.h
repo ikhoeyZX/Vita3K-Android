@@ -53,6 +53,7 @@ enum ScreenshotFormat {
 // Order is code(option_type, option_name, option_default, member_name)
 // When adding in a new macro for generation, ALL options must be stated.
 #define CONFIG_INDIVIDUAL(code)                                                                         \
+    code(bool, "boot-fail", false, boot_fail)                                                           \
     code(bool, "initial-setup", false, initial_setup)                                                   \
     code(bool, "gdbstub", false, gdbstub)                                                               \
     code(bool, "log-active-shaders", false, log_active_shaders)                                         \
