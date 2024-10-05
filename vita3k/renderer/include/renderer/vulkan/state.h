@@ -26,6 +26,7 @@
 #include <renderer/vulkan/types.h>
 
 struct Config;
+struct libadreno_var;
 
 namespace renderer::vulkan {
 
@@ -112,7 +113,7 @@ struct VKState : public renderer::State {
     VKState(int gpu_idx);
 
     bool init() override;
-    bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config);
+    bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config, const libadreno_var &adreno);
     void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) override;
     void cleanup();
 
