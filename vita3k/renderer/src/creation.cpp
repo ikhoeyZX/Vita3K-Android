@@ -15,6 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <emuenv/state.h>
+
 #include <gxm/types.h>
 #include <renderer/commands.h>
 #include <renderer/driver_functions.h>
@@ -250,7 +252,7 @@ void destroy(SceGxmSyncObject *sync, State &state) {
     // nothing to do right now
 }
 
-bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths) {
+bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths, const libadreno_var &adreno) {
     switch (backend) {
     case Backend::OpenGL:
         state = std::make_unique<gl::GLState>();
@@ -262,7 +264,7 @@ bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, co
     case Backend::Vulkan:
         state = std::make_unique<vulkan::VKState>(config.gpu_idx);
         state->init_paths(root_paths);
-        if (!vulkan::create(window, state, config))
+        if (!vulkan::create(window, state, config, adreno))
             return false;
         break;
 
