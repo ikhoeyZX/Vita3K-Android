@@ -25,7 +25,7 @@ struct FeatureState;
 struct Config;
 struct SDL_Window;
 
-#ifdef ANDROID
+#ifdef ANDROID // pass to android
 struct libadreno_var;
 #endif
 
@@ -62,8 +62,11 @@ void submit_command_list(State &state, renderer::Context *context, CommandList &
 bool is_cmd_ready(MemState &mem, CommandList &command_list);
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list);
 void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config);
+#ifdef ANDROID
 bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths, const libadreno_var &adreno);
-
+#else
+bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths);
+#endif
 void set_depth_bias(State &state, Context *ctx, bool is_front, int factor, int units);
 void set_depth_func(State &state, Context *ctx, bool is_front, SceGxmDepthFunc depth_func);
 void set_depth_write_enable_mode(State &state, Context *ctx, bool is_front, SceGxmDepthWriteMode enable);
