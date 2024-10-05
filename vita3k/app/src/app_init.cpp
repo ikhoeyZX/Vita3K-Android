@@ -52,7 +52,7 @@
 #include <boost/range/iterator_range.hpp>
 #include <jni.h>
 
-static bool load_custom_driver(const std::string &driver_name) {
+auto load_custom_driver(const std::string &driver_name) {
     libadreno_var val = {false, "", "", "", "", ""};
     fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver_name / "/";
 
