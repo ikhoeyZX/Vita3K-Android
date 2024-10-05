@@ -30,7 +30,9 @@ struct SDL_Window;
 struct DisplayState;
 struct GxmState;
 struct Config;
+#ifdef ANDROID
 struct libadreno_var;
+#endif
 
 enum struct MappingMethod : int {
     Disabled,
@@ -62,9 +64,9 @@ struct State {
 
     Backend current_backend;
     std::string current_custom_driver;
-
+#ifdef ANDROID
     bool is_adreno = false;
-
+#endif
     FeatureState features;
     float res_multiplier;
     bool disable_surface_sync;
