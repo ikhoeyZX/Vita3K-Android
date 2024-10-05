@@ -49,17 +49,16 @@
 
 #ifdef ANDROID
 #include <SDL.h>
-#include <adrenotools/driver.h>
 #include <boost/range/iterator_range.hpp>
 #include <jni.h>
-#include <dlfcn.h> // load custom driver
 
 static bool load_custom_driver(const std::string &driver_name) {
+    libadreno_var val = {false, "", "", "", "", ""};
     fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver_name / "/";
 
     if (!fs::exists(driver_path)) {
         LOG_ERROR("Could not find driver {}", driver_name);
-        return false;
+        return val;
     }
 
     std::string main_so_name;
@@ -67,7 +66,7 @@ static bool load_custom_driver(const std::string &driver_name) {
         fs::path driver_name_file = driver_path / "driver_name.txt";
         if (!fs::exists(driver_name_file)) {
             LOG_ERROR("Could not find driver driver_name.txt");
-            return false;
+            return val;
         }
 
         fs::ifstream name_file(driver_name_file, std::ios_base::in);
@@ -75,12 +74,10 @@ static bool load_custom_driver(const std::string &driver_name) {
         name_file.close();
     }
 
-    const char *temp_dir = nullptr;
     fs::path temp_dir_path;
     if (SDL_GetAndroidSDKVersion() < 29) {
         temp_dir_path = driver_path / "tmp/";
         fs::create_directory(temp_dir_path);
-        temp_dir = temp_dir_path.c_str();
     }
 
     fs::path lib_dir;
@@ -109,43 +106,10 @@ static bool load_custom_driver(const std::string &driver_name) {
     }
 
     fs::create_directory(driver_path / "file_redirect");
+    std::string inject_path = (driver_path / "file_redirect/").c_str();
+    val = {true, temp_dir_path.c_str(), lib_dir.c_str(), driver_path.c_str(), main_so_name.c_str(), inject_path.c_str()};
 
-    void *vulkan_handle = adrenotools_open_libvulkan(
-        RTLD_NOW,
-        ADRENOTOOLS_DRIVER_FILE_REDIRECT | ADRENOTOOLS_DRIVER_CUSTOM,
-        temp_dir,
-        lib_dir.c_str(),
-        driver_path.c_str(),
-        main_so_name.c_str(),
-        (driver_path / "file_redirect/").c_str(),
-        nullptr);
-
-    if (!vulkan_handle) {
-        LOG_ERROR("Could not open handle for custom driver {}", driver_name);
-        return false;
-    }
-
-    // we use a custom sdl build, if the path starts with this magic number, it uses the following handle instead
-    struct {
-        uint64_t magic;
-        void *handle;
-    } load_library_parameter;
-    load_library_parameter.magic = 0xFEEDC0DE;
-    load_library_parameter.handle = vulkan_handle;
-
-    if (SDL_Vulkan_LoadLibrary(reinterpret_cast<const char *>(&load_library_parameter)) < 0) {
-        LOG_ERROR("Could not load custom driver, error {}", SDL_GetError());
-        app::error_dialog("Could not load custom driver.\napp will use system driver instead");
-            vulkan_handle = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
-        if (vulkan_handle == nullptr) {
-            char *error = dlerror();
-            LOG_WARN( "Failed to load system Vulkan driver: %s", error ? error : "");
-            app::error_dialog("Could not load built-in vulkan driver");
-            return false;
-        }
-    }
-
-    return true;
+    return val;
 }
 #endif
 
@@ -494,11 +458,22 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     state.res_height_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.dpi_scale);
 
 #ifdef ANDROID
-    if (!state.cfg.current_config.custom_driver_name.empty()) {
-        // load custom driver using libadrenotools
-        if (!load_custom_driver(state.cfg.current_config.custom_driver_name))
-            return false;
+    if(state.cfg.boot_fail && state.cfg.gpu_idx != 0){
+            error_dialog("Looks like last GPU driver not supported or broken\nApp will use default driver now", nullptr);
+            state.cfg.gpu_idx = 0;
+            state.cfg.custom_driver_name = "";
+            state.cfg.boot_fail = false;
+    }else if (state.cfg.current_config.custom_driver_name.empty() && state.cfg.gpu_idx != 0) {
+        // set path to load custom driver using libadrenotools
+            state.libadreno = load_custom_driver(state.cfg.current_config.custom_driver_name);
+            if(!state.libadreno.is_adreno){
+                error_dialog("Custom driver corrupted or you use wrong file\nApp will use default driver now", nullptr);
+                state.cfg.gpu_idx = 0;
+                state.cfg.custom_driver_name = "";
+                state.cfg.boot_fail = true;
+            }
     }
+
 #endif
 
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
@@ -510,7 +485,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
 
     // initialize the renderer first because we need to know if we need a page table
     if (!state.cfg.console) {
-        if (renderer::init(state.window.get(), state.renderer, state.backend_renderer, state.cfg, root_paths)) {
+        if (renderer::init(state.window.get(), state.renderer, state.backend_renderer, state.cfg, root_paths, state.libadreno)) {
             update_viewport(state);
         } else {
             switch (state.backend_renderer) {
@@ -550,7 +525,10 @@ bool init(EmuEnvState &state, const Root &root_paths) {
         discordrpc::update_presence();
     }
 #endif
-
+#ifdef ANDROID
+    if(state.cfg.boot_fail)
+        state.cfg.boot_fail = false;
+#endif
     return true;
 }
 
