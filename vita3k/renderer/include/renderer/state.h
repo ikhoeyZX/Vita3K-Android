@@ -64,9 +64,7 @@ struct State {
 
     Backend current_backend;
     std::string current_custom_driver;
-#ifdef ANDROID
-    bool is_adreno = false;
-#endif
+
     FeatureState features;
     float res_multiplier;
     bool disable_surface_sync;
