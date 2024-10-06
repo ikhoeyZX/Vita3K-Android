@@ -458,9 +458,8 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     state.res_height_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.dpi_scale);
 
 #ifdef ANDROID
-   // LOG_TRACE("state.cfg.gpu_idx: {}", state.cfg.gpu_idx);
     if(state.cfg.boot_fail && state.cfg.gpu_idx != 0){
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Custom driver failed!", fmt::format("GPU driver {}\nnot supported or broken\nApp will use default driver now", state.cfg.custom_driver_name).c_str(), window);
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Custom driver failed!", fmt::format("GPU driver {}\nnot supported or broken\nApp will use default driver now", state.cfg.custom_driver_name).c_str(), nullptr);
             state.cfg.gpu_idx = 0;
             state.cfg.custom_driver_name = "";
             state.cfg.boot_fail = false;
@@ -470,7 +469,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
           if(!state.cfg.boot_fail){
                 state.cfg.boot_fail = true;
                 config::serialize_config(state.cfg, state.cfg.config_path);
-              }
+            }
         
            // LOG_INFO("Load custom driver");
            // set path to load custom driver using libadrenotools
