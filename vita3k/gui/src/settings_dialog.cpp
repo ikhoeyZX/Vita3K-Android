@@ -837,12 +837,14 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
            if ((config.resolution_multiplier == 1.0f) && !config.disable_surface_sync)
                ImGui::EndDisabled();
            ImGui::Spacing();
+           ImGui::PopID();
         }else{
           ImGui::Text(": Manual Input");
           ImGui::Spacing();
           static int setdph = static_cast<int>(544 * config.resolution_multiplier);
           ImGui::Text("Insert screen height ");
-          ImGui::InputInt(": ", &setdph);
+          ImGui::SameLine();
+          ImGui::InputInt(" ", &setdph);
           if (ImGui::IsItemHovered())
               ImGui::SetTooltip("Not all games support manual screen size");
                     
@@ -851,15 +853,15 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
           }else if(setdph > 4352){
              setdph = 4352;
           }
-          float tmp =  static_cast<float>(setdph / 544);
-          config.resolution_multiplier = tmp;
+          
+          config.resolution_multiplier = static_cast<float>(setdph / 544);
           ImGui::Spacing();
         }
         const auto res_scal = fmt::format("{}x{}", static_cast<int>(960 * config.resolution_multiplier), static_cast<int>(544 * config.resolution_multiplier));
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(res_scal.c_str()).x / 2.f) - (35.f * SCALE.x));
         ImGui::Text("%s", res_scal.c_str());
         ImGui::Spacing();
-        ImGui::PopID();
+        
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
