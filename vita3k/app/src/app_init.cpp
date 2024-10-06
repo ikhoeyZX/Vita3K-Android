@@ -458,7 +458,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     state.res_height_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.dpi_scale);
 
 #ifdef ANDROID
-    LOG_TRACE("state.cfg.gpu_idx: {}", state.cfg.gpu_idx);
+   // LOG_TRACE("state.cfg.gpu_idx: {}", state.cfg.gpu_idx);
     if(state.cfg.boot_fail && state.cfg.gpu_idx != 0){
             error_dialog("Looks like last GPU driver \nnot supported or broken\nApp will use default driver now", nullptr);
             state.cfg.gpu_idx = 0;
@@ -466,8 +466,14 @@ bool init(EmuEnvState &state, const Root &root_paths) {
             state.cfg.boot_fail = false;
             config::serialize_config(state.cfg, state.cfg.config_path);
     }else if (state.cfg.gpu_idx != 0) {
-        // set path to load custom driver using libadrenotools
-            LOG_INFO("Load custom driver");
+          // mark failed boot first because if custom driber fail it will crash app so no way mark it after load custom driver
+          if(!state.cfg.boot_fail){
+                state.cfg.boot_fail = true;
+                config::serialize_config(state.cfg, state.cfg.config_path);
+              }
+        
+           // LOG_INFO("Load custom driver");
+           // set path to load custom driver using libadrenotools
             state.libadreno = load_custom_driver(state.cfg.current_config.custom_driver_name);
             if(!state.libadreno.is_adreno){
                 error_dialog("Custom driver corrupted or you use wrong file\nApp will use default driver now", nullptr);
