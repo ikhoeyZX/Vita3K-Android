@@ -460,7 +460,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
 #ifdef ANDROID
    // LOG_TRACE("state.cfg.gpu_idx: {}", state.cfg.gpu_idx);
     if(state.cfg.boot_fail && state.cfg.gpu_idx != 0){
-            error_dialog("Looks like last GPU driver \nnot supported or broken\nApp will use default driver now", nullptr);
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Custom driver failed!", fmt::format("GPU driver {}\nnot supported or broken\nApp will use default driver now", state.cfg.custom_driver_name).c_str(), window);
             state.cfg.gpu_idx = 0;
             state.cfg.custom_driver_name = "";
             state.cfg.boot_fail = false;
