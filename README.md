@@ -9,7 +9,7 @@ if you find issue go to main repo, not in here
 - 6GB Free storage
 
 # Known Issue
-- Custom driver didn't work in v12 build 2 or newer since it's **NOT** using custom SDL2 (because it's close source)
+~- Custom driver didn't work in v12 build 2 or newer since it's **NOT** using custom SDL2 (because it's close source)~ (Adreno GPU Driver supported now [v12_build10](https://github.com/ikhoeyZX/Vita3K-Android/releases/tag/v12_build9))
 - Vulkan 1.0 can run but it didn't run well, use OpenGL(ES) instead (adreno only, mali didn't support openGLES in this emu for now) 
 
 # Vita3K
