@@ -307,14 +307,14 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
         
 #ifdef ANDROID
-        LOG_TRACE("LIBPASS ADRENO");
+        /*  LOG_TRACE("LIBPASS ADRENO");
 	    LOG_TRACE("is_adreno : {}", adreno.is_adreno);
 	    LOG_TRACE("adreno_temp_dir: {}", adreno.adreno_temp_dir.c_str());
 	    LOG_TRACE("adreno_lib_dir: {}", adreno.adreno_lib_dir.c_str());
 	    LOG_TRACE("adreno_driver_path: {}", adreno.adreno_driver_path.c_str());
 	    LOG_TRACE("adreno_main_so_name: {}", adreno.adreno_main_so_name.c_str());
 	    LOG_TRACE("adreno_inject_dir: {}", adreno.adreno_inject_dir.c_str());
-	    
+	*/
         if(adreno.is_adreno){
     	    const char *temp_dir = nullptr;
         	if (SDL_GetAndroidSDKVersion() < 29) { // ANDROID 9
