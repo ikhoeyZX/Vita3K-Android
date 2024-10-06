@@ -307,6 +307,14 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
         
 #ifdef ANDROID
+        LOG_TRACE("LIBPASS ADRENO");
+	    LOG_TRACE("is_adreno : {}", adreno.is_adreno);
+	    LOG_TRACE("adreno_temp_dir: {}", adreno.adreno_temp_dir.c_str());
+	    LOG_TRACE("adreno_lib_dir: {}", adreno.adreno_lib_dir.c_str());
+	    LOG_TRACE("adreno_driver_path: {}", adreno.adreno_driver_path.c_str());
+	    LOG_TRACE("adreno_main_so_name: {}", adreno.adreno_main_so_name.c_str());
+	    LOG_TRACE("adreno_inject_dir: {}", adreno.adreno_inject_dir.c_str());
+	    
         if(adreno.is_adreno){
     	    const char *temp_dir = nullptr;
         	if (SDL_GetAndroidSDKVersion() < 29) { // ANDROID 9
@@ -327,11 +335,11 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
                   LOG_ERROR("Could not open handle for custom driver {}",  adreno.adreno_main_so_name);
                   LOG_INFO("Using default vulkan driver instead");
                   SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Custom Driver Error!", fmt::format(" Could not open custom driver {} \n System will use default driver instead ", adreno.adreno_main_so_name).c_str(), window);
+            }else{
+                  // Inject custom driver
+                  vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>( dlsym( vulkan_handle, "vkGetInstanceProcAddr" ) );
+    	          VULKAN_HPP_DEFAULT_DISPATCHER.init( vkGetInstanceProcAddr );
             }
-            
-            // Inject custom driver
-            vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>( dlsym( vulkan_handle, "vkGetInstanceProcAddr" ) );
-    	    VULKAN_HPP_DEFAULT_DISPATCHER.init( vkGetInstanceProcAddr );
         }
         
         if (!detect_patch_bcn(&texture_cache.support_dxt))
