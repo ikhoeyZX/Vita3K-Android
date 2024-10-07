@@ -37,6 +37,7 @@ static inline void func_trace(CPUState &state) {
 }
 
 void UnicornCPU::code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
+    LOG_TRACE("CODE HOOK");
     UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
     std::string disassembly = disassemble(*state.parent, address);
     if (LOG_REGISTERS) {
@@ -56,6 +57,7 @@ void UnicornCPU::code_hook(uc_engine *uc, uint64_t address, uint32_t size, void 
 }
 
 void UnicornCPU::read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+    LOG_TRACE("READ HOOK");
     assert(value == 0);
 
     UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
@@ -68,6 +70,7 @@ void UnicornCPU::read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, in
 }
 
 void UnicornCPU::write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
+    LOG_TRACE("WRITE HOOK");
     UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
     auto start = state.parent->protocol->get_watch_memory_addr(address);
     if (start) {
@@ -77,6 +80,7 @@ void UnicornCPU::write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, i
 }
 
 void UnicornCPU::log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, MemState &mem, CPUState &cpu, Address offset) {
+    LOG_TRACE("LOG MEM ACCESS");
     const char *const name = mem_name(address, mem);
     auto pc = get_pc();
     LOG_TRACE("{} ({}): {} {} bytes, address {} + {} ({}, {}), value {} at {}", log_hex((uint64_t)uc), cpu.thread_id, type, size, log_hex(address), log_hex(offset), log_hex(address + offset), name, log_hex(value), log_hex(pc));
@@ -86,6 +90,7 @@ constexpr uint32_t INT_SVC = 2;
 constexpr uint32_t INT_BKPT = 7;
 
 void UnicornCPU::intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
+    LOG_TRACE("INTR HOOK");
     assert(intno == INT_SVC || intno == INT_BKPT);
     UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
     uint32_t pc = state.get_pc();
@@ -108,6 +113,7 @@ void UnicornCPU::intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
 }
 
 static void enable_vfp_fpu(uc_engine *uc) {
+    LOG_TRACE("ENABLE VPU/FPU");
     uint64_t c1_c0_2 = 0;
     uc_err err = uc_reg_read(uc, UC_ARM_REG_CP_REG, &c1_c0_2);
     assert(err == UC_ERR_OK);
@@ -137,34 +143,46 @@ void UnicornCPU::log_error_details(uc_err code) {
 UnicornCPU::UnicornCPU(CPUState *state)
     : parent(state) {
     uc_engine *temp_uc = nullptr;
+    LOG_TRACE("UC_OPEN");
     uc_err err = uc_open(UC_ARCH_ARM, UC_MODE_ARM, &temp_uc);
     assert(err == UC_ERR_OK);
-
+    LOG_TRACE("UNICORNPTR");
     uc = UnicornPtr(temp_uc, uc_close);
     temp_uc = nullptr;
 
     uc_hook hh = 0;
 
+    LOG_TRACE("uc_ctl_set_cpu_model");
+    err = uc_ctl_set_cpu_model(uc.get(), UC_CPU_ARM_CORTEX_A9);
+    assert(err == UC_ERR_OK);
+
+    LOG_TRACE("uc_hook_add");
     err = uc_hook_add(uc.get(), &hh, UC_HOOK_INTR, reinterpret_cast<void *>(&intr_hook), this, 1, 0);
     assert(err == UC_ERR_OK);
 
     // Don't map the null page into unicorn so that unicorn returns access error instead of
     // crashing the whole emulator on invalid access
+    LOG_TRACE("uc_mem_map_ptr");
     err = uc_mem_map_ptr(uc.get(), state->mem->page_size, GiB(4), UC_PROT_ALL, &state->mem->memory[state->mem->page_size]);
     assert(err == UC_ERR_OK);
 
+    LOG_TRACE("enable_vfp_fpu");
     enable_vfp_fpu(uc.get());
 }
 
 int UnicornCPU::execute_instructions_no_check(int num) {
+    LOG_TRACE("GET_PC");
     std::uint32_t pc = get_pc();
+    LOG_TRACE("IS THUMB?");
     bool thumb_mode = is_thumb_mode();
     if (thumb_mode) {
         pc |= 1;
     }
 
+    LOG_TRACE("uc_emu_start");
     uc_err err = uc_emu_start(uc.get(), pc, 1ULL << 63, 0, num);
 
+    LOG_TRACE("uc_emu_start ENDED");
     if (err != UC_ERR_OK) {
         log_error_details(err);
         return -1;
@@ -174,65 +192,80 @@ int UnicornCPU::execute_instructions_no_check(int num) {
 }
 
 int UnicornCPU::run() {
+    LOG_TRACE("UNICORN RUN");
     uint32_t pc = get_pc();
+    LOG_TRACE("IS THUMB");
     bool thumb_mode = is_thumb_mode();
     did_break = false;
     parent->svc_called = false;
 
+    LOG_TRACE("GET PC");
     pc = get_pc();
     if (thumb_mode) {
         pc |= 1;
     }
 
+    LOG_TRACE("uc_emu_start");
     uc_err err = uc_emu_start(uc.get(), pc, 0, 0, 0);
     if (err != UC_ERR_OK) {
         log_error_details(err);
         return -1;
     }
-
+    LOG_TRACE("GET PC");
     pc = get_pc();
+
+    LOG_TRACE("IS THUMB");
     thumb_mode = is_thumb_mode();
     if (thumb_mode) {
         pc |= 1;
     }
 
+    LOG_TRACE("RETURN HALT");
     return parent->halt_instruction_pc <= pc && pc <= parent->halt_instruction_pc + 4;
 }
 
 int UnicornCPU::step() {
+    LOG_TRACE("STEP, GET PC");
     uint32_t pc = get_pc();
+    LOG_TRACE("IS THUMB");
     bool thumb_mode = is_thumb_mode();
 
     did_break = false;
     parent->svc_called = false;
 
+    LOG_TRACE("GET PC");
     pc = get_pc();
     if (thumb_mode) {
         pc |= 1;
     }
 
+    LOG_TRACE("uc_emu_start");
     uc_err err = uc_emu_start(uc.get(), pc, 0, 0, 1);
 
     if (err != UC_ERR_OK) {
         log_error_details(err);
         return -1;
     }
+    LOG_TRACE("GET PC");
     pc = get_pc();
     thumb_mode = is_thumb_mode();
     if (thumb_mode) {
         pc |= 1;
     }
 
+    LOG_TRACE("RETURN HALT");
     return parent->halt_instruction_pc <= pc && pc <= parent->halt_instruction_pc + 4;
 }
 
 void UnicornCPU::stop() {
+    LOG_TRACE("UNICORN STOP");
     const uc_err err = uc_emu_stop(uc.get());
     assert(err == UC_ERR_OK);
 }
 
 uint32_t UnicornCPU::get_reg(uint8_t idx) {
     uint32_t value = 0;
+    LOG_TRACE("uc_reg_read GET REG");
     const uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_R0 + static_cast<int>(idx), &value);
     assert(err == UC_ERR_OK);
 
@@ -240,12 +273,14 @@ uint32_t UnicornCPU::get_reg(uint8_t idx) {
 }
 
 void UnicornCPU::set_reg(uint8_t idx, uint32_t val) {
+    LOG_TRACE("uc_reg_write SET REG");
     const uc_err err = uc_reg_write(uc.get(), UC_ARM_REG_R0 + static_cast<int>(idx), &val);
     assert(err == UC_ERR_OK);
 }
 
 uint32_t UnicornCPU::get_sp() {
     uint32_t value = 0;
+    LOG_TRACE("uc_reg_read GET SP");
     const uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_SP, &value);
     assert(err == UC_ERR_OK);
 
@@ -253,11 +288,13 @@ uint32_t UnicornCPU::get_sp() {
 }
 
 void UnicornCPU::set_sp(uint32_t val) {
+    LOG_TRACE("uc_reg_write SET SP");
     const uc_err err = uc_reg_write(uc.get(), UC_ARM_REG_SP, &val);
     assert(err == UC_ERR_OK);
 }
 
 uint32_t UnicornCPU::get_pc() {
+    LOG_TRACE("GET PC uc_reg_read");
     uint32_t value = 0;
     const uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_PC, &value);
     assert(err == UC_ERR_OK);
@@ -266,11 +303,13 @@ uint32_t UnicornCPU::get_pc() {
 }
 
 void UnicornCPU::set_pc(uint32_t val) {
+    LOG_TRACE("SET PC uc_reg_write");
     const uc_err err = uc_reg_write(uc.get(), UC_ARM_REG_PC, &val);
     assert(err == UC_ERR_OK);
 }
 
 uint32_t UnicornCPU::get_lr() {
+    LOG_TRACE("GET LR uc_reg_read");
     uint32_t value = 0;
     const uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_LR, &value);
     assert(err == UC_ERR_OK);
@@ -279,11 +318,13 @@ uint32_t UnicornCPU::get_lr() {
 }
 
 void UnicornCPU::set_lr(uint32_t val) {
+    LOG_TRACE("SET LR uc_reg_write");
     const uc_err err = uc_reg_write(uc.get(), UC_ARM_REG_LR, &val);
     assert(err == UC_ERR_OK);
 }
 
 uint32_t UnicornCPU::get_cpsr() {
+    LOG_TRACE("GET CPSR uc_reg_read");
     uint32_t value = 0;
     const uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_CPSR, &value);
     assert(err == UC_ERR_OK);
@@ -292,11 +333,13 @@ uint32_t UnicornCPU::get_cpsr() {
 }
 
 void UnicornCPU::set_cpsr(uint32_t val) {
+    LOG_TRACE("SET CPSR uc_reg_write");
     const uc_err err = uc_reg_write(uc.get(), UC_ARM_REG_CPSR, &val);
     assert(err == UC_ERR_OK);
 }
 
 uint32_t UnicornCPU::get_tpidruro() {
+    LOG_TRACE("GET TPIDRURO uc_reg_read");
     uint32_t value = 0;
     const uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_C13_C0_3, &value);
     assert(err == UC_ERR_OK);
@@ -305,11 +348,13 @@ uint32_t UnicornCPU::get_tpidruro() {
 }
 
 void UnicornCPU::set_tpidruro(uint32_t val) {
+    LOG_TRACE("SET TPIDRURO uc_reg_write");
     const uc_err err = uc_reg_write(uc.get(), UC_ARM_REG_C13_C0_3, &val);
     assert(err == UC_ERR_OK);
 }
 
 uint32_t UnicornCPU::get_fpscr() {
+    LOG_TRACE("GET FPSCR uc_reg_read");
     uint32_t value = 0;
     const uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_FPSCR, &value);
     assert(err == UC_ERR_OK);
@@ -318,6 +363,7 @@ uint32_t UnicornCPU::get_fpscr() {
 }
 
 void UnicornCPU::set_fpscr(uint32_t val) {
+    LOG_TRACE("SET FPSCR uc_reg_write);
     const uc_err err = uc_reg_write(uc.get(), UC_ARM_REG_FPSCR, &val);
     assert(err == UC_ERR_OK);
 }
