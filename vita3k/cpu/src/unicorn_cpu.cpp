@@ -40,7 +40,7 @@ void UnicornCPU::code_hook(uc_engine *uc, uint64_t address, uint32_t size, void 
     UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
     std::string disassembly = disassemble(*state.parent, address);
     if (LOG_REGISTERS) {
-        for (int i = 0; i < 12; i++) {
+        for (uint8_t i = 0; i < 12; i++) {
             auto reg_name = fmt::format("r{}", i);
             auto reg_name_with_value = fmt::format("{}({})", reg_name, log_hex(state.get_reg(i)));
             string_utils::replace(disassembly, reg_name, reg_name_with_value);
@@ -109,12 +109,12 @@ void UnicornCPU::intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
 
 static void enable_vfp_fpu(uc_engine *uc) {
     uint64_t c1_c0_2 = 0;
-    uc_err err = uc_reg_read(uc, UC_ARM_REG_C1_C0_2, &c1_c0_2);
+    uc_err err = uc_reg_read(uc, UC_ARM_REG_CP_REG, &c1_c0_2);
     assert(err == UC_ERR_OK);
 
     c1_c0_2 |= (0xf << 20);
 
-    err = uc_reg_write(uc, UC_ARM_REG_C1_C0_2, &c1_c0_2);
+    err = uc_reg_write(uc, UC_ARM_REG_CP_REG, &c1_c0_2);
     assert(err == UC_ERR_OK);
 
     const uint64_t fpexc = 0xf0000000;
@@ -137,7 +137,7 @@ void UnicornCPU::log_error_details(uc_err code) {
 UnicornCPU::UnicornCPU(CPUState *state)
     : parent(state) {
     uc_engine *temp_uc = nullptr;
-    uc_err err = uc_open(UC_ARCH_ARM, UC_MODE_ARM, &temp_uc);
+    uc_err err = uc_open(UC_ARCH_ARM, UC_MODE_ARM + UC_MODE_LITTLE_ENDIAN, &temp_uc);
     assert(err == UC_ERR_OK);
 
     uc = UnicornPtr(temp_uc, uc_close);
@@ -150,7 +150,7 @@ UnicornCPU::UnicornCPU(CPUState *state)
 
     // Don't map the null page into unicorn so that unicorn returns access error instead of
     // crashing the whole emulator on invalid access
-    err = uc_mem_map_ptr(uc.get(), state->mem->page_size, GiB(4) - state->mem->page_size, UC_PROT_ALL, &state->mem->memory[state->mem->page_size]);
+    err = uc_mem_map_ptr(uc.get(), state->mem->page_size, GiB(4), UC_PROT_ALL, &state->mem->memory[state->mem->page_size]);
     assert(err == UC_ERR_OK);
 
     enable_vfp_fpu(uc.get());
@@ -353,14 +353,14 @@ bool UnicornCPU::is_thumb_mode() {
 
 CPUContext UnicornCPU::save_context() {
     CPUContext ctx;
-    for (size_t i = 0; i < 13; i++) {
+    for (uint8_t i = 0; i < 13; i++) {
         ctx.cpu_registers[i] = get_reg(i);
     }
     ctx.cpu_registers[13] = get_sp();
     ctx.cpu_registers[14] = get_lr();
     ctx.set_pc(is_thumb_mode() ? get_pc() | 1 : get_pc());
 
-    for (size_t i = 0; i < ctx.fpu_registers.size(); i++) {
+    for (auto i = 0; i < ctx.fpu_registers.size(); i++) {
         ctx.fpu_registers[i] = get_float_reg(i);
     }
 
@@ -380,7 +380,7 @@ void UnicornCPU::load_context(const CPUContext &ctx) {
     // set_cpsr(ctx.cpsr);
     // set_fpscr(ctx.fpscr);
 
-    for (size_t i = 0; i < 16; i++) {
+    for (uint8_t i = 0; i < 16; i++) {
         set_reg(i, ctx.cpu_registers[i]);
     }
     set_sp(ctx.get_sp());
