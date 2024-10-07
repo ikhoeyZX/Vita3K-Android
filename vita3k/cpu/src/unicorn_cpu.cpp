@@ -137,7 +137,7 @@ void UnicornCPU::log_error_details(uc_err code) {
 UnicornCPU::UnicornCPU(CPUState *state)
     : parent(state) {
     uc_engine *temp_uc = nullptr;
-    uc_err err = uc_open(UC_ARCH_ARM, UC_MODE_ARM + UC_MODE_LITTLE_ENDIAN, &temp_uc);
+    uc_err err = uc_open(UC_ARCH_ARM, UC_MODE_ARM, &temp_uc);
     assert(err == UC_ERR_OK);
 
     uc = UnicornPtr(temp_uc, uc_close);
