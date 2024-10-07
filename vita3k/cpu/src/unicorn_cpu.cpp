@@ -363,12 +363,13 @@ uint32_t UnicornCPU::get_fpscr() {
 }
 
 void UnicornCPU::set_fpscr(uint32_t val) {
-    LOG_TRACE("SET FPSCR uc_reg_write);
+    LOG_TRACE("SET FPSCR uc_reg_write");
     const uc_err err = uc_reg_write(uc.get(), UC_ARM_REG_FPSCR, &val);
     assert(err == UC_ERR_OK);
 }
 
 float UnicornCPU::get_float_reg(uint8_t idx) {
+    LOG_TRACE("GET FLOAT REG uc_reg_read");
     DoubleReg value;
 
     const int single_index = idx / 2;
@@ -378,6 +379,7 @@ float UnicornCPU::get_float_reg(uint8_t idx) {
 }
 
 void UnicornCPU::set_float_reg(uint8_t idx, float val) {
+    LOG_TRACE("SET FLOAT REG uc_reg_write");
     DoubleReg value;
 
     const int single_index = idx / 2;
@@ -390,6 +392,7 @@ void UnicornCPU::set_float_reg(uint8_t idx, float val) {
 }
 
 bool UnicornCPU::is_thumb_mode() {
+    LOG_TRACE("IS THUMB MODE uc_query");
     size_t mode = 0;
     const uc_err err = uc_query(uc.get(), UC_QUERY_MODE, &mode);
     assert(err == UC_ERR_OK);
@@ -398,6 +401,7 @@ bool UnicornCPU::is_thumb_mode() {
 }
 
 CPUContext UnicornCPU::save_context() {
+    LOG_TRACE("SAVE CONTEXT");
     CPUContext ctx;
     for (uint8_t i = 0; i < 13; i++) {
         ctx.cpu_registers[i] = get_reg(i);
@@ -418,6 +422,7 @@ CPUContext UnicornCPU::save_context() {
 }
 
 void UnicornCPU::load_context(const CPUContext &ctx) {
+    LOG_TRACE("LOAD CONTEXT");
     for (size_t i = 0; i < ctx.fpu_registers.size(); i++) {
         set_float_reg(i, ctx.fpu_registers[i]);
     }
@@ -435,19 +440,23 @@ void UnicornCPU::load_context(const CPUContext &ctx) {
 }
 
 void UnicornCPU::invalidate_jit_cache(Address start, size_t length) {
+    LOG_TRACE("invalidate_jit_cache");
     uc_ctl_remove_cache(uc.get(), start, start + length);
 }
 
 bool UnicornCPU::hit_breakpoint() {
+    LOG_TRACE("hit_breakpoint");
     return did_break;
 }
 
 void UnicornCPU::trigger_breakpoint() {
+    LOG_TRACE("trigger_breakpoint");
     stop();
     did_break = true;
 }
 
 void UnicornCPU::set_log_code(bool log) {
+    LOG_TRACE("set_log_code");
     if (get_log_code() == log) {
         return;
     }
@@ -463,6 +472,7 @@ void UnicornCPU::set_log_code(bool log) {
 }
 
 void UnicornCPU::set_log_mem(bool log) {
+    LOG_TRACE("set_log_mem");
     if (get_log_mem() == log) {
         return;
     }
@@ -484,9 +494,11 @@ void UnicornCPU::set_log_mem(bool log) {
 }
 
 bool UnicornCPU::get_log_code() {
+    LOG_TRACE("get_log_code");
     return code_hook_handle != 0;
 }
 
 bool UnicornCPU::get_log_mem() {
+    LOG_TRACE("get_log_mem");
     return memory_read_hook_handle != 0 && memory_write_hook_handle != 0;
 }
