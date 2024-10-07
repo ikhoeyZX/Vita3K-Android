@@ -126,7 +126,7 @@ static void enable_vfp_fpu(uc_engine *uc) {
    // const uint64_t fpexc = 0xf0000000;
     const uint64_t fpexc = 0x40000000;
 
-    err = uc_reg_write(uc, UC_ARM_REG_FPEXC, &fpexc);
+    uc_err err = uc_reg_write(uc, UC_ARM_REG_FPEXC, &fpexc);
     assert(err == UC_ERR_OK);
 }
 
