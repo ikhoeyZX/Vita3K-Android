@@ -113,8 +113,8 @@ void UnicornCPU::intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
 }
 
 static void enable_vfp_fpu(uc_engine *uc) {
-    LOG_TRACE("ENABLE VPU/FPU");
-/*    uint64_t c1_c0_2 = 0;
+   /* LOG_TRACE("ENABLE VPU/FPU");
+    uint64_t c1_c0_2 = 0;
     uc_err err = uc_reg_read(uc, UC_ARM_REG_CP_REG, &c1_c0_2);
     assert(err == UC_ERR_OK);
 
@@ -122,12 +122,13 @@ static void enable_vfp_fpu(uc_engine *uc) {
 
     err = uc_reg_write(uc, UC_ARM_REG_CP_REG, &c1_c0_2);
     assert(err == UC_ERR_OK);
-*/
+
    // const uint64_t fpexc = 0xf0000000;
     const uint64_t fpexc = 0x40000000;
 
     uc_err err = uc_reg_write(uc, UC_ARM_REG_FPEXC, &fpexc);
     assert(err == UC_ERR_OK);
+    */
 }
 
 void UnicornCPU::log_error_details(uc_err code) {
