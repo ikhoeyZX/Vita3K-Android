@@ -800,11 +800,11 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
            ImGui::Text(": Slider");
            ImGui::Spacing();
            ImGui::PushID("Res scal");
-           if (config.resolution_multiplier <= 0.01f)
+           if (config.resolution_multiplier <= 0.25f)
                ImGui::BeginDisabled();
            if (ImGui::Button("<", ImVec2(20.f * SCALE.x, 0)))
                config.resolution_multiplier -= 0.25f;
-           if (config.resolution_multiplier <= 0.5f)
+           if (config.resolution_multiplier <= 0.25f)
                ImGui::EndDisabled();
            ImGui::SameLine(0, 5.f * SCALE.x);
             if(emuenv.cfg.screenmode_pos == 3){
@@ -813,7 +813,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::PushItemWidth(-100.f * SCALE.x);
             }
            
-           int slider_position = static_cast<uint8_t>(config.resolution_multiplier * 4);
+           int slider_position = static_cast<int>(config.resolution_multiplier * 4);
            if (ImGui::SliderInt("##res_scal", &slider_position, 2, 32, fmt::format("{}x", config.resolution_multiplier).c_str(), ImGuiSliderFlags_None)) {
                config.resolution_multiplier = static_cast<float>(slider_position) / 4.0f;
                if (config.resolution_multiplier != 1.0f && !is_vulkan)
@@ -854,7 +854,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
              setdph = 4352;
           }
           
-          config.resolution_multiplier = static_cast<float>(setdph / 544);
+          config.resolution_multiplier = static_cast<float>(setdph) / 544;
           ImGui::Spacing();
         }
         const auto res_scal = fmt::format("{}x{}", static_cast<int>(960 * config.resolution_multiplier), static_cast<int>(544 * config.resolution_multiplier));
