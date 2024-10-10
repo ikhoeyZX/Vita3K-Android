@@ -113,7 +113,8 @@ void UnicornCPU::intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
 }
 
 static void enable_vfp_fpu(uc_engine *uc) {
-   /* LOG_TRACE("ENABLE VPU/FPU");
+    LOG_TRACE("ENABLE VPU/FPU");
+/*
     uint64_t c1_c0_2 = 0;
     uc_err err = uc_reg_read(uc, UC_ARM_REG_CP_REG, &c1_c0_2);
     assert(err == UC_ERR_OK);
@@ -122,13 +123,13 @@ static void enable_vfp_fpu(uc_engine *uc) {
 
     err = uc_reg_write(uc, UC_ARM_REG_CP_REG, &c1_c0_2);
     assert(err == UC_ERR_OK);
-
+*/
    // const uint64_t fpexc = 0xf0000000;
     const uint64_t fpexc = 0x40000000;
 
     uc_err err = uc_reg_write(uc, UC_ARM_REG_FPEXC, &fpexc);
     assert(err == UC_ERR_OK);
-    */
+    
 }
 
 void UnicornCPU::log_error_details(uc_err code) {
@@ -283,7 +284,7 @@ void UnicornCPU::set_reg(uint8_t idx, uint32_t val) {
 uint32_t UnicornCPU::get_sp() {
     uint32_t value = 0;
     LOG_TRACE("uc_reg_read GET SP");
-    const uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_SP, &value);
+    const uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_R13, &value);
     assert(err == UC_ERR_OK);
 
     return value;
@@ -291,14 +292,14 @@ uint32_t UnicornCPU::get_sp() {
 
 void UnicornCPU::set_sp(uint32_t val) {
     LOG_TRACE("uc_reg_write SET SP");
-    const uc_err err = uc_reg_write(uc.get(), UC_ARM_REG_SP, &val);
+    const uc_err err = uc_reg_write(uc.get(), UC_ARM_REG_R13, &val);
     assert(err == UC_ERR_OK);
 }
 
 uint32_t UnicornCPU::get_pc() {
     LOG_TRACE("GET PC uc_reg_read");
     uint32_t value = 0;
-    const uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_PC, &value);
+    const uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_R15, &value);
     assert(err == UC_ERR_OK);
 
     return value;
@@ -306,14 +307,14 @@ uint32_t UnicornCPU::get_pc() {
 
 void UnicornCPU::set_pc(uint32_t val) {
     LOG_TRACE("SET PC uc_reg_write");
-    const uc_err err = uc_reg_write(uc.get(), UC_ARM_REG_PC, &val);
+    const uc_err err = uc_reg_write(uc.get(), UC_ARM_REG_R15, &val);
     assert(err == UC_ERR_OK);
 }
 
 uint32_t UnicornCPU::get_lr() {
     LOG_TRACE("GET LR uc_reg_read");
     uint32_t value = 0;
-    const uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_LR, &value);
+    const uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_R14, &value);
     assert(err == UC_ERR_OK);
 
     return value;
@@ -321,7 +322,7 @@ uint32_t UnicornCPU::get_lr() {
 
 void UnicornCPU::set_lr(uint32_t val) {
     LOG_TRACE("SET LR uc_reg_write");
-    const uc_err err = uc_reg_write(uc.get(), UC_ARM_REG_LR, &val);
+    const uc_err err = uc_reg_write(uc.get(), UC_ARM_REG_R14, &val);
     assert(err == UC_ERR_OK);
 }
 
