@@ -30,7 +30,7 @@
 
 #ifdef ANDROID
 // for message popup
-#include <SDL.h>
+#include <SDL_system.h>
 #endif
 
 static constexpr bool log_texture_import = false;
