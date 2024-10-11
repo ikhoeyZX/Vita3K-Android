@@ -299,9 +299,11 @@ static vk::Format linear_to_srgb(const vk::Format format) {
 
 static vk::Format bcn_to_rgba8(const vk::Format format) {
     switch (format) {
-    //https://learn.microsoft.com/en-us/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-block-compression
-//    case vk::Format::eBc1RgbUnormBlock:
+    // https://learn.microsoft.com/en-us/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-block-compression
+    case vk::Format::eBc1RgbUnormBlock:
+        return vk::Format::eR8G8B8Unorm;
 //            return vk::Format::eR5G6B5UnormPack16;
+        
     case vk::Format::eBc1RgbSrgbBlock:
             return vk::Format::eR8G8B8Snorm;
 //    case vk::Format::eBc1RgbaUnormBlock:
@@ -317,8 +319,18 @@ static vk::Format bcn_to_rgba8(const vk::Format format) {
     case vk::Format::eBc3UnormBlock:
             return vk::Format::eR8G8B8A8Unorm;
     case vk::Format::eBc3SrgbBlock:
-            return vk::Format::eR8G8B8A8Sint;
-                     
+            return vk::Format::eR8G8B8A8Snorm;
+    //        return vk::Format::eR8G8B8A8Sint;
+
+    case vk::Format::eBc6HUfloatBlock:
+         return vk::Format::
+    case vk::Format::eBc6HSfloatBlock:
+        return vk::Format::
+    case vk::Format::eBc7UnormBlock:
+        return vk::Format::
+    case vk::Format::eBc7SrgbBlock:
+        return vk::Format::
+             
     case vk::Format::eBc4UnormBlock:
         return vk::Format::eR8Unorm;
     case vk::Format::eBc4SnormBlock:
@@ -379,7 +391,7 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
         memory_needed += memory_needed / 2;
     if (is_cube)
         memory_needed *= 6;
-    current_texture->memory_needed = align(memory_needed, 8);
+    current_texture->memory_needed = align(memory_needed, 8); // original was (memory_needed, 16)
     vkutil::Image &image = current_texture->texture;
 
     // In case the cache is full, no need to put the previous image in the destroy queue
@@ -442,8 +454,8 @@ static void *add_alpha_channel(const void *pixels, const uint32_t width, const u
 
     const uint8_t *src = static_cast<const uint8_t *>(pixels);
     uint8_t *dst = data.data();
-    for (uint32_t y = 0; y <= height; y++) {
-        for (uint32_t x = 0; x <= width; x++) {
+    for (uint32_t y = 0; y < height; y++) {
+        for (uint32_t x = 0; x < width; x++) {
             dst[0] = src[0];
             dst[1] = src[1];
             dst[2] = src[2];
