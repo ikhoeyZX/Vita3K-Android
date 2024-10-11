@@ -291,7 +291,7 @@ static vk::Format linear_to_srgb(const vk::Format format) {
     case vk::Format::eBc7UnormBlock:
         return vk::Format::eBc7SrgbBlock;
     default: {
-        LOG_WARN_ONCE("Trying to use gamma correction with non-compatible format {}", vk::to_string(format));
+        LOG_ERROR("Trying to use gamma correction with non-compatible format {}", vk::to_string(format));
         return format;
     }
     }
@@ -299,49 +299,62 @@ static vk::Format linear_to_srgb(const vk::Format format) {
 
 static vk::Format bcn_to_rgba8(const vk::Format format) {
     switch (format) {
-    // https://learn.microsoft.com/en-us/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-block-compression
+    // https://www.reedbeta.com/blog/understanding-bcn-texture-compression-formats/
+    
+    // BC1
     case vk::Format::eBc1RgbUnormBlock:
         return vk::Format::eR8G8B8Unorm;
 //            return vk::Format::eR5G6B5UnormPack16;
-        
     case vk::Format::eBc1RgbSrgbBlock:
-            return vk::Format::eR8G8B8Snorm;
-//    case vk::Format::eBc1RgbaUnormBlock:
+        return vk::Format::eR8G8B8Snorm;
+    case vk::Format::eBc1RgbaUnormBlock:
+        return vk::Format::eR8G8B8A8Unorm;
 //            return vk::Format::eR5G5B5A1UnormPack16;
     case vk::Format::eBc1RgbaSrgbBlock:
-            return vk::Format::eR8G8B8A8Snorm;
-                
+        return vk::Format::eR8G8B8A8Snorm;
+    
+    // BC2
     case vk::Format::eBc2UnormBlock:
-            return vk::Format::eR8G8B8A8Unorm;
+        return vk::Format::eR8G8B8A8Unorm;
     case vk::Format::eBc2SrgbBlock:
-            return vk::Format::eR8G8B8A8Snorm;
+        return vk::Format::eR8G8B8A8Snorm;
 
+    // BC3
     case vk::Format::eBc3UnormBlock:
-            return vk::Format::eR8G8B8A8Unorm;
+        return vk::Format::eR8G8B8A8Unorm;
     case vk::Format::eBc3SrgbBlock:
-            return vk::Format::eR8G8B8A8Snorm;
+        return vk::Format::eR8G8B8A8Snorm;
     //        return vk::Format::eR8G8B8A8Sint;
 
-    case vk::Format::eBc6HUfloatBlock:
-         return vk::Format::
-    case vk::Format::eBc6HSfloatBlock:
-        return vk::Format::
-    case vk::Format::eBc7UnormBlock:
-        return vk::Format::
-    case vk::Format::eBc7SrgbBlock:
-        return vk::Format::
-             
+    // BC4
     case vk::Format::eBc4UnormBlock:
         return vk::Format::eR8Unorm;
     case vk::Format::eBc4SnormBlock:
         return vk::Format::eR8Snorm;
+
+    // BC5
     case vk::Format::eBc5UnormBlock:
         return vk::Format::eR8G8Unorm;
     case vk::Format::eBc5SnormBlock:
         return vk::Format::eR8G8Snorm;
-    default:
+
+    // BC6
+    case vk::Format::eBc6HUfloatBlock:
+        return vk::Format::eR16G16B16Sfloat;
+    case vk::Format::eBc6HSfloatBlock:
+        return vk::Format::eR16G16B16Sfloat;
+
+    // BC7
+    case vk::Format::eBc7UnormBlock:
+        return vk::Format::eR16G16B16A16Unorm;
+    case vk::Format::eBc7SrgbBlock:
+        return vk::Format::eR16G16B16A16Snorm;
+
+    default:{
         // BC1/2/3
+        LOG_ERROR("Trying to convert bcn format with non-compatible format {}", vk::to_string(format));
         return vk::Format::eR8G8B8A8Unorm;
+    }
     }
 }
 
