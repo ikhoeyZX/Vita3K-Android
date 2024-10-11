@@ -300,12 +300,12 @@ static vk::Format linear_to_srgb(const vk::Format format) {
 static vk::Format bcn_to_rgba8(const vk::Format format) {
     switch (format) {
     //https://learn.microsoft.com/en-us/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-block-compression
-    case vk::Format::eBc1RgbUnormBlock:
-            return vk::Format::eR5G6B5UnormPack16;
+//    case vk::Format::eBc1RgbUnormBlock:
+//            return vk::Format::eR5G6B5UnormPack16;
     case vk::Format::eBc1RgbSrgbBlock:
             return vk::Format::eR8G8B8Snorm;
-    case vk::Format::eBc1RgbaUnormBlock:
-            return vk::Format::eR5G5B5A1UnormPack16;
+//    case vk::Format::eBc1RgbaUnormBlock:
+//            return vk::Format::eR5G5B5A1UnormPack16;
     case vk::Format::eBc1RgbaSrgbBlock:
             return vk::Format::eR8G8B8A8Snorm;
                 
@@ -317,7 +317,7 @@ static vk::Format bcn_to_rgba8(const vk::Format format) {
     case vk::Format::eBc3UnormBlock:
             return vk::Format::eR8G8B8A8Unorm;
     case vk::Format::eBc3SrgbBlock:
-            return vk::Format::eR8G8B8A8Snorm;
+            return vk::Format::eR8G8B8A8Sint;
                      
     case vk::Format::eBc4UnormBlock:
         return vk::Format::eR8Unorm;
