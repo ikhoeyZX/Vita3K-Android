@@ -1205,7 +1205,7 @@ struct SceGxmTexture {
         };
     };
     // Control Word 2
-    uint32_t lod_min0 : 2;
+    uint32_t lod_min0 : 1; // original 2
     uint32_t data_addr : 30;
     // Control Word 3
     uint32_t palette_addr : 26;
