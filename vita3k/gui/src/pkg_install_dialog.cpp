@@ -140,7 +140,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 state = "install";
         } else if (state == "install") {
             std::thread installation([&emuenv]() {
-                if (install_pkg(pkg_path, emuenv, zRIF, progress_callback)) {
+                if (install_pkg(pkg_path.native(), emuenv, zRIF, progress_callback)) {
                     std::lock_guard<std::mutex> lock(install_mutex);
                     state = "success";
                 } else {
@@ -170,11 +170,11 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
                 if (delete_pkg_file) {
-                    fs::remove(pkg_path);
+                    fs::remove(fs::path(pkg_path));
                     delete_pkg_file = false;
                 }
                 if (delete_license_file) {
-                    fs::remove(license_path);
+                    fs::remove(fs::path(license_path));
                     delete_license_file = false;
                 }
                 if ((emuenv.app_info.app_category.find("gd") != std::string::npos) || (emuenv.app_info.app_category.find("gp") != std::string::npos)) {
