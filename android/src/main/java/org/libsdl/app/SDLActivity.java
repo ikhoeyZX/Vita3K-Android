@@ -59,10 +59,10 @@ import java.util.Locale;
 */
 public class SDLActivity extends Activity implements View.OnSystemUiVisibilityChangeListener {
     private static final String TAG = "SDL";
-    private static final int SDL_MAJOR_VERSION = 2;
+/*    private static final int SDL_MAJOR_VERSION = 2;
     private static final int SDL_MINOR_VERSION = 28;
     private static final int SDL_MICRO_VERSION = 3;
-/*
+
     // Display InputType.SOURCE/CLASS of events and devices
     //
     // SDLActivity.debugSource(device.getSources(), "device[" + device.getName() + "]");
@@ -351,6 +351,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             errorMsgBrokenLib = e.getMessage();
         }
 
+/* 
         if (!mBrokenLibraries) {
             String expected_version = String.valueOf(SDL_MAJOR_VERSION) + "." +
                                       String.valueOf(SDL_MINOR_VERSION) + "." +
@@ -361,6 +362,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                 errorMsgBrokenLib = "SDL C/Java version mismatch (expected " + expected_version + ", got " + version + ")";
             }
         }
+*/
 
         if (mBrokenLibraries) {
             mSingleton = this;
