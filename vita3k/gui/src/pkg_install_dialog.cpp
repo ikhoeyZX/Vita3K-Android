@@ -17,14 +17,15 @@
 
 #include "private.h"
 
-#include <dialog/state.h>
 #include <gui/functions.h>
 #include <host/dialog/filesystem.h>
 #include <misc/cpp/imgui_stdlib.h>
+#include <packages/functions.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
 #include <rif2zrif.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <thread>
 
@@ -48,23 +49,9 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (draw_file_dialog) {
         result = host::dialog::filesystem::open_file(pkg_path, { { "PlayStation Store Downloaded Package", { "pkg" } } });
         draw_file_dialog = false;
-        if (result == host::dialog::filesystem::Result::SUCCESS) {
-            fs::ifstream infile(pkg_path.native(), std::ios::binary);
-            PkgHeader pkg_header{};
-            infile.read(reinterpret_cast<char *>(&pkg_header), sizeof(PkgHeader));
-            std::string title_id_str(pkg_header.content_id);
-            std::string title_id = title_id_str.substr(7, 9);
-            const auto work_path{ emuenv.pref_path / fmt::format("ux0/license/{}/{}.rif", title_id, pkg_header.content_id) };
-            if (fs::exists(work_path)) {
-                LOG_INFO("Found license file: {}", work_path);
-                fs::ifstream binfile(work_path, std::ios::in | std::ios::binary | std::ios::ate);
-                zRIF = rif2zrif(binfile);
-                ImGui::OpenPopup("install");
-                gui::state = "install";
-            } else {
-                ImGui::OpenPopup("install");
-            }
-        } else if (result == host::dialog::filesystem::Result::CANCEL) {
+        if (result == host::dialog::filesystem::Result::SUCCESS)
+            ImGui::OpenPopup("install");
+        else if (result == host::dialog::filesystem::Result::CANCEL) {
             gui.file_menu.pkg_install_dialog = false;
             draw_file_dialog = true;
         } else {
@@ -126,7 +113,8 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::PushItemWidth(640.f * SCALE.x);
             ImGui::InputTextWithHint("##enter_zrif", lang["input_zrif"].c_str(), &zRIF);
             ImGui::PopItemWidth();
-            SetTooltipEx(lang["copy_paste_zrif"].c_str());
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", lang["copy_paste_zrif"].c_str());
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
@@ -140,7 +128,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 state = "install";
         } else if (state == "install") {
             std::thread installation([&emuenv]() {
-                if (install_pkg(pkg_path.native(), emuenv, zRIF, progress_callback)) {
+                if (install_pkg(pkg_path, emuenv, zRIF, progress_callback)) {
                     std::lock_guard<std::mutex> lock(install_mutex);
                     state = "success";
                 } else {
@@ -170,11 +158,11 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
                 if (delete_pkg_file) {
-                    fs::remove(fs::path(pkg_path));
+                    fs::remove(pkg_path);
                     delete_pkg_file = false;
                 }
                 if (delete_license_file) {
-                    fs::remove(fs::path(license_path));
+                    fs::remove(license_path);
                     delete_license_file = false;
                 }
                 if ((emuenv.app_info.app_category.find("gd") != std::string::npos) || (emuenv.app_info.app_category.find("gp") != std::string::npos)) {
