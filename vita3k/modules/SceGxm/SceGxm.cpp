@@ -1754,6 +1754,9 @@ EXPORT(int, sceGxmColorSurfaceSetGammaMode, SceGxmColorSurface *surface, SceGxmC
     case SCE_GXM_COLOR_SURFACE_GAMMA_GR:
         texture_gamma = SCE_GXM_TEXTURE_GAMMA_GR;
         break;
+    case SCE_GXM_COLOR_SURFACE_GAMMA_R:
+        texture_gamma = SCE_GXM_TEXTURE_GAMMA_R;
+        break;
     default:
         texture_gamma = SCE_GXM_TEXTURE_GAMMA_NONE;
         break;
@@ -2690,7 +2693,9 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
 
 EXPORT(int, sceGxmIsDebugVersion) {
     TRACY_FUNC(sceGxmIsDebugVersion);
-    return UNIMPLEMENTED();
+    STUBBED("always return success");
+    // return UNIMPLEMENTED();
+    return 0;
 }
 
 EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, uint32_t size, uint32_t *offset) {
@@ -2741,9 +2746,8 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
 
 EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, uint32_t size, uint32_t *offset) {
     TRACY_FUNC(sceGxmMapVertexUsseMemory, base, size, offset);
-    STUBBED("DISABLED for now");
-	return UNIMPLEMENTED();
-/*  STUBBED("always return success");
+  
+    STUBBED("always return success");
     if (!base || !offset) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -2751,7 +2755,7 @@ EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, uint32_t size, uint32_t *
     // TODO What should this be?
     *offset = base.address();
 
-    return 0;*/
+    return 0;
 }
 
 EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags, SceGxmSyncObject *vertexSyncObject, const SceGxmNotification *vertexNotification) {
