@@ -1754,9 +1754,6 @@ EXPORT(int, sceGxmColorSurfaceSetGammaMode, SceGxmColorSurface *surface, SceGxmC
     case SCE_GXM_COLOR_SURFACE_GAMMA_GR:
         texture_gamma = SCE_GXM_TEXTURE_GAMMA_GR;
         break;
-    case SCE_GXM_COLOR_SURFACE_GAMMA_R:
-        texture_gamma = SCE_GXM_TEXTURE_GAMMA_R;
-        break;
     default:
         texture_gamma = SCE_GXM_TEXTURE_GAMMA_NONE;
         break;
