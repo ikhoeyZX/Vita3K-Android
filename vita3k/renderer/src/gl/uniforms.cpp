@@ -37,6 +37,7 @@ bool set_uniform_buffer(GLContext &context, const ShaderProgram *program, const 
             // Allocate a region for it. Don't worry though, when the shader program is changed
             context.vertex_uniform_buffer_storage_ptr = context.vertex_uniform_stream_ring_buffer.allocate(program->max_total_uniform_buffer_storage * 4);
 
+            LOG_INFO("context.vertex_uniform_buffer_storage_ptr : {}", context.vertex_uniform_buffer_storage_ptr);
             if (!context.vertex_uniform_buffer_storage_ptr.first) {
                 LOG_ERROR("Unable to allocate vertex SSBO from persistent mapped buffer");
                 return false;
@@ -51,6 +52,7 @@ bool set_uniform_buffer(GLContext &context, const ShaderProgram *program, const 
             // Allocate a region for it. Don't worry though, when the shader program is changed
             context.fragment_uniform_buffer_storage_ptr = context.fragment_uniform_stream_ring_buffer.allocate(program->max_total_uniform_buffer_storage * 4);
 
+            LOG_INFO("context.fragment_uniform_buffer_storage_ptr : {}", context.fragment_uniform_buffer_storage_ptr);
             if (!context.fragment_uniform_buffer_storage_ptr.first) {
                 LOG_ERROR("Unable to allocate fragment SSBO from persistent mapped buffer");
                 return false;
