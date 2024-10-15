@@ -240,7 +240,7 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
     R_PROFILE(__func__);
 
     assert(state.fragment_program);
-    assert(state.vertex_program);
+    // assert(state.vertex_program);
 
     const SceGxmVertexProgram &vertex_program_gxm = *state.vertex_program.get(mem);
     const SceGxmFragmentProgram &fragment_program_gxm = *state.fragment_program.get(mem);
@@ -279,7 +279,7 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
 
     if (!vertex_shader) {
         LOG_CRITICAL("Error in get/compiled vertex shader:\n{}", hex_string(vertex_program.hash));
-        return SharedGLObject();
+   //     return SharedGLObject();
     }
 
     SharedGLObject program = compile_program(renderer.program_cache, fragment_shader, vertex_shader, hashes);
