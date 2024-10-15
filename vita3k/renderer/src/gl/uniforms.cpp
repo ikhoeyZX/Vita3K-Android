@@ -33,11 +33,13 @@ bool set_uniform_buffer(GLContext &context, const ShaderProgram *program, const 
     const size_t offset_start_upload = offset * 4;
 
     if (vertex_shader) {
-        if (!context.vertex_uniform_buffer_storage_ptr.first) {
+        LOG_INFO("vertex_shader SSBO Disabled");
+        return false;
+/*        if (!context.vertex_uniform_buffer_storage_ptr.first) {
             // Allocate a region for it. Don't worry though, when the shader program is changed
             context.vertex_uniform_buffer_storage_ptr = context.vertex_uniform_stream_ring_buffer.allocate(program->max_total_uniform_buffer_storage * 4);
 
-            LOG_INFO("vertex_uniform_buffer_storage_ptr : {}", program->max_total_uniform_buffer_storage);
+//            LOG_INFO("vertex_uniform_buffer_storage_ptr : {}", program->max_total_uniform_buffer_storage);
             if (!context.vertex_uniform_buffer_storage_ptr.first) {
                 LOG_ERROR("Unable to allocate vertex SSBO from persistent mapped buffer");
                 return false;
@@ -47,12 +49,13 @@ bool set_uniform_buffer(GLContext &context, const ShaderProgram *program, const 
         }
 
         std::memcpy(context.vertex_uniform_buffer_storage_ptr.first + offset_start_upload, data, data_size_upload);
+*/
     } else {
         if (!context.fragment_uniform_buffer_storage_ptr.first) {
             // Allocate a region for it. Don't worry though, when the shader program is changed
             context.fragment_uniform_buffer_storage_ptr = context.fragment_uniform_stream_ring_buffer.allocate(program->max_total_uniform_buffer_storage * 4);
 
-            LOG_INFO("context.fragment_uniform_buffer_storage_ptr : {}", program->max_total_uniform_buffer_storage);
+//            LOG_INFO("context.fragment_uniform_buffer_storage_ptr : {}", program->max_total_uniform_buffer_storage);
             if (!context.fragment_uniform_buffer_storage_ptr.first) {
                 LOG_ERROR("Unable to allocate fragment SSBO from persistent mapped buffer");
                 return false;
