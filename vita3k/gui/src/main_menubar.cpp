@@ -141,12 +141,10 @@ static void draw_controls_menu(GuiState &gui) {
     if (ImGui::BeginMenu(lang["title"].c_str())) {
 #ifdef ANDROID
         const char *controls_name = "Overlay";
-        ImGui::MenuItem(controls_name, nullptr, &gui.controls_menu.controls_dialog);
-        ImGui::MenuItem(gui.lang.controllers["title"].c_str(), nullptr, &gui.controls_menu.controllers_dialog);
+#else
+        const char *controls_name = lang["keyboard_controls"].c_str();
 #endif
-        const char *keyboard_name = lang["keyboard_controls"].c_str();
-
-        ImGui::MenuItem(keyboard_name, nullptr, &gui.controls_menu.controls_dialog);
+        ImGui::MenuItem(controls_name, nullptr, &gui.controls_menu.controls_dialog);
         ImGui::MenuItem(gui.lang.controllers["title"].c_str(), nullptr, &gui.controls_menu.controllers_dialog);
         ImGui::EndMenu();
     }
