@@ -1748,14 +1748,14 @@ EXPORT(int, sceGxmColorSurfaceSetGammaMode, SceGxmColorSurface *surface, SceGxmC
     surface->gamma = static_cast<uint32_t>(gammaMode) >> 12;
     SceGxmTextureGammaMode texture_gamma;
     switch (gammaMode) {
-    case SCE_GXM_COLOR_SURFACE_GAMMA_BGR:
-        texture_gamma = SCE_GXM_TEXTURE_GAMMA_BGR;
+    case SCE_GXM_COLOR_SURFACE_GAMMA_NONE:
+        texture_gamma = SCE_GXM_TEXTURE_GAMMA_NONE;
         break;
     case SCE_GXM_COLOR_SURFACE_GAMMA_GR:
         texture_gamma = SCE_GXM_TEXTURE_GAMMA_GR;
         break;
     default:
-        texture_gamma = SCE_GXM_TEXTURE_GAMMA_NONE;
+        texture_gamma = SCE_GXM_TEXTURE_GAMMA_BGR;
         break;
     }
     return CALL_EXPORT(sceGxmTextureSetGammaMode, &surface->backgroundTex, texture_gamma);
