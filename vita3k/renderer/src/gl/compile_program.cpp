@@ -141,13 +141,13 @@ static SharedGLObject compile_program(ProgramCache &program_cache, const SharedG
     glGetProgramiv(program->get(), GL_LINK_STATUS, &is_linked);
     assert(is_linked != GL_FALSE);
     if (is_linked == GL_FALSE) {
-     //   return SharedGLObject();
+        return SharedGLObject();
     }
 
     glDetachShader(program->get(), frag_shader->get());
     glDetachShader(program->get(), vert_shader->get());
 
-  //  program_cache.emplace(hashes, program);
+    program_cache.emplace(hashes, program);
 
     return program;
 }
