@@ -221,8 +221,8 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     LOG_INFO("GPU = {}", gpu_name);
     LOG_INFO("GL_VERSION = {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
-    LOG_INFO("GL_MAX_UNIFORM_BLOCK_SIZE = {} bytes", glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &size));
-    LOG_INFO("GL_MAX_SHADER_STORAGE_BLOCK_SIZE = {} bytes", glGetIntegerv(GL_MAX_SHADER_STORAGE_BLOCK_SIZE, &size));
+    LOG_INFO("GL_MAX_UNIFORM_BLOCK_SIZE = {} bytes", reinterpret_cast<GLint>(glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &size)));
+    LOG_INFO("GL_MAX_SHADER_STORAGE_BLOCK_SIZE = {} bytes", reinterpret_cast<GLint>(glGetIntegerv(GL_MAX_SHADER_STORAGE_BLOCK_SIZE, &size)));
 
 #ifndef NDEBUG
     glDebugMessageCallback(reinterpret_cast<GLDEBUGPROC>(debug_output_callback), nullptr);
