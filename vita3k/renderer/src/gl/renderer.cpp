@@ -178,7 +178,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
 #ifdef ANDROID
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
     gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
     choosen_minor_version = 6;
@@ -216,10 +216,13 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     // Detect GPU and features
     const std::string gpu_name = reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
     const std::string version = reinterpret_cast<const GLchar *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
-
+    GLint size;
+    
     LOG_INFO("GPU = {}", gpu_name);
     LOG_INFO("GL_VERSION = {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
+    LOG_INFO("GL_MAX_UNIFORM_BLOCK_SIZE = {} bytes", glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &size));
+    LOG_INFO("GL_MAX_SHADER_STORAGE_BLOCK_SIZE = {} bytes", glGetIntegerv(GL_MAX_SHADER_STORAGE_BLOCK_SIZE, &size));
 
 #ifndef NDEBUG
     glDebugMessageCallback(reinterpret_cast<GLDEBUGPROC>(debug_output_callback), nullptr);
