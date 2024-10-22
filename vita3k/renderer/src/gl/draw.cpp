@@ -134,7 +134,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
 
         context.previous_vert_info = vert_ublock;
 
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, context.vertex_info_uniform_buffer.handle(), allocated_buffer.second, sizeof(shader::RenderVertUniformBlock));
+        glBindBufferRange(GL_UNIFORM_BUFFER, 2, context.vertex_info_uniform_buffer.handle(), allocated_buffer.second, sizeof(shader::RenderVertUniformBlock));
     }
 
     shader::RenderFragUniformBlock &frag_ublock = context.current_frag_render_info;
@@ -175,7 +175,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
 
         context.previous_frag_info = frag_ublock;
 
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, context.fragment_info_uniform_buffer.handle(), allocated_buffer.second, sizeof(shader::RenderFragUniformBlock));
+        glBindBufferRange(GL_UNIFORM_BUFFER, 3, context.fragment_info_uniform_buffer.handle(), allocated_buffer.second, sizeof(shader::RenderFragUniformBlock));
     }
 
     // Upload vertex stream
