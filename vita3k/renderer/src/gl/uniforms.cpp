@@ -42,7 +42,7 @@ bool set_uniform_buffer(GLContext &context, const ShaderProgram *program, const 
                 return false;
             }
 
-            glBindBufferRange(GL_UNIFORM_BUFFER, 0, context.vertex_uniform_stream_ring_buffer.handle(), context.vertex_uniform_buffer_storage_ptr.second, program->max_total_uniform_buffer_storage * 4);
+            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 0, context.vertex_uniform_stream_ring_buffer.handle(), context.vertex_uniform_buffer_storage_ptr.second, program->max_total_uniform_buffer_storage * 4);
         }
 
         std::memcpy(context.vertex_uniform_buffer_storage_ptr.first + offset_start_upload, data, data_size_upload);
@@ -56,7 +56,7 @@ bool set_uniform_buffer(GLContext &context, const ShaderProgram *program, const 
                 return false;
             }
 
-            glBindBufferRange(GL_UNIFORM_BUFFER, 1, context.fragment_uniform_stream_ring_buffer.handle(), context.fragment_uniform_buffer_storage_ptr.second, program->max_total_uniform_buffer_storage * 4);
+            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, context.fragment_uniform_stream_ring_buffer.handle(), context.fragment_uniform_buffer_storage_ptr.second, program->max_total_uniform_buffer_storage * 4);
         }
 
         std::memcpy(context.fragment_uniform_buffer_storage_ptr.first + offset_start_upload, data, data_size_upload);
