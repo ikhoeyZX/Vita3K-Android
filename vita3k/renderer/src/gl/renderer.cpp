@@ -178,7 +178,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
 #ifdef ANDROID
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 
     gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
     choosen_minor_version = 6;
@@ -242,7 +242,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
         { "GL_EXT_shader_image_load_formatted", &gl_state.features.support_unknown_format }
     };
 
-    for (int16_t i = 0; i < total_extensions; i++) {
+    for (int i = 0; i < total_extensions; i++) {
         const std::string extension = reinterpret_cast<const GLchar *>(glGetStringi(GL_EXTENSIONS, i));
         auto find_result = check_extensions.find(extension);
 
