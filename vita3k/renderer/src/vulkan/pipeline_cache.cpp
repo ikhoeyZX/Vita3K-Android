@@ -230,9 +230,9 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         nb_worker_threads = 6;
     else if (nb_logical_threads > 8)
         nb_worker_threads = 4;
-    else if (nb_logical_threads >= 8)
-        nb_worker_threads = 3;
     else if (nb_logical_threads >= 6)
+        nb_worker_threads = 3;
+    else if (nb_logical_threads >= 4)
         nb_worker_threads = 2;
     else
         nb_worker_threads = 1;
@@ -636,14 +636,25 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
             component_count = info.component_count;
             switch (info.gxm_type) {
             case SCE_GXM_PARAMETER_TYPE_U8:
-            case SCE_GXM_PARAMETER_TYPE_S8:
-            case SCE_GXM_PARAMETER_TYPE_C10:
                 attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_U8;
                 break;
+            case SCE_GXM_PARAMETER_TYPE_S8:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_S8;
+                break;
+            case SCE_GXM_PARAMETER_TYPE_C10:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_U8N;
+                break;
             case SCE_GXM_PARAMETER_TYPE_U16:
-            case SCE_GXM_PARAMETER_TYPE_S16:
-            case SCE_GXM_PARAMETER_TYPE_F16:
                 attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_U16;
+                break;
+            case SCE_GXM_PARAMETER_TYPE_S16:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_S16;
+                break;
+            case SCE_GXM_PARAMETER_TYPE_F16:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_F16;
+                break;
+            case SCE_GXM_PARAMETER_TYPE_F32:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
                 break;
             default:
                 // U32 format
