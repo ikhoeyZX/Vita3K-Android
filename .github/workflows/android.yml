@@ -36,7 +36,7 @@ jobs:
           sudo apt-get install -y ninja-build
           vcpkg update
           vcpkg upgrade --no-dry-run
-          vcpkg install boost-system:arm-android boost-filesystem:arm-android boost-program-options:arm-android boost-icl:arm-android boost-variant:arm-android openssl:arm-android zlib:arm-android boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
+          vcpkg install boost-system:arm-neon-android boost-filesystem:arm-neon-android boost-program-options:arm-neon-android boost-icl:arm-neon-android boost-variant:arm-neon-android openssl:arm-neon-android zlib:arm-neon-android boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
           
       - name: Decode Keystore
         env:
