@@ -60,6 +60,7 @@ jobs:
           bash -c "yes || Yes || true" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
           mkdir android/assets/data
           cp -r data/image android/assets/data/image
+          sudo apt-get install -y libboost-all-dev
           cp -r lang android/assets
           cp -r vita3k/shaders-builtin android/assets
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
