@@ -61,6 +61,7 @@ jobs:
           mkdir android/assets/data
           cp -r data/image android/assets/data/image
           sudo apt-get install -y libboost-all-dev
+          sudo apt install -y build-essential libboost-system-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev
           cp -r lang android/assets
           cp -r vita3k/shaders-builtin android/assets
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
