@@ -34,8 +34,10 @@ jobs:
       - name: Set up build environment
         run: |
           sudo apt-get install -y ninja-build
+          vcpkg update
+          vcpkg upgrade --no-dry-run
           vcpkg install boost-system:arm-android boost-filesystem:arm-android boost-program-options:arm-android boost-icl:arm-android boost-variant:arm-android openssl:arm-android zlib:arm-android boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
-
+          
       - name: Decode Keystore
         env:
           KEYSTORE_ENCODED: ${{ secrets.KEYSTORE }}
@@ -56,13 +58,14 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
           bash -c "yes || Yes || true" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
-          sudo apt-get install -y libboost*
-          
           mkdir android/assets/data
           cp -r data/image android/assets/data/image
           cp -r lang android/assets
           cp -r vita3k/shaders-builtin android/assets
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
+          echo ================
+          echo $JAVA_HOME
+          echi ================
           ./gradlew --stacktrace --info --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease
 
       - name: Compute git short sha
