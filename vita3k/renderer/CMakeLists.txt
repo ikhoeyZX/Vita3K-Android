@@ -54,6 +54,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
 	target_compile_options(renderer PRIVATE "-Wno-nullability-completeness")
 endif()
 
+if(ANDROID)
+	target_link_libraries(renderer PRIVATE android)
+endif()
 # Marshmallow Tracy linking
 if(TRACY_ENABLE_ON_CORE_COMPONENTS)
 	target_link_libraries(renderer PRIVATE tracy)
