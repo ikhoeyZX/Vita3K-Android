@@ -34,7 +34,7 @@ jobs:
       - name: Set up build environment
         run: |
           sudo apt-get install -y ninja-build
-          vcpkg install boost-system:arm32-android boost-filesystem:arm32-android boost-program-options:arm32-android boost-icl:arm32-android boost-variant:arm3w-android openssl:arm32-android zlib:arm32-android boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
+          vcpkg install boost-system:arm-android boost-filesystem:arm-android boost-program-options:arm-android boost-icl:arm-android boost-variant:arm-android openssl:arm-android zlib:arm-android boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
 
       - name: Decode Keystore
         env:
