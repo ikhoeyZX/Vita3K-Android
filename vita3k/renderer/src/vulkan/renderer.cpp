@@ -43,8 +43,10 @@
 #ifdef ANDROID
 #include <emuenv/state.h>
 #include <SDL.h>
+/*
 #include <adrenotools/bcenabler.h>
 #include <adrenotools/driver.h>
+*/
 #include <boost/range/iterator_range.hpp>
 #include <sys/mman.h>
 #include <util/float_to_half.h>
@@ -140,6 +142,7 @@ const static std::vector<const char *> required_device_extensions = {
 
 namespace renderer::vulkan {
 
+/*
 #ifdef ANDROID
 static bool detect_patch_bcn(bool *support_dxt) {
     // some Adreno GPUs support BCn textures even though they say they don't
@@ -181,6 +184,7 @@ static bool detect_patch_bcn(bool *support_dxt) {
     return true;
 }
 #endif
+*/
 
 static bool device_is_compatible(const vk::PhysicalDevice &device) {
     const std::vector<vk::ExtensionProperties> available_extensions = device.enumerateDeviceExtensionProperties();
@@ -303,7 +307,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     {
         PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
-        
+/*        
 #ifdef ANDROID
         if(adreno.is_adreno){
     	    const char *temp_dir = nullptr;
@@ -326,16 +330,19 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
                   LOG_INFO("Using default vulkan driver instead");
                   SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Custom Driver Error!", fmt::format(" Could not open custom driver {} \n System will use default driver instead ", adreno.adreno_main_so_name).c_str(), window);
             }else{
+		    
                   // Inject custom driver
                   vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>( dlsym( vulkan_handle, "vkGetInstanceProcAddr" ) );
     	          VULKAN_HPP_DEFAULT_DISPATCHER.init( vkGetInstanceProcAddr );
-            }
+             }
+	*/
         }
         
-        if (!detect_patch_bcn(&texture_cache.support_dxt))
+   /*     if (!detect_patch_bcn(&texture_cache.support_dxt))
             return false;
+	
 #endif
-
+*/
         vk::ApplicationInfo app_info{
             .pApplicationName = app_name, // App Name
             .applicationVersion = VK_MAKE_API_VERSION(0, 0, 0, 1), // App Version
