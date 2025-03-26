@@ -139,10 +139,6 @@ elseif (ARCHITECTURE STREQUAL "x86_64")
 	)
 endif ()
 
-if(ANDROID)
-	add_subdirectory(libadrenotools)
-endif()
-
 if(WIN32)
 	add_library(winsock INTERFACE)
 	find_library(WSOCK32 wsock32)
