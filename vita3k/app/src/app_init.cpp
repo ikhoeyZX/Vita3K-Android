@@ -474,6 +474,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
         
            // LOG_INFO("Load custom driver");
            // set path to load custom driver using libadrenotools
+           /* DISABLED SINCE NOT SUPPORTED IN 32BIT
             state.libadreno = load_custom_driver(state.cfg.current_config.custom_driver_name);
             if(!state.libadreno.is_adreno){
                 error_dialog("Custom driver corrupted or you use wrong file\nApp will use default driver now", nullptr);
@@ -481,7 +482,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
                 state.cfg.custom_driver_name = "";
                 state.cfg.boot_fail = true;
                 config::serialize_config(state.cfg, state.cfg.config_path);
-            }
+            }*/
     }
 
 #endif
