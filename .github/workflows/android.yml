@@ -56,7 +56,7 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
           bash -c "yes || Yes || true" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
-          sudo apt-get install libboost*
+          sudo apt-get install -y libboost*
           
           mkdir android/assets/data
           cp -r data/image android/assets/data/image
