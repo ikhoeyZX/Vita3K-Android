@@ -57,6 +57,7 @@ jobs:
         run: |
           bash -c "yes || Yes || true" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
           sudo apt-get install libboost-all-dev
+          cmake -H. -Bbuild -DBOOST_ROOT=/usr/local
           mkdir android/assets/data
           cp -r data/image android/assets/data/image
           cp -r lang android/assets
