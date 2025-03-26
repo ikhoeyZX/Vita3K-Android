@@ -140,7 +140,7 @@ macro(boost_compile)
 		)
 	elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 		execute_process(
-			COMMAND ${b2_cmd_line_common} address-model=32 address-model=64 , toolset=${BOOST_TOOLSET} stage
+			COMMAND ${b2_cmd_line_common} --ignore-site-config toolset=${BOOST_TOOLSET} stage
 			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
             OUTPUT_QUIET
 		)
