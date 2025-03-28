@@ -2,16 +2,16 @@ apply plugin: 'com.android.application'
 
 android {
 	namespace "org.vita3k.emulator"
-	compileSdk 33
-	ndkVersion "26.3.11579264"
+	compileSdk 34
+	ndkVersion "27.0.12077973"
 	buildFeatures {
 		buildConfig true
 	}
 
 	defaultConfig {
-		applicationId "org.vita3k32.emulator.ikhoeyZX"
-		minSdk 27
-		targetSdk 33
+		applicationId "org.vita3k_32.emulator.ikhoeyZX"
+		minSdk 28
+		targetSdk 34
 		versionCode 12
 		versionName "0.2.0-12.5-ikhoeyZX-32bit"
 
