@@ -103,11 +103,11 @@ static void debug_log_message(std::string_view msg) {
 }
 
 static vk::DebugUtilsMessengerEXT debug_messenger;
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_util_callback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
-    VkDebugUtilsMessageTypeFlagsEXT message_type,
-    const VkDebugUtilsMessengerCallbackDataEXT *callback_data,
-    void *pUserData) {
+VKAPI_ATTR VkBool32 VKAPI_CALL debug_util_callback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+    void* pUserData) {
     if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
         // for now we are not interested by performance warnings
         && (message_type & ~VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)) {
@@ -117,16 +117,19 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_util_callback(
 }
 
 static vk::DebugReportCallbackEXT debug_report;
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_report_callback(
-    VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType,
-    uint64_t object, size_t location,
-    int32_t messageCode, const char *layerPrefix, const char *message,
-    void *pUserData) {
+VKAPI_ATTR VkBool32 VKAPI_CALL debug_report_callback(
+    VkDebugReportFlagsEXT flags,
+    VkDebugReportObjectTypeEXT objectType,
+    uint64_t object,
+    size_t location,
+    int32_t messageCode,
+    const char* pLayerPrefix,
+    const char* pMessage,
+    void* pUserData) {
     std::string msg = fmt::format("Validation layer: Vk{}:{}[0x{:X}]:I{}:L{}: {}", layerPrefix, vk::to_string(vk::DebugReportObjectTypeEXT(objectType)),
         object, messageCode, location, message);
 
     debug_log_message(msg);
-
     return VK_FALSE;
 }
 
