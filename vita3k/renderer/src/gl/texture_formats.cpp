@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -207,38 +207,25 @@ GLenum translate_internal_format(SceGxmTextureBaseFormat base_format) {
     switch (base_format) {
     // 1 Component.
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
-        return GL_R8;
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
-        return GL_R8_SNORM;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
-        return GL_R16;
     case SCE_GXM_TEXTURE_BASE_FORMAT_S16:
-        return GL_R16_SNORM;
     case SCE_GXM_TEXTURE_BASE_FORMAT_F16:
-        return GL_R16F;
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
-        return GL_R32F;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
-        return GL_R32UI;
     case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
-        return GL_R32I;
+        return GL_RED;
 
     // 2 components (red-green.)
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
-        return GL_RG8;
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
-        return GL_RG8_SNORM;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
-        return GL_RG16;
     case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16:
-        return GL_RG16_SNORM;
     case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
-        return GL_RG16F;
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32:
-        return GL_RG32F;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
-        return GL_RG32UI;
+        return GL_RG;
 
     // 2 components (depth-stencil.)
     case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
@@ -247,13 +234,10 @@ GLenum translate_internal_format(SceGxmTextureBaseFormat base_format) {
     // 3 components.
     case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
     case SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6:
-        return GL_RGB565;
     case SCE_GXM_TEXTURE_BASE_FORMAT_X8S8S8U8:
-        return GL_RGB8;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
-        return GL_RGB8;
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
-        return GL_RGB8_SNORM;
+        return GL_RGB;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10:
         return GL_R11F_G11F_B10F;
@@ -261,32 +245,23 @@ GLenum translate_internal_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
         return GL_RGB16F;
 
-    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
-        return GL_RGBA8;
-
     // 4 components.
     case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
-        return GL_RGBA;
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
-        return GL_RGBA8_SNORM;
-
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
-        return GL_RGB10_A2;
     case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16:
-        return GL_RGBA16F;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16:
-        return GL_RGBA16;
     case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16S16S16:
-        return GL_RGBA16_SNORM;
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
     case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
     case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
@@ -322,13 +297,6 @@ GLenum translate_internal_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC7:
         return GL_COMPRESSED_RGBA_BPTC_UNORM;
 
-#define ASTC_FMT(b_x, b_y)                              \
-    case SCE_GXM_TEXTURE_BASE_FORMAT_ASTC##b_x##x##b_y: \
-        return GL_COMPRESSED_RGBA_ASTC_##b_x##x##b_y;
-
-#include "../texture/astc_formats.inc"
-#undef ASTC_FMT
-
     default:
         LOG_ERROR("Missing case texture base format {}, fallback to GL_RGBA", fmt::underlying(base_format));
         return GL_RGBA;
@@ -345,10 +313,9 @@ GLenum translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_F16:
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
-        return GL_RED;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
     case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
-        return GL_RED_INTEGER;
+        return GL_RED;
 
     // 2 components (red-green.)
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
@@ -356,10 +323,9 @@ GLenum translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
     case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16:
     case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
-        return GL_RG;
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
-        return GL_RG_INTEGER;
+        return GL_RG;
 
     // 2 components (depth-stencil.)
     case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
@@ -397,7 +363,7 @@ GLenum translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
-        return GL_RGBA;
+        return GL_RGB;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
         return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
@@ -429,13 +395,6 @@ GLenum translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC7:
         return GL_COMPRESSED_RGBA_BPTC_UNORM;
 
-#define ASTC_FMT(b_x, b_y)                              \
-    case SCE_GXM_TEXTURE_BASE_FORMAT_ASTC##b_x##x##b_y: \
-        return GL_COMPRESSED_RGBA_ASTC_##b_x##x##b_y;
-
-#include "../texture/astc_formats.inc"
-#undef ASTC_FMT
-
     default:
         LOG_ERROR("Missing case texture base format {}, fallback to GL_RGBA", fmt::underlying(base_format));
         return GL_RGBA;
@@ -449,16 +408,16 @@ GLenum translate_type(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
         return GL_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
-        return GL_UNSIGNED_SHORT_4_4_4_4;
+        return GL_UNSIGNED_SHORT_4_4_4_4_REV;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
         return GL_UNSIGNED_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
-        return GL_UNSIGNED_SHORT_5_5_5_1;
+        return GL_UNSIGNED_SHORT_1_5_5_5_REV;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
-        return GL_UNSIGNED_SHORT_5_6_5;
+        return GL_UNSIGNED_SHORT_5_6_5_REV;
     case SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6:
         LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6");
-        return GL_UNSIGNED_SHORT_5_6_5;
+        return GL_UNSIGNED_SHORT_5_6_5_REV;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
         return GL_UNSIGNED_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
@@ -523,16 +482,15 @@ GLenum translate_type(SceGxmTextureBaseFormat base_format) {
         LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_YUV422");
         return GL_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
-        return GL_UNSIGNED_BYTE;
+        return GL_UNSIGNED_INT_8_8_8_8_REV;
     case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
-        return GL_UNSIGNED_BYTE;
+        return GL_UNSIGNED_INT_8_8_8_8_REV;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
         return GL_UNSIGNED_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
         return GL_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
-        LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10");
-        return GL_UNSIGNED_BYTE;
+        return GL_UNSIGNED_INT_2_10_10_10_REV;
 
     default:
         LOG_WARN("Unhandled base format {}", log_hex(base_format));

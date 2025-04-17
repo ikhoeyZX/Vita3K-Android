@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,10 +41,10 @@ SDLAudioAdapter::~SDLAudioAdapter() {
 
 bool SDLAudioAdapter::init() {
     SDL_AudioSpec desired = {};
-    desired.freq = 44100;
-    desired.format = AUDIO_S16SYS;
+    desired.freq = 48000;
+    desired.format = AUDIO_S16LSB;
     desired.channels = 2;
-    desired.samples = 768;
+    desired.samples = 512;
     desired.callback = sdl_audio_callback;
     desired.userdata = this;
 

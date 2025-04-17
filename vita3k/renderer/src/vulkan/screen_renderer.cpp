@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,20 +23,6 @@
 #include "util/log.h"
 #include "vkutil/vkutil.h"
 
-#ifdef __ANDROID__
-#include <SDL.h>
-#include <jni.h>
-
-static bool has_surface = false;
-
-extern "C" JNIEXPORT void JNICALL
-Java_org_vita3k_emulator_EmuSurface_setSurfaceStatus(JNIEnv *env, jobject thiz, bool surface_present) {
-    has_surface = surface_present;
-}
-#else
-static constexpr bool has_surface = true;
-#endif
-
 namespace renderer::vulkan {
 
 ScreenRenderer::ScreenRenderer(VKState &state)
@@ -44,11 +30,6 @@ ScreenRenderer::ScreenRenderer(VKState &state)
 }
 
 bool ScreenRenderer::create(SDL_Window *window) {
-    if (this->surface) {
-        state.instance.destroySurfaceKHR(this->surface);
-        this->surface = nullptr;
-    }
-
     VkSurfaceKHR surface = VK_NULL_HANDLE;
     bool surface_error = SDL_Vulkan_CreateSurface(window, state.instance, &surface);
     if (!surface_error) {
@@ -62,7 +43,7 @@ bool ScreenRenderer::create(SDL_Window *window) {
     return true;
 }
 
-bool ScreenRenderer::setup(uint8_t vk_idx) {
+bool ScreenRenderer::setup() {
     const auto surface_formats = state.physical_device.getSurfaceFormatsKHR(surface);
     bool surface_format_found = false;
     for (const auto &format : surface_formats) {
@@ -78,7 +59,6 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
     if (!surface_format_found)
         surface_format = surface_formats[0];
 
-/*
     // preferred order : mailbox > fifo_relaxed > fifo > whatever
     // the only drawback for mailbox is that it draws more power, so maybe on a portable device use something else
     const auto present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
@@ -100,37 +80,17 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
             present_mode = mode;
         }
     }
-*/
-
-    // preferred order : mailbox > fifo_relaxed > fifo > whatever
-    // the only drawback for mailbox is that it draws more power, so maybe on a portable device use something else
-    auto present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
-
-    switch(vk_idx){
-        case 1:
-            present_mode = vk::PresentModeKHR::eMailbox;
-            break;
-        case 2:
-            present_mode = vk::PresentModeKHR::eFifoRelaxed;
-            break;
-        case 3:
-            present_mode = vk::PresentModeKHR::eFifo;
-            break;
-        default:
-            present_mode = vk::PresentModeKHR::eImmediate;
-            break;
-    }
-
     LOG_INFO("Present mode: {}", vk::to_string(present_mode));
 
     create_render_pass();
 
     create_swapchain();
 
-    // this function do not need to be called when the swapchain is resized
+    // these functions do not need to be called when the swapchain is resized
+    create_layout_sync();
     create_surface_image();
 
-    filter = std::make_unique<BilinearScreenFilter>(*this);
+    filter = std::make_unique<FXAAScreenFilter>(*this);
     filter->init();
 
     return true;
@@ -159,20 +119,9 @@ void ScreenRenderer::create_swapchain() {
     // Create Swapchain
     {
         vk::ImageUsageFlags surface_usage = vk::ImageUsageFlagBits::eColorAttachment;
-
-        vk::ImageUsageFlags fsr_flags = vk::ImageUsageFlagBits::eTransferDst;
-        if (!state.is_adreno_turnip)
-            // workaround for a Turnip driver bug: adding storage flag here breaks the swapchain
-            // and fsr works fine without this flag on Adreno
-            fsr_flags |= vk::ImageUsageFlagBits::eStorage;
-
         if (surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage)
             // needed for FSR
-            surface_usage |= fsr_flags;
-
-        vk::CompositeAlphaFlagBitsKHR comp_alpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-        if (!(surface_capabilities.supportedCompositeAlpha & comp_alpha))
-            comp_alpha = vk::CompositeAlphaFlagBitsKHR::eInherit;
+            surface_usage |= vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage;
 
         vk::SwapchainCreateInfoKHR swapchain_info{
             .surface = surface,
@@ -183,8 +132,8 @@ void ScreenRenderer::create_swapchain() {
             .imageArrayLayers = 1,
             .imageUsage = surface_usage,
             .imageSharingMode = vk::SharingMode::eExclusive,
-            .preTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity,
-            .compositeAlpha = comp_alpha,
+            .preTransform = surface_capabilities.currentTransform,
+            .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
             .presentMode = present_mode,
             .clipped = true,
         };
@@ -223,18 +172,8 @@ void ScreenRenderer::create_swapchain() {
         swapchain_framebuffers[i] = state.device.createFramebuffer(fb_info);
     }
 
-    if (filter) {
-        if (command_buffers.size() < swapchain_size) {
-            // if the swapchain size increased, we need to reset the filter
-            std::string filter_name{ filter->get_name() };
-            filter.reset();
-            set_filter(filter_name);
-        } else {
-            filter->on_resize();
-        }
-    }
-
-    create_layout_sync();
+    if (filter)
+        filter->on_resize();
 }
 
 void ScreenRenderer::destroy_swapchain() {
@@ -264,10 +203,8 @@ void ScreenRenderer::cleanup() {
         state.device.destroy(view);
     state.device.destroy(swapchain);
 
-    for (uint32_t i = 0; i <= swapchain_size; i++) {
-        if (i != swapchain_size)
-            state.device.destroy(fences[i]);
-
+    for (uint32_t i = 0; i < swapchain_size; i++) {
+        state.device.destroy(fences[i]);
         state.device.destroy(image_acquired_semaphores[i]);
         state.device.destroy(image_ready_semaphores[i]);
     }
@@ -278,15 +215,10 @@ void ScreenRenderer::cleanup() {
 static constexpr uint64_t next_image_timeout = std::numeric_limits<uint64_t>::max();
 
 bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
-    if (!has_surface) {
-        swapchain_image_idx = 0xDEADBEAF;
-        return false;
-    }
-
     vk::Result acquire_result = vk::Result::eErrorOutOfDateKHR;
 
     current_frame++;
-    if (current_frame == swapchain_size + 1)
+    if (current_frame == swapchain_size)
         current_frame = 0;
 
     if (swapchain)
@@ -294,9 +226,7 @@ bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
             next_image_timeout, image_acquired_semaphores[current_frame], vk::Fence(), &swapchain_image_idx);
 
     if (acquire_result != vk::Result::eSuccess) {
-        if (acquire_result == vk::Result::eErrorOutOfDateKHR
-            || acquire_result == vk::Result::eSuboptimalKHR
-            || acquire_result == vk::Result::eErrorSurfaceLostKHR) {
+        if (acquire_result == vk::Result::eErrorOutOfDateKHR || acquire_result == vk::Result::eSuboptimalKHR) {
             state.device.waitIdle();
             destroy_swapchain();
             int width, height;
@@ -304,9 +234,6 @@ bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
             // don't render anything when the window is minimized
             if (width == 0 || height == 0)
                 return false;
-
-            if (acquire_result == vk::Result::eErrorSurfaceLostKHR)
-                create(this->window);
 
             create_swapchain();
             if (swapchain)
@@ -380,18 +307,6 @@ void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, co
     current_cmd_buffer.beginRenderPass(pass_info, vk::SubpassContents::eInline);
 
     filter->render(false, image_view, layout, viewport);
-
-#ifdef ANDROID
-    // stock adreno driver bug
-    // if there is too much load on the GPU, it just drops any render pass with ImGui graphics in it....
-    // I still don't know exactly why
-    // so as a partial fix, render the gui and screen in different render passes
-    if (state.is_adreno_stock) {
-        current_cmd_buffer.endRenderPass();
-        pass_info.renderPass = stock_adreno_pass;
-        current_cmd_buffer.beginRenderPass(pass_info, vk::SubpassContents::eInline);
-    }
-#endif
 }
 
 void ScreenRenderer::swap_window() {
@@ -421,38 +336,24 @@ void ScreenRenderer::swap_window() {
         .pSwapchains = &swapchain,
         .pImageIndices = &swapchain_image_idx,
     };
-        
-    auto result = state.general_queue.presentKHR(&present_info);
-    if (result == vk::Result::eSuboptimalKHR) {
-        int width, height;
-        SDL_Vulkan_GetDrawableSize(window, &width, &height);
-
-        if (width != extent.width || height != extent.height) {
-            state.device.waitIdle();
-            destroy_swapchain();
-            // don't render anything when the window is minimized
-            if (width == 0 || height == 0)
-                return;
-
-            create_swapchain();
-            need_rebuild = true;
+    try {
+        auto result = state.general_queue.presentKHR(present_info);
+        if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
+            LOG_ERROR("Could not present KHR.");
+            assert(false);
+            return;
         }
-    } else if(result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eErrorSurfaceLostKHR){
+    } catch (vk::OutOfDateKHRError &) {
         state.device.waitIdle();
         destroy_swapchain();
 
         int width, height;
         SDL_Vulkan_GetDrawableSize(window, &width, &height);
-
         if (width > 0 && height > 0) {
             create_swapchain();
             if (swapchain)
                 need_rebuild = true;
         }
-    } else if (result != vk::Result::eSuccess) {
-        LOG_ERROR("Could not present KHR.");
-        assert(false);
-        return;
     }
 
     swapchain_image_idx = ~0;
@@ -480,35 +381,25 @@ void ScreenRenderer::set_filter(const std::string_view &filter) {
 }
 
 void ScreenRenderer::create_layout_sync() {
-    if (command_buffers.size() >= swapchain_size)
-        return;
-
-    const uint32_t previous_size = command_buffers.size();
-    const uint32_t to_add = swapchain_size - previous_size;
-
     vk::CommandBufferAllocateInfo cmd_buffer_info{
         .commandPool = state.general_command_pool,
         .level = vk::CommandBufferLevel::ePrimary,
-        .commandBufferCount = to_add
+        .commandBufferCount = swapchain_size
     };
-    auto new_cmd_buffers = state.device.allocateCommandBuffers(cmd_buffer_info);
-    command_buffers.insert(command_buffers.end(), new_cmd_buffers.begin(), new_cmd_buffers.end());
+    command_buffers = state.device.allocateCommandBuffers(cmd_buffer_info);
 
     // create fences (in signaled state) and semaphores
     vk::FenceCreateInfo fence_info{
         .flags = vk::FenceCreateFlagBits::eSignaled
     };
+    vk::SemaphoreCreateInfo semaphore_info{};
     fences.resize(swapchain_size);
-
-    // add one more semaphore for synchronisation reasons
-    image_acquired_semaphores.resize(swapchain_size + 1);
-    image_ready_semaphores.resize(swapchain_size + 1);
-    for (uint32_t i = previous_size; i <= swapchain_size; i++) {
-        if (i != swapchain_size)
-            fences[i] = state.device.createFence(fence_info);
-
-        image_acquired_semaphores[i] = state.device.createSemaphore({});
-        image_ready_semaphores[i] = state.device.createSemaphore({});
+    image_acquired_semaphores.resize(swapchain_size);
+    image_ready_semaphores.resize(swapchain_size);
+    for (uint32_t i = 0; i < swapchain_size; i++) {
+        fences[i] = state.device.createFence(fence_info);
+        image_acquired_semaphores[i] = state.device.createSemaphore(semaphore_info);
+        image_ready_semaphores[i] = state.device.createSemaphore(semaphore_info);
     }
 }
 
@@ -554,14 +445,6 @@ void ScreenRenderer::create_render_pass() {
         .setLoadOp(vk::AttachmentLoadOp::eLoad)
         .setInitialLayout(vk::ImageLayout::eGeneral);
     post_filter_render_pass = state.device.createRenderPass(pass_info);
-
-#ifdef ANDROID
-    if (state.is_adreno_stock) {
-        // used to fix an adreno driver bug
-        color_attachment.setInitialLayout(vk::ImageLayout::ePresentSrcKHR);
-        stock_adreno_pass = state.device.createRenderPass(pass_info);
-    }
-#endif
 }
 
 void ScreenRenderer::create_surface_image() {

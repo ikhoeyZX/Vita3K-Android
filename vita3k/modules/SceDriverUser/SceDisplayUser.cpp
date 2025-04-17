@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,9 +38,9 @@ EXPORT(int, sceDisplayGetFrameBufInternal) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceDisplayGetMaximumFrameBufResolution) {
-    TRACY_FUNC(sceDisplayGetMaximumFrameBufResolution);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceDisplayGetMaximumFrameBufResolution, SceInt32 *width, SceInt32 *height) {
+    TRACY_FUNC(sceDisplayGetMaximumFrameBufResolution, width, height);
+    return CALL_EXPORT(_sceDisplayGetMaximumFrameBufResolution, width, height);
 }
 
 EXPORT(int, sceDisplayGetResolutionInfoInternal) {
@@ -66,8 +66,6 @@ EXPORT(int, sceDisplaySetFrameBufInternal, uint32_t maybe_buffer_idx, uint32_t u
     // only render for frame buffer 0 or we'll get double fps
     if (maybe_buffer_idx != 0)
         return 0;
-    // size does not match (is 4 bytes larger)
-    if (pFrameBuf)
-        pFrameBuf->size = 0x18;
+
     return CALL_EXPORT(_sceDisplaySetFrameBuf, pFrameBuf, sync, nullptr);
 }

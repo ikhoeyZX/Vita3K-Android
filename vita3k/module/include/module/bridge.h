@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 
 using ImportFn = std::function<void(EmuEnvState &emuenv, CPUState &cpu, SceUID thread_id)>;
 using ImportVarFactory = std::function<Address(EmuEnvState &emuenv)>;
+using LibraryInitFn = std::function<void(EmuEnvState &emuenv)>;
 
 // Function returns a value that is written to CPU registers.
 template <typename Ret, typename... Args, size_t... indices>

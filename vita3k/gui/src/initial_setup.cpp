@@ -1,4 +1,4 @@
-// Vita3K emulator project
+﻿// Vita3K emulator project
 // Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
@@ -66,9 +66,9 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     static std::string title_str;
 
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
-    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
-    const ImVec2 WINDOW_SIZE(756.f * SCALE.x, 418.f * SCALE.y);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
+    const auto WINDOW_SIZE = ImVec2(756.f * SCALE.x, 418.f * SCALE.y);
     const auto SELECT_SIZE = 72.f * SCALE.y;
     const ImVec2 BUTTON_SIZE(186.f * SCALE.x, 52.f * SCALE.y);
     const ImVec2 BUTTON_POS(8.f * SCALE.x, display_size.y - BUTTON_SIZE.y - (6.f * SCALE.y));
@@ -76,8 +76,8 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 BIG_BUTTON_POS((WINDOW_SIZE.x / 2.f) - (BIG_BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BIG_BUTTON_SIZE.y - (20.f * SCALE.y));
 
     auto &lang = gui.lang.initial_setup;
-    auto &emulator = gui.lang.settings_dialog.emulator;
     auto &common = emuenv.common_dialog.lang.common;
+    auto &welcome = gui.lang.welcome;
 
     const auto is_default_path = emuenv.cfg.pref_path == emuenv.default_path;
     const auto FW_PREINST_PATH{ emuenv.pref_path / "pd0" };
@@ -87,7 +87,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     const auto FW_FONT_PATH{ emuenv.pref_path / "sa0" };
     const auto FW_FONT_INSTALLED = fs::exists(FW_FONT_PATH) && !fs::is_empty(FW_FONT_PATH);
 
-    ImGui::PushFont(gui.vita_font);
+    ImGui::PushFont(gui.vita_font[emuenv.current_font_level]);
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
@@ -114,11 +114,6 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
     ImGui::SetCursorPosY(94.f * SCALE.y);
     ImGui::Separator();
-    
-#ifdef ANDROID
-    constexpr char path_warning[] = "Using a different path requires additional permissions";
-#endif
-    
     switch (setup) {
     case SELECT_LANGUAGE:
         title_str = lang["select_language"];
@@ -149,9 +144,6 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopStyleVar();
         ImGui::PopStyleColor(3);
         ImGui::Columns(1);
-#ifdef ANDROID
-        ImGui::ScrollWhenDragging();
-#endif
         ImGui::EndChild();
         break;
     case SELECT_PREF_PATH:
@@ -159,14 +151,10 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize());
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["current_emu_path"].c_str());
         ImGui::Spacing();
-#ifdef ANDROID
-        ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(path_warning).x / 2.f));
-        ImGui::TextColored(ImVec4(0.98f, 0.01f, 0.20f, 1.0f), "%s", path_warning);
-#endif
         TextCentered(emuenv.cfg.pref_path.c_str(), 0);
         ImGui::SetCursorPos(!is_default_path ? ImVec2((WINDOW_SIZE.x / 2.f) - BIG_BUTTON_SIZE.x - (20.f * SCALE.x), BIG_BUTTON_POS.y) : BIG_BUTTON_POS);
         if (ImGui::Button(lang["change_emu_path"].c_str(), BIG_BUTTON_SIZE)) {
-            fs::path emulator_path = "";
+            std::filesystem::path emulator_path = "";
             host::dialog::filesystem::Result result = host::dialog::filesystem::pick_folder(emulator_path);
 
             if ((result == host::dialog::filesystem::Result::SUCCESS) && (emulator_path.native() != emuenv.pref_path.native())) {
@@ -191,12 +179,12 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - (ImGui::GetFontSize() * 3.5f));
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["install_highly_recommended"].c_str());
         ImGui::Spacing();
-        if (ImGui::Button("Download Preinst Firmware", BIG_BUTTON_SIZE))
+        if (ImGui::Button(welcome["download_preinst_firmware"].c_str(), BIG_BUTTON_SIZE))
             open_path("https://bit.ly/4hlePsX");
         ImGui::SameLine(0, 20.f * SCALE.x);
         ImGui::Text("%s %s", lang["installed"].c_str(), FW_PREINST_INSTALLED ? "V" : "X");
         ImGui::Spacing();
-        if (ImGui::Button(lang["download_firmware"].c_str(), BIG_BUTTON_SIZE))
+        if (ImGui::Button(welcome["download_firmware"].c_str(), BIG_BUTTON_SIZE))
             get_firmware_file(emuenv);
         ImGui::SameLine(0, 20.f * SCALE.x);
         ImGui::Text("%s %s", lang["installed"].c_str(), FW_INSTALLED ? "V" : "X");
@@ -212,13 +200,6 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetWindowFontScale(RES_SCALE.x);
             draw_firmware_install_dialog(gui, emuenv);
         }
-        // Dencrypt box
-        if(ImGui::Checkbox(emulator["dencrypt_installs"].c_str(), &emuenv.cfg.dencrypt_installs))
-            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-        SetTooltipEx(emulator["dencrypt_installs_description"].c_str());
-#ifdef ANDROID
-        ImGui::ScrollWhenDragging();
-#endif
         break;
     case SELECT_INTERFACE_SETTINGS:
         title_str = lang["select_interface_settings"];
@@ -269,7 +250,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetCursorPos(ImVec2(display_size.x - BUTTON_SIZE.x - BUTTON_POS.x, BUTTON_POS.y));
     if ((setup < FINISHED) && ImGui::Button(lang["next"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
         setup = (InitialSetup)(setup + 1);
-       config::serialize_config(emuenv.cfg, emuenv.config_path);
+        config::serialize_config(emuenv.cfg, emuenv.config_path);
     }
     ImGui::SetWindowFontScale(1.f);
 

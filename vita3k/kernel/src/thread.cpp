@@ -71,7 +71,7 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     start_tick = rtc_get_ticks(kernel.base_tick.tick);
     last_vblank_waited = 0;
 
-    cpu = init_cpu(kernel.cpu_backend, kernel.cpu_opt, kernel.cpu_unsafe, id, static_cast<std::size_t>(core_num), mem, kernel.cpu_protocol.get());
+    cpu = init_cpu(kernel.cpu_backend, kernel.cpu_opt, id, static_cast<std::size_t>(core_num), mem, kernel.cpu_protocol.get());
     if (!cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
@@ -93,18 +93,19 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     memset(base_tls_ptr.get(mem), 0, tls_size);
 
     int *tls_array = tls.get_ptr<int>().get(mem);
+
     tls_array[TLS_PROCESS_ID] = 1; // stubbed. unused
     tls_array[TLS_THREAD_ID] = id;
     tls_array[TLS_SP_TOP] = stack.get();
     tls_array[TLS_SP_BOTTOM] = stack.get() + stack_size;
     tls_array[TLS_CURRENT_PRIORITY] = priority;
     tls_array[TLS_CPU_AFFINITY_MASK] = affinity_mask;
+
     const Ptr<uint8_t> user_tls_ptr = base_tls_ptr + KERNEL_TLS_SIZE;
     write_tpidruro(*cpu, user_tls_ptr.address());
     if (kernel.tls_address) {
         assert(kernel.tls_psize <= kernel.tls_msize);
-        // memcpy(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
-        memmove(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
+        memcpy(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
     }
 
     CPUContext ctx;
@@ -143,7 +144,6 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     // Copy data to stack
     if (argp && arglen > 0) {
         const Address data_addr = stack_alloc(*cpu, align(arglen, 8));
-        // memcpy(Ptr<uint8_t>(data_addr).get(mem), argp.get(mem), arglen);
         memcpy(Ptr<uint8_t>(data_addr).get(mem), argp.get(mem), arglen);
         write_reg(*cpu, 1, data_addr);
     } else {
@@ -155,8 +155,8 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
         status = ThreadStatus::suspend;
         kernel.debugger.wait_for_debugger = false;
     } else {
-        status = ThreadStatus::run;
         to_do = ThreadToDo::run;
+        status = ThreadStatus::run;
     }
     something_to_do.notify_one();
 
@@ -187,6 +187,7 @@ void ThreadState::exit_delete(bool exit) {
 bool ThreadState::run_loop() {
     int res = 0;
     int run_level = std::max(call_level, 1);
+
     std::unique_lock<std::mutex> lock(mutex);
 
     auto run_thread_end_callback = [&]() {
@@ -250,19 +251,17 @@ bool ThreadState::run_loop() {
             }
 
             // Run the cpu
-            do {
-                if (to_do == ThreadToDo::step) {
-                    res = step(*cpu);
-                    to_do = ThreadToDo::suspend;
+            if (to_do == ThreadToDo::step) {
+                res = step(*cpu);
+                to_do = ThreadToDo::suspend;
 
-                } else
-                    res = run(*cpu);
+            } else
+                res = run(*cpu);
 
-                // handle svc call if this was what stopped the cpu
-                if (cpu->svc_called) {
-                    cpu->protocol->call_svc(*cpu, cpu->svc_called, read_pc(*cpu), *this);
-                }
-            } while (to_do == ThreadToDo::run && res == 0 && call_level == run_level && !hit_breakpoint(*cpu));
+            // handle svc call if this was what stopped the cpu
+            if (cpu->svc_called) {
+                cpu->protocol->call_svc(*cpu, cpu->svc_called, read_pc(*cpu), *this);
+            }
 
             lock.lock();
 
@@ -301,6 +300,8 @@ bool ThreadState::run_loop() {
             something_to_do.wait(lock);
             break;
         case ThreadToDo::suspend:
+            update_status(ThreadStatus::suspend);
+            something_to_do.wait(lock);
             break;
         }
     }
@@ -315,8 +316,7 @@ void ThreadState::push_arguments(const std::vector<uint32_t> &args) {
         // TODO align to 16 bytes
         const size_t remain_size = args.size() - 4;
         sp -= 4 * remain_size;
-        // memcpy(Ptr<uint32_t>(sp).get(mem), &args[4], remain_size * 4);
-        memmove(Ptr<uint32_t>(sp).get(mem), &args[4], remain_size * 4);
+        memcpy(Ptr<uint32_t>(sp).get(mem), &args[4], remain_size * 4);
     }
     write_sp(*cpu, sp);
 }

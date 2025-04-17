@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 #include <io/filesystem.h>
 #include <io/util.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 // To open wide files for Boost.Filesystem, we also need the appropriate wide mode flags for Windows, and normal flags for other OS
 const wchar_t *translate_open_mode(const int flags) {
     if (flags & SCE_O_WRONLY) {

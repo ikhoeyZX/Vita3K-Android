@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,33 +31,19 @@ extern "C" {
 
 void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t frame_width, const DecoderColorSpace color_space, const bool is_bgra, MJpegPitch pitch[4]) {
     AVPixelFormat format = AV_PIX_FMT_YUVJ444P;
-    int strides_divisor = 1;
-    int slice_position = 8;
     int width = pitch[0].x, height = pitch[0].y;
 
     switch (color_space) {
     case COLORSPACE_YUV444P:
         format = AV_PIX_FMT_YUV444P;
-        strides_divisor = 1;
-        slice_position = 8; // 2
         break;
     case COLORSPACE_YUV422P:
         format = AV_PIX_FMT_YUV422P;
-        strides_divisor = 2;
-        slice_position = 6; // 1.5
         break;
     case COLORSPACE_YUV420P:
         format = AV_PIX_FMT_YUV420P;
-        strides_divisor = 2;
-        slice_position = 5; // 1.25
         break;
-    case COLORSPACE_GRAYSCALE:
-        LOG_ERROR("Unsupported type: COLORSPACE_GRAYSCALE");
-        format = AV_PIX_FMT_GRAY8;
-        strides_divisor = 1;
-        slice_position = 1;
-        break;
-    default: 
+    default:
         LOG_WARN("An attempt was made to use an unsupported color space.");
         return;
     }
@@ -111,12 +97,6 @@ void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint3
         strides_divisor = 2;
         slice_position = 5; // 1.25
         break;
-    case COLORSPACE_GRAYSCALE:
-        LOG_ERROR("Unsupported type: COLORSPACE_GRAYSCALE");
-        format = AV_PIX_FMT_GRAY8;
-        strides_divisor = 1;
-        slice_position = 1;
-        break;
     default:
         LOG_WARN("An attempt was made to use an unsupported color space.");
         return;
@@ -151,7 +131,7 @@ void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint3
     assert(error == height);
 }
 
-AVPixelFormat colorspace_to_av_pixel_format(DecoderColorSpace color_space) {
+static AVPixelFormat colorspace_to_av_pixel_format(DecoderColorSpace color_space) {
     switch (color_space) {
     case COLORSPACE_YUV444P:
         return AV_PIX_FMT_YUVJ444P;
@@ -174,7 +154,7 @@ AVPixelFormat colorspace_to_av_pixel_format(DecoderColorSpace color_space) {
     }
 }
 
-DecoderColorSpace av_pixel_format_to_colorspace(AVPixelFormat format) {
+static DecoderColorSpace av_pixel_format_to_colorspace(AVPixelFormat format) {
     switch (format) {
     case AV_PIX_FMT_YUVJ444P:
         return COLORSPACE_YUV444P;
@@ -410,7 +390,7 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
 
         if (this->downscale_ratio != 1) {
             int original_size = 0;
-            for (uint8_t i = 0; i < 3; i++) {
+            for (int i = 0; i < 3; i++) {
                 original_size += original_pitch[i].x * original_pitch[i].y;
             }
             original_buffer.resize(original_size);
@@ -420,12 +400,12 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
         }
 
         // Implement YUV image align to pitch
-        for (uint8_t plane = 0; plane < 3; plane++) {
+        for (int plane = 0; plane < 3; plane++) {
             if (!frame->data[plane])
                 continue;
 
-            uint32_t src_width = frame->width;
-            uint32_t src_height = frame->height;
+            int src_width = frame->width;
+            int src_height = frame->height;
 
             if (plane > 0) {
                 switch (color_space_out) {
@@ -455,7 +435,7 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
                 }
             }
 
-            for (uint32_t y = 0; y < src_height; y++) {
+            for (int y = 0; y < src_height; y++) {
                 const uint8_t *src_row = frame->data[plane] + y * frame->linesize[plane];
                 uint8_t *dst_row = original_data + y * original_pitch[plane].x;
 
@@ -469,7 +449,7 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
 
             // Fill remaining rows with the last row
             const uint8_t *last_row = original_data + (src_height - 1) * original_pitch[plane].x;
-            for (uint32_t y = src_height; y < original_pitch[plane].y; y++) {
+            for (int y = src_height; y < original_pitch[plane].y; y++) {
                 uint8_t *dst_row = original_data + y * original_pitch[plane].x;
                 std::memcpy(dst_row, last_row, original_pitch[plane].x);
             }
@@ -484,26 +464,26 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
 
             original_data = original_buffer.data();
 
-            for (uint8_t plane = 0; plane < 3; plane++) {
+            for (int plane = 0; plane < 3; plane++) {
                 if (!frame->data[plane])
                     continue;
 
-                uint32_t src_width = original_pitch[plane].x;
-                uint32_t src_height = original_pitch[plane].y;
-                uint32_t dst_width = this->pitch[plane].x;
-                uint32_t dst_height = this->pitch[plane].y;
+                int src_width = original_pitch[plane].x;
+                int src_height = original_pitch[plane].y;
+                int dst_width = this->pitch[plane].x;
+                int dst_height = this->pitch[plane].y;
 
-                for (uint32_t y = 0; y < dst_height; y++) {
-                    for (uint32_t x = 0; x < dst_width; x++) {
-                        uint32_t sum = 0;
-                        uint32_t count = 0;
-                        uint32_t src_y_start = y * this->downscale_ratio;
-                        uint32_t src_y_end = std::min(src_y_start + this->downscale_ratio, src_height);
-                        uint32_t src_x_start = x * this->downscale_ratio;
-                        uint32_t src_x_end = std::min(src_x_start + this->downscale_ratio, src_width);
+                for (int y = 0; y < dst_height; y++) {
+                    for (int x = 0; x < dst_width; x++) {
+                        int sum = 0;
+                        int count = 0;
+                        int src_y_start = y * this->downscale_ratio;
+                        int src_y_end = std::min(src_y_start + this->downscale_ratio, src_height);
+                        int src_x_start = x * this->downscale_ratio;
+                        int src_x_end = std::min(src_x_start + this->downscale_ratio, src_width);
 
-                        for (uint32_t sy = src_y_start; sy < src_y_end; sy++) {
-                            for (uint32_t sx = src_x_start; sx < src_x_end; sx++) {
+                        for (int sy = src_y_start; sy < src_y_end; sy++) {
+                            for (int sx = src_x_start; sx < src_x_end; sx++) {
                                 sum += original_data[sy * original_pitch[plane].x + sx];
                                 count++;
                             }
@@ -535,7 +515,7 @@ DecoderColorSpace MjpegDecoderState::get_color_space() {
 }
 
 void MjpegDecoderState::get_pitch_info(MJpegPitch pitch[4]) {
-    for (uint8_t i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
         pitch[i] = this->pitch[i];
     }
 }

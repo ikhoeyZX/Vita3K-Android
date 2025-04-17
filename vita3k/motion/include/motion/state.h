@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 #pragma once
 
 #include <motion/motion_input.h>
-#include <SDL_gamecontroller.h>
 
 #include <mutex>
 
@@ -29,12 +28,5 @@ struct MotionState {
     uint64_t last_gyro_timestamp = 0;
     uint64_t last_accel_timestamp = 0;
 
-    // gyroscope and accelerometer on the device itself
-    SDL_Sensor* device_gyro = nullptr;
-    SDL_Sensor* device_accel = nullptr;
-    bool has_device_motion_support = false;
-
     bool is_sampling = false;
-
-    void init();
 };

@@ -16,12 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <util/fs.h>
-#include <util/log.h>
 #include <util/string_utils.h>
-
-#ifdef ANDROID
-#include <SDL.h>
-#endif
 
 namespace fs_utils {
 
@@ -60,48 +55,33 @@ void dump_data(const fs::path &path, const void *data, const std::streamsize siz
         of.close();
     }
 }
-
-
-std::vector<uint8_t> read_asset_raw(const fs::path &path) {
-#ifdef ANDROID
-    static const uint32_t base_path_size = strlen(SDL_AndroidGetExternalStoragePath()) + 1;
-    std::string file_path = path.string().substr(base_path_size);
-    SDL_RWops *file = SDL_RWFromFile(file_path.c_str(), "r");
-    if (file == nullptr) {
-        LOG_ERROR("Could not open asset file {}", path.string());
-        return {};
+template <typename T>
+static bool read_data(const fs::path &path, std::vector<T> &data) {
+    data.clear();
+    fs::ifstream file(path, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {
+        return false;
     }
 
-    Sint64 size_read = SDL_RWsize(file);
-    std::vector<uint8_t> raw_data(size_read);
-
-    if (SDL_RWread(file, raw_data.data(), size_read, 1) != 1) {
-        LOG_ERROR("Could not read asset file {}", path.string());
-        return {};
+    // Get the size of the file
+    std::streamsize size = file.tellg();
+    if (size <= 0) {
+        return false;
     }
 
-    SDL_RWclose(file);
+    // Resize the vector to fit the file content
+    data.resize(size);
 
-    return raw_data;
-#else
-    fs::ifstream is(path, fs::ifstream::binary);
-    if (!is) {
-        return {};
+    // Go back to the beginning of the file and read the content
+    file.seekg(0, std::ios::beg);
+    if (!file.read(reinterpret_cast<char *>(data.data()), size)) {
+        return false;
     }
-
-    is.seekg(0, fs::ifstream::end);
-    uint32_t size_read = is.tellg();
-    is.seekg(0);
-
-    if (size_read == 0) {
-        return {};
-    }
-
-    std::vector<uint8_t> raw_data(size_read);
-
-    is.read(reinterpret_cast<char *>(raw_data.data()), size_read);
-    return raw_data;
-#endif
+    return true;
 }
+
+bool read_data(const fs::path &path, std::vector<uint8_t> &data) { return read_data<uint8_t>(path, data); }
+bool read_data(const fs::path &path, std::vector<int8_t> &data) { return read_data<int8_t>(path, data); }
+bool read_data(const fs::path &path, std::vector<char> &data) { return read_data<char>(path, data); }
 
 } // namespace fs_utils

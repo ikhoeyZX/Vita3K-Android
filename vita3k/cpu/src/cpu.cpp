@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,17 +17,13 @@
 
 #include <cpu/disasm/functions.h>
 #include <cpu/functions.h>
-
-#ifdef USE_DYNARMIC
 #include <cpu/impl/dynarmic_cpu.h>
-#endif
 #include <cpu/impl/interface.h>
-#ifdef USE_UNICORN
 #include <cpu/impl/unicorn_cpu.h>
-#endif
 #include <cpu/state.h>
 #include <mem/ptr.h>
 #include <util/types.h>
+
 #include <memory>
 #include <string>
 
@@ -43,7 +39,7 @@ SceUID get_thread_id(CPUState &state) {
     return state.thread_id;
 }
 
-CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, bool cpu_unsafe, SceUID thread_id, std::size_t processor_id, MemState &mem, CPUProtocolBase *protocol) {
+CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem, CPUProtocolBase *protocol) {
     CPUStatePtr state(new CPUState(), delete_cpu_state);
     state->mem = &mem;
     state->protocol = protocol;
@@ -62,19 +58,15 @@ CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, bool cpu_unsafe, SceUID t
     }
 
     switch (backend) {
-#ifdef USE_DYNARMIC
     case CPUBackend::Dynarmic: {
         Dynarmic::ExclusiveMonitor *monitor = static_cast<Dynarmic::ExclusiveMonitor *>(protocol->get_exclusive_monitor());
-        state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, monitor, cpu_opt, cpu_unsafe);
+        state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, monitor, cpu_opt);
         break;
     }
-#endif
-#ifdef USE_UNICORN
     case CPUBackend::Unicorn: {
         state->cpu = std::make_unique<UnicornCPU>(state.get());
         break;
     }
-#endif
     default:
         return nullptr;
     }

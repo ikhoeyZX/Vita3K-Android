@@ -66,23 +66,31 @@ static ImportFn resolve_import(uint32_t nid) {
 #undef VAR_NID
     }
 
-    return ImportFn();
+    return {};
 }
 
-const std::array<VarExport, var_exports_size> &get_var_exports() {
-    static std::array<VarExport, var_exports_size> var_exports = { {
+struct VarExport {
+    uint32_t nid;
+    ImportVarFactory factory;
+};
+
+void init_exported_vars(EmuEnvState &emuenv) {
+    const auto var_exports = std::to_array<VarExport>({
 #define NID(name, nid)
 #define VAR_NID(name, nid) \
     {                      \
         nid,               \
-        import_##name,     \
-        #name              \
+        import_##name      \
     },
 #include <nids/nids.inc>
 #undef VAR_NID
 #undef NID
-    } };
-    return var_exports;
+    });
+
+    for (const auto &var : var_exports) {
+        auto addr = var.factory(emuenv);
+        emuenv.kernel.export_nids.emplace(var.nid, addr);
+    }
 }
 
 /**
@@ -153,7 +161,6 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
 
             if (!emuenv.missing_nids.contains(nid) || LOG_UNK_NIDS_ALWAYS) {
                 LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);
-                LOG_DEBUG("{}\n{}", save_context(*thread->cpu).description(), thread->log_stack_traceback());
 
                 if (!LOG_UNK_NIDS_ALWAYS)
                     emuenv.missing_nids.insert(nid);
@@ -171,7 +178,7 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
 
         assert((pc & 1) == 0);
 
-        pc -= 4; // Move back to SVC (SuperVisor Call) instruction
+        pc -= sizeof(uint32_t); // Move back to SVC (SuperVisor Call) instruction
 
         uint32_t *const stub = Ptr<uint32_t>(pc).get(emuenv.mem);
 
@@ -252,7 +259,7 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         LOG_ERROR("Failed to decrypt module file {}", module_path);
         return SCE_ERROR_ERRNO_ENOENT;
     }
-    
+
     // Only load patches for eboot.bin modules
     const std::vector<Patch> patches = module_path.find("eboot.bin") != std::string::npos ? get_patches(emuenv.patch_path, emuenv.io.title_id) : std::vector<Patch>();
 

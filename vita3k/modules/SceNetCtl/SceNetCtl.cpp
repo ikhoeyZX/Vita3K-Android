@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -256,7 +256,7 @@ EXPORT(int, sceNetCtlCheckCallback) {
 
     emuenv.net.state = 1;
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
     // TODO: Limit the number of callbacks called to 5
     // TODO: Check in which order the callbacks are executed

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -78,7 +78,7 @@ struct DisplayState {
     // should contain the list of sync objects / swapchain images (in the order they appear in the cycle)
     std::vector<PredictedDisplayFrame> predicted_frames;
     // position in the predicted_frame cycle (the -1 is needed)
-    int32_t predicted_frame_position = -1;
+    uint32_t predicted_frame_position = -1;
     // how many times the same predicted_frames cycle has been seen (if it is below some threshold, do not predict the frame)
     uint32_t predicted_cycles_seen = 0;
     // should the next call to sceDisplaySetFrameBuf do something

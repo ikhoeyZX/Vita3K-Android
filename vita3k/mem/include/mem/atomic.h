@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 #include <memory>
 
-#if WIN32
+#ifdef _MSC_VER
 #include <intrin.h>
 #endif
 
-#if WIN32
+#ifdef _MSC_VER
 
 inline bool atomic_compare_and_swap(volatile uint8_t *pointer, uint8_t value, uint8_t expected) {
     const uint8_t result = _InterlockedCompareExchange8(reinterpret_cast<volatile char *>(pointer), value, expected);

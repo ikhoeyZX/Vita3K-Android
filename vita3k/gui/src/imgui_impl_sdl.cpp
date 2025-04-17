@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,14 +29,14 @@
 #include <SDL_vulkan.h>
 
 static char *clipboard_text_data = nullptr;
-const char *ImGui_ImplSdl_GetClipboardText(ImGuiContext *) {
+static const char *ImGui_ImplSdl_GetClipboardText(ImGuiContext *) {
     if (clipboard_text_data)
         SDL_free(clipboard_text_data);
     clipboard_text_data = SDL_GetClipboardText();
     return clipboard_text_data;
 }
 
-void ImGui_ImplSdl_SetClipboardText(ImGuiContext *, const char *text) {
+static void ImGui_ImplSdl_SetClipboardText(ImGuiContext *, const char *text) {
     SDL_SetClipboardText(text);
 }
 
@@ -153,10 +153,10 @@ static ImGuiKey ImGui_ImplSDL2_KeycodeToImGuiKey(int keycode) {
 
 static void ImGui_ImplSDL2_UpdateKeyModifiers(SDL_Keymod sdl_key_mods) {
     ImGuiIO &io = ImGui::GetIO();
-    io.AddKeyEvent(ImGuiKey_ModCtrl, (sdl_key_mods & KMOD_CTRL) != 0);
-    io.AddKeyEvent(ImGuiKey_ModShift, (sdl_key_mods & KMOD_SHIFT) != 0);
-    io.AddKeyEvent(ImGuiKey_ModAlt, (sdl_key_mods & KMOD_ALT) != 0);
-    io.AddKeyEvent(ImGuiKey_ModSuper, (sdl_key_mods & KMOD_GUI) != 0);
+    io.AddKeyEvent(ImGuiMod_Ctrl, (sdl_key_mods & KMOD_CTRL) != 0);
+    io.AddKeyEvent(ImGuiMod_Shift, (sdl_key_mods & KMOD_SHIFT) != 0);
+    io.AddKeyEvent(ImGuiMod_Alt, (sdl_key_mods & KMOD_ALT) != 0);
+    io.AddKeyEvent(ImGuiMod_Super, (sdl_key_mods & KMOD_GUI) != 0);
 }
 
 // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -167,16 +167,14 @@ bool ImGui_ImplSdl_ProcessEvent(ImGui_State *state, SDL_Event *event) {
     ImGuiIO &io = ImGui::GetIO();
     switch (event->type) {
     case SDL_MOUSEMOTION: {
-#ifdef ANDROID
-        io.AddMousePosEvent(event->motion.x / io.DisplayFramebufferScale.x, event->motion.y / io.DisplayFramebufferScale.y);
-#else
         io.AddMousePosEvent((float)event->motion.x, (float)event->motion.y);
-#endif
         return true;
     }
     case SDL_MOUSEWHEEL: {
-        float wheel_x = (event->wheel.x > 0) ? 1.0f : (event->wheel.x < 0) ? -1.0f : 0.0f;
-        float wheel_y = (event->wheel.y > 0) ? 1.0f : (event->wheel.y < 0) ? -1.0f : 0.0f;
+        float wheel_x = (event->wheel.x > 0) ? 1.0f : (event->wheel.x < 0) ? -1.0f
+                                                                           : 0.0f;
+        float wheel_y = (event->wheel.y > 0) ? 1.0f : (event->wheel.y < 0) ? -1.0f
+                                                                           : 0.0f;
         io.AddMouseWheelEvent(wheel_x, wheel_y);
         return true;
     }
@@ -201,14 +199,8 @@ bool ImGui_ImplSdl_ProcessEvent(ImGui_State *state, SDL_Event *event) {
         if (mouse_button == -1)
             break;
 
-#ifdef ANDROID
-        if (event->type == SDL_MOUSEBUTTONUP && mouse_button == 0 && !(state->MouseButtonsDown & 1))
-            // handle the case when a long touch is turned into a right click
-            return true;
-#endif
-
         io.AddMouseButtonEvent(mouse_button, (event->type == SDL_MOUSEBUTTONDOWN));
-        state->MouseButtonsDown = (event->type == SDL_MOUSEBUTTONDOWN) ? (state->MouseButtonsDown | (1 << mouse_button)) : (state->MouseButtonsDown & ~(1 << mouse_button));
+        state->mouse_buttons_down = (event->type == SDL_MOUSEBUTTONDOWN) ? (state->mouse_buttons_down | (1 << mouse_button)) : (state->mouse_buttons_down & ~(1 << mouse_button));
         return true;
     }
     case SDL_TEXTINPUT: {
@@ -231,9 +223,9 @@ bool ImGui_ImplSdl_ProcessEvent(ImGui_State *state, SDL_Event *event) {
         //   we delay process the SDL_WINDOWEVENT_LEAVE events by one frame. See issue #5012 for details.
         Uint8 window_event = event->window.event;
         if (window_event == SDL_WINDOWEVENT_ENTER)
-            state->PendingMouseLeaveFrame = 0;
+            state->pending_mouse_leave_frame = 0;
         if (window_event == SDL_WINDOWEVENT_LEAVE)
-            state->PendingMouseLeaveFrame = ImGui::GetFrameCount() + 1;
+            state->pending_mouse_leave_frame = ImGui::GetFrameCount() + 1;
         if (window_event == SDL_WINDOWEVENT_FOCUS_GAINED)
             io.AddFocusEvent(true);
         else if (event->window.event == SDL_WINDOWEVENT_FOCUS_LOST)
@@ -278,7 +270,7 @@ IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window 
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors; // We can honor GetMouseCursor() values (optional)
     io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos; // We can honor io.WantSetMousePos requests (optional, rarely used)
 
-    state->MouseCanUseGlobalState = mouse_can_use_global_state;
+    state->mouse_can_use_global_state = mouse_can_use_global_state;
 
     ImGuiPlatformIO &platform_io = ImGui::GetPlatformIO();
     platform_io.Platform_SetClipboardTextFn = ImGui_ImplSdl_SetClipboardText;
@@ -287,15 +279,15 @@ IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window 
     platform_io.Platform_SetImeDataFn = nullptr;
 
     // Load mouse cursors
-    state->MouseCursors[ImGuiMouseCursor_Arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-    state->MouseCursors[ImGuiMouseCursor_TextInput] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
-    state->MouseCursors[ImGuiMouseCursor_ResizeAll] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
-    state->MouseCursors[ImGuiMouseCursor_ResizeNS] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
-    state->MouseCursors[ImGuiMouseCursor_ResizeEW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
-    state->MouseCursors[ImGuiMouseCursor_ResizeNESW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
-    state->MouseCursors[ImGuiMouseCursor_ResizeNWSE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
-    state->MouseCursors[ImGuiMouseCursor_Hand] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
-    state->MouseCursors[ImGuiMouseCursor_NotAllowed] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
+    state->mouse_cursors[ImGuiMouseCursor_Arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+    state->mouse_cursors[ImGuiMouseCursor_TextInput] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+    state->mouse_cursors[ImGuiMouseCursor_ResizeAll] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+    state->mouse_cursors[ImGuiMouseCursor_ResizeNS] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+    state->mouse_cursors[ImGuiMouseCursor_ResizeEW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+    state->mouse_cursors[ImGuiMouseCursor_ResizeNESW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
+    state->mouse_cursors[ImGuiMouseCursor_ResizeNWSE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
+    state->mouse_cursors[ImGuiMouseCursor_Hand] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+    state->mouse_cursors[ImGuiMouseCursor_NotAllowed] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
 
     // Set platform dependent data in viewport
 #ifdef _WIN32
@@ -331,7 +323,7 @@ IMGUI_API void ImGui_ImplSdl_Shutdown(ImGui_State *state) {
     if (clipboard_text_data)
         SDL_free(clipboard_text_data);
     for (ImGuiMouseCursor cursor_n = 0; cursor_n < ImGuiMouseCursor_COUNT; cursor_n++)
-        SDL_FreeCursor(state->MouseCursors[cursor_n]);
+        SDL_FreeCursor(state->mouse_cursors[cursor_n]);
 
     ImGuiIO &io = ImGui::GetIO();
     io.BackendPlatformName = nullptr;
@@ -343,7 +335,7 @@ static void ImGui_ImplSDL2_UpdateMouseData(ImGui_State *state) {
     // We forward mouse input when hovered or captured (via SDL_MOUSEMOTION) or when focused (below)
 #if SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE
     // SDL_CaptureMouse() let the OS know e.g. that our imgui drag outside the SDL window boundaries shouldn't e.g. trigger other operations outside
-    SDL_CaptureMouse(state->MouseButtonsDown != 0 ? SDL_TRUE : SDL_FALSE);
+    SDL_CaptureMouse(state->mouse_buttons_down != 0 ? SDL_TRUE : SDL_FALSE);
     SDL_Window *focused_window = SDL_GetKeyboardFocus();
     const bool is_app_focused = (state->window == focused_window);
 #else
@@ -355,7 +347,7 @@ static void ImGui_ImplSDL2_UpdateMouseData(ImGui_State *state) {
             SDL_WarpMouseInWindow(state->window, (int)io.MousePos.x, (int)io.MousePos.y);
 
         // (Optional) Fallback to provide mouse position when focused (SDL_MOUSEMOTION already provides this when hovered or captured)
-        if (state->MouseCanUseGlobalState && state->MouseButtonsDown == 0) {
+        if (state->mouse_can_use_global_state && state->mouse_buttons_down == 0) {
             int window_x, window_y, mouse_x_global, mouse_y_global;
             SDL_GetGlobalMouseState(&mouse_x_global, &mouse_y_global);
             SDL_GetWindowPosition(state->window, &window_x, &window_y);
@@ -375,7 +367,7 @@ static void ImGui_ImplSDL2_UpdateMouseCursor(ImGui_State *state) {
         SDL_ShowCursor(SDL_FALSE);
     } else {
         // Show OS mouse cursor
-        SDL_SetCursor(state->MouseCursors[imgui_cursor] ? state->MouseCursors[imgui_cursor] : state->MouseCursors[ImGuiMouseCursor_Arrow]);
+        SDL_SetCursor(state->mouse_cursors[imgui_cursor] ? state->mouse_cursors[imgui_cursor] : state->mouse_cursors[ImGuiMouseCursor_Arrow]);
         SDL_ShowCursor(SDL_TRUE);
     }
 }
@@ -393,9 +385,12 @@ static void ImGui_ImplSDL2_UpdateGamepads(ImGui_State *state) {
     io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
 
 // Update gamepad inputs
-#define IM_SATURATE(V) (V < 0.0f ? 0.0f : V > 1.0f ? 1.0f : V)
-#define MAP_BUTTON(KEY_NO, BUTTON_NO) \
-    { io.AddKeyEvent(KEY_NO, SDL_GameControllerGetButton(game_controller, BUTTON_NO) != 0); }
+#define IM_SATURATE(V) (V < 0.0f ? 0.0f : V > 1.0f ? 1.0f \
+                                                   : V)
+#define MAP_BUTTON(KEY_NO, BUTTON_NO)                                                         \
+    {                                                                                         \
+        io.AddKeyEvent(KEY_NO, SDL_GameControllerGetButton(game_controller, BUTTON_NO) != 0); \
+    }
 #define MAP_ANALOG(KEY_NO, AXIS_NO, V0, V1)                                                              \
     {                                                                                                    \
         float vn = (float)(SDL_GameControllerGetAxis(game_controller, AXIS_NO) - V0) / (float)(V1 - V0); \
@@ -431,26 +426,6 @@ static void ImGui_ImplSDL2_UpdateGamepads(ImGui_State *state) {
 #undef MAP_ANALOG
 }
 
-static void ImGui_ImplSDL2_HandleTouch(ImGui_State *state) {
-    ImGuiIO &io = ImGui::GetIO();
-
-    if (state->MouseButtonsDown & 1) {
-        // considered left click
-        if (io.MouseDownDuration[0] >= 1.0f && !ImGui::IsMouseDragging(0)) {
-            // we left click without dragging for more than 1sec, turn into right click
-            io.MouseClickedTime[0] = 0;
-            io.MouseClicked[0] = false;
-            io.MouseDown[0] = false;
-            io.MouseReleased[0] = false;
-            io.MouseDownDuration[0] = -1.0f;
-            ImGui::SetActiveID(0, ImGui::GetCurrentContext()->CurrentWindow);
-            io.AddMouseButtonEvent(1, true);
-            io.AddMouseButtonEvent(1, false);
-            state->MouseButtonsDown &= ~1;
-        }
-    }
-}
-
 IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
     ImGuiIO &io = ImGui::GetIO();
 
@@ -468,9 +443,9 @@ IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
     io.DeltaTime = state->time > 0 ? (float)((double)(current_time - state->time) / frequency) : (1.0f / 60.0f);
     state->time = current_time;
 
-    if (state->PendingMouseLeaveFrame && state->PendingMouseLeaveFrame >= ImGui::GetFrameCount() && state->MouseButtonsDown == 0) {
+    if (state->pending_mouse_leave_frame && state->pending_mouse_leave_frame >= ImGui::GetFrameCount() && state->mouse_buttons_down == 0) {
         io.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
-        state->PendingMouseLeaveFrame = 0;
+        state->pending_mouse_leave_frame = 0;
     }
 
     ImGui_ImplSDL2_UpdateMouseData(state);
@@ -478,10 +453,6 @@ IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
 
     // Update game controllers (if enabled and available)
     ImGui_ImplSDL2_UpdateGamepads(state);
-
-#ifdef ANDROID
-    ImGui_ImplSDL2_HandleTouch(state);
-#endif
 
     // Start the frame. This call will update the io.WantCaptureMouse, io.WantCaptureKeyboard flag that you can use to dispatch inputs (or not) to your application.
     ImGui::NewFrame();

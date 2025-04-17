@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,10 +27,9 @@ void draw_condvars_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
 
-    for (const auto &condvar : emuenv.kernel.condvars) {
-        std::shared_ptr<Condvar> sema_state = condvar.second;
+    for (const auto &[id, sema_state] : emuenv.kernel.condvars) {
         ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d             %02zu",
-            condvar.first,
+            id,
             sema_state->name,
             sema_state->attr,
             sema_state->waiting_threads->size());
@@ -44,10 +43,9 @@ void draw_lw_condvars_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
 
-    for (const auto &condvar : emuenv.kernel.lwcondvars) {
-        std::shared_ptr<Condvar> sema_state = condvar.second;
+    for (const auto &[id, sema_state] : emuenv.kernel.lwcondvars) {
         ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d             %02zu",
-            condvar.first,
+            id,
             sema_state->name,
             sema_state->attr,
             sema_state->waiting_threads->size());

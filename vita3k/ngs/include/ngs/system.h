@@ -22,6 +22,7 @@
 #include <ngs/common.h>
 #include <ngs/scheduler.h>
 #include <ngs/types.h>
+#include <util/types.h>
 
 #include <array>
 #include <cstdint>

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -46,8 +46,7 @@ struct FileInfo {
     int access_mode;
 
     FileInfo()
-        : vita_loc()
-        , open_mode(SCE_O_RDONLY)
+        : open_mode(SCE_O_RDONLY)
         , file_mode(SCE_SO_IFREG | SCE_SO_IROTH)
         , access_mode(SCE_S_IRUSR) {}
 };

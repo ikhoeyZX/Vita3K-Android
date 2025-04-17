@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -171,8 +171,8 @@ std::vector<int16_t> PlayerState::receive_audio() {
 
         data.resize(frame->nb_samples * frame->ch_layout.nb_channels);
 
-        for (uint16_t a = 0; a < frame->nb_samples; a++) {
-            for (uint16_t b = 0; b < frame->ch_layout.nb_channels; b++) {
+        for (int a = 0; a < frame->nb_samples; a++) {
+            for (int b = 0; b < frame->ch_layout.nb_channels; b++) {
                 auto *frame_data = reinterpret_cast<float *>(frame->data[b]);
                 float current_sample = frame_data[a];
                 int16_t pcm_sample = current_sample * INT16_MAX;

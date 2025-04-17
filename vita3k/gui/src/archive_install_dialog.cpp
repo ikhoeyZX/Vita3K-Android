@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,14 +31,6 @@
 
 namespace gui {
 
-static bool delete_archive_file;
-static std::string state, type, title;
-static std::map<fs::path, std::vector<ContentInfo>> contents_archives;
-static std::vector<fs::path> invalid_archives;
-static fs::path archive_path = "";
-static float global_progress = 0.f;
-static int archives_count = 0;
-
 static std::vector<fs::path> get_path_of_archives(const fs::path &path) {
     std::vector<fs::path> archives_path;
     for (const auto &archive : fs::directory_iterator(path)) {
@@ -52,17 +44,41 @@ static std::vector<fs::path> get_path_of_archives(const fs::path &path) {
 }
 
 void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
+    static bool delete_archive_file;
+    static std::string title;
+    static std::map<fs::path, std::vector<ContentInfo>> contents_archives;
+    static std::vector<fs::path> invalid_archives;
+    static std::filesystem::path archive_path = "";
+    static float global_progress = 0.f;
+    static size_t archives_count = 0;
+
+    enum class State {
+        UNDEFINED,
+        INSTALL,
+        INSTALLING,
+        FINISHED
+    };
+    static State state = State::UNDEFINED;
+
+    enum class Type {
+        UNDEFINED,
+        FILE,
+        DIRECTORY
+    };
+
+    static Type type = Type::UNDEFINED;
+
     static std::atomic<float> count(0.f);
     static std::atomic<float> current(0.f);
     static std::atomic<float> progress(0.f);
     static std::mutex install_mutex;
     static const auto progress_callback = [&](const ArchiveContents &progress_value) {
         if (progress_value.count.has_value())
-            count = progress_value.count.value();
+            count = *progress_value.count;
         if (progress_value.current.has_value())
-            current = progress_value.current.value();
+            current = *progress_value.current;
         if (progress_value.progress.has_value())
-            progress = progress_value.progress.value();
+            progress = *progress_value.progress;
     };
     std::lock_guard<std::mutex> lock(install_mutex);
 
@@ -70,48 +86,44 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     auto &indicator = gui.lang.indicator;
     auto &common = emuenv.common_dialog.lang.common;
 
-    const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
     const auto BUTTON_SIZE = ImVec2(190.f * SCALE.x, 45.f * SCALE.y);
-    const auto WINDOW_SIZE = ImVec2(630.f * SCALE.x, (state.empty() ? 240.f : 380.f) * SCALE.y);
+    const auto WINDOW_SIZE = ImVec2(616.f * SCALE.x, (state == State::UNDEFINED ? 240.f : 340.f) * SCALE.y);
 
-    ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size);
     ImGui::Begin("archive_install", &gui.file_menu.archive_install_dialog, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2.f), emuenv.viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2.f), emuenv.logical_viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
     ImGui::BeginChild("##archive_Install_child", WINDOW_SIZE, ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     const auto POS_BUTTON = (ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f) + (10.f * SCALE.x);
     ImGui::SetWindowFontScale(RES_SCALE.x);
-    ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(title.c_str()).x / 2.f));
-    ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", title.c_str());
+    TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, title.c_str());
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    if (type.empty()) {
+    if (type == Type::UNDEFINED) {
         ImGui::SetCursorPosX(POS_BUTTON);
         title = lang["select_install_type"];
         if (ImGui::Button(lang["select_file"].c_str(), BUTTON_SIZE))
-            type = "file";
+            type = Type::FILE;
         ImGui::Spacing();
-
-#ifndef ANDROID
         ImGui::SetCursorPosX(POS_BUTTON);
         if (ImGui::Button(lang["select_directory"].c_str(), BUTTON_SIZE))
-            type = "directory";
+            type = Type::DIRECTORY;
         ImGui::Spacing();
-#endif
-
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::SetCursorPosX(POS_BUTTON);
         if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE))
             gui.file_menu.archive_install_dialog = false;
     } else {
-        if (state.empty()) {
+        switch (state) {
+        case State::UNDEFINED: {
             host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
-            if (type == "file") {
+            if (type == Type::FILE) {
                 // Set file filters for the file picking dialog
                 std::vector<host::dialog::filesystem::FileFilter> file_filters = {
                     { "PlayStation Vita commercial software package (NoNpDrm/FAGDec) / PlayStation Vita homebrew software package", { "zip", "vpk" } },
@@ -124,13 +136,15 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 result = host::dialog::filesystem::pick_folder(archive_path);
             }
             if (result == host::dialog::filesystem::Result::SUCCESS) {
-                state = "install";
+                state = State::INSTALL;
             } else {
                 if (result == host::dialog::filesystem::Result::ERROR)
                     LOG_CRITICAL("Error initializing file dialog: {}", host::dialog::filesystem::get_error());
-                type.clear();
+                type = Type::UNDEFINED;
             }
-        } else if (state == "install") {
+            break;
+        }
+        case State::INSTALL: {
             std::thread installation([&emuenv, &gui]() {
                 global_progress = 1.f;
                 const auto install_archive_contents = [&](const fs::path &archive_path) {
@@ -145,7 +159,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                         invalid_archives.push_back(archive_path);
                 };
                 const auto contents_path = fs::path(archive_path.native());
-                if (type == "directory") {
+                if (type == Type::DIRECTORY) {
                     const auto archives_path = get_path_of_archives(contents_path);
                     archives_count = archives_path.size();
                     for (const auto &archive : archives_path) {
@@ -161,11 +175,13 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 }
                 archives_count = 0;
                 global_progress = 0.f;
-                state = "finished";
+                state = State::FINISHED;
             });
             installation.detach();
-            state = "installing";
-        } else if (state == "installing") {
+            state = State::INSTALLING;
+            break;
+        }
+        case State::INSTALLING: {
             title = indicator["installing"];
             ImGui::SetCursorPos(ImVec2(178.f * SCALE.x, ImGui::GetCursorPosY() + (20.f * SCALE.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", emuenv.app_info.app_title.c_str());
@@ -177,31 +193,30 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             // Draw Global Progress bar
             ImGui::SetCursorPos(ImVec2(PROGRESS_BAR_POS, ImGui::GetCursorPosY() + (14.f * SCALE.y)));
             ImGui::ProgressBar(global_progress / archives_count, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.y), "");
-            const auto global_progress_str = fmt::format("{}/{}", global_progress, archives_count);
-            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(global_progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + (6.f * SCALE.y)));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", global_progress_str.c_str());
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (6.f * SCALE.y));
+            TextColoredCentered(GUI_COLOR_TEXT, fmt::format("{}/{}", global_progress, archives_count).c_str());
             // Draw Progress bar of count contents
             ImGui::SetCursorPos(ImVec2(PROGRESS_BAR_POS, ImGui::GetCursorPosY() + (14.f * SCALE.y)));
             ImGui::ProgressBar(current / count, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.y), "");
-            const auto count_progress_str = fmt::format("{}/{}", current.load(), count.load());
-            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(count_progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + (6.f * SCALE.y)));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", count_progress_str.c_str());
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (6.f * SCALE.y));
+            TextColoredCentered(GUI_COLOR_TEXT, fmt::format("{}/{}", current.load(), count.load()).c_str());
             // Draw Progress bar
             ImGui::SetCursorPos(ImVec2(PROGRESS_BAR_POS, ImGui::GetCursorPosY() + (14.f * SCALE.y)));
             ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.y), "");
-            const auto progress_str = std::to_string(progress).append("%");
-            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + (6.f * SCALE.y)));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", progress_str.c_str());
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (6.f * SCALE.y));
+            TextColoredCentered(GUI_COLOR_TEXT, std::to_string(progress).append("%").c_str());
             ImGui::PopStyleColor();
-        } else if (state == "finished") {
+            break;
+        }
+        case State::FINISHED: {
             title = indicator["install_complete"];
             ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + (5.f * SCALE.x), ImGui::GetWindowPos().y + BUTTON_SIZE.y));
             ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
             ImGui::BeginChild("##content_installed_list", ImVec2(WINDOW_SIZE.x - (10.f * SCALE.x), WINDOW_SIZE.y - (BUTTON_SIZE.y * 2.f) - (25 * SCALE.y)), ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
             if (!contents_archives.empty()) {
-                const auto count_content_state = [&](const fs::path &path, const bool state) {
+                const auto count_content_state = [&](const fs::path &path, const bool content_state) {
                     return std::count_if(contents_archives[path].begin(), contents_archives[path].end(), [&](const ContentInfo &c) {
-                        return c.state == state;
+                        return c.state == content_state;
                     });
                 };
                 ImGui::Spacing();
@@ -210,7 +225,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Spacing();
                 ImGui::Separator();
                 for (const auto &archive : contents_archives) {
-                    ImGui::TextWrapped("%s", archive.first.filename().string().c_str());
+                    ImGui::TextWrapped("%s", fs_utils::path_to_utf8(archive.first.filename()).c_str());
                     ImGui::Spacing();
                     const auto count_contents_successed = count_content_state(archive.first, true);
                     if (count_contents_successed) {
@@ -252,11 +267,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::PopStyleVar();
             ImGui::Separator();
             ImGui::Spacing();
-#ifdef ANDROID
-            delete_archive_file = false;
-#else
             ImGui::Checkbox(lang["delete_archive"].c_str(), &delete_archive_file);
-#endif
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, WINDOW_SIZE.y - BUTTON_SIZE.y - (12.f * SCALE.y)));
             if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
                 for (const auto &archive : contents_archives) {
@@ -267,9 +278,10 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                             emuenv.app_info.app_content_id = content.content_id;
                             if (emuenv.app_info.app_category != "theme")
                                 update_notice_info(gui, emuenv, "content");
-                            if (content.category == "gd") {
+                            if ((content.category.find("gd") != std::string::npos) || (content.category.find("gp") != std::string::npos)) {
                                 init_user_app(gui, emuenv, content.title_id);
                                 save_apps_cache(gui, emuenv);
+                                select_app(gui, content.title_id);
                             }
                         }
                     }
@@ -285,9 +297,11 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 delete_archive_file = false;
                 contents_archives.clear();
                 invalid_archives.clear();
-                type.clear();
-                state.clear();
+                type = Type::UNDEFINED;
+                state = State::UNDEFINED;
             }
+            break;
+        }
         }
     }
     ImGui::EndChild();

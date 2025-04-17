@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,20 +32,18 @@ struct ImGui_State {
     SDL_Window *window{};
     renderer::State *renderer{};
 
-    uint64_t time;
-    int MouseButtonsDown;
-    SDL_Cursor *MouseCursors[ImGuiMouseCursor_COUNT];
-    int PendingMouseLeaveFrame;
-    bool MouseCanUseGlobalState;
+    uint64_t time = 0;
+    int mouse_buttons_down = 0;
+    SDL_Cursor *mouse_cursors[ImGuiMouseCursor_COUNT] = {};
+    int pending_mouse_leave_frame = 0;
+    bool mouse_can_use_global_state = false;
 
-    bool init;
-    bool is_typing;
-    bool do_clear_screen;
+    bool init = false;
+    bool is_typing = false;
+    bool do_clear_screen = true;
 
-    ImGui_State() {
-        memset((void *)this, 0, sizeof(*this));
-        do_clear_screen = true;
-    }
+    ImGui_State() = default;
+
     virtual ~ImGui_State() = default;
 };
 

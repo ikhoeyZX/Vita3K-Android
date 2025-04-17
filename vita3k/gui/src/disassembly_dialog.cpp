@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ void reevaluate_code(GuiState &gui, EmuEnvState &emuenv) {
 
     uint32_t address = 0, count = 0;
     if (!address_string.empty())
-        address = static_cast<uint32_t>(std::stol(address_string, nullptr, 16));
+        address = static_cast<uint32_t>(std::stoll(address_string, nullptr, 16));
     if (!count_string.empty())
         count = static_cast<uint32_t>(std::stol(count_string));
     bool thumb = gui.disassembly_arch == "THUMB";

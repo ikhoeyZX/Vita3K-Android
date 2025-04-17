@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
  */
 
 #include <emuenv/state.h>
+
 #include <packages/license.h>
 
 #include <util/bytes.h>
@@ -68,14 +69,17 @@ void get_license(EmuEnvState &emuenv, const std::string &title_id, const std::st
     // Skip if it's not a retail game or already have a license
     if (!title_id.starts_with("PCS") || emuenv.license.rif.contains(title_id))
         return;
+
     // Get license buffer corresponding to the title id
     auto &license_buf = emuenv.license.rif[title_id];
     license_buf = {};
+
     // Open license file
     const auto license_path{ emuenv.pref_path / "ux0/license" / title_id / fmt::format("{}.rif", content_id) };
-        if (!open_license(license_path, license_buf)) {
+    if (!open_license(license_path, license_buf)) {
         if (fs::exists(license_path))
             fs::remove(license_path);
+
         LOG_WARN("License file is corrupted or missing at: {}, using default value.", license_path);
         const auto RETAIL_APP_PATH{ emuenv.pref_path / "ux0/app" / title_id / "sce_sys/retail/livearea" };
         if (fs::exists(RETAIL_APP_PATH))
@@ -83,7 +87,7 @@ void get_license(EmuEnvState &emuenv, const std::string &title_id, const std::st
         else
             license_buf.sku_flag = 0;
     } else
-        license_buf.sku_flag = byte_swap(license_buf.sku_flag); // Convert
+        license_buf.sku_flag = byte_swap(license_buf.sku_flag); // Convert to little endian
 }
 
 bool create_license(EmuEnvState &emuenv, const std::string &zRIF) {
@@ -96,6 +100,7 @@ bool create_license(EmuEnvState &emuenv, const std::string &zRIF) {
         LOG_ERROR("Failed to create temp license file at: {}", temp_license_path);
         return false;
     }
+
     // Convert zRIF to RIF
     zrif2rif(zRIF, temp_file);
     auto res = copy_license(emuenv, temp_license_path);

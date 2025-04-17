@@ -21,15 +21,11 @@
  */
 
 #include <fat16/fat16.h>
-#include <io/device.h>
-#include <io/state.h>
-#include <io/vfs.h>
 #include <miniz.h>
 #include <openssl/evp.h>
 #include <packages/sce_types.h>
 #include <util/string_utils.h>
 
-#include <rif2zrif.h>
 #include <self.h>
 
 #include <fstream>
@@ -689,8 +685,8 @@ std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, cons
         return "";
     }
 
-    const std::string compressed_data((char *)decrypted_data.data(), size);
-    stream.next_in = (const Bytef *)compressed_data.data();
+    const std::string compressed_data(reinterpret_cast<const char *>(decrypted_data.data()), size);
+    stream.next_in = reinterpret_cast<const Bytef *>(compressed_data.data());
     stream.avail_in = compressed_data.size();
 
     int ret = 0;
@@ -837,54 +833,10 @@ std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader
     }
 }
 
-bool is_self(const fs::path &file_path) {
-    const auto extension = file_path.filename().extension();
-    const auto is_self = ((extension == ".suprx") || (extension == ".skprx") || (extension == ".self"));
-    return (is_self || (file_path.filename() == "eboot.bin"));
-}
-
-void dencrypt_elf_files(const fs::path &pref_path, const fs::path &translated_module_path, std::string &zkey){
-    vfs::FileBuffer file_dec;
-    
-    
-    fs::ifstream f{ translated_module_path.c_str(), fs::ifstream::binary };
-    if (!f){
-        LOG_ERROR("Failed to open {}", translated_module_path);
-        return;
-    }
-    
-    f.unsetf(fs::ifstream::skipws);
-    file_dec.reserve(fs::file_size(translated_module_path));
-    file_dec.insert(file_dec.begin(), std::istream_iterator<uint8_t>(f), std::istream_iterator<uint8_t>());
-    f.close();
-    
-    if (file_dec.empty()) {
-        LOG_ERROR("Failed to decrypt {}", translated_module_path);
-        return;
-    }else if (zkey == "pup"){
-        file_dec = decrypt_fself(std::move(file_dec), 0);
-    }else if (zkey == "pupfw"){
-        file_dec = decrypt_fself(std::move(file_dec), nullptr);
-    }else{
-        std::vector<uint8_t> temp_klicensee = get_temp_klicensee(zkey);
-        file_dec = decrypt_fself(std::move(file_dec), temp_klicensee.data());
-    }
-    
-    LOG_INFO("Decrypted {}", translated_module_path);
-    fs::ofstream d{ translated_module_path, fs::ofstream::binary };
-    if (!d){
-        LOG_ERROR("Failed to open output {}", translated_module_path);
-    }else{
-        std::string tmp(file_dec.begin(), file_dec.end());
-        d.write(tmp.c_str(), tmp.size());
-        d.close();
-    }
-}
-
-std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> fself, const uint8_t *klic) {
+std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> &fself, const uint8_t *klic) {
     const SCE_header &self_header = *reinterpret_cast<const SCE_header *>(fself.data());
     const segment_info *const seg_infos = reinterpret_cast<const segment_info *>(&fself[self_header.section_info_offset]);
-    const AppInfoHeader app_info_hdr = AppInfoHeader((char *)&fself[self_header.appinfo_offset]);
+    const AppInfoHeader app_info_hdr = AppInfoHeader(reinterpret_cast<const char *>(&fself[self_header.appinfo_offset]));
 
     // Check the encryption self type
     if (seg_infos->encryption == 2)
@@ -906,31 +858,31 @@ std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> fself, const uint8
     std::vector<uint8_t> elf;
     int npdrmtype = 0;
 
-    const SceHeader sce_hdr = SceHeader((char *)fself.data());
-    const SelfHeader self_hdr = SelfHeader((char *)&fself[SceHeader::Size]);
+    const SceHeader sce_hdr = SceHeader(reinterpret_cast<const char *>(fself.data()));
+    const SelfHeader self_hdr = SelfHeader(reinterpret_cast<const char *>(&fself[SceHeader::Size]));
     authid = app_info_hdr.auth_id;
 
     // Get the control info
-    SceControlInfo control_info = SceControlInfo((char *)&fself[self_hdr.controlinfo_offset]);
+    SceControlInfo control_info = SceControlInfo(reinterpret_cast<const char *>(&fself[self_hdr.controlinfo_offset]));
     auto ci_off = SceControlInfo::Size;
 
     // Check if the control info is a digest
     if (control_info.type == ControlType::DIGEST_SHA256)
         ci_off += SceControlInfoDigest256::Size;
 
-    control_info = SceControlInfo((char *)&fself[self_hdr.controlinfo_offset + ci_off]);
+    control_info = SceControlInfo(reinterpret_cast<const char *>(&fself[self_hdr.controlinfo_offset + ci_off]));
 
     ci_off += SceControlInfo::Size;
 
     // Check if the control info is a npdrm type
     if (control_info.type == ControlType::NPDRM_VITA) {
-        const SceControlInfoDRM controlnpdrm = SceControlInfoDRM((char *)&fself[self_hdr.controlinfo_offset + ci_off]);
+        const SceControlInfoDRM controlnpdrm = SceControlInfoDRM(reinterpret_cast<const char *>(&fself[self_hdr.controlinfo_offset + ci_off]));
         npdrmtype = controlnpdrm.npdrm_type;
     }
 
     // Extract the elf from the encrypted self
-    const ElfHeader elf_hdr = ElfHeader((char *)&fself[self_hdr.elf_offset]);
-    elf.insert(elf.end(), (uint8_t *)&elf_hdr, (uint8_t *)&elf_hdr + ElfHeader::Size);
+    const ElfHeader elf_hdr = ElfHeader(reinterpret_cast<const char *>(&fself[self_hdr.elf_offset]));
+    elf.insert(elf.end(), (const uint8_t *)&elf_hdr, (const uint8_t *)&elf_hdr + ElfHeader::Size);
 
     // Extract the phdrs from the encrypted self
     std::vector<ElfPhdr> elf_phdrs;
@@ -939,12 +891,12 @@ std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> fself, const uint8
     uint64_t at = ElfHeader::Size;
 
     for (uint16_t i = 0; i < elf_hdr.e_phnum; i++) {
-        const ElfPhdr phdr = ElfPhdr((char *)&fself[self_hdr.phdr_offset + (i * ElfPhdr::Size)]);
+        const ElfPhdr phdr = ElfPhdr(reinterpret_cast<const char *>(&fself[self_hdr.phdr_offset + (i * ElfPhdr::Size)]));
         elf_phdrs.push_back(phdr);
-        elf.insert(elf.end(), (uint8_t *)&phdr, (uint8_t *)&phdr + ElfPhdr::Size);
+        elf.insert(elf.end(), (const uint8_t *)&phdr, (const uint8_t *)&phdr + ElfPhdr::Size);
         at += ElfPhdr::Size;
 
-        const SegmentInfo segment_info = SegmentInfo((char *)&fself[self_hdr.segment_info_offset + (i * SegmentInfo::Size)]);
+        const SegmentInfo segment_info = SegmentInfo(reinterpret_cast<const char *>(&fself[self_hdr.segment_info_offset + (i * SegmentInfo::Size)]));
         segment_infos.push_back(segment_info);
 
         if (segment_info.plaintext == SecureBool::NO)
@@ -1090,7 +1042,7 @@ std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> fself, const uint8
 
     // Copy the phdrs to the decrypted self
     for (int i = 0; i < ehdr.e_phnum; ++i) {
-        ElfPhdr phdr = ElfPhdr((char *)&elf[ehdr.e_phoff + (ehdr.e_phentsize * i)]);
+        ElfPhdr phdr = ElfPhdr(reinterpret_cast<const char *>(&elf[ehdr.e_phoff + (ehdr.e_phentsize * i)]));
         if (phdr.p_align > 0x1000)
             phdr.p_align = 0x1000;
         memcpy(&decrypted_self[hdr.phdr_offset + (ElfPhdr::Size * i)], &phdr, ElfPhdr::Size);

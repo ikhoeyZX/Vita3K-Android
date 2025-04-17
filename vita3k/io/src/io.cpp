@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 #include <util/preprocessor.h>
 #include <util/string_utils.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #else
@@ -66,15 +66,7 @@ namespace vfs {
 
 bool read_file(const VitaIoDevice device, FileBuffer &buf, const fs::path &pref_path, const fs::path &vfs_file_path) {
     const auto host_file_path = device::construct_emulated_path(device, vfs_file_path, pref_path).generic_path();
-
-    fs::ifstream f{ host_file_path, fs::ifstream::binary };
-    if (!f)
-        return false;
-
-    f.unsetf(fs::ifstream::skipws);
-    buf.reserve(fs::file_size(host_file_path));
-    buf.insert(buf.begin(), std::istream_iterator<uint8_t>(f), std::istream_iterator<uint8_t>());
-    return true;
+    return fs_utils::read_data(host_file_path, buf);
 }
 
 bool read_app_file(FileBuffer &buf, const fs::path &pref_path, const std::string &app_path, const fs::path &vfs_file_path) {
@@ -125,7 +117,7 @@ bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, con
 
     io.redirect_stdio = redirect_stdio;
 
-#ifndef WIN32
+#ifndef _WIN32
     io.case_isens_find_enabled = true;
 #endif
 
@@ -162,6 +154,12 @@ bool find_case_isens_path(IOState &io, VitaIoDevice &device, const fs::path &tra
     case +VitaIoDevice::addcont0: {
         std::string addcont_id = translated_path.string().substr(0, 18);
         final_path = system_path.string().substr(0, system_path.string().find(addcont_id)) + addcont_id;
+        break;
+    }
+    case +VitaIoDevice::vs0: {
+        // This only works if ALL the parent folders of the path are the correct case or are in a case insensitive fs
+        // Only the file's name is searched for, not the parent folders
+        final_path = system_path.string().substr(0, system_path.string().find_last_of('/'));
         break;
     }
     default: {
@@ -251,7 +249,7 @@ std::string translate_path(const char *path, VitaIoDevice &device, const IOState
         break;
     }
     case +VitaIoDevice::tty0:
-        case +VitaIoDevice::tty1:
+    case +VitaIoDevice::tty1:
     case +VitaIoDevice::tty2:
     case +VitaIoDevice::tty3: {
         return std::string{};
@@ -287,7 +285,7 @@ SceUID open_file(IOState &io, const char *path, const int flags, const fs::path 
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    if (device == VitaIoDevice::tty0 || device == VitaIoDevice::tty1) {
+    if ((device == VitaIoDevice::tty0) || (device == VitaIoDevice::tty1) || (device == VitaIoDevice::tty2) || (device == VitaIoDevice::tty3)) {
         assert(flags >= 0);
 
         auto tty_type = TTY_UNKNOWN;
@@ -386,7 +384,7 @@ int write_file(SceUID fd, const void *data, const SceSize size, const IOState &i
     assert(size >= 0);
 
     if (fd < 0) {
-        LOG_WARN("Error writing fd: {}, size: {}", fd, size);
+        LOG_WARN("Error writing fd: {}, size: {}", log_hex(fd), size);
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
     }
 
@@ -548,7 +546,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &p
     creation_time_ticks = (uint64_t)sb.st_ctime * VITA_CLOCKS_PER_SEC;
     last_modification_time_ticks = (uint64_t)sb.st_mtime * VITA_CLOCKS_PER_SEC;
 
-#ifndef WIN32
+#ifndef _WIN32
 #undef st_atime
 #undef st_mtime
 #undef st_ctime

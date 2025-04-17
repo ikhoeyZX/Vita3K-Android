@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,7 +39,6 @@ EXPORT(int, sceMotionGetBasicOrientation, SceFVector3 *basicOrientation) {
     }
 
     std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
-    SceFVector3 accelerometer = get_acceleration(emuenv.motion);
 
     *basicOrientation = get_basic_orientation(emuenv.motion);
 
@@ -73,30 +72,21 @@ EXPORT(SceBool, sceMotionGetMagnetometerState) {
 
 EXPORT(int, sceMotionGetSensorState, SceMotionSensorState *sensorState, int numRecords) {
     TRACY_FUNC(sceMotionGetSensorState, sensorState, numRecords);
-    if (!emuenv.motion.is_sampling) 
+    if (!emuenv.motion.is_sampling) {
         return SCE_MOTION_ERROR_NOT_SAMPLING;
-    
-    if (numRecords >= SCE_MOTION_MAX_NUM_STATES) 
+    }
+    if (numRecords >= SCE_MOTION_MAX_NUM_STATES) {
         return SCE_MOTION_ERROR_OUT_OF_BOUNDS;
-    
-    if (sensorState == nullptr) 
+    }
+    if (sensorState == nullptr) {
         return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
-    
-    if (emuenv.ctrl.has_motion_support || emuenv.motion.has_device_motion_support && emuenv.cfg.tiltsens) {
+    }
+
+    if (emuenv.ctrl.has_motion_support && !emuenv.cfg.disable_motion) {
         std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
         sensorState->accelerometer = get_acceleration(emuenv.motion);
         sensorState->gyro = get_gyroscope(emuenv.motion);
-        
-        if(emuenv.cfg.calibrate_gyro && !emuenv.ctrl.is_virtual_joystick){
-           sensorState->gyro.x = sensorState->gyro.x + emuenv.cfg.controller_gyro_calibration[0];
-           sensorState->gyro.y = sensorState->gyro.y + emuenv.cfg.controller_gyro_calibration[1];
-           sensorState->gyro.z = sensorState->gyro.z + emuenv.cfg.controller_gyro_calibration[2];
-        }
-        if(emuenv.cfg.invert_gyro){
-           sensorState->gyro.x = sensorState->gyro.x * -1;
-           sensorState->gyro.y = sensorState->gyro.y * -1;
-           sensorState->gyro.z = sensorState->gyro.z * -1;
-        }
+
         sensorState->timestamp = emuenv.motion.last_accel_timestamp;
         sensorState->counter = emuenv.motion.last_counter;
         sensorState->hostTimestamp = sensorState->timestamp;
@@ -105,10 +95,7 @@ EXPORT(int, sceMotionGetSensorState, SceMotionSensorState *sensorState, int numR
         // some default values
         memset(sensorState, 0, sizeof(*sensorState));
         sensorState->accelerometer.z = -1.0;
-        sensorState->accelerometer.x = static_cast<float>(emuenv.cfg.tiltpos);
-        sensorState->accelerometer.y = 0;
-        sensorState->gyro = {0,0,0};
-        
+
         std::chrono::time_point<std::chrono::steady_clock> ts = std::chrono::steady_clock::now();
         uint64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
         sensorState->timestamp = timestamp;
@@ -125,28 +112,20 @@ EXPORT(int, sceMotionGetSensorState, SceMotionSensorState *sensorState, int numR
 
 EXPORT(int, sceMotionGetState, SceMotionState *motionState) {
     TRACY_FUNC(sceMotionGetState, motionState);
-    if (!emuenv.motion.is_sampling) 
+    if (!emuenv.motion.is_sampling) {
         return SCE_MOTION_ERROR_NOT_SAMPLING;
-    
-    if (motionState == nullptr) 
+    }
+    if (motionState == nullptr) {
         return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
-    
-    if (emuenv.ctrl.has_motion_support || emuenv.motion.has_device_motion_support && emuenv.cfg.tiltsens) {
+    }
+
+    if (emuenv.ctrl.has_motion_support && !emuenv.cfg.disable_motion) {
         std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
         motionState->timestamp = emuenv.motion.last_accel_timestamp;
 
         motionState->acceleration = get_acceleration(emuenv.motion);
         motionState->angularVelocity = get_gyroscope(emuenv.motion);
-        if(emuenv.cfg.calibrate_gyro && !emuenv.ctrl.is_virtual_joystick){
-           motionState->angularVelocity.x = motionState->angularVelocity.x + emuenv.cfg.controller_gyro_calibration[0];
-           motionState->angularVelocity.y = motionState->angularVelocity.y + emuenv.cfg.controller_gyro_calibration[1];
-           motionState->angularVelocity.z = motionState->angularVelocity.z + emuenv.cfg.controller_gyro_calibration[2];
-        }
-        if(emuenv.cfg.invert_gyro){
-           motionState->angularVelocity.x = motionState->angularVelocity.x * -1;
-           motionState->angularVelocity.y = motionState->angularVelocity.y * -1;
-           motionState->angularVelocity.z = motionState->angularVelocity.z * -1;
-        }
+
         Util::Quaternion dev_quat = get_orientation(emuenv.motion);
         motionState->basicOrientation = get_basic_orientation(emuenv.motion);
 
@@ -171,17 +150,14 @@ EXPORT(int, sceMotionGetState, SceMotionState *motionState) {
         motionState->hostTimestamp = timestamp;
 
         motionState->acceleration.z = -1.0;
-        motionState->acceleration.y = 0;
-        motionState->acceleration.x = static_cast<float>(emuenv.cfg.tiltpos);
-        motionState->angularVelocity = {0,0,0};
         motionState->deviceQuat.z = 1;
-        for (uint8_t i = 0; i < 4; i++) {
+        for (int i = 0; i < 4; i++) {
             // identity matrices
             reinterpret_cast<float *>(&motionState->rotationMatrix.x.x)[i * 4 + i] = 1;
             reinterpret_cast<float *>(&motionState->nedMatrix.x.x)[i * 4 + i] = 1;
         }
     }
-    
+
     CALL_EXPORT(sceMotionGetBasicOrientation, &motionState->basicOrientation);
     return SCE_MOTION_OK;
 }
@@ -242,17 +218,18 @@ EXPORT(int, sceMotionRotateYaw, const float radians) {
 
 EXPORT(int, sceMotionSetAngleThreshold, SceFloat angle) {
     TRACY_FUNC(sceMotionSetAngleThreshold, angle);
-    if (std::isnan(angle) || angle > 45.0f) 
+    if (std::isnan(angle) || angle > 45.0f) {
         return SCE_MOTION_ERROR_ANGLE_OUT_OF_RANGE;
-    
+    }
+
     set_angle_threshold(emuenv.motion, angle);
     return SCE_MOTION_OK;
 }
 
 EXPORT(int, sceMotionSetDeadband, SceBool setValue) {
     TRACY_FUNC(sceMotionSetDeadband, setValue);
-    STUBBED("only set value");
     set_deadband(emuenv.motion, setValue);
+
     return SCE_MOTION_OK;
 }
 
@@ -270,8 +247,8 @@ EXPORT(int, sceMotionSetGyroBiasCorrection, SceBool setValue) {
 
 EXPORT(int, sceMotionSetTiltCorrection, SceBool setValue) {
     TRACY_FUNC(sceMotionSetTiltCorrection, setValue);
-    STUBBED("only set value");
     set_tilt_correction(emuenv.motion, setValue);
+
     return SCE_MOTION_OK;
 }
 
@@ -282,9 +259,10 @@ EXPORT(int, sceMotionSetTiltCorrectionExt) {
 
 EXPORT(int, sceMotionStartSampling) {
     TRACY_FUNC(sceMotionStartSampling);
-    if (emuenv.motion.is_sampling) 
+    if (emuenv.motion.is_sampling) {
         return SCE_MOTION_ERROR_ALREADY_SAMPLING;
-    
+    }
+
     emuenv.motion.is_sampling = true;
     return SCE_MOTION_OK;
 }
@@ -296,8 +274,9 @@ EXPORT(int, sceMotionStartSamplingExt) {
 
 EXPORT(int, sceMotionStopSampling) {
     TRACY_FUNC(sceMotionStopSampling);
-    if (!emuenv.motion.is_sampling)
+    if (!emuenv.motion.is_sampling) {
         return SCE_MOTION_ERROR_NOT_SAMPLING;
+    }
 
     emuenv.motion.is_sampling = false;
     return SCE_MOTION_OK;

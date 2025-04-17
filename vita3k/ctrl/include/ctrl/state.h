@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <SDL_haptic.h>
 #include <SDL_joystick.h>
 
+#include <cstring>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -58,7 +59,6 @@ struct CtrlState {
     std::mutex mutex;
     ControllerList controllers;
     int controllers_num = 0;
-    bool is_virtual_joystick = false;
     bool has_motion_support = false;
     bool free_ports[SCE_CTRL_MAX_WIRELESS_NUM] = { true, true, true, true };
     SceCtrlPadInputMode input_mode = SCE_CTRL_MODE_DIGITAL;

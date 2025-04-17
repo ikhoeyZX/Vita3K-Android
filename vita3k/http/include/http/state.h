@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,10 +18,10 @@
 #pragma once
 
 #include <mem/ptr.h>
+#include <util/types.h>
 
 #include <map>
 #include <string>
-#include <util/types.h>
 #include <vector>
 
 #define SCE_HTTP_DEFAULT_RESPONSE_HEADER_MAX KB(5)

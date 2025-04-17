@@ -34,8 +34,8 @@ struct DialogLangState {
         { "an_error_occurred", "An error occurred.\nError code: {}" },
         { "cancel", "Cancel" },
         { "close", "Close" },
-        { "save", "Save" },
         { "delete", "Delete" },
+        { "error", "Error" },
         { "file_corrupted", "The file is corrupt." },
         { "microphone_disabled", "Enable the microphone." },
         { "no", "No" },
@@ -47,7 +47,7 @@ struct DialogLangState {
         { "submit", "Submit" },
         { "yes", "Yes" }
     };
-    std::map<std::string, std::string> message = { { "load_app_failed", "Failed to load \"{}\".\nCheck vita3k.log to see console output for details.\n1. Do you have installed firmware?\n2. Dump your own app(s)/game(s) and install it on Vita3K.\n3. If you want to install or boot Vitamin, it is not supported." } };
+    std::map<std::string, std::string> message = { { "load_app_failed", "Failed to load \"{}\".\nCheck vita3k.log to see console output for details.\n1. Have you installed the firmware?\n2. Re-dump your own PS Vita app/game and install it on Vita3K.\n3. If you want to install or boot Vitamin, it is not supported." } };
     std::map<std::string, std::string> trophy = { { "preparing_start_app", "Preparing to start the application..." } };
     struct SaveData {
         std::map<std::string, std::string> deleting = {
@@ -110,9 +110,11 @@ struct LangState {
         };
         std::map<std::string, std::string> emulation = {
             { "title", "Emulation" },
-            { "last_apps_used", "Last Apps used" }
+            { "last_apps_used", "Last Apps used" },
+            { "empty", "Empty" }
         };
         std::map<std::string, std::string> debug = {
+            { "title", "Debug" },
             { "threads", "Threads" },
             { "semaphores", "Semaphores" },
             { "mutexes", "Mutexes" },
@@ -172,8 +174,7 @@ struct LangState {
             { "manual", "Manual" },
             { "update", "Update" },
             { "update_history", "Update History" },
-            { "history_version", "Version {}" },
-            { "information", "Information" }
+            { "history_version", "Version {}" }
         };
         std::map<std::string, std::string> deleting = {
             { "app_delete", "This application and all related data, including saved data, will be deleted." },
@@ -183,6 +184,7 @@ struct LangState {
             { "saved_data_delete", "Do you want to delete this saved data?" }
         };
         std::map<std::string, std::string> info = {
+            { "title", "Information" },
             { "eligible", "Eligible" },
             { "ineligible", "Ineligible" },
             { "level", "Level" },
@@ -221,8 +223,6 @@ struct LangState {
     };
     Compatibility compatibility;
     std::map<std::string, std::string> compat_db = {
-        { "error", "Error" },
-        { "information", "Information" },
         { "get_failed", "Failed to get current compatibility database, check firewall/internet access, try again later." },
         { "download_failed", "Failed to download Applications compatibility database updated at: {}" },
         { "load_failed", "Failed to load Applications compatibility database downloaded updated at: {}" },
@@ -257,11 +257,8 @@ struct LangState {
     std::map<std::string, std::string> controllers = {
         { "title", "Controllers" },
         { "connected", "{} controllers connected" },
-        { "name", "Name" },
         { "num", "Num" },
-        { "motion", "Enable Motion Sensors (restart required)" },
-        { "not_connected", "No compatible controllers connected.\nConnect a controller that is compatible with SDL2." },
-        { "motion_support", "Gamepad has motion support" },
+        { "motion_support", "Motion Support" },
         { "rebind_controls", "Rebind Controls" },
         { "led_color", "LED Color" },
         { "use_custom_color", "Use Custom Color" },
@@ -269,16 +266,11 @@ struct LangState {
         { "red", "Red" },
         { "green", "Green" },
         { "blue", "Blue" },
-        { "gyro_sens", "Gyro Sensor Calibration" },
-        { "use_custom_gyro_cal", "Change gyroscope offset" },
-        { "use_custom_gyro_cal_description", "Check this box to change offset your gyroscope controller (if drifted)" },
-        { "gyro-x", "X position" },
-        { "gyro-y", "Y position" },
-        { "gyro-z", "Z position" },
+        { "not_connected", "No compatible controllers connected.\nConnect a controller that is compatible with SDL2." },
+        { "disable_motion", "Disable Motion" },
         { "reset_controller_binding", "Reset Controller Binding" }
     };
     std::map<std::string, std::string> controls = {
-        { "title", "Controls" },
         { "button", "Button" },
         { "mapped_button", "Mapped button" },
         { "left_stick_up", "Left stick up" },
@@ -315,8 +307,7 @@ struct LangState {
         { "toggle_gui_visibility_description", "Toggles between showing and hiding the GUI at the top of the screen while the app is running." },
         { "miscellaneous", "Miscellaneous" },
         { "toggle_texture_replacement", "Toggle Texture Replacement" },
-        { "take_a_screenshot", "Take A Screenshot" },
-        { "error", "Error" },
+        { "take_screenshot", "Take A Screenshot" },
         { "error_duplicate_key", "The key is used for other bindings or it is reserved." }
     };
     std::map<std::string, std::string> game_data = {
@@ -361,9 +352,8 @@ struct LangState {
         { "change_emu_path", "Change Emulator Path" },
         { "reset_emu_path", "Reset Emulator Path" },
         { "install_firmware", "Install Firmware." },
-        { "install_highly_recommended", "Installing both firmware files is highly recommended." },
+        { "install_highly_recommended", "Installing all firmware files is highly recommended." },
         { "installed", "Installed:" },
-        { "download_firmware", "Download Firmware" },
         { "download_font_package", "Download Font Package" },
         { "install_firmware_file", "Install Firmware File" },
         { "select_interface_settings", "Select interface settings." },
@@ -385,7 +375,6 @@ struct LangState {
             { "successed_install_firmware", "Firmware successfully installed." },
             { "firmware_version", "Firmware version:" },
             { "no_font_exist", "No firmware font package present, please download and install it." },
-            { "download_firmware_font_package", "Download Firmware Font Package" },
             { "firmware_font_package_description", "Firmware font package is needed for some applications\nand also for Asian regional font support. (Generally Recommended)" },
             { "delete_firmware", "Delete the firmware installation file?" }
         };
@@ -522,8 +511,6 @@ struct LangState {
             { "title", "Settings" },
             { "save_reboot", "Save & Reboot" },
             { "save_apply", "Save & Apply" },
-            { "close", "Close" },
-            { "save", "Save" },
             { "keep_changes", "Click on Save to keep your changes." }
         };
         std::map<std::string, std::string> core = {
@@ -534,16 +521,20 @@ struct LangState {
             { "search_modules", "Search Modules" },
             { "clear_list", "Clear List" },
             { "no_modules", "No modules present.\nPlease download and install the last PS Vita firmware." },
-            { "refresh_list", "Refresh List" }
+            { "refresh_list", "Refresh List" },
+            { "automatic", "Automatic" },
+            { "automatic_description", "Select Automatic mode to use a preset list of modules." },
+            { "auto_manual", "Auto & Manual" },
+            { "auto_manual_description", "Select this mode to load Automatic module and selected modules from the list below." },
+            { "manual", "Manual" },
+            { "manual_description", "Select Manual mode to load selected modules from the list below." }
         };
         std::map<std::string, std::string> cpu = {
             { "unicorn", "Unicorn (deprecated)" },
             { "cpu_backend", "CPU Backend" },
             { "select_cpu_backend", "Select your preferred CPU backend." },
             { "cpu_opt", "Enable optimizations" },
-            { "cpu_opt_description", "Check the box to enable additional CPU JIT optimizations." },
-            { "cpu_unsafe", "Unsafe optimizations" },
-            { "cpu_unsafe_description", "Use extra optimizations, maybe break in games." }
+            { "cpu_opt_description", "Check the box to enable additional CPU JIT optimizations." }
         };
         std::map<std::string, std::string> gpu = {
             { "reset", "Reset" },
@@ -576,10 +567,6 @@ struct LangState {
             { "shaders", "Shaders" },
             { "shader_cache", "Use Shader Cache" },
             { "shader_cache_description", "Check the box to enable shader cache to pre-compile it at game startup.\nUncheck to disable this feature." },
-            { "mapping_method", "Memory mapping method" },
-            { "mapping_method_description", "Memory mapping improved performances, reduces memory usage and fixes many graphical issues.\nHowever, it may be unstable on some GPUs" },
-            { "surface_format_method", "Change vulkan sync method" },
-            { "surface_format_method_description", "Change GPU sync behaviour" },
             { "spirv_shader", "Use Spir-V Shader (deprecated)" },
             { "spirv_shader_description", "Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled,\nand not all GPUs are compatible with this." },
             { "clean_shaders", "Clean Shaders Cache and Log" },
@@ -593,9 +580,7 @@ struct LangState {
             { "audio_volume", "Audio Volume" },
             { "audio_volume_description", "Adjusts the volume percentage of all audio outputs." },
             { "enable_ngs_support", "Enable NGS support" },
-            { "ngs_description", "Uncheck the box to disable support for advanced audio library NGS." },
-            { "audio_driver", "Select specific audio output driver (restart required)" },
-            { "select_audio_driver", "Select audio driver to find better audio quality and latency control." }
+            { "ngs_description", "Uncheck the box to disable support for advanced audio library NGS." }
         };
         std::map<std::string, std::string> system = {
             { "title", "System" },
@@ -658,22 +643,11 @@ struct LangState {
             { "change_emu_path_description", "Change Vita3K emulator folder path.\nYou will need to move your old folder to the new location manually." },
             { "reset_emu_path", "Reset Emulator Path" },
             { "reset_emu_path_description", "Reset Vita3K emulator path to the default.\nYou will need to move your old folder to the new location manually." },
-            { "sensor_settings", "Built-In Sensor settings" },
-            { "sensor_enable", "Enable HW acceleration and gyroscope" },
-            { "sensor_emu_pos", "Emulate acceleration position sensor" },
-            { "sensors_description", "Enable built-in sensor or disable sensor and lock specific sensor position" },
-            { "invert_gyro", "Invert gyroscope sensor input" },
-            { "invert_gyro_description", "Change logic of gyroscope sensor to inverse type" },
-            { "screenmode_pos", "Change screen position (restart app to take effect)" },
-            { "screenmode_auto", "Auto landscape" },
-            { "screenmode_Left", "Lock to landscape left" },
-            { "screenmode_right", "Lock to landscape right" },
-            { "screenmode_up", "Lock to portrait" },
-            { "screenmode_up_description", "WIP, GUI still buggy" },
-            { "dencrypt_installs", "Dencrypt executable when install"},
-            { "dencrypt_installs_description", "Dencrypt all files included eboot and libs for compability with older builds (otherwise all installed content will no longer work in older builds)" },
             { "custom_config_settings", "Custom Config Settings" },
-            { "clear_custom_config", "Clear Custom Config" }
+            { "clear_custom_config", "Clear Custom Config" },
+            { "screenshot_image_type", "screenshot image type" },
+            { "null", "NULL" },
+            { "screenshot_format", "Screenshot format" }
         };
         std::map<std::string, std::string> gui = {
             { "title", "GUI" },
@@ -693,8 +667,6 @@ struct LangState {
             { "stretch_the_display_area_description", "Check the box to enlarge the display area to fit the screen size." },
             { "apps_list_grid", "Grid Mode" },
             { "apps_list_grid_description", "Check the box to set the app list to grid mode." },
-            { "skip_lockscreen", "Skip lockscreen area" },
-            { "skip_lockscreen_description", "Check the box to skip lockscreen gui." },
             { "icon_size", "App Icon Size" },
             { "select_icon_size", "Select your preferred icon size." },
             { "font_support", "Font support" },
@@ -745,7 +717,6 @@ struct LangState {
             { "dump_elfs_description", "Dump loaded code as ELFs." },
             { "validation_layer", "Validation Layer (Reboot required)" },
             { "validation_layer_description", "Enable Vulkan validation layer." },
-            { "debug_menu", "Enable debug menu in menubar" },
             { "unwatch_code", "Unwatch Code" },
             { "watch_code", "Watch Code" },
             { "unwatch_memory", "Unwatch Memory" },
@@ -777,7 +748,9 @@ struct LangState {
         { "trophies", "Trophies" },
         { "grade", "Grade" },
         { "progress", "Progress" },
-        { "updated", "Updated" }
+        { "updated", "Updated" },
+        { "advance", "Advance" },
+        { "show_hidden", "Show Hidden Trophies" }
     };
     std::map<std::string, std::string> user_management = {
         { "select_user", "Select User" },
@@ -803,7 +776,7 @@ struct LangState {
         { "title", "Vita3K Update" },
         { "new_version_available", "A new version of Vita3K is available." },
         { "back", "Back" },
-        { "cancel_update_resume", "Do you want to cancel the update?" },
+        { "cancel_update_resume", "Do you want to cancel the update?\nIf you cancel, the next time you update, Vita3K will start downloading from this point." },
         { "downloading", "Downloading...\nAfter the download is complete, Vita3K will restart automatically and then install the new update." },
         { "not_complete_update", "Could not complete the update." },
         { "minutes_left", "{} Minutes Left" },
@@ -823,8 +796,10 @@ struct LangState {
         { "vita3k", "Vita3K PlayStation Vita Emulator" },
         { "about_vita3k", "Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux, macOS and Android." },
         { "development_stage", "The emulator is still in its development stages so any feedback and testing is greatly appreciated." },
-        { "about_firmware", "To get started, please install the PS Vita firmware and font packages." },
+        { "about_firmware", "To get started, please install all PS Vita firmware files." },
+        { "download_preinst_firmware", "Download Preinst Firmware" },
         { "download_firmware", "Download Firmware" },
+        { "download_firmware_font_package", "Download Firmware Font Package" },
         { "vita3k_quickstart", "A comprehensive guide on how to set-up Vita3K can be found on the" },
         { "quickstart", "Quickstart" },
         { "page", "page." },

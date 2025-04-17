@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -123,8 +123,13 @@ static bool load_trophy_progress(IOState &io, const SceUID &progress_input_file,
     return true;
 }
 
-static std::string np_com_id_sort;
-bool show_hidden_trophy = false;
+enum class NpComIdSortType {
+    UPDATED,
+    NAME,
+    PROGRESS
+};
+static NpComIdSortType np_com_id_sort;
+static bool show_hidden_trophy = false;
 
 void init_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     const auto TROPHY_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "trophy" };
@@ -260,7 +265,7 @@ void init_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
         }
     }
 
-    np_com_id_sort = "updated";
+    np_com_id_sort = NpComIdSortType::UPDATED;
     std::sort(np_com_id_list.begin(), np_com_id_list.end(), [](const auto &ta, const auto &tb) {
         return ta.updated > tb.updated;
     });
@@ -280,13 +285,20 @@ struct Trophy {
 struct TrophySort {
     std::string id;
     time_t earned;
-    uint32_t grade;
+    SceNpTrophyGrade grade;
     std::string name;
 };
 
 static std::map<std::string, Trophy> trophy_info;
 static std::vector<TrophySort> trophy_list;
-static std::string trophy_sort;
+
+enum class TrophySortType {
+    ORIGINAL,
+    EARNED,
+    GRADE,
+    NAME,
+};
+static TrophySortType trophy_sort;
 
 static void get_trophy_list(GuiState &gui, EmuEnvState &emuenv, const std::string &np_com_id, const std::string &group_id) {
     const auto trophy_conf_id_path{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "trophy/conf" / np_com_id };
@@ -364,18 +376,25 @@ static void get_trophy_list(GuiState &gui, EmuEnvState &emuenv, const std::strin
             SAFE_LOCALTIME(&unlocked, &trophy_info[trophy_id].unlocked_time);
         }
 
-        const auto grade = uint32_t(np_com_id_info[np_com_id].context.trophy_kinds[string_utils::stoi_def(trophy_id, 0, "trophy id")]);
+        const auto grade = np_com_id_info[np_com_id].context.trophy_kinds[string_utils::stoi_def(trophy_id, 0, "trophy id")];
 
         trophy_list.push_back({ trophy_id, unlocked, grade, trophy_info[trophy_id].name });
 
-        trophy_sort = "original";
+        trophy_sort = TrophySortType::ORIGINAL;
     }
 }
 
-static std::string np_com_id_selected, group_id_selected, trophy_id_selected, delete_np_com_id, scroll_type;
+enum class ScrollType {
+    Undefined,
+    NPCom,
+    Trophy,
+    Group
+};
+static ScrollType scroll_type = ScrollType::Undefined;
+static std::string np_com_id_selected, group_id_selected, trophy_id_selected, delete_np_com_id;
 static bool detail_np_com_id, set_scroll_pos;
 static ImGuiTextFilter search_bar;
-static std::map<std::string, float> scroll_pos;
+static std::map<ScrollType, float> scroll_pos;
 
 void open_trophy_unlocked(GuiState &gui, EmuEnvState &emuenv, const std::string &np_com_id, const std::string &trophy_id) {
     np_com_id_selected = np_com_id;
@@ -393,10 +412,10 @@ void open_trophy_unlocked(GuiState &gui, EmuEnvState &emuenv, const std::string 
 }
 
 void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 VIEWPORT_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
-    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
-    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
+    const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
 
@@ -457,8 +476,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     if (np_com_id_list.empty()) {
         ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
         ImGui::SetCursorPosY(140.f * SCALE.y);
-        const auto no_trophy_string = lang["no_trophies"].c_str();
-        ImGui::TextWrapped("%s", no_trophy_string);
+        ImGui::TextWrapped("%s", lang["no_trophies"].c_str());
     } else {
         // Set Scroll Pos
         if (set_scroll_pos) {
@@ -537,7 +555,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                         group_id_selected = "000";
                         get_trophy_list(gui, emuenv, np_com.id, "000");
                     }
-                    scroll_pos["np_com"] = ImGui::GetScrollY();
+                    scroll_pos[ScrollType::NPCom] = ImGui::GetScrollY();
                     ImGui::SetScrollY(0.f);
                 }
                 ImGui::PopStyleVar();
@@ -596,7 +614,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                     if (ImGui::Selectable(np_com_id_info[np_com_id_selected].name[group_id].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y))) {
                         group_id_selected = group_id;
                         get_trophy_list(gui, emuenv, np_com_id_selected, group_id);
-                        scroll_pos["group"] = ImGui::GetScrollY();
+                        scroll_pos[ScrollType::Group] = ImGui::GetScrollY();
                         ImGui::SetScrollY(0.f);
                     }
                     ImGui::PopID();
@@ -680,7 +698,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                         ImGui::PushID(trophy.id.c_str());
                         if (ImGui::Selectable(lang["locked"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_TROPHY_LIST.y))) {
                             trophy_id_selected = trophy.id;
-                            scroll_pos["trophy"] = ImGui::GetScrollY();
+                            scroll_pos[ScrollType::Trophy] = ImGui::GetScrollY();
                         }
                         ImGui::PopID();
                         ImGui::PopStyleVar();
@@ -713,10 +731,11 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["locked"].c_str());
                 }
                 const auto hidden_trophy = (!trophy_info[trophy_id_selected].earned && (trophy_info[trophy_id_selected].hidden == "yes"));
-                const auto CALC_NAME = ImGui::CalcTextSize(hidden_trophy && !show_hidden_trophy ? hidden_trophy_str : trophy_info[trophy_id_selected].name.c_str(), nullptr, false, SIZE_INFO.x - SIZE_TROPHY_LIST.x - 48.f).y / 2.f;
+                const auto selected_trophy_str = hidden_trophy && !show_hidden_trophy ? hidden_trophy_str : trophy_info[trophy_id_selected].name.c_str();
+                const auto CALC_NAME = ImGui::CalcTextSize(selected_trophy_str, nullptr, false, SIZE_INFO.x - SIZE_TROPHY_LIST.x - 48.f).y / 2.f;
                 ImGui::SetCursorPos(ImVec2(SIZE_TROPHY_LIST.x + 20.f, (SIZE_TROPHY_LIST.y / 2.f) - CALC_NAME));
                 ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + SIZE_INFO.x - SIZE_TROPHY_LIST.x - (48.f * SCALE.x));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", hidden_trophy && !show_hidden_trophy ? hidden_trophy_str : trophy_info[trophy_id_selected].name.c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", selected_trophy_str);
                 ImGui::PopTextWrapPos();
                 ImGui::SetCursorPosY(SIZE_TROPHY_LIST.y + (25.f * SCALE.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["grade"].c_str());
@@ -743,7 +762,6 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
             }
         }
     }
-    ImGui::ScrollWhenDragging();
     ImGui::EndChild();
 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
@@ -751,7 +769,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
 
     // Back
     ImGui::SetCursorPos(ImVec2(8.f * SCALE.x, WINDOW_SIZE.y - (52.f * SCALE.y)));
-    if (ImGui::Button("Back", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
+    if (ImGui::Button("<<", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
         if (!np_com_id_selected.empty()) {
             if (detail_np_com_id) {
                 detail_np_com_id = false;
@@ -759,19 +777,19 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                     group_id_selected.clear();
             } else if (!trophy_id_selected.empty()) {
                 trophy_id_selected.clear();
-                scroll_type = "trophy";
+                scroll_type = ScrollType::Trophy;
                 set_scroll_pos = true;
             } else if (!group_id_selected.empty()) {
                 group_id_selected.clear();
                 if (!np_com_id_info[np_com_id_selected].context.group_count) {
                     np_com_id_selected.clear();
-                    scroll_type = "np_com";
+                    scroll_type = ScrollType::NPCom;
                 } else
-                    scroll_type = "group";
+                    scroll_type = ScrollType::Group;
                 set_scroll_pos = true;
             } else {
                 np_com_id_selected.clear();
-                scroll_type = "np_com";
+                scroll_type = ScrollType::NPCom;
                 set_scroll_pos = true;
             }
         } else
@@ -785,25 +803,27 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::OpenPopup("...");
         if (ImGui::BeginPopup("...", ImGuiWindowFlags_NoMove)) {
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["sort"].c_str());
-            const auto NAME = lang["name"].c_str();
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
             if (np_com_id_selected.empty()) {
-                if (ImGui::MenuItem(lang["updated"].c_str(), nullptr, np_com_id_sort == "updated")) {
+                if (ImGui::MenuItem(lang["updated"].c_str(), nullptr, np_com_id_sort == NpComIdSortType::UPDATED)) {
                     std::sort(np_com_id_list.begin(), np_com_id_list.end(), [](const auto &ta, const auto &tb) {
                         return ta.updated > tb.updated;
                     });
-                    np_com_id_sort = "updated";
+                    np_com_id_sort = NpComIdSortType::UPDATED;
                 }
-                if (ImGui::MenuItem(NAME, nullptr, np_com_id_sort == "name")) {
+                if (ImGui::MenuItem(lang["name"].c_str(), nullptr, np_com_id_sort == NpComIdSortType::NAME)) {
                     std::sort(np_com_id_list.begin(), np_com_id_list.end(), [](const auto &ta, const auto &tb) {
                         return ta.name < tb.name;
                     });
-                    np_com_id_sort = "name";
+                    np_com_id_sort = NpComIdSortType::NAME;
                 }
-                if (ImGui::MenuItem(lang["progress"].c_str(), nullptr, np_com_id_sort == "progress")) {
+                if (ImGui::MenuItem(lang["progress"].c_str(), nullptr, np_com_id_sort == NpComIdSortType::PROGRESS)) {
                     std::sort(np_com_id_list.begin(), np_com_id_list.end(), [](const auto &ta, const auto &tb) {
                         return ta.progress > tb.progress;
                     });
-                    np_com_id_sort = "progress";
+                    np_com_id_sort = NpComIdSortType::PROGRESS;
                 }
                 ImGui::Spacing();
                 ImGui::Separator();
@@ -813,35 +833,38 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                         LOG_INFO("All trophies successfully deleted.");
                 }
             } else {
-                if (ImGui::MenuItem(lang["original"].c_str(), nullptr, trophy_sort == "original")) {
+                if (ImGui::MenuItem(lang["original"].c_str(), nullptr, trophy_sort == TrophySortType::ORIGINAL)) {
                     std::sort(trophy_list.begin(), trophy_list.end(), [](const auto &ta, const auto &tb) {
                         return ta.id < tb.id;
                     });
-                    trophy_sort = "original";
+                    trophy_sort = TrophySortType::ORIGINAL;
                 }
-                if (ImGui::MenuItem(lang["earned"].c_str(), nullptr, trophy_sort == "earned")) {
+                if (ImGui::MenuItem(lang["earned"].c_str(), nullptr, trophy_sort == TrophySortType::EARNED)) {
                     std::sort(trophy_list.begin(), trophy_list.end(), [](const auto &ta, const auto &tb) {
                         return ta.earned > tb.earned;
                     });
-                    trophy_sort = "earned";
+                    trophy_sort = TrophySortType::EARNED;
                 }
-                if (ImGui::MenuItem(lang["grade"].c_str(), nullptr, trophy_sort == "grade")) {
+                if (ImGui::MenuItem(lang["grade"].c_str(), nullptr, trophy_sort == TrophySortType::GRADE)) {
                     std::sort(trophy_list.begin(), trophy_list.end(), [](const auto &ta, const auto &tb) {
                         return ta.grade < tb.grade;
                     });
-                    trophy_sort = "grade";
+                    trophy_sort = TrophySortType::GRADE;
                 }
-                if (ImGui::MenuItem(NAME, nullptr, trophy_sort == "name")) {
+                if (ImGui::MenuItem(lang["name"].c_str(), nullptr, trophy_sort == TrophySortType::NAME)) {
                     std::sort(trophy_list.begin(), trophy_list.end(), [](const auto &ta, const auto &tb) {
                         return ta.name < tb.name;
                     });
-                    trophy_sort = "name";
+                    trophy_sort = TrophySortType::NAME;
                 }
                 ImGui::Spacing();
                 ImGui::Separator();
                 ImGui::Spacing();
-                ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Advance");
-                if (ImGui::MenuItem("Show Hidden Trophy", nullptr, show_hidden_trophy))
+                ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["advance"].c_str());
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
+                if (ImGui::MenuItem(lang["show_hidden"].c_str(), nullptr, show_hidden_trophy))
                     show_hidden_trophy = !show_hidden_trophy;
             }
             ImGui::EndPopup();

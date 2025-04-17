@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,13 +29,11 @@
 
 // Code heavily influenced by PPSSSPP's SceDisplay.cpp
 
-// static constexpr int TARGET_FPS = 60;
-// static constexpr int64_t TARGET_MICRO_PER_FRAME = 1000000LL / TARGET_FPS;
-static constexpr auto TARGET_MICRO_PER_FRAME = 16666LL;
-
+static constexpr int TARGET_FPS = 60;
+static constexpr int64_t TARGET_MICRO_PER_FRAME = 1000000LL / TARGET_FPS;
 // how many cycles do we need to see before we start predicting the next frame
-static constexpr uint8_t predict_threshold = 3;
-static constexpr uint8_t max_expected_swapchain_size = 6;
+static constexpr int predict_threshold = 3;
+static constexpr int max_expected_swapchain_size = 6;
 
 static void vblank_sync_thread(EmuEnvState &emuenv) {
     DisplayState &display = emuenv.display;

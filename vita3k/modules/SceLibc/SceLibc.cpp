@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 
 TRACY_MODULE_NAME(SceLibc);
 
-Ptr<void> g_dso;
+static Ptr<void> g_dso;
 
 EXPORT(int, _Assert) {
     TRACY_FUNC(_Assert);
@@ -962,7 +962,7 @@ EXPORT(int, printf, const char *format, module::vargs args) {
     // TODO: add args to tracy func
     std::vector<char> buffer(1024);
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
     if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;

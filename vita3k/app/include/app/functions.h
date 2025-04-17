@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,15 +36,12 @@ enum class AppRunType {
 };
 
 void init_paths(Root &root_paths);
-bool init(EmuEnvState &state, const Root &root_paths);
+bool init(EmuEnvState &state, Config &cfg, const Root &root_paths);
 bool late_init(EmuEnvState &state);
 void destroy(EmuEnvState &emuenv, ImGui_State *imgui);
 void update_viewport(EmuEnvState &state);
 void switch_state(EmuEnvState &emuenv, const bool pause);
 void error_dialog(const std::string &message, SDL_Window *window = nullptr);
-
-void add_custom_driver(EmuEnvState &emuenv);
-void remove_custom_driver(EmuEnvState &emuenv, const std::string &driver);
 
 void set_window_title(EmuEnvState &emuenv);
 void calculate_fps(EmuEnvState &emuenv);

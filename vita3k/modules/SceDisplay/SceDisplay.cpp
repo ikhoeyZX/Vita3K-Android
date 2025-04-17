@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -92,14 +92,15 @@ EXPORT(SceInt32, _sceDisplayGetMaximumFrameBufResolution, SceInt32 *width, SceIn
         *width = 1920;
         *height = 1088;
     } else {
+        // PSVita does this exact same check
         auto &title_id = emuenv.io.title_id;
-        bool cond = title_id == "PCSG80001"
-            || title_id == "PCSG80007"
-            || title_id == "PCSG00318"
-            || title_id == "PCSG00319"
-            || title_id == "PCSG00320"
-            || title_id == "PCSG00321"
-            || title_id == "PCSH00059";
+        bool cond = (title_id == "PCSG80001")
+            || (title_id == "PCSG80007")
+            || (title_id == "PCSG00318")
+            || (title_id == "PCSG00319")
+            || (title_id == "PCSG00320")
+            || (title_id == "PCSG00321")
+            || (title_id == "PCSH00059");
         if (cond) {
             *width = 960;
             *height = 544;

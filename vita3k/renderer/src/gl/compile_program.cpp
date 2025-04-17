@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 #include <renderer/gl/state.h>
 #include <renderer/gl/types.h>
 
-#include <gxm/types.h>
 #include <util/log.h>
 
 #include <shader/spirv_recompiler.h>
@@ -149,9 +148,6 @@ static SharedGLObject compile_program(ProgramCache &program_cache, const SharedG
 
     program_cache.emplace(hashes, program);
 
-    glDeleteShader(frag_shader->get());
-    glDeleteShader(vert_shader->get());
-    
     return program;
 }
 

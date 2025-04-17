@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,9 +24,7 @@
 template <class T>
 class Ptr {
 public:
-    Ptr()
-        : addr(0) {
-    }
+    Ptr() = default;
 
     explicit Ptr(Address address)
         : addr(address) {
@@ -99,7 +97,7 @@ public:
     }
 
 private:
-    Address addr;
+    Address addr{};
 };
 
 static_assert(sizeof(Ptr<const void>) == 4, "Size of Ptr isn't 4 bytes.");

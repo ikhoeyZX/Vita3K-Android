@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,9 +17,9 @@
 
 #include "interface.h"
 
-#include <app/functions.h>
 #include "module/load_module.h"
 
+#include <app/functions.h>
 #include <config/state.h>
 #include <ctrl/functions.h>
 #include <ctrl/state.h>
@@ -28,10 +28,10 @@
 #include <display/state.h>
 #include <gui/functions.h>
 #include <gxm/state.h>
-#include <host/dialog/filesystem.h>
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/state.h>
+#include <packages/functions.h>
 #include <packages/license.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
@@ -53,9 +53,6 @@
 #include <stb_image_write.h>
 
 #include <gdbstub/functions.h>
-
-#include <glad/glad.h>
-
 
 #if USE_DISCORD
 #include <app/discord.h>
@@ -128,7 +125,7 @@ static bool set_content_path(EmuEnvState &emuenv, const bool is_theme, fs::path 
     return true;
 }
 
-bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &zip, const std::string &content_path, const std::function<void(ArchiveContents)> &progress_callback) {
+static bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &zip, const std::string &content_path, const std::function<void(ArchiveContents)> &progress_callback) {
     std::string sfo_path = "sce_sys/param.sfo";
     std::string theme_path = "theme.xml";
     vfs::FileBuffer buffer, theme;
@@ -157,16 +154,8 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &z
 
             while (handle_events(emuenv, *gui) && (status == gui::UNK_STATE)) {
                 gui::draw_begin(*gui, emuenv);
-                if(emuenv.renderer->current_backend == renderer::Backend::OpenGL)
-                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
                 gui::draw_ui(*gui, emuenv);
-                ImGui::PushFont(gui->vita_font);
                 gui::draw_reinstall_dialog(&status, *gui, emuenv);
-                ImGui::PopFont();
-                if(emuenv.renderer->current_backend == renderer::Backend::OpenGL)
-                    glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
-                ImGui::Render();
                 gui::draw_end(*gui);
                 emuenv.renderer->swap_window(emuenv.window.get());
             }
@@ -254,9 +243,6 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
         std::string m_filename = std::string(file_stat.m_filename);
         if (m_filename.find("sce_module/steroid.suprx") != std::string::npos) {
             LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
-#ifdef ANDROID
-            SDL_AndroidShowToast("Vitamin dumps are not supported!", 1, -1, 0, 0);
-#endif
             content_path.clear();
             break;
         }
@@ -273,14 +259,14 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
 }
 
 std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, GuiState *gui, const fs::path &archive_path, const std::function<void(ArchiveContents)> &progress_callback) {
-    FILE *vpk_fp = host::dialog::filesystem::resolve_host_handle(archive_path);
-
-    if (!vpk_fp) {
-        LOG_CRITICAL("Failed to load archive file in path: {}", archive_path.generic_path().string());
+    if (!fs::exists(archive_path)) {
+        LOG_CRITICAL("Failed to load archive file in path: {}", archive_path.generic_path());
         return {};
     }
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
+
+    FILE *vpk_fp = FOPEN(archive_path.generic_path().c_str(), "rb");
 
     if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
         LOG_CRITICAL("miniz error reading archive: {}", miniz_get_error(zip));
@@ -306,7 +292,8 @@ std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, GuiState *gui, con
     for (auto &path : content_path) {
         current++;
         update_progress();
-        const bool state = install_archive_content(emuenv, gui, zip, path, progress_callback);
+        bool state = install_archive_content(emuenv, gui, zip, path, progress_callback);
+        // Can't use emplace_back due to Clang 15 for macos
         content_installed.push_back({ emuenv.app_info.app_title, emuenv.app_info.app_title_id, emuenv.app_info.app_category, emuenv.app_info.app_content_id, path, state });
     }
 
@@ -318,11 +305,12 @@ static std::vector<fs::path> get_contents_path(const fs::path &path) {
     std::vector<fs::path> contents_path;
 
     for (const auto &p : fs::recursive_directory_iterator(path)) {
-        const auto is_content = (p.path().filename() == "param.sfo") || (p.path().filename() == "theme.xml");
+        auto filename = p.path().filename();
+        const auto is_content = (filename == "param.sfo") || (filename == "theme.xml");
         if (is_content) {
-            const auto content_path = (p.path().filename() == "param.sfo") ? p.path().parent_path().parent_path() : p.path().parent_path();
-            if (!vector_utils::contains(content_path, p.path().parent_path()))
-                contents_path.push_back(content_path);
+            auto parent_path = p.path().parent_path();
+            const auto content_path = (filename == "param.sfo") ? parent_path.parent_path() : parent_path;
+            vector_utils::push_if_not_exists(contents_path, content_path);
         }
     }
 
@@ -334,21 +322,9 @@ static bool install_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &
     const auto theme_path{ content_path / "theme.xml" };
     vfs::FileBuffer buffer;
 
-    const auto get_buffer = [&](const fs::path &path) {
-        fs::ifstream f{ path, fs::ifstream::binary };
-        if (!f)
-            return false;
-
-        f.unsetf(fs::ifstream::skipws);
-        buffer.reserve(fs::file_size(path));
-        buffer.insert(buffer.begin(), std::istream_iterator<uint8_t>(f), std::istream_iterator<uint8_t>());
-
-        return true;
-    };
-
-    const auto is_theme = fs::exists(content_path / "theme.xml");
+    const auto is_theme = fs::exists(theme_path);
     auto dst_path{ emuenv.pref_path / "ux0" };
-    if (get_buffer(sfo_path)) {
+    if (fs_utils::read_data(sfo_path, buffer)) {
         sfo::get_param_info(emuenv.app_info, buffer, emuenv.cfg.sys_lang);
         if (!set_content_path(emuenv, is_theme, dst_path))
             return false;
@@ -356,7 +332,7 @@ static bool install_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &
         if (exists(dst_path))
             fs::remove_all(dst_path);
 
-    } else if (get_buffer(theme_path)) {
+    } else if (fs_utils::read_data(theme_path, buffer)) {
         set_theme_name(emuenv, buffer);
         dst_path /= fs::path("theme") / fs_utils::utf8_to_path(emuenv.app_info.app_title_id);
     } else {
@@ -437,7 +413,8 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
         if (emuenv.ctrl.has_motion_support)
             LOG_INFO("Controller has motion support");
     }
-    LOG_INFO("modules mode: {}", config_modules_mode[emuenv.cfg.current_config.modules_mode][ModulesModeType::MODE]);
+    constexpr std::array modules_mode_names{ "Automatic", "Auto & Manual", "Manual" };
+    LOG_INFO("modules mode: {}", modules_mode_names.at(emuenv.cfg.current_config.modules_mode));
     if ((emuenv.cfg.current_config.modules_mode != ModulesMode::AUTOMATIC) && !emuenv.cfg.current_config.lle_modules.empty()) {
         std::string modules;
         for (const auto &mod : emuenv.cfg.current_config.lle_modules) {
@@ -459,12 +436,8 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     vfs::FileBuffer param_sfo;
     if (vfs::read_app_file(param_sfo, emuenv.pref_path, emuenv.io.app_path, "sce_sys/param.sfo"))
         sfo::load(emuenv.sfo_handle, param_sfo);
-    
-    // todo: VAR_NID(__sce_libcparam, 0xDF084DFA) is loaded wrong
-    for (const auto &var : get_var_exports()) {
-        auto addr = var.factory(emuenv);
-        emuenv.kernel.export_nids.emplace(var.nid, addr);
-    }
+
+    init_exported_vars(emuenv);
 
     // Load main executable
     emuenv.self_path = !emuenv.cfg.self_path.empty() ? emuenv.cfg.self_path : EBOOT_PATH;
@@ -487,6 +460,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
         }
     }
     const auto module_app_path{ emuenv.pref_path / "ux0/app" / emuenv.io.app_path / "sce_module" };
+
     std::vector<std::string> lib_load_list = {};
     // todo: check if module is imported
     auto add_preload_module = [&](uint32_t code, SceSysmoduleModuleId module_id, const std::string &name, bool load_from_app) {
@@ -551,7 +525,6 @@ static void take_screenshot(EmuEnvState &emuenv) {
 
     if (emuenv.io.title_id.empty()) {
         LOG_ERROR("Trying to take a screenshot while not ingame");
-        return;
     }
 
     uint32_t width, height;
@@ -572,32 +545,21 @@ static void take_screenshot(EmuEnvState &emuenv) {
     const auto img_format = emuenv.cfg.screenshot_format == JPEG ? ".jpg" : ".png";
     const fs::path save_file = save_folder / fmt::format("{}_{:%Y-%m-%d-%H%M%OS}{}", string_utils::remove_special_chars(emuenv.current_app_title), fmt::localtime(std::time(nullptr)), img_format);
     constexpr int quality = 85; // google recommended value
-    bool screenshot_ok = false;
     if (emuenv.cfg.screenshot_format == JPEG) {
         if (stbi_write_jpg(fs_utils::path_to_utf8(save_file).c_str(), width, height, 4, frame.data(), quality) == 1)
-            screenshot_ok = true;
+            LOG_INFO("Successfully saved screenshot to {}", save_file);
+        else
+            LOG_INFO("Failed to save screenshot");
     } else {
         if (stbi_write_png(fs_utils::path_to_utf8(save_file).c_str(), width, height, 4, frame.data(), width * 4) == 1)
-            screenshot_ok = true;
-    }
-    if (screenshot_ok){
-        const auto tmp = fmt::format("Successfully saved screenshot to {:s}", save_file);
-        LOG_INFO("{}", tmp);
-#ifdef ANDROID
-        SDL_AndroidShowToast("Screenshot saved at pref-path/shared/screenshots", 1, -1, 0, 0);
-#endif
-    }else{
-        const auto tmp = "Failed to save screenshot";
-        LOG_INFO("{}", tmp);
-#ifdef ANDROID
-        SDL_AndroidShowToast(tmp, 1, -1, 0, 0);
-#endif
+            LOG_INFO("Successfully saved screenshot to {}", save_file);
+        else
+            LOG_INFO("Failed to save screenshot");
     }
 }
 
 bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
-    refresh_controllers(emuenv.ctrl, emuenv);   
-
+    refresh_controllers(emuenv.ctrl, emuenv);
     const auto allow_switch_state = !emuenv.io.title_id.empty() && !gui.vita_area.app_close && !gui.vita_area.home_screen && !gui.vita_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog && gui::get_sys_apps_state(gui);
 
     const auto ui_navigation = [&emuenv, &gui, allow_switch_state](const uint32_t sce_ctrl_btn) {
@@ -727,7 +689,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             };
 
             // Get Sce Ctrl button from key
-            auto sce_ctrl_btn = get_sce_ctrl_btn_from_scancode(event.key.keysym.scancode);
+            const auto sce_ctrl_btn = get_sce_ctrl_btn_from_scancode(event.key.keysym.scancode);
 
             if (gui.is_capturing_keys && event.key.keysym.scancode) {
                 gui.is_key_capture_dropped = false;
@@ -744,38 +706,25 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             if (ImGui::GetIO().WantTextInput || gui.is_key_locked || emuenv.drop_inputs)
                 continue;
 
-#ifdef ANDROID
-            if(event.key.keysym.sym == SDLK_AC_BACK)
-                sce_ctrl_btn = SCE_CTRL_PSBUTTON;
-            if(gui.is_screenshot){
-                take_screenshot(emuenv);
-                gui.is_screenshot = false;
-            }
-#else
             // toggle gui state
+            if (allow_switch_state && (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_gui))
+                emuenv.display.imgui_render = !emuenv.display.imgui_render;
             if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_touch && !gui.is_key_capture_dropped)
                 toggle_touchscreen();
             if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_fullscreen && !gui.is_key_capture_dropped)
                 switch_full_screen(emuenv);
-            if (allow_switch_state && (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_gui))
-                emuenv.display.imgui_render = !emuenv.display.imgui_render;
             if (event.key.keysym.scancode == emuenv.cfg.keyboard_toggle_texture_replacement && !gui.is_key_capture_dropped)
                 toggle_texture_replacement(emuenv);
             if (event.key.keysym.scancode == emuenv.cfg.keyboard_take_screenshot && !gui.is_key_capture_dropped)
                 take_screenshot(emuenv);
-#endif
 
-            bool was_in_livearea = gui.vita_area.live_area_screen;
-
-            if (sce_ctrl_btn != 0)
+            if (sce_ctrl_btn != 0) {
+                if (last_buttons.contains(sce_ctrl_btn)) {
+                    continue;
+                }
+                last_buttons.insert(sce_ctrl_btn);
                 ui_navigation(sce_ctrl_btn);
-
-#ifdef ANDROID
-            if(!was_in_livearea && gui.vita_area.live_area_screen){
-                emuenv.display.imgui_render = true;
-                gui::set_controller_overlay_state(0);
             }
-#endif
 
             break;
         }
@@ -798,7 +747,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
 
             for (const auto &binding : get_controller_bindings_ext(emuenv)) {
                 if (event.cbutton.button == binding.controller) {
-                    if (last_buttons.find(binding.button) != last_buttons.end()) {
+                    if (last_buttons.contains(binding.button)) {
                         continue;
                     }
                     last_buttons.insert(binding.button);
@@ -827,7 +776,15 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         case SDL_DROPFILE: {
             const auto drop_file = fs_utils::utf8_to_path(event.drop.file);
             const auto extension = string_utils::tolower(drop_file.extension().string());
-            if ((extension == ".vpk") || (extension == ".zip"))
+            if (extension == ".pup") {
+                const std::string fw_version = install_pup(emuenv.pref_path, drop_file);
+                if (!fw_version.empty()) {
+                    LOG_INFO("Firmware {} installed successfully!", fw_version);
+                    gui::get_modules_list(gui, emuenv);
+                    if (emuenv.cfg.initial_setup)
+                        gui::init_theme(gui, emuenv, gui.users[emuenv.cfg.user_id].theme_id);
+                }
+            } else if ((extension == ".vpk") || (extension == ".zip"))
                 install_archive(emuenv, &gui, drop_file);
             else if ((extension == ".rif") || (drop_file.filename() == "work.bin"))
                 copy_license(emuenv, drop_file);

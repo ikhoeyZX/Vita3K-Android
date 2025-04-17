@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,8 +40,11 @@
 
 #include <gdbstub/state.h>
 
+#include <util/warning.h>
+
 // initialize the unique_ptr then the reference each time
 // this is VERY repetitive
+DISABLE_WARNING_BEGIN(5038, "-Wreorder-ctor")
 EmuEnvState::EmuEnvState()
     : _app_info(new sfo::SfoAppInfo)
     , app_info(*_app_info)
@@ -86,13 +89,9 @@ EmuEnvState::EmuEnvState()
     , _gdb(new GDBState)
     , gdb(*_gdb)
     , _http(new HTTPState)
-    , http(*_http) 
-#ifdef ANDROID
-    , _libadreno(new libadreno_var)
-    , libadreno(*_libadreno)
-#endif
-{
+    , http(*_http) {
 }
+DISABLE_WARNING_END;
 
 // this is necessary to forward declare unique_ptrs (so that they can call the appropriate destructor)
 EmuEnvState::~EmuEnvState() = default;

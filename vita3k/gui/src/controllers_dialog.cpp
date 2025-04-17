@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,14 +23,14 @@
 #include <dialog/state.h>
 #include <emuenv/state.h>
 #include <gui/functions.h>
-#include <motion/state.h>
 
 #include <SDL_events.h>
+#include <SDL_version.h>
 
 namespace gui {
 
-bool rebinds_is_open = false;
-bool is_capturing_buttons = false;
+static bool rebinds_is_open = false;
+static bool is_capturing_buttons = false;
 
 void reset_controller_binding(EmuEnvState &emuenv) {
     emuenv.cfg.controller_binds = {
@@ -119,9 +119,11 @@ static void add_bind_to_table(GuiState &gui, EmuEnvState &emuenv, const SDL_Game
             }
             break;
         case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO:
+#if SDL_VERSION_ATLEAST(2, 24, 0)
         case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_LEFT:
         case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT:
         case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_PAIR:
+#endif
             switch (btn) {
             case SDL_CONTROLLER_BUTTON_BACK: return "-";
             case SDL_CONTROLLER_BUTTON_START: return "+";
@@ -171,9 +173,9 @@ static void add_bind_to_table(GuiState &gui, EmuEnvState &emuenv, const SDL_Game
     ImGui::PopID();
 }
 
-void swap_controller_ports(CtrlState &state, int source_port, int dest_port) {
+static void swap_controller_ports(CtrlState &state, int source_port, int dest_port) {
     // Check if the ports are valid
-    if (source_port < 1 || source_port > SCE_CTRL_MAX_WIRELESS_NUM || dest_port < 1 || dest_port > SCE_CTRL_MAX_WIRELESS_NUM) {
+    if ((source_port < 0) || (source_port >= SCE_CTRL_MAX_WIRELESS_NUM) || (dest_port < 0) || (dest_port >= SCE_CTRL_MAX_WIRELESS_NUM)) {
         LOG_ERROR("Ports are not valid.");
         return;
     }
@@ -191,9 +193,9 @@ void swap_controller_ports(CtrlState &state, int source_port, int dest_port) {
     }
 
     if (dest_controller_it == state.controllers.end()) {
-    LOG_INFO("Controller on source port {} {} assigned to destination port {}", source_port, source_controller_it->second.name, dest_port);
-        
-    // Assign controller to destination port
+        LOG_INFO("Controller on source port {} {} assigned to destination port {}", source_port, source_controller_it->second.name, dest_port);
+
+        // Assign controller to destination port
         SDL_GameControllerSetPlayerIndex(source_controller_it->second.controller.get(), dest_port);
         source_controller_it->second.port = dest_port;
         std::swap(state.free_ports[source_port], state.free_ports[dest_port]);
@@ -208,10 +210,10 @@ void swap_controller_ports(CtrlState &state, int source_port, int dest_port) {
 }
 
 void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 VIEWPORT_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
-    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
-    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
+    const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
+    const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.manual_dpi_scale, 0.f);
 
     auto &ctrl = emuenv.ctrl;
     auto &lang = gui.lang.controllers;
@@ -222,9 +224,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (VIEWPORT_SIZE.x / 2.f), VIEWPORT_POS.y + (VIEWPORT_SIZE.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("##controllers", &gui.controls_menu.controllers_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings);
     ImGui::SetWindowFontScale(RES_SCALE.x);
-    auto title_str = lang["title"].c_str();
-    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title_str).x / 2.f));
-    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title_str);
+    TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["title"].c_str());
     ImGui::Spacing();
     ImGui::Separator();
 
@@ -242,12 +242,11 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::TableSetColumnIndex(0);
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["num"].c_str());
             ImGui::TableSetColumnIndex(1);
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["name"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", gui.lang.app_context.info["name"].c_str());
             ImGui::Spacing();
             ImGui::TableSetColumnIndex(2);
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", "Motion Support");
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["motion_support"].c_str());
             const char *port_names[] = { "1", "2", "3", "4" };
-            static int selected_port = -1;
             for (auto i = 0; i < SCE_CTRL_MAX_WIRELESS_NUM; i++) {
                 auto controller_it = std::find_if(ctrl.controllers.begin(), ctrl.controllers.end(),
                     [&](const auto &pair) { return pair.second.port == i; });
@@ -256,13 +255,12 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 }
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                selected_port = i;
+                int selected_port = i;
                 ImGui::PushID(i);
-                ImGui::SetNextItemWidth(50.f * emuenv.dpi_scale);
+                ImGui::SetNextItemWidth(50.f * emuenv.manual_dpi_scale);
                 if (ImGui::Combo("##swap_port", &selected_port, port_names, SCE_CTRL_MAX_WIRELESS_NUM))
-                    swap_controller_ports(ctrl, i + 1, selected_port + 1);
+                    swap_controller_ports(ctrl, i, selected_port);
                 ImGui::PopID();
-                ImGui::TableSetColumnIndex(1);
                 ImGui::TableSetColumnIndex(1);
                 if (ImGui::Button(controller_it->second.name))
                     rebinds_is_open = true;
@@ -276,9 +274,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (VIEWPORT_SIZE.x / 2.f), VIEWPORT_POS.y + (VIEWPORT_SIZE.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
                     ImGui::Begin("##rebind_controls", &rebinds_is_open, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
                     ImGui::SetWindowFontScale(RES_SCALE.x);
-                    auto rebind_controls = lang["rebind_controls"].c_str();
-                    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(rebind_controls).x / 2.f));
-                    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", rebind_controls);
+                    TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["rebind_controls"].c_str());
                     ImGui::Spacing();
                     ImGui::Separator();
 
@@ -358,42 +354,6 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                         }
                         ImGui::EndTable();
                     }
-                    
-                    if (ctrl.controllers[guid].has_gyro) {
-                        const auto set_calib_gyro = [&](const std::vector<float> &gyro_sens) {
-                            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-                        };
-                        ImGui::Spacing();
-                        ImGui::Separator();
-                        ImGui::Spacing();
-                        const auto gyro_sens_str = lang["gyro_sens"].c_str();
-                        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(gyro_sens_str).x / 2.f));
-                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", gyro_sens_str);
-                        auto &gyro_sensor = emuenv.cfg.controller_gyro_calibration;
-                        if (ImGui::Checkbox(lang["use_custom_gyro_cal"].c_str(), &emuenv.cfg.calibrate_gyro)) {
-                            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-                        }
-                        SetTooltipEx(lang["use_custom_gyro_cal_description"].c_str());
-                        static std::vector<float> gyro_set = gyro_sensor;
-                        if (gyro_set.empty())
-                                gyro_set = { 0, 0, 0 };
-                        if (emuenv.cfg.calibrate_gyro) {
-                            ImGui::Spacing();
-                            ImGui::InputFloat(lang["gyro-x"].c_str(), &gyro_set[0], -1, 1, "%.2f");
-                            ImGui::Spacing();
-                            ImGui::InputFloat(lang["gyro-y"].c_str(), &gyro_set[1], -1, 1, "%.2f");
-                            ImGui::Spacing();
-                            ImGui::InputFloat(lang["gyro-z"].c_str(), &gyro_set[2], -1, 1, "%.2f");
-                            ImGui::Spacing();
-                            if (ImGui::Button(common["save"].c_str(), BUTTON_SIZE)){
-                               gyro_sensor = gyro_set;
-                               set_calib_gyro(gyro_sensor);
-                            }
-                        }
-                    }
-                    ImGui::Spacing();
-                    ImGui::Separator();
-                    ImGui::Spacing();
 
                     if (ctrl.controllers[guid].has_led) {
                         const auto set_led_color = [&](const std::vector<int> &led) {
@@ -403,9 +363,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                         ImGui::Spacing();
                         ImGui::Separator();
                         ImGui::Spacing();
-                        const auto led_color_str = lang["led_color"].c_str();
-                        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(led_color_str).x / 2.f));
-                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", led_color_str);
+                        TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["led_color"].c_str());
                         auto &color = emuenv.cfg.controller_led_color;
                         bool has_custom_color = !color.empty();
                         if (ImGui::Checkbox(lang["use_custom_color"].c_str(), &has_custom_color)) {
@@ -448,12 +406,10 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::Spacing();
                     ImGui::Separator();
                     ImGui::Spacing();
-                    
                     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
                     if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
                         rebinds_is_open = false;
 
-                    ImGui::ScrollWhenDragging();
                     ImGui::End();
                 }
                 ImGui::TableSetColumnIndex(2);
@@ -465,21 +421,10 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", lang["not_connected"].c_str());
 
     if (emuenv.ctrl.has_motion_support) {
-        auto &emulator = gui.lang.settings_dialog.emulator;
         ImGui::Spacing();
-        if (ImGui::Checkbox(lang["motion"].c_str(), &emuenv.cfg.tiltsens))
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-        if(emuenv.cfg.tiltsens){
-           if(ImGui::Checkbox(emulator["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro))
-               config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-           SetTooltipEx(emulator["invert_gyro_description"].c_str());
-        }
+        if (ImGui::Checkbox(lang["disable_motion"].c_str(), &emuenv.cfg.disable_motion))
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         ImGui::PushTextWrapPos(ImGui::GetWindowWidth() - (ImGui::GetStyle().WindowPadding.x * 2.f));
-        ImGui::PopTextWrapPos();
-    } else if (emuenv.motion.has_device_motion_support){
-        ImGui::Spacing();
-        ImGui::PushTextWrapPos(ImGui::GetWindowWidth() - (ImGui::GetStyle().WindowPadding.x * 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", "Using builtin device motion sensors");
         ImGui::PopTextWrapPos();
     }
 

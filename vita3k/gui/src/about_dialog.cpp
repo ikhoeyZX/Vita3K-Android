@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,19 +25,19 @@
 namespace gui {
 
 // Add any new developer/contributor in alphabetic order
-constexpr std::array developers_list = {
+static constexpr std::array developers_list = {
     "1whatleytay", "bookmist", "EXtremeExploit", "frangarcj", "IllusionMan1212",
     "KorewaWatchful", "Macdu", "pent0", "petmac", "Rinnegatamante",
     "sunho", "VelocityRa", "Zangetsu38"
 };
 
-constexpr std::array contributors_list = {
+static constexpr std::array contributors_list = {
     "0nza1101", "0x8080", "AtticFinder65536", "Avellea", "blackbird806",
     "BogdanTheGeek", "bsinky", "bythos14", "cobalt2727", "CoffeeBrewer64", "Cpasjuste",
     "Creeot", "CreepNT", "Croden1999", "d3m3vilurr", "Danik2343", "darkash",
     "DerRM", "devnoname120", "dima-xd", "dracc", "edwinr", "FantasyGmm",
     "Felipefpl", "FlotterCodername", "Frain-Breeze", "francois-berder", "FromAlaska",
-    "Ghabry", "hobyst", "HuanJiCanShang", "ichisadashioko", "illusion0001", "ikhoeyZX",
+    "Ghabry", "hobyst", "HuanJiCanShang", "ichisadashioko", "illusion0001",
     "isJuhn", "jdoe0000000", "jlachniet", "Johnnynator", "johnothwolo", "Kaitul",
     "KaneDbD", "kd-11", "KhoraLee", "Kitakatarashima", "lephilousophe",
     "Lupiax", "lybxlpsv", "MaddTheSane", "Margen67", "mavethee", "merryhime",
@@ -50,44 +50,32 @@ constexpr std::array contributors_list = {
     "xerpi", "xperia64", "xsamueljr", "xyzz", "yousifd", "Yunotchi"
 };
 
-constexpr std::array supporters_list = {
+static constexpr std::array supporters_list = {
     "j0hnnybrav0", "TacoOblivion", "Undeadbob", "uplush"
 };
 
 void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
-    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
-    const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
+    const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
+    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.manual_dpi_scale, 0.f);
 
     auto &lang = gui.lang.about;
     auto &common = emuenv.common_dialog.lang.common;
 
-    // Always center this window when appearing
-    const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-
-
-    ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("##about", &gui.help_menu.about_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(RES_SCALE.x);
-    auto title_str = lang["title"].c_str();
-    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title_str).x / 2.f));
-    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title_str);
+    TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["title"].c_str());
     ImGui::Spacing();
     ImGui::Separator();
-    const auto HALF_WINDOW_WIDTH = ImGui::GetWindowWidth() / 2.f;
-    ImGui::SetCursorPosX(HALF_WINDOW_WIDTH - (ImGui::CalcTextSize(window_title).x / 2.f));
-    ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", window_title);
+    TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, window_title);
 
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
 
     ImGui::Text("%s", lang["vita3k"].c_str());
-#ifdef ANDROID
-    ImGui::Spacing();
-    ImGui::TextWrapped("%s", "Note: This is not an Official release!, this is a custom preview that i will create PR / manually merge from PC version in main repo. If you see this contains ads or paid for it BLAME SOMEONE WHO MODIFIED IT!, because i NEVER DO THAT!");
-#endif
     ImGui::Spacing();
     ImGui::TextWrapped("%s", lang["about_vita3k"].c_str());
 
@@ -129,14 +117,13 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
 
     // Draw Vita3K Staff list
-    ImGui::SetCursorPosX(HALF_WINDOW_WIDTH - (ImGui::CalcTextSize(lang["vita3k_staff"].c_str()).x / 2.f));
-    ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", lang["vita3k_staff"].c_str());
+    TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, lang["vita3k_staff"].c_str());
     ImGui::Spacing();
 
     const auto STAFF_LIST_SIZE = ImVec2(630.f * SCALE.x, 160.f * SCALE.y);
     static constexpr int STAFF_COLUMN_COUNT(3);
     const float STAFF_COLUMN_SIZE(STAFF_LIST_SIZE.x / STAFF_COLUMN_COUNT);
-    const float STAFF_COLUMN_POS(HALF_WINDOW_WIDTH - (STAFF_LIST_SIZE.x / 2.f));
+    const float STAFF_COLUMN_POS(ImGui::GetWindowWidth() / 2.f - (STAFF_LIST_SIZE.x / 2.f));
 
     ImGui::SetCursorPosX(STAFF_COLUMN_POS);
     if (ImGui::BeginTable("##vita3k_staff_table", STAFF_COLUMN_COUNT, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersV | ImGuiTableFlags_NoSavedSettings, STAFF_LIST_SIZE)) {
@@ -167,7 +154,6 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
         // Supporters list
         for (const auto supporter : supporters_list)
             ImGui::Text("%s", supporter);
-        ImGui::ScrollWhenDragging();
         ImGui::EndTable();
     }
     ImGui::Spacing();
@@ -177,7 +163,6 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
         gui.help_menu.about_dialog = false;
 
-    ImGui::ScrollWhenDragging();
     ImGui::End();
 }
 
