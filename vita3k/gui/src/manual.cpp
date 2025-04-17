@@ -28,6 +28,7 @@
 
 #include <stb_image.h>
 
+
 namespace gui {
 
 void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
@@ -77,7 +78,7 @@ static std::vector<uint32_t> height_manual_pages;
 
 bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     // Reset manual variables
-    constexpr uint32_t MAX_MANUAL_PAGES = 999;
+    constexpr uint16_t MAX_MANUAL_PAGES = 999;
     current_page = 0;
     scroll = 0.f;
     height_manual_pages.clear();
@@ -91,7 +92,7 @@ bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         manual_path /= lang;
 
     // Load manual images
-    for (uint32_t i = 0; i < MAX_MANUAL_PAGES; i++) {
+    for (uint16_t i = 0; i < MAX_MANUAL_PAGES; i++) {
         // Get manual page path
         const auto page_path = manual_path / fmt::format("{:0>3d}.png", i + 1);
 

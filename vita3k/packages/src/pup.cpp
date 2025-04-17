@@ -24,9 +24,12 @@
  */
 
 #include <openssl/evp.h>
+#include <host/dialog/filesystem.h>
 #include <packages/exfat.h>
 #include <packages/sce_types.h>
+#include <util/bytes.h>
 #include <util/fs.h>
+#include <util/log.h>
 
 #include <algorithm>
 #include <fstream>
@@ -107,11 +110,12 @@ static std::string make_filename(unsigned char *hdr, int64_t filetype) {
 static void extract_pup_files(const fs::path &pup, const fs::path &output) {
     constexpr int SCEUF_HEADER_SIZE = 0x80;
     constexpr int SCEUF_FILEREC_SIZE = 0x20;
-    fs::ifstream infile(pup, std::ios::binary);
+    FILE *infile = host::dialog::filesystem::resolve_host_handle(pup);
     char header[SCEUF_HEADER_SIZE];
-    infile.read(header, SCEUF_HEADER_SIZE);
+    fread(header, SCEUF_HEADER_SIZE, 1, infile);
 
     if (strncmp(header, "SCEUF", 5) != 0) {
+        fclose(infile);
         LOG_ERROR("Invalid PUP");
         return;
     }
@@ -131,9 +135,9 @@ static void extract_pup_files(const fs::path &pup, const fs::path &output) {
     LOG_INFO("Number Of Files: {}", cnt);
 
     for (uint32_t x = 0; x < cnt; x++) {
-        infile.seekg(SCEUF_HEADER_SIZE + x * SCEUF_FILEREC_SIZE);
+        fseek(infile, SCEUF_HEADER_SIZE + x * SCEUF_FILEREC_SIZE, SEEK_SET);
         char rec[SCEUF_FILEREC_SIZE];
-        infile.read(rec, SCEUF_FILEREC_SIZE);
+        fread(rec, SCEUF_FILEREC_SIZE, 1, infile);
 
         uint64_t filetype = 0;
         uint64_t offset = 0;
@@ -149,21 +153,21 @@ static void extract_pup_files(const fs::path &pup, const fs::path &output) {
         if (PUP_TYPES.contains(filetype)) {
             filename = PUP_TYPES.at(filetype);
         } else {
-            infile.seekg(offset);
+            fseek(infile, offset, SEEK_SET);
             char hdr[HEADER_LENGTH];
-            infile.read(hdr, HEADER_LENGTH);
+            fread(hdr, HEADER_LENGTH, 1, infile);
             filename = make_filename((unsigned char *)hdr, filetype);
         }
 
         fs::ofstream outfile(output / filename, std::ios::binary);
-        infile.seekg(offset);
+        fseek(infile, offset, SEEK_SET);
         std::vector<char> buffer(length);
-        infile.read(&buffer[0], length);
+        fread(buffer.data(), length, 1, infile);
         outfile.write(&buffer[0], length);
 
         outfile.close();
     }
-    infile.close();
+    fclose(infile);
 }
 
 static void decrypt_segments(std::ifstream &infile, const fs::path &outdir, const fs::path &filename, KeyStore &SCE_KEYS) {
@@ -222,9 +226,11 @@ static void join_files(const fs::path &path, const std::string &filename, const 
 
     fs::ofstream fileout(output, std::ios::binary);
     for (const auto &file : files) {
-        std::vector<char> buffer(0);
-        fs_utils::read_data(file, buffer);
-        fileout.write(buffer.data(), buffer.size());
+        fs::ifstream filein(file, std::ios::binary);
+        std::vector<char> buffer(fs::file_size(file));
+        filein.read(&buffer[0], fs::file_size(file));
+        fileout.write(&buffer[0], fs::file_size(file));
+        filein.close();
         fs::remove(file);
     }
     fileout.close();
@@ -251,27 +257,22 @@ static void decrypt_pup_packages(const fs::path &src, const fs::path &dest, KeyS
     join_files(dest, "sa0-", dest / "sa0.img");
 }
 
-std::string install_pup(const fs::path &pref_path, const fs::path &pup_path, const std::function<void(uint32_t)> &progress_callback) {
+void install_pup(const fs::path &pref_path, const fs::path &pup_path, const std::function<void(uint32_t)> &progress_callback, const bool is_dencrypt) {
     fs::path pup_dec_root = pref_path / "PUP_DEC";
+    std::string zkey;
     if (fs::exists(pup_dec_root)) {
         LOG_WARN("Path already exists, deleting it and reinstalling");
         fs::remove_all(pup_dec_root);
     }
-
-    const auto update_progress = [&](const uint32_t progress) {
-        if (progress_callback)
-            progress_callback(progress);
-    };
 
     LOG_INFO("Extracting {} to {}", pup_path, pup_dec_root);
 
     fs::create_directory(pup_dec_root);
     const auto pup_dest = pup_dec_root / "PUP";
     fs::create_directory(pup_dest);
-    update_progress(10);
+    progress_callback(10);
 
     extract_pup_files(pup_path, pup_dest);
-    update_progress(20);
 
     const auto pup_dec = pup_dec_root / "PUP_dec";
     fs::create_directory(pup_dec);
@@ -279,30 +280,44 @@ std::string install_pup(const fs::path &pref_path, const fs::path &pup_path, con
     KeyStore SCE_KEYS;
     register_keys(SCE_KEYS, 0);
 
-    update_progress(30);
+    progress_callback(30);
     decrypt_pup_packages(pup_dest, pup_dec, SCE_KEYS);
 
-    update_progress(70);
-    if (fs::file_size(pup_dec / "os0.img") > 0)
+    progress_callback(70);
+    if (fs::file_size(pup_dec / "os0.img") > 0) {
         extract_fat(pup_dec, "os0.img", pref_path);
-    if (fs::file_size(pup_dec / "pd0.img") > 0)
+
+        // dencrypt system library
+        if(is_dencrypt){
+           progress_callback(95);
+           zkey = "pup";
+           for (const auto &file : fs::recursive_directory_iterator(pref_path / "os0")) {
+                if (is_self(file.path()))
+                    dencrypt_elf_files(pref_path, file.path(), zkey);
+           }
+        }
+    }
+    if (fs::file_size(pup_dec / "pd0.img") > 0){
         exfat::extract_exfat(pup_dec, "pd0.img", pref_path);
+        // wellcome park not yet support dencrypt
+        // since old builds can't boot vita os
+        // so i'm just ignore it
+    }
+
     if (fs::file_size(pup_dec / "sa0.img") > 0)
         extract_fat(pup_dec, "sa0.img", pref_path);
-    if (fs::file_size(pup_dec / "vs0.img") > 0)
+    if (fs::file_size(pup_dec / "vs0.img") > 0) {
         extract_fat(pup_dec, "vs0.img", pref_path);
-    update_progress(100);
 
-    // get firmware version
-    std::string fw_version;
-    fs::ifstream versionFile(pup_dest / "version.txt");
-    if (versionFile.is_open()) {
-        std::getline(versionFile, fw_version);
-        versionFile.close();
-    } else
-        LOG_WARN("Firmware Version file not found!");
-
-    fs::remove_all(pup_dec_root);
-
-    return fw_version;
+        // dencrypt system app
+        if(is_dencrypt){
+           zkey = "pupfw";
+           progress_callback(95);
+           for (const auto &file : fs::recursive_directory_iterator(pref_path / "vs0")) {
+                if (is_self(file.path()))
+                    dencrypt_elf_files(pref_path, file.path(), zkey);
+           }
+        }
+    }
+    progress_callback(100);
 }

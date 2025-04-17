@@ -28,6 +28,7 @@
 #include <display/state.h>
 #include <gui/functions.h>
 #include <gxm/state.h>
+#include <host/dialog/filesystem.h>
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/state.h>
@@ -53,6 +54,9 @@
 #include <stb_image_write.h>
 
 #include <gdbstub/functions.h>
+
+#include <glad/glad.h>
+
 
 #if USE_DISCORD
 #include <app/discord.h>
@@ -125,7 +129,7 @@ static bool set_content_path(EmuEnvState &emuenv, const bool is_theme, fs::path 
     return true;
 }
 
-static bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &zip, const std::string &content_path, const std::function<void(ArchiveContents)> &progress_callback) {
+bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &zip, const std::string &content_path, const std::function<void(ArchiveContents)> &progress_callback) {
     std::string sfo_path = "sce_sys/param.sfo";
     std::string theme_path = "theme.xml";
     vfs::FileBuffer buffer, theme;
@@ -243,6 +247,9 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
         std::string m_filename = std::string(file_stat.m_filename);
         if (m_filename.find("sce_module/steroid.suprx") != std::string::npos) {
             LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
+#ifdef ANDROID
+            SDL_AndroidShowToast("Vitamin dumps are not supported!", 1, -1, 0, 0);
+#endif
             content_path.clear();
             break;
         }
@@ -259,14 +266,14 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
 }
 
 std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, GuiState *gui, const fs::path &archive_path, const std::function<void(ArchiveContents)> &progress_callback) {
-    if (!fs::exists(archive_path)) {
-        LOG_CRITICAL("Failed to load archive file in path: {}", archive_path.generic_path());
+    FILE *vpk_fp = host::dialog::filesystem::resolve_host_handle(archive_path);
+
+    if (!vpk_fp) {
+        LOG_CRITICAL("Failed to load archive file in path: {}", archive_path.generic_path().string());
         return {};
     }
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
-
-    FILE *vpk_fp = FOPEN(archive_path.generic_path().c_str(), "rb");
 
     if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
         LOG_CRITICAL("miniz error reading archive: {}", miniz_get_error(zip));
@@ -322,9 +329,21 @@ static bool install_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &
     const auto theme_path{ content_path / "theme.xml" };
     vfs::FileBuffer buffer;
 
-    const auto is_theme = fs::exists(theme_path);
+    const auto get_buffer = [&](const fs::path &path) {
+        fs::ifstream f{ path, fs::ifstream::binary };
+        if (!f)
+            return false;
+
+        f.unsetf(fs::ifstream::skipws);
+        buffer.reserve(fs::file_size(path));
+        buffer.insert(buffer.begin(), std::istream_iterator<uint8_t>(f), std::istream_iterator<uint8_t>());
+
+        return true;
+    };
+
+    const auto is_theme = fs::exists(content_path / "theme.xml");
     auto dst_path{ emuenv.pref_path / "ux0" };
-    if (fs_utils::read_data(sfo_path, buffer)) {
+    if (get_buffer(sfo_path)) {
         sfo::get_param_info(emuenv.app_info, buffer, emuenv.cfg.sys_lang);
         if (!set_content_path(emuenv, is_theme, dst_path))
             return false;
@@ -332,7 +351,7 @@ static bool install_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &
         if (exists(dst_path))
             fs::remove_all(dst_path);
 
-    } else if (fs_utils::read_data(theme_path, buffer)) {
+    } else if (get_buffer(theme_path)) {
         set_theme_name(emuenv, buffer);
         dst_path /= fs::path("theme") / fs_utils::utf8_to_path(emuenv.app_info.app_title_id);
     } else {
@@ -436,7 +455,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     vfs::FileBuffer param_sfo;
     if (vfs::read_app_file(param_sfo, emuenv.pref_path, emuenv.io.app_path, "sce_sys/param.sfo"))
         sfo::load(emuenv.sfo_handle, param_sfo);
-
+    
     init_exported_vars(emuenv);
 
     // Load main executable
@@ -460,7 +479,6 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
         }
     }
     const auto module_app_path{ emuenv.pref_path / "ux0/app" / emuenv.io.app_path / "sce_module" };
-
     std::vector<std::string> lib_load_list = {};
     // todo: check if module is imported
     auto add_preload_module = [&](uint32_t code, SceSysmoduleModuleId module_id, const std::string &name, bool load_from_app) {
@@ -545,21 +563,32 @@ static void take_screenshot(EmuEnvState &emuenv) {
     const auto img_format = emuenv.cfg.screenshot_format == JPEG ? ".jpg" : ".png";
     const fs::path save_file = save_folder / fmt::format("{}_{:%Y-%m-%d-%H%M%OS}{}", string_utils::remove_special_chars(emuenv.current_app_title), fmt::localtime(std::time(nullptr)), img_format);
     constexpr int quality = 85; // google recommended value
+    bool screenshot_ok = false;
     if (emuenv.cfg.screenshot_format == JPEG) {
         if (stbi_write_jpg(fs_utils::path_to_utf8(save_file).c_str(), width, height, 4, frame.data(), quality) == 1)
-            LOG_INFO("Successfully saved screenshot to {}", save_file);
-        else
-            LOG_INFO("Failed to save screenshot");
+            screenshot_ok = true;
     } else {
         if (stbi_write_png(fs_utils::path_to_utf8(save_file).c_str(), width, height, 4, frame.data(), width * 4) == 1)
-            LOG_INFO("Successfully saved screenshot to {}", save_file);
-        else
-            LOG_INFO("Failed to save screenshot");
+            screenshot_ok = true;
+    }
+    if (screenshot_ok){
+        const auto tmp = fmt::format("Successfully saved screenshot to {:s}", save_file);
+        LOG_INFO("{}", tmp);
+#ifdef ANDROID
+        SDL_AndroidShowToast("Screenshot saved at pref-path/shared/screenshots", 1, -1, 0, 0);
+#endif
+    }else{
+        const auto tmp = "Failed to save screenshot";
+        LOG_INFO("{}", tmp);
+#ifdef ANDROID
+        SDL_AndroidShowToast(tmp, 1, -1, 0, 0);
+#endif
     }
 }
 
 bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
-    refresh_controllers(emuenv.ctrl, emuenv);
+    refresh_controllers(emuenv.ctrl, emuenv);   
+
     const auto allow_switch_state = !emuenv.io.title_id.empty() && !gui.vita_area.app_close && !gui.vita_area.home_screen && !gui.vita_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog && gui::get_sys_apps_state(gui);
 
     const auto ui_navigation = [&emuenv, &gui, allow_switch_state](const uint32_t sce_ctrl_btn) {
@@ -706,6 +735,14 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             if (ImGui::GetIO().WantTextInput || gui.is_key_locked || emuenv.drop_inputs)
                 continue;
 
+#ifdef ANDROID
+            if(event.key.keysym.sym == SDLK_AC_BACK)
+                sce_ctrl_btn = SCE_CTRL_PSBUTTON;
+            if(gui.is_screenshot){
+                take_screenshot(emuenv);
+                gui.is_screenshot = false;
+            }
+#else
             // toggle gui state
             if (allow_switch_state && (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_gui))
                 emuenv.display.imgui_render = !emuenv.display.imgui_render;
@@ -717,6 +754,9 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 toggle_texture_replacement(emuenv);
             if (event.key.keysym.scancode == emuenv.cfg.keyboard_take_screenshot && !gui.is_key_capture_dropped)
                 take_screenshot(emuenv);
+#endif
+
+            bool was_in_livearea = gui.vita_area.live_area_screen;
 
             if (sce_ctrl_btn != 0) {
                 if (last_buttons.contains(sce_ctrl_btn)) {
@@ -725,6 +765,13 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 last_buttons.insert(sce_ctrl_btn);
                 ui_navigation(sce_ctrl_btn);
             }
+
+#ifdef ANDROID
+            if(!was_in_livearea && gui.vita_area.live_area_screen){
+                emuenv.display.imgui_render = true;
+                gui::set_controller_overlay_state(0);
+            }
+#endif
 
             break;
         }

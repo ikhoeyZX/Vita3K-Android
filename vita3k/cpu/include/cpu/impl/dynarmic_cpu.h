@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,9 @@
 
 #include <cpu/functions.h>
 #include <cpu/impl/interface.h>
+#ifdef USE_UNICORN
+#include <cpu/impl/unicorn_cpu.h>
+#endif
 
 #include <memory>
 
@@ -46,11 +49,12 @@ class DynarmicCPU : public CPUInterface {
     bool log_mem = false;
     bool log_code = false;
     bool cpu_opt;
+    bool cpu_unsafe;
 
     std::unique_ptr<Dynarmic::A32::Jit> make_jit();
 
 public:
-    DynarmicCPU(CPUState *state, std::size_t processor_id, Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt);
+    DynarmicCPU(CPUState *state, std::size_t processor_id, Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt, bool cpu_unsafe);
     ~DynarmicCPU() override;
     int run() override;
     void stop() override;

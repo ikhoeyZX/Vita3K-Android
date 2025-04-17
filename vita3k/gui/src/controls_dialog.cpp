@@ -24,7 +24,205 @@
 #include <gui/functions.h>
 #include <interface.h>
 
+#ifdef ANDROID
+#include <SDL.h>
+#include <jni.h>
+#endif
+
 namespace gui {
+
+enum struct OverlayShowMask : int {
+    Basic = 1, // Basic Vita Gamepad
+    L2R2 = 2,
+    TouchScreenSwitch = 4,   // Button to switch between the front and back touchscreen
+};
+
+int get_overlay_display_mask(const Config& cfg){
+    if(!cfg.enable_gamepad_overlay)
+        return 0;
+
+    int mask = (int)OverlayShowMask::Basic;
+    if(cfg.pstv_mode)
+        mask |= (int)OverlayShowMask::L2R2;
+    if(cfg.overlay_show_touch_switch)
+        mask |= (int)OverlayShowMask::TouchScreenSwitch;
+
+    return mask;
+}
+
+#ifdef ANDROID
+void set_controller_overlay_state(int overlay_mask, bool edit, bool reset, bool portrait) {
+    // retrieve the JNI environment.
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+
+    // retrieve the Java instance of the SDLActivity
+    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+
+    // find the Java class of the activity. It should be SDLActivity or a subclass of it.
+    jclass clazz(env->GetObjectClass(activity));
+
+    // find the identifier of the method to call
+    jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayState", "(IZZZ)V");
+
+    // effectively call the Java method
+    env->CallVoidMethod(activity, method_id, overlay_mask, edit, reset, portrait);
+
+    // clean up the local references.
+    env->DeleteLocalRef(activity);
+    env->DeleteLocalRef(clazz);
+}
+
+void set_controller_overlay_scale(float scale, float joystick) {
+    // retrieve the JNI environment.
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+
+    // retrieve the Java instance of the SDLActivity
+    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+
+    // find the Java class of the activity. It should be SDLActivity or a subclass of it.
+    jclass clazz(env->GetObjectClass(activity));
+
+    // find the identifier of the method to call
+    jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayScale", "(FF)V");
+
+    // effectively call the Java method
+    env->CallVoidMethod(activity, method_id, scale, joystick);
+
+    // clean up the local references.
+    env->DeleteLocalRef(activity);
+    env->DeleteLocalRef(clazz);
+}
+
+void set_controller_overlay_opacity(int opacity) {
+    // retrieve the JNI environment.
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+
+    // retrieve the Java instance of the SDLActivity
+    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+
+    // find the Java class of the activity. It should be SDLActivity or a subclass of it.
+    jclass clazz(env->GetObjectClass(activity));
+
+    // find the identifier of the method to call
+    jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayOpacity", "(I)V");
+
+    // effectively call the Java method
+    env->CallVoidMethod(activity, method_id, opacity);
+
+    // clean up the local references.
+    env->DeleteLocalRef(activity);
+    env->DeleteLocalRef(clazz);
+}
+
+void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
+    static bool overlay_editing = false;
+    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
+
+    const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+
+    // Always center this window when appearing
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    if(emuenv.cfg.screenmode_pos == 3){
+        center.y = center.y / 2;
+    }
+    ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::Begin("Overlay", &gui.controls_menu.controls_dialog, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::SetWindowFontScale(RES_SCALE.x);
+
+    if (!gui.controls_menu.controls_dialog) {
+        set_controller_overlay_state(0);
+        overlay_editing = false;
+    }
+
+    ImGui::Spacing();
+
+    const auto gmpd = ImGui::CalcTextSize("Gamepad Overlay").x;
+    ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (gmpd / 2.f));
+    ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Gamepad Overlay");
+    ImGui::Spacing();
+    if (ImGui::Checkbox("Show gamepad overlay ingame", &emuenv.cfg.enable_gamepad_overlay))
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+
+    const char *overlay_edit_text = overlay_editing ? "Hide Gamepad Overlay" : "Modify Gamepad Overlay";
+    ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (gmpd / 2.f));
+    if (ImGui::Button(overlay_edit_text)) {
+        overlay_editing = !overlay_editing;
+        set_controller_overlay_state(overlay_editing ? get_overlay_display_mask(emuenv.cfg) : 0, overlay_editing);
+    }
+    ImGui::Spacing();
+    if(overlay_editing){
+        ImGui::Spacing();
+        if (ImGui::SliderFloat("Overlay scale", &emuenv.cfg.overlay_scale, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+            set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_joystick);
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        }
+        ImGui::Spacing();
+        if (ImGui::SliderFloat("Overlay scale joystick", &emuenv.cfg.overlay_scale_joystick, 0.25f, 4.0f, "%.3f", ImGuiSliderFlags_NoInput | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_Logarithmic)) {
+            set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_joystick);
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        }
+        ImGui::Spacing();
+        if (ImGui::SliderInt("Overlay opacity", &emuenv.cfg.overlay_opacity, 0, 100, "%d%%")) {
+            set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        }
+        ImGui::Spacing();
+    
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (gmpd / 2.f));
+        if (overlay_editing && ImGui::Button("Reset Gamepad")) {
+           if(emuenv.cfg.screenmode_pos == 3){
+               set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true, true, true);   // portrait
+           }else{
+               set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true, true, false);  // landscape
+           }
+           emuenv.cfg.overlay_scale = 1.0f;
+           emuenv.cfg.overlay_scale_joystick = 1.0f;
+           emuenv.cfg.overlay_opacity = 80;
+           set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_joystick);
+           set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
+           config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+       }
+    }
+    ImGui::Spacing();
+    ImGui::Separator();
+
+    if(emuenv.cfg.enable_gamepad_overlay){
+        auto &emulator = gui.lang.settings_dialog.emulator;
+        ImGui::Checkbox(emulator["sensor_enable"].c_str(), &emuenv.cfg.tiltsens);
+        SetTooltipEx(emulator["sensors_description"].c_str());
+        if (emuenv.cfg.tiltsens){
+            ImGui::Checkbox(emulator["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro);
+            SetTooltipEx(emulator["invert_gyro_description"].c_str());
+        }
+    }
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    
+    if(emuenv.cfg.enable_gamepad_overlay && ImGui::Checkbox("Show front/back touchscreen switch button.", &emuenv.cfg.overlay_show_touch_switch)){
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), overlay_editing);
+    }
+    ImGui::Text("L2/R2 triggers will be displayed only if PSTV mode is enabled.");
+    
+    auto &common = emuenv.common_dialog.lang.common;
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
+    if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE)){
+        overlay_editing = false;
+        set_controller_overlay_state(0);
+        gui.controls_menu.controls_dialog = false;
+    }
+
+    ImGui::ScrollWhenDragging();
+    ImGui::End();
+}
+
+#else
+
+void set_controller_overlay_state(int overlay_mask, bool edit, bool reset, bool portrait) {}
+void set_controller_overlay_scale(float scale, float joystick) {}
+void set_controller_overlay_opacity(int opacity) {}
 
 static constexpr std::array<const char *, 256> SDL_key_to_string{ "[unset]", "[unknown]", "[unknown]", "[unknown]", "A", "B", "C", "D", "E", "F", "G",
     "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
@@ -58,6 +256,7 @@ static int int_or_zero(T value) {
     else
         return 0;
 }
+
 static void prepare_map_array(EmuEnvState &emuenv, std::array<int, total_key_entries> &map) {
     size_t i = 0;
 #define ADD_KEYBOARD_MEMBERS(option_type, option_name, option_default, member_name) \
@@ -219,5 +418,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::End();
 }
+
+#endif
 
 } // namespace gui

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -89,9 +89,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
     // Load lang xml
     pugi::xml_document lang_xml;
     const auto lang_xml_path{ (emuenv.cfg.user_lang.empty() ? system_lang_path / lang.user_lang[GUI] : (is_user_lang_static ? user_lang_static_path : user_lang_shared_path) / emuenv.cfg.user_lang).replace_extension("xml") };
-    if (fs::exists(lang_xml_path)) {
-        auto load_xml_res = lang_xml.load_file(lang_xml_path.c_str());
-        if (load_xml_res) {
+    std::vector<uint8_t> lang_content = fs_utils::read_asset_raw(lang_xml_path);
+    if (!lang_content.empty()) {
+        if (lang_xml.load_buffer(lang_content.data(), lang_content.size(), pugi::encoding_utf8)) {
             // Lang
             const auto lang_child = lang_xml.child("lang");
             if (!lang_child.empty()) {
@@ -358,7 +358,7 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                                 if (!keyboard_lang_ime.empty()) {
                                     lang_ime.clear();
                                     const auto op = [](const auto &lang) {
-                                        return std::make_pair(static_cast<SceImeLanguage>(lang.attribute("id").as_ullong()), lang.text().as_string());
+                                        return std::make_pair(SceImeLanguage(lang.attribute("id").as_ullong()), lang.text().as_string());
                                     };
                                     std::transform(std::begin(keyboard_lang_ime), std::end(keyboard_lang_ime), std::back_inserter(lang_ime), op);
                                 }
@@ -417,23 +417,7 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                 set_lang_string(lang.welcome, lang_child.child("welcome"));
             }
         } else {
-            LOG_ERROR("Error open lang file xml: {}", lang_xml_path);
-            LOG_DEBUG("error: {} position: {}", load_xml_res.description(), load_xml_res.offset);
-            constexpr ptrdiff_t context_window = 20;
-            fs::ifstream file(lang_xml_path, std::ios::binary);
-            if (file.is_open()) {
-                const ptrdiff_t error_in_context = load_xml_res.offset < context_window ? load_xml_res.offset : context_window;
-                file.seekg(load_xml_res.offset - error_in_context, std::ios::beg);
-                if (!file.eof()) {
-                    std::string error_context;
-                    error_context.resize(context_window * 2);
-                    file.read(error_context.data(), context_window * 2);
-                    if (file.gcount() < context_window * 2)
-                        error_context.resize(file.gcount());
-                    LOG_DEBUG("Error preview: {}|{}", error_context.substr(0, error_in_context), error_context.substr(error_in_context));
-                }
-                file.close();
-            }
+            LOG_ERROR("Error parsing xml lang file: {}", lang_xml_path);
         }
     } else
         LOG_ERROR("Lang file xml not found: {}", lang_xml_path);

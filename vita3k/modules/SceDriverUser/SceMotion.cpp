@@ -82,10 +82,21 @@ EXPORT(int, sceMotionGetSensorState, SceMotionSensorState *sensorState, int numR
         return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
     }
 
-    if (emuenv.ctrl.has_motion_support && !emuenv.cfg.disable_motion) {
+    if (emuenv.ctrl.has_motion_support || emuenv.motion.has_device_motion_support && emuenv.cfg.tiltsens) {
         std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
         sensorState->accelerometer = get_acceleration(emuenv.motion);
         sensorState->gyro = get_gyroscope(emuenv.motion);
+
+        if(emuenv.cfg.calibrate_gyro && !emuenv.ctrl.is_virtual_joystick){
+            sensorState->gyro.x = sensorState->gyro.x + emuenv.cfg.controller_gyro_calibration[0];
+            sensorState->gyro.y = sensorState->gyro.y + emuenv.cfg.controller_gyro_calibration[1];
+            sensorState->gyro.z = sensorState->gyro.z + emuenv.cfg.controller_gyro_calibration[2];
+        }
+        if(emuenv.cfg.invert_gyro){
+            sensorState->gyro.x = sensorState->gyro.x * -1;
+            sensorState->gyro.y = sensorState->gyro.y * -1;
+            sensorState->gyro.z = sensorState->gyro.z * -1;
+        }
 
         sensorState->timestamp = emuenv.motion.last_accel_timestamp;
         sensorState->counter = emuenv.motion.last_counter;
@@ -95,6 +106,9 @@ EXPORT(int, sceMotionGetSensorState, SceMotionSensorState *sensorState, int numR
         // some default values
         memset(sensorState, 0, sizeof(*sensorState));
         sensorState->accelerometer.z = -1.0;
+        sensorState->accelerometer.x = static_cast<float>(emuenv.cfg.tiltpos);
+        sensorState->accelerometer.y = 0;
+        sensorState->gyro = {0,0,0};
 
         std::chrono::time_point<std::chrono::steady_clock> ts = std::chrono::steady_clock::now();
         uint64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
@@ -119,12 +133,23 @@ EXPORT(int, sceMotionGetState, SceMotionState *motionState) {
         return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
     }
 
-    if (emuenv.ctrl.has_motion_support && !emuenv.cfg.disable_motion) {
+    if (emuenv.ctrl.has_motion_support || emuenv.motion.has_device_motion_support && emuenv.cfg.tiltsens) {
         std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
         motionState->timestamp = emuenv.motion.last_accel_timestamp;
 
         motionState->acceleration = get_acceleration(emuenv.motion);
         motionState->angularVelocity = get_gyroscope(emuenv.motion);
+
+        if(emuenv.cfg.calibrate_gyro && !emuenv.ctrl.is_virtual_joystick){
+            motionState->angularVelocity.x = motionState->angularVelocity.x + emuenv.cfg.controller_gyro_calibration[0];
+            motionState->angularVelocity.y = motionState->angularVelocity.y + emuenv.cfg.controller_gyro_calibration[1];
+            motionState->angularVelocity.z = motionState->angularVelocity.z + emuenv.cfg.controller_gyro_calibration[2];
+        }
+        if(emuenv.cfg.invert_gyro){
+            motionState->angularVelocity.x = motionState->angularVelocity.x * -1;
+            motionState->angularVelocity.y = motionState->angularVelocity.y * -1;
+            motionState->angularVelocity.z = motionState->angularVelocity.z * -1;
+        }
 
         Util::Quaternion dev_quat = get_orientation(emuenv.motion);
         motionState->basicOrientation = get_basic_orientation(emuenv.motion);
@@ -150,8 +175,11 @@ EXPORT(int, sceMotionGetState, SceMotionState *motionState) {
         motionState->hostTimestamp = timestamp;
 
         motionState->acceleration.z = -1.0;
+        motionState->acceleration.y = 0;
+        motionState->acceleration.x = static_cast<float>(emuenv.cfg.tiltpos);
+        motionState->angularVelocity = {0,0,0};
         motionState->deviceQuat.z = 1;
-        for (int i = 0; i < 4; i++) {
+        for (uint8_t i = 0; i < 4; i++) {
             // identity matrices
             reinterpret_cast<float *>(&motionState->rotationMatrix.x.x)[i * 4 + i] = 1;
             reinterpret_cast<float *>(&motionState->nedMatrix.x.x)[i * 4 + i] = 1;

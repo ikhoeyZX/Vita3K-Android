@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,10 @@ struct MemState;
 struct FeatureState;
 struct Config;
 struct SDL_Window;
+
+#ifdef ANDROID // pass to android
+struct libadreno_var;
+#endif
 
 namespace renderer {
 struct Context;
@@ -58,8 +62,11 @@ void submit_command_list(State &state, renderer::Context *context, CommandList &
 bool is_cmd_ready(MemState &mem, CommandList &command_list);
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list);
 void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config);
+#ifdef ANDROID
+bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths, const libadreno_var &adreno);
+#else
 bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths);
-
+#endif
 void set_depth_bias(State &state, Context *ctx, bool is_front, int factor, int units);
 void set_depth_func(State &state, Context *ctx, bool is_front, SceGxmDepthFunc depth_func);
 void set_depth_write_enable_mode(State &state, Context *ctx, bool is_front, SceGxmDepthWriteMode enable);
@@ -152,6 +159,11 @@ void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, uint32_t width
 void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, uint32_t width, uint32_t height, const uint32_t *palette);
 void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, uint32_t width, uint32_t height, uint32_t layout_width, uint32_t layout_height, bool is_p3);
 const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState &mem);
+
+// Assume fmt is a bcn format
+SceGxmTextureBaseFormat get_matching_decompressed_format(SceGxmTextureBaseFormat fmt);
+
+bool is_astc_format(SceGxmTextureBaseFormat base_format);
 
 /**
  * \brief Try to resolve Z-order of block compressed texture

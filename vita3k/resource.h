@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,8 @@
 #define STRINGIZE(s) STRINGIZE2(s)
 
 #define FILE_VERSION APP_VER_HI, APP_VER_MID, APP_VER_LO, APP_NUMBER
-#define FILE_VERSION_STR STRINGIZE(APP_VER_HI) "." STRINGIZE(APP_VER_MID) "." STRINGIZE(APP_VER_LO) "." STRINGIZE(APP_NUMBER)
+#define FILE_VERSION_STR STRINGIZE(APP_VER_HI) \
+"." STRINGIZE(APP_VER_MID) "." STRINGIZE(APP_VER_LO) "." STRINGIZE(APP_NUMBER)
 
 // Next default values for new objects
 //

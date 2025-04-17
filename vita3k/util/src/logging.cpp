@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,24 +24,32 @@
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/msvc_sink.h>
+#ifdef ANDROID
+#include <spdlog/sinks/android_sink.h>
+#else
 #include <spdlog/sinks/stdout_color_sinks.h>
+#endif
 
 namespace logging {
 
 static const fs::path &LOG_FILE_NAME = "vita3k.log";
 static const char *LOG_PATTERN = "%^[%H:%M:%S.%e] |%L| [%!]: %v%$";
-static std::vector<spdlog::sink_ptr> sinks;
+std::vector<spdlog::sink_ptr> sinks;
 
-static void register_log_exception_handler();
+void register_log_exception_handler();
 
-static void flush() {
+void flush() {
     spdlog::details::registry::instance().flush_all();
 }
 
 ExitCode init(const Root &root_paths, bool use_stdout) {
     sinks.clear();
-    if (use_stdout)
+    if(use_stdout)
+#ifdef ANDROID
+        sinks.push_back(std::make_shared<spdlog::sinks::android_sink_mt>());
+#else
         sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+#endif
 
     if (add_sink(root_paths.get_log_path() / LOG_FILE_NAME) != Success)
         return InitConfigFailed;
@@ -51,10 +59,15 @@ ExitCode init(const Root &root_paths, bool use_stdout) {
         assert(0);
     });
 
-#ifdef _WIN32
+#ifdef WIN32
     // set console codepage to UTF-8
     SetConsoleOutputCP(65001);
     SetConsoleTitle("Vita3K PSVita Emulator");
+#endif
+
+#ifdef ANDROID
+    // needed, otherwise the log file contains nothing
+    spdlog::flush_on(spdlog::level::trace);
 #endif
 
     register_log_exception_handler();
@@ -99,7 +112,7 @@ ExitCode add_sink(const fs::path &log_path) {
 }
 
 // log exceptions and flush log file on exceptions
-#ifdef _WIN32
+#ifdef WIN32
 static LONG WINAPI exception_handler(PEXCEPTION_POINTERS pExp) noexcept {
     const unsigned ec = pExp->ExceptionRecord->ExceptionCode;
     switch (ec) {

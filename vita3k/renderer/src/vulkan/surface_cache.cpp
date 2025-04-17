@@ -154,7 +154,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
         if (vk_format == vk::Format::eR8G8B8A8Unorm) {
             vk_format = vk::Format::eR8G8B8A8Srgb;
         } else {
-            LOG_WARN_ONCE("Trying to use gamma correction with non-compatible format {}", vk::to_string(vk_format));
+            LOG_WARN("Trying to use gamma correction with non-compatible format {}", vk::to_string(vk_format));
         }
     }
 
@@ -336,7 +336,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         if (vk_format == vk::Format::eR8G8B8A8Unorm) {
             vk_format = vk::Format::eR8G8B8A8Srgb;
         } else {
-            LOG_WARN_ONCE("Trying to use gamma correction with non-compatible format {}", vk::to_string(vk_format));
+            LOG_WARN("Trying to use gamma correction with non-compatible format {}", vk::to_string(vk_format));
         }
     }
 
@@ -688,7 +688,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
 
     image.width = width;
     image.height = height;
-    image.format = vk::Format::eD32SfloatS8Uint;
+    image.format = vk::Format::eD24UnormS8Uint;
     image.layout = vkutil::ImageLayout::Undefined;
     image.init_image(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eSampled);
 
@@ -771,7 +771,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         // get the first depth surface with an address lower or equal to address
         auto it = depth_address_lookup.upper_bound(address);
         if (it != depth_address_lookup.begin()) {
-            --it;
+            it--;
 
             // the texture must be contained entirely in the depth surface
             if (address + total_bytes <= it->first + it->second->total_bytes) {
@@ -784,7 +784,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         // get the first stencil surface with an address lower or equal to address
         auto it = stencil_address_lookup.upper_bound(address);
         if (it != stencil_address_lookup.begin()) {
-            --it;
+            it--;
 
             // note: we don't support sampling the stencil from a D24S8 depth-stencil
             // so we can assume any stencil uses only 1 byte per sample
@@ -838,7 +838,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
             vk::ImageViewCreateInfo view_info{
                 .image = cached_info.texture.image,
                 .viewType = vk::ImageViewType::e2D,
-                .format = vk::Format::eD32SfloatS8Uint,
+                .format = vk::Format::eD24UnormS8Uint,
                 .components = {},
                 .subresourceRange = range
             };
@@ -861,7 +861,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         return TextureLookupResult{
             img_view,
             vkutil::ImageLayout::DepthStencilReadOnly,
-            vk::Format::eD32SfloatS8Uint
+            vk::Format::eD24UnormS8Uint
         };
     }
 
@@ -883,7 +883,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         // no compatible read surface found
 
         DepthSurfaceView read_only{
-            .depth_view = vkutil::Image(width, height, vk::Format::eD32SfloatS8Uint),
+            .depth_view = vkutil::Image(width, height, vk::Format::eD24UnormS8Uint),
             .scene_timestamp = 0,
             .delta_col = delta_col_samples,
             .delta_row = delta_row_samples,
@@ -907,7 +907,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         vk::ImageViewCreateInfo view_info{
             .image = read_only.depth_view.image,
             .viewType = vk::ImageViewType::e2D,
-            .format = vk::Format::eD32SfloatS8Uint,
+            .format = vk::Format::eD24UnormS8Uint,
             .components = {},
             .subresourceRange = range
         };
@@ -965,9 +965,8 @@ Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmCo
         return empty_framebuffer;
     }
 
-    if (!color && !depth_stencil) {
+    if (!color && !depth_stencil) 
         LOG_ERROR_ONCE("Depth stencil and color surface are both null!");
-    }
 
     // might get modified by retrieve_color_surface_for_framebuffer
     state.pipeline_cache.can_use_deferred_compilation = true;
@@ -1028,7 +1027,7 @@ Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmCo
 }
 
 bool VKSurfaceCache::check_for_surface(MemState &mem, Address source_address, CallbackRequestFunction &callback, Address target_address) {
-    if (!state.features.support_memory_mapping || state.disable_surface_sync)
+    if (!state.features.enable_memory_mapping || state.disable_surface_sync)
         return false;
 
     if (vector_utils::find_index(cpu_surfaces_changed, source_address) != -1) {
@@ -1112,7 +1111,7 @@ bool VKSurfaceCache::check_for_surface(MemState &mem, Address source_address, Ca
 
 ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
     // surface sync is supported only if memory mapping is enabled
-    if (!state.features.support_memory_mapping)
+    if (!state.features.enable_memory_mapping)
         return nullptr;
 
     if (last_written_surface == nullptr || !*last_written_surface->need_surface_sync)
@@ -1180,7 +1179,12 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
 
         buffer = copy_buffer.buffer;
         offset = 0;
+
+        last_written_surface->need_buffer_sync = false;
+        last_written_surface->need_post_surface_sync = true;
     } else {
+        last_written_surface->need_buffer_sync = true;
+        last_written_surface->need_post_surface_sync = !is_swizzle_identity;
         std::tie(buffer, offset) = state.get_matching_mapping(last_written_surface->data);
     }
     const uint32_t pixel_stride = (last_written_surface->stride_bytes * 8) / gxm::bits_per_pixel(last_written_surface->format);
@@ -1194,22 +1198,21 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
     };
     cmd_buffer.copyImageToBuffer(image_to_copy, image_layout, buffer, copy);
 
-    const bool need_post_sync = !is_swizzle_identity || format_need_additional_memory(last_written_surface->format);
-    ColorSurfaceCacheInfo *return_value = need_post_sync ? last_written_surface : nullptr;
+    ColorSurfaceCacheInfo *return_value = last_written_surface;
     last_written_surface = nullptr;
 
     return return_value;
 }
 
 template <typename T>
-static void swizzle_text_T_2(T *pixels, uint32_t nb_pixel) {
+void swizzle_text_T_2(T *pixels, uint32_t nb_pixel) {
     for (uint32_t i = 0; i < nb_pixel; i++) {
         std::swap(pixels[2 * i], pixels[2 * i + 1]);
     }
 }
 
 template <typename T, size_t type>
-static void swizzle_text_T_4(T *pixels, uint32_t nb_pixel) {
+void swizzle_text_T_4(T *pixels, uint32_t nb_pixel) {
     for (uint32_t i = 0; i < nb_pixel; i++) {
         if constexpr (type == 0) {
             // BGRA
@@ -1233,7 +1236,7 @@ static void swizzle_text_T_4(T *pixels, uint32_t nb_pixel) {
 }
 
 template <typename T>
-static void swizzle_text_T(T *pixels, uint32_t nb_pixel, ColorSurfaceCacheInfo *surface) {
+void swizzle_text_T(T *pixels, uint32_t nb_pixel, ColorSurfaceCacheInfo *surface) {
     // there can only be 2 or 4 component textures here
     if (vk::componentCount(surface->texture.format) == 2) {
         swizzle_text_T_2<T>(pixels, nb_pixel);
@@ -1252,6 +1255,9 @@ static void swizzle_text_T(T *pixels, uint32_t nb_pixel, ColorSurfaceCacheInfo *
         case vk::ComponentSwizzle::eG:
             // ARGB
             swizzle_text_T_4<T, 2>(pixels, nb_pixel);
+            break;
+        default:
+            LOG_ERROR_ONCE("Unknown swizzle Text!");
             break;
         }
     }

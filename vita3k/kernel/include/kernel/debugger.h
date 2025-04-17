@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,10 +17,9 @@
 
 #pragma once
 #include <cpu/state.h>
+#include <map>
 #include <mem/state.h>
 #include <mem/util.h>
-
-#include <map>
 
 constexpr uint32_t TRAMPOLINE_JUMPER_SVC = 0x54;
 constexpr uint32_t TRAMPOLINE_HANDLER_SVC = 0x53;

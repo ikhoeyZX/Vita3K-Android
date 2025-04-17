@@ -41,6 +41,12 @@ void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::PopStyleColor();
+#ifdef ANDROID
+    ImGui::Spacing();
+    ImGui::TextWrapped("%s", "This emulator is free. If you did not download this application from Vita3K's discord or ikhoeyZX repo, paid for it or it has ads, consider uninstalling it immediately for your own safety.");
+#endif
+    ImGui::Spacing();
+    ImGui::Separator();
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["vita3k"].c_str());
     ImGui::Spacing();
@@ -97,6 +103,7 @@ void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
         gui.help_menu.welcome_dialog = false;
 
+    ImGui::ScrollWhenDragging();
     ImGui::End();
 }
 

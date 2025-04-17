@@ -1,4 +1,4 @@
-﻿// Vita3K emulator project
+// Vita3K emulator project
 // Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
@@ -34,6 +34,10 @@
 
 #include <chrono>
 #include <stb_image.h>
+
+#ifdef ANDROID
+#include <SDL_system.h>
+#endif
 
 namespace gui {
 
@@ -501,7 +505,7 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
         type[app_path] = "a1";
 }
 
-inline static uint64_t current_time() {
+inline uint64_t current_time() {
     return std::chrono::duration_cast<std::chrono::seconds>(
         std::chrono::high_resolution_clock::now().time_since_epoch())
         .count();
@@ -633,7 +637,12 @@ void browse_live_area_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32
 void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
-    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    ImVec2 RES_SCALE;
+    if(emuenv.cfg.screenmode_pos == 3){
+        RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y / 2);
+    else
+        RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
+
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
     const auto &app_path = gui.live_area_current_open_apps_list[gui.live_area_app_current_open];
@@ -698,8 +707,12 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         const auto FRAME = items_styles[app_type].frames[frame.id];
         const auto FRAME_SIZE = FRAME.size;
 
-        auto FRAME_POS = ImVec2(FRAME.pos.x * SCALE.x, FRAME.pos.y * SCALE.y);
-
+        ImVec2 FRAME_POS = ImVec2(FRAME.pos.x * SCALE.x, FRAME.pos.y * SCALE.y);
+        if(emuenv.cfg.screenmode_pos == 3){
+	   FRAME_POS = ImVec2(FRAME.pos.x * SCALE.x, (FRAME.pos.y * SCALE.y) / 2);
+	}else{
+	   FRAME_POS = ImVec2(FRAME.pos.x * SCALE.x, FRAME.pos.y * SCALE.y);
+	}
         auto bg_size = items_size[app_path][frame.id]["background"];
 
         // Resize items
@@ -766,9 +779,15 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             img_pos.y = WINDOW_SIZE.y - FRAME_POS.y;
 
         // Scale size items
-        const auto bg_scal_size = ImVec2(bg_size.x * SCALE.x, bg_size.y * SCALE.y);
-        const auto img_scal_size = ImVec2(img_size.x * SCALE.x, img_size.y * SCALE.y);
-
+	ImVec2 bg_scal_size;
+        ImVec2 img_scal_size;
+	if(emuenv.cfg.screenmode_pos == 3){
+           bg_scal_size = ImVec2(bg_size.x * SCALE.x, bg_size.y * SCALE.x);
+           img_scal_size = ImVec2(img_size.x * SCALE.x, img_size.y * SCALE.x);
+	}else{
+	   bg_scal_size = ImVec2(bg_size.x * SCALE.x, bg_size.y * SCALE.y);
+           img_scal_size = ImVec2(img_size.x * SCALE.x, img_size.y * SCALE.y);
+	}
         const auto pos_frame = ImVec2(WINDOW_SIZE.x - FRAME_POS.x, WINDOW_SIZE.y - FRAME_POS.y);
 
         // Scale size frame
@@ -1050,8 +1069,12 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto gate_pos = items_styles[app_type].gate_pos;
     const std::string BUTTON_STR = app_path == emuenv.io.title_id ? gui.lang.live_area.main["continue"] : gui.lang.live_area.main["start"];
 
-    const auto GATE_SIZE = ImVec2(280.0f * SCALE.x, 158.0f * SCALE.y);
-    const auto GATE_POS = ImVec2(WINDOW_SIZE.x - (gate_pos.x * SCALE.x), WINDOW_SIZE.y - (gate_pos.y * SCALE.y));
+    ImVec2 GATE_SIZE;
+    if(emuenv.cfg.screenmode_pos == 3) {
+       GATE_SIZE = ImVec2(280.0f * SCALE.x, 68.0f * SCALE.y);
+    } else {
+       GATE_SIZE = ImVec2(280.0f * SCALE.x, 158.0f * SCALE.y);
+    }
     const ImVec2 GATE_POS_MIN(WINDOW_POS.x + GATE_POS.x, WINDOW_POS.y + GATE_POS.y);
     const ImVec2 GATE_POS_MAX(GATE_POS_MIN.x + GATE_SIZE.x, GATE_POS_MIN.y + GATE_SIZE.y);
 
@@ -1062,7 +1085,12 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto SELECT_SIZE = ImVec2(GATE_SIZE.x - (10.f * SCALE.x), GATE_SIZE.y - (5.f * SCALE.y));
     const auto SELECT_POS = ImVec2(GATE_POS.x + (5.f * SCALE.y), GATE_POS.y + (2.f * SCALE.y));
 
-    const auto BUTTON_SIZE = ImVec2(72.f * SCALE.x, 30.f * SCALE.y);
+    ImVec2 BUTTON_SIZE;
+    if(emuenv.cfg.screenmode_pos == 3){
+        BUTTON_SIZE = ImVec2(120.f * SCALE.x, 70.f * SCALE.y);
+    }else{
+        BUTTON_SIZE = ImVec2(120.f * SCALE.x, 50.f * SCALE.y);
+    }
 
     if (gui.live_area_contents[app_path].contains("gate")) {
         ImGui::SetCursorPos(GATE_POS);
@@ -1107,8 +1135,14 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         const auto SEARCH_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(SEARCH_STR).x * scal_widget_font_size) * SCALE.x, (ImGui::CalcTextSize(SEARCH_STR).y * scal_widget_font_size) * SCALE.y);
         const auto POS_STR_SEARCH = ImVec2(SEARCH_WIDGET_POS_MIN.x + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.x / 2.f)),
             SEARCH_WIDGET_POS_MIN.y + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.y / 2.f)));
-        window_draw_list->AddRectFilled(SEARCH_WIDGET_POS_MIN, ImVec2(SEARCH_WIDGET_POS_MIN.x + widget_scal_size.x, SEARCH_WIDGET_POS_MIN.y + widget_scal_size.y), IM_COL32(10, 169, 246, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
-        window_draw_list->AddText(gui.vita_font[emuenv.current_font_level], 23.0f * SCALE.x, POS_STR_SEARCH, IM_COL32(255, 255, 255, 255), SEARCH_STR);
+
+        if(emuenv.cfg.screenmode_pos == 3){
+            window_draw_list->AddRectFilled(SEARCH_WIDGET_POS_MIN, ImVec2(SEARCH_WIDGET_POS_MIN.x + widget_scal_size.x, SEARCH_WIDGET_POS_MIN.y + (widget_scal_size.y / 2)), IM_COL32(10, 169, 246, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
+        }else{
+            window_draw_list->AddRectFilled(SEARCH_WIDGET_POS_MIN, ImVec2(SEARCH_WIDGET_POS_MIN.x + widget_scal_size.x, SEARCH_WIDGET_POS_MIN.y + widget_scal_size.y), IM_COL32(10, 169, 246, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
+        }
+
+        window_draw_list->AddText(gui.vita_font, 23.0f * SCALE.x, POS_STR_SEARCH, IM_COL32(255, 255, 255, 255), SEARCH_STR);
         ImGui::SetCursorPos(pos_scal_search);
         if (ImGui::Selectable("##Search", gui.is_nav_button && (live_area_type_selected == SEARCH), ImGuiSelectableFlags_None, widget_scal_size))
             open_search(get_app_index(gui, app_path)->title);
@@ -1122,38 +1156,68 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             const ImVec2 MANUAL_WIDGET_POS_MIN(WINDOW_POS.x + pos_scal_manual.x, WINDOW_POS.y + pos_scal_manual.y);
             const auto MANUAL_STR_POS = ImVec2(MANUAL_WIDGET_POS_MIN.x + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.x / 2.f)),
                 MANUAL_WIDGET_POS_MIN.y + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.y / 2.f)));
-            window_draw_list->AddRectFilled(MANUAL_WIDGET_POS_MIN, ImVec2(MANUAL_WIDGET_POS_MIN.x + widget_scal_size.x, MANUAL_WIDGET_POS_MIN.y + widget_scal_size.y), IM_COL32(202, 0, 106, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
-            window_draw_list->AddText(gui.vita_font[emuenv.current_font_level], 23.0f * SCALE.x, MANUAL_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR);
+	    if(emuenv.cfg.screenmode_pos == 3){
+               window_draw_list->AddRectFilled(MANUAL_WIDGET_POS_MIN, ImVec2(MANUAL_WIDGET_POS_MIN.x + widget_scal_size.x, MANUAL_WIDGET_POS_MIN.y + (widget_scal_size.y / 2)), IM_COL32(202, 0, 106, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
+	    }else{
+	       window_draw_list->AddRectFilled(MANUAL_WIDGET_POS_MIN, ImVec2(MANUAL_WIDGET_POS_MIN.x + widget_scal_size.x, MANUAL_WIDGET_POS_MIN.y + widget_scal_size.y), IM_COL32(202, 0, 106, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
+	    }
+            window_draw_list->AddText(gui.vita_font, 23.0f * SCALE.x, MANUAL_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR);
             ImGui::SetCursorPos(pos_scal_manual);
             if (ImGui::Selectable("##manual", gui.is_nav_button && (live_area_type_selected == MANUAL), ImGuiSelectableFlags_None, widget_scal_size))
                 open_manual(gui, emuenv, app_path);
         }
-
-        const auto update_pos = ImVec2((manual_exist ? 408.f : 463.f) * SCALE.x, 505.0f * SCALE.y);
-        const auto pos_scal_update = ImVec2(WINDOW_SIZE.x - update_pos.x, WINDOW_SIZE.y - update_pos.y);
-
-        const auto UPDATE_STR = "Update";
-        const auto UPDATE_STR_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(UPDATE_STR).x * scal_widget_font_size) * SCALE.x, (ImGui::CalcTextSize(UPDATE_STR).y * scal_widget_font_size) * SCALE.y);
-        const ImVec2 UPDATE_WIDGET_POS_MIN(WINDOW_POS.x + pos_scal_update.x, WINDOW_POS.y + pos_scal_update.y);
-        const auto UPDATE_STR_POS = ImVec2(UPDATE_WIDGET_POS_MIN.x + ((widget_scal_size.x / 2.f) - (UPDATE_STR_SCAL_SIZE.x / 2.f)),
-            UPDATE_WIDGET_POS_MIN.y + ((widget_scal_size.x / 2.f) - (UPDATE_STR_SCAL_SIZE.y / 2.f)));
-        window_draw_list->AddRectFilled(UPDATE_WIDGET_POS_MIN, ImVec2(UPDATE_WIDGET_POS_MIN.x + widget_scal_size.x, UPDATE_WIDGET_POS_MIN.y + widget_scal_size.y), IM_COL32(3, 187, 250, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
-        window_draw_list->AddText(gui.vita_font[emuenv.current_font_level], 23.0f * SCALE.x, UPDATE_STR_POS, IM_COL32(255, 255, 255, 255), UPDATE_STR);
-        ImGui::SetCursorPos(pos_scal_update);
-        if (ImGui::Selectable("##update", ImGuiSelectableFlags_None, false, widget_scal_size))
-            update_app(gui, emuenv, app_path);
     }
+
+#ifdef USE_VITA3K_UPDATE
+    const auto update_pos = ImVec2((manual_exist ? 408.f : 463.f) * SCALE.x, 505.0f * SCALE.y);
+    const auto pos_scal_update = ImVec2(WINDOW_SIZE.x - update_pos.x, WINDOW_SIZE.y - update_pos.y);
+
+    const auto UPDATE_STR = "Update";
+    const auto UPDATE_STR_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(UPDATE_STR).x * scal_widget_font_size) * SCALE.x, (ImGui::CalcTextSize(UPDATE_STR).y * scal_widget_font_size) * SCALE.y);
+    const ImVec2 UPDATE_WIDGET_POS_MIN(WINDOW_POS.x + pos_scal_update.x, WINDOW_POS.y + pos_scal_update.y);
+    const auto UPDATE_STR_POS = ImVec2(UPDATE_WIDGET_POS_MIN.x + ((widget_scal_size.x / 2.f) - (UPDATE_STR_SCAL_SIZE.x / 2.f)),
+        UPDATE_WIDGET_POS_MIN.y + ((widget_scal_size.x / 2.f) - (UPDATE_STR_SCAL_SIZE.y / 2.f)));
+    window_draw_list->AddRectFilled(UPDATE_WIDGET_POS_MIN, ImVec2(UPDATE_WIDGET_POS_MIN.x + widget_scal_size.x, UPDATE_WIDGET_POS_MIN.y + widget_scal_size.y), IM_COL32(3, 187, 250, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
+    window_draw_list->AddText(gui.vita_font[emuenv.current_font_level], 23.0f * SCALE.x, UPDATE_STR_POS, IM_COL32(255, 255, 255, 255), UPDATE_STR);
+    ImGui::SetCursorPos(pos_scal_update);
+    if (ImGui::Selectable("##update", ImGuiSelectableFlags_None, false, widget_scal_size))
+        update_app(gui, emuenv, app_path);
+    }
+#endif
 
     auto &lang = gui.lang.live_area.help;
     auto &common = emuenv.common_dialog.lang.common;
+    // Always center this window when appearing
+    const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 
     if (!gui.vita_area.content_manager && !gui.vita_area.manual) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f * SCALE.x);
-        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (60.0f * SCALE.x) - BUTTON_SIZE.x, 12.0f * SCALE.y));
-        if (ImGui::Button("Esc", BUTTON_SIZE))
-            close_live_area_app(gui, emuenv, app_path);
-        ImGui::SetCursorPos(ImVec2(60.f * SCALE.x, 12.0f * SCALE.y));
-        if (ImGui::Button("Help", BUTTON_SIZE))
+      if(emuenv.cfg.screenmode_pos == 3)
+        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (60.0f * SCALE.x) - BUTTON_SIZE.x, center.y));
+      else
+        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (60.0f * SCALE.x) - BUTTON_SIZE.x, 55.0f * SCALE.y));
+
+      if (ImGui::Button("Exit", BUTTON_SIZE))
+          close_live_area_app(gui, emuenv, app_path);
+
+      if(emuenv.cfg.screenmode_pos == 3)
+        ImGui::SetCursorPos(ImVec2(180.f * SCALE.x, center.y));
+      else
+        ImGui::SetCursorPos(ImVec2(180.f * SCALE.x, 55.0f * SCALE.y));
+
+      if (!emuenv.io.title_id.empty()) {
+          if (ImGui::Button("Screenshot", BUTTON_SIZE)){
+            gui.is_screenshot = true;
+            pre_run_app(gui, emuenv, app_path);
+          }
+      }
+
+      if(emuenv.cfg.screenmode_pos == 3)
+        ImGui::SetCursorPos(ImVec2(60.f * SCALE.x, center.y));
+      else
+        ImGui::SetCursorPos(ImVec2(60.f * SCALE.x, 55.0f * SCALE.y));
+
+      if (ImGui::Button("Help", BUTTON_SIZE))
             ImGui::OpenPopup("Live Area Help");
         ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x / 2.f, WINDOW_SIZE.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         if (ImGui::BeginPopupModal("Live Area Help", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
@@ -1209,7 +1273,6 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     const auto SELECTABLE_SIZE = ImVec2(50.f * SCALE.x, 60.f * SCALE.y);
-
     const auto ARROW_HEIGHT_POS = WINDOW_SIZE.y - (250.f * SCALE.y);
     const auto ARROW_HEIGHT_DRAW_POS = WINDOW_POS.y + ARROW_HEIGHT_POS;
     const auto ARROW_WIDTH_POS = (30.f * SCALE.x);
@@ -1224,6 +1287,9 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetCursorPos(ImVec2(ARROW_WIDTH_POS - (SELECTABLE_SIZE.x / 2.f), ARROW_SELECT_HEIGHT_POS));
     if (ImGui::Selectable("##left", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) {
         if (gui.live_area_app_current_open == 0) {
+	    if(emuenv.cfg.screenmode_pos == 3){
+	       gui.vita_area.app_information = false;
+	    }
             gui.vita_area.live_area_screen = false;
             gui.vita_area.home_screen = true;
         }

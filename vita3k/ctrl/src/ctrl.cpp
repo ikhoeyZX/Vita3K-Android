@@ -27,6 +27,56 @@
 
 #include <SDL_keyboard.h>
 
+#include <array>
+
+#ifdef ANDROID
+#include <SDL_gamecontroller.h>
+#include <jni.h>
+
+static int virtual_joystick_id = -1;
+static SDL_Joystick *virtual_joystick = nullptr;
+
+extern "C" {
+
+JNIEXPORT void JNICALL
+Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobject thiz) {
+    virtual_joystick_id = SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_GAMECONTROLLER, 6, 18, 0);
+    if (virtual_joystick_id == -1) {
+        LOG_CRITICAL("Could not create overlay virtual controller");
+        return;
+    }
+
+    virtual_joystick = SDL_JoystickOpen(virtual_joystick_id);
+    if (virtual_joystick == nullptr)
+        LOG_CRITICAL("Could not create virtual joystick");
+}
+
+JNIEXPORT void JNICALL
+Java_org_vita3k_emulator_overlay_InputOverlay_detachController(JNIEnv *env, jobject thiz) {
+    SDL_JoystickClose(virtual_joystick);
+    SDL_JoystickDetachVirtual(virtual_joystick_id);
+    virtual_joystick = nullptr;
+    virtual_joystick_id = -1;
+}
+
+JNIEXPORT void JNICALL
+Java_org_vita3k_emulator_overlay_InputOverlay_setAxis(JNIEnv *env, jobject thiz, jint axis, jshort value) {
+    SDL_JoystickSetVirtualAxis(virtual_joystick, axis, value);
+}
+
+JNIEXPORT void JNICALL
+Java_org_vita3k_emulator_overlay_InputOverlay_setButton(JNIEnv *env, jobject thiz, jint button, jboolean value) {
+    if(button < 0)
+        // l2/r2
+        SDL_JoystickSetVirtualAxis(virtual_joystick, -button, value ? SDL_MAX_SINT16 : 0);
+    else
+        SDL_JoystickSetVirtualButton(virtual_joystick, button, value);
+}
+}
+#endif
+
+static uint64_t timestamp;
+
 static int reserve_port(CtrlState &state) {
     for (int i = 0; i < SCE_CTRL_MAX_WIRELESS_NUM; i++) {
         if (state.free_ports[i]) {
@@ -69,6 +119,32 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
         }
         if (SDL_IsGameController(joystick_index)) {
             const SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(joystick_index);
+#ifdef ANDROID
+            // for whatever reasons, fingerprint sensors are detected as controllers, filter them out
+            const char *controller_name = SDL_GameControllerNameForIndex(joystick_index);
+            if (controller_name != nullptr && 
+                (std::string_view(controller_name).starts_with("uinput-")
+                || std::string_view(controller_name).starts_with("gf_")
+                || std::string_view(controller_name).ends_with("sensor") 
+                || std::string_view(controller_name).ends_with("audio") // blacklist audio accessories
+                || std::string_view(controller_name).starts_with("sensor"))) // maybe other sensor are detected as controller
+                continue;
+            
+            if(!SDL_JoystickIsVirtual(joystick_index)){
+                if (virtual_joystick_id == -1) {
+
+                }else{
+                    SDL_JoystickClose(virtual_joystick);
+                    SDL_JoystickDetachVirtual(virtual_joystick_id);
+                    virtual_joystick = nullptr;
+                    virtual_joystick_id = -1;
+                }
+                state.is_virtual_joystick = false;
+            }else{
+                state.is_virtual_joystick = true;
+            }
+#endif
+
             if (!state.controllers.contains(guid)) {
                 Controller new_controller;
                 const GameControllerPtr controller(SDL_GameControllerOpen(joystick_index), SDL_GameControllerClose);
@@ -81,13 +157,32 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                     return;
                 }
                 SDL_GameControllerSetPlayerIndex(controller.get(), new_controller.port);
-
-                new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
-                if (new_controller.has_gyro)
-                    SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_TRUE);
+                
                 new_controller.has_accel = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_ACCEL);
-                if (new_controller.has_accel)
-                    SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_TRUE);
+                new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
+
+                if(emuenv.cfg.tiltsens){
+                   if (new_controller.has_accel)
+                       SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_TRUE);
+                   if (new_controller.has_gyro)
+                       SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_TRUE);
+                    LOG_INFO("Accel and gyro sensor enabled");
+                }else{
+                   if (new_controller.has_accel)
+                       SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_FALSE);
+                   if (new_controller.has_gyro)
+                       SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_FALSE);
+                    LOG_INFO("Accel and gyro sensor disabled");
+                }
+
+               found_gyro |= new_controller.has_gyro;
+               found_accel |= new_controller.has_accel;
+
+               new_controller.name = SDL_GameControllerNameForIndex(joystick_index);
+               if (new_controller.name == nullptr) {
+                   state.free_ports[new_controller.port] = true;
+                   continue;
+               }
 
                 new_controller.has_led = SDL_GameControllerHasLED(controller.get());
                 if (new_controller.has_led) {
@@ -97,21 +192,13 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                         SDL_GameControllerSetLED(controller.get(), color[0], color[1], color[2]);
                     }
                 }
-
-                found_gyro |= new_controller.has_gyro;
-                found_accel |= new_controller.has_accel;
-                new_controller.name = SDL_GameControllerNameForIndex(joystick_index);
-                if (new_controller.name == nullptr) {
-                    state.free_ports[new_controller.port] = true;
-                    continue;
-                }
-
+                
                 state.controllers.emplace(guid, new_controller);
-                state.controllers_num++;
+                state.controllers_num++;                
             }
         }
     }
-
+    
     state.has_motion_support = found_gyro && found_accel;
 }
 
@@ -292,10 +379,11 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
             rx = float_to_byte(axes[2]);
             ry = float_to_byte(axes[3]);
         }
+
         if (negative)
             buttons ^= ~0;
     };
-
+    
     if ((emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) || emuenv.drop_inputs) {
         reset_axes();
         return;

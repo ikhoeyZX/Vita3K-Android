@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -89,9 +89,13 @@ EmuEnvState::EmuEnvState()
     , _gdb(new GDBState)
     , gdb(*_gdb)
     , _http(new HTTPState)
-    , http(*_http) {
+    , http(*_http) 
+#ifdef ANDROID
+    , _libadreno(new libadreno_var)
+    , libadreno(*_libadreno)
+#endif
+{
 }
 DISABLE_WARNING_END;
-
 // this is necessary to forward declare unique_ptrs (so that they can call the appropriate destructor)
 EmuEnvState::~EmuEnvState() = default;

@@ -185,7 +185,7 @@ static uint32_t __glsl_shader_frag_spv[] = {
 // FUNCTIONS
 //-----------------------------------------------------------------------------
 
-inline static renderer::vulkan::VKState &get_renderer(ImGui_VulkanState &state) {
+inline renderer::vulkan::VKState &get_renderer(ImGui_VulkanState &state) {
     return dynamic_cast<renderer::vulkan::VKState &>(*state.renderer);
 }
 
@@ -532,10 +532,10 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(ImGui_VulkanState &state) {
                     clip_min.y = 0.0f;
                 }
                 if (clip_max.x > fb_width) {
-                    clip_max.x = (float)fb_width;
+                    clip_max.x = static_cast<float>(fb_width);
                 }
                 if (clip_max.y > fb_height) {
-                    clip_max.y = (float)fb_height;
+                    clip_max.y = static_cast<float>(fb_height);
                 }
                 if (clip_max.x <= clip_min.x || clip_max.y <= clip_min.y)
                     continue;
@@ -584,7 +584,7 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(ImGui_VulkanState &state) {
 IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(ImGui_VulkanState &state, void *pixels, int width, int height, bool is_alpha) {
     auto *texture = new TextureState;
 
-    const size_t buffer_size = width * height * (is_alpha ? 1 : 4);
+    const size_t buffer_size = static_cast<size_t>(width * height * (is_alpha ? 1 : 4));
 
     vk::BufferCreateInfo buffer_info{
         .size = buffer_size,
@@ -758,7 +758,7 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(ImGui_VulkanState &state)
         // Constants: we are using 'vec2 offset' and 'vec2 scale' instead of a full 3d projection matrix
         vk::PushConstantRange push_constants{
             .stageFlags = vk::ShaderStageFlagBits::eVertex,
-            .offset = sizeof(float) * 0,
+            .offset = 0,
             .size = sizeof(float) * 4
         };
         vk::PipelineLayoutCreateInfo layout_info{};

@@ -15,6 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#ifdef USE_VITA3K_UPDATE
+
 #include "private.h"
 
 #include <boost/algorithm/string.hpp>
@@ -474,3 +476,4 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 } // namespace gui
+#endif

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,7 +29,9 @@ struct CPUProtocol : public CPUProtocolBase {
     ~CPUProtocol() override = default;
     void call_svc(CPUState &cpu, uint32_t svc, Address pc, ThreadState &thread) override;
     Address get_watch_memory_addr(Address addr) override;
+#ifdef USE_DYNARMIC
     ExclusiveMonitorPtr get_exclusive_monitor() override;
+#endif
 
 private:
     CallImportFunc call_import;

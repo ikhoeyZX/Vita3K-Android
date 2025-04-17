@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -118,6 +118,8 @@ struct KernelState {
     CallbackPtrs callbacks;
 
     ThreadStatePtrs threads;
+    void* jni_env;
+    void* jni_activity;
 
     SceKernelModuleInfoPtrs loaded_modules;
     LoadedSysmodules loaded_sysmodules;
@@ -131,10 +133,13 @@ struct KernelState {
     ModuleUidByNid module_uid_by_nid;
 
     bool cpu_opt;
+    bool cpu_unsafe;
     CPUBackend cpu_backend;
     CorenumAllocator corenum_allocator;
     CPUProtocolPtr cpu_protocol;
+#ifdef USE_DYNARMIC
     ExclusiveMonitorPtr exclusive_monitor;
+#endif
 
     ObjectStore obj_store;
 

@@ -420,6 +420,15 @@ void draw_background(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
+    if(emuenv.cfg.screenmode_pos == 3 || emuenv.cfg.skip_lockscreen){ // bypass lockscreen
+        gui.vita_area.start_screen = false;
+        gui.vita_area.home_screen = true;
+        if (emuenv.cfg.show_info_bar)
+            gui.vita_area.information_bar = true;
+
+        return;
+    }
+
     const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
     const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);

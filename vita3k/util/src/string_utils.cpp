@@ -23,6 +23,7 @@
 #include <codecvt>
 #include <locale>
 #include <sstream>
+#include <string>
 
 namespace string_utils {
 
@@ -84,8 +85,8 @@ void replace(std::string &str, const std::string &in, const std::string &out) {
     }
 }
 
-std::vector<uint8_t> string_to_byte_array(const std::string &string) {
-    std::vector<uint8_t> hex_bytes;
+std::basic_string<uint8_t> string_to_byte_array(const std::string &string) {
+    std::basic_string<uint8_t> hex_bytes;
 
     for (size_t i = 0; i < string.length(); i += 2) {
         uint16_t byte;
@@ -96,7 +97,7 @@ std::vector<uint8_t> string_to_byte_array(const std::string &string) {
     return hex_bytes;
 }
 
-#ifdef _MSC_VER
+#ifdef WIN32
 std::string utf16_to_utf8(const std::u16string &str) {
     std::wstring_convert<std::codecvt_utf8_utf16<int16_t>, int16_t> myconv;
     auto p = reinterpret_cast<const int16_t *>(str.data());
@@ -141,9 +142,9 @@ std::string tolower(const std::string &s) {
 int stoi_def(const std::string &str, int default_value, const char *name) {
     try {
         return std::stoi(str);
-    } catch (std::invalid_argument &_) {
+    } catch (std::invalid_argument &e) {
         LOG_ERROR("Invalid {}: \"{}\"", name, str);
-    } catch (std::out_of_range &_) {
+    } catch (std::out_of_range &e) {
         LOG_ERROR("Out of range {}: \"{}\"", name, str);
     }
     return default_value;

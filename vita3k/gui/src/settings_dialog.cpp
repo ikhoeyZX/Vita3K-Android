@@ -1,4 +1,4 @@
-﻿// Vita3K emulator project
+// Vita3K emulator project
 // Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
@@ -83,7 +83,7 @@ void get_modules_list(GuiState &gui, EmuEnvState &emuenv) {
     }
 }
 
-static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
+void reset_emulator(GuiState &gui, EmuEnvState &emuenv) { // has static
     gui.configuration_menu.settings_dialog = false;
     gui.vita_area.home_screen = false;
 
@@ -104,13 +104,19 @@ static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
     init_home(gui, emuenv);
 }
 
-static void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) {
-    std::filesystem::path emulator_path = "";
+void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) { // has stativ
+    fs::path emulator_path = "";
     host::dialog::filesystem::Result result = host::dialog::filesystem::pick_folder(emulator_path);
 
     if (result == host::dialog::filesystem::Result::SUCCESS && emulator_path.native() != emuenv.pref_path.native()) {
         // Refresh the working paths
-        emuenv.pref_path = fs::path(emulator_path.native()) / "";
+        emuenv.pref_path = emulator_path / "";
+        auto tmp = fs::path(emuenv.pref_path / ".nomedia");
+        if(!fs::exists(tmp)){
+            fs::ofstream( emuenv.pref_path / "tmp.txt" );
+            fs::rename( emuenv.pref_path / "tmp.txt", tmp );
+            LOG_INFO(".nomedia created");
+        }
 
         // TODO: Move app old to new path
         reset_emulator(gui, emuenv);
@@ -161,15 +167,20 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
                 const auto cpu_child = config_child.child("cpu");
                 config.cpu_backend = cpu_child.attribute("cpu-backend").as_string();
                 config.cpu_opt = cpu_child.attribute("cpu-opt").as_bool();
+                config.cpu_unsafe = cpu_child.attribute("cpu-unsafe").as_bool();
             }
 
             // Load GPU Config
             if (!config_child.child("gpu").empty()) {
                 const auto gpu_child = config_child.child("gpu");
+                config.backend_renderer = gpu_child.attribute("backend-renderer").as_string();
+                config.custom_driver_name = gpu_child.attribute("custom-driver-name").as_string();
                 config.high_accuracy = gpu_child.attribute("high-accuracy").as_bool();
                 config.resolution_multiplier = gpu_child.attribute("resolution-multiplier").as_float();
                 config.disable_surface_sync = gpu_child.attribute("disable-surface-sync").as_bool();
                 config.screen_filter = gpu_child.attribute("screen-filter").as_string();
+                config.memory_mapping = gpu_child.attribute("memory-mapping").as_string();
+                config.vk_mapping = gpu_child.attribute("vk-mapping").as_string();
                 config.v_sync = gpu_child.attribute("v-sync").as_bool();
                 config.anisotropic_filtering = gpu_child.attribute("anisotropic-filtering").as_int();
                 config.async_pipeline_compilation = gpu_child.attribute("async-pipeline-compilation").as_bool();
@@ -214,12 +225,12 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
     return false;
 }
 
-static CPUBackend set_cpu_backend(std::string &cpu_backend) {
+CPUBackend set_cpu_backend(std::string &cpu_backend) { // has static
     return cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
 }
 
 static int current_aniso_filter_log, max_aniso_filter_log, audio_backend_idx, current_user_lang;
-static std::vector<std::string> list_user_lang;
+std::vector<std::string> list_user_lang;  // has static
 
 /**
  * @brief Initialize the `config` struct with the values set in the global emulator config.
@@ -234,12 +245,17 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     if (!get_custom_config(gui, emuenv, app_path)) {
         config.cpu_backend = emuenv.cfg.cpu_backend;
         config.cpu_opt = emuenv.cfg.cpu_opt;
+        config.cpu_unsafe = emuenv.cfg.cpu_unsafe;
         config.modules_mode = emuenv.cfg.modules_mode;
         config.lle_modules = emuenv.cfg.lle_modules;
+        config.backend_renderer = emuenv.cfg.backend_renderer;
+        config.custom_driver_name = emuenv.cfg.custom_driver_name;
         config.high_accuracy = emuenv.cfg.high_accuracy;
         config.resolution_multiplier = emuenv.cfg.resolution_multiplier;
         config.disable_surface_sync = emuenv.cfg.disable_surface_sync;
         config.screen_filter = emuenv.cfg.screen_filter;
+        config.memory_mapping = emuenv.cfg.memory_mapping;
+        config.vk_mapping = emuenv.cfg.vk_mapping;
         config.v_sync = emuenv.cfg.v_sync;
         config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
         config.async_pipeline_compilation = emuenv.cfg.async_pipeline_compilation;
@@ -267,6 +283,12 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     get_list_user_lang(emuenv.static_assets_path);
     if (emuenv.static_assets_path != emuenv.shared_path)
         get_list_user_lang(emuenv.shared_path);
+#ifdef ANDROID
+    // files are not in a folder
+    list_user_lang.push_back("id");
+    list_user_lang.push_back("ms");
+    list_user_lang.push_back("ua");
+#endif
 
     current_user_lang = emuenv.cfg.user_lang.empty() ? 0 : (vector_utils::find_index(list_user_lang, emuenv.cfg.user_lang) + 1);
 
@@ -276,6 +298,14 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     current_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(config.anisotropic_filtering)));
     max_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(emuenv.renderer->get_max_anisotropic_filtering())));
     audio_backend_idx = (emuenv.cfg.audio_backend == "SDL") ? 0 : 1;
+#ifndef __APPLE__
+    if (string_utils::toupper(config.backend_renderer) == "OPENGL")
+        emuenv.backend_renderer = renderer::Backend::OpenGL;
+    else
+        emuenv.backend_renderer = renderer::Backend::Vulkan;
+#else
+    emuenv.backend_renderer = renderer::Backend::Vulkan;
+#endif
     emuenv.app_path = app_path;
     emuenv.display.imgui_render = true;
 }
@@ -291,7 +321,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
  * @param gui State of the Vita3K GUI
  * @param emuenv State of the emulated PlayStation Vita environment
  */
-static void save_config(GuiState &gui, EmuEnvState &emuenv) {
+void save_config(GuiState &gui, EmuEnvState &emuenv) {  // has static
     if (gui.configuration_menu.custom_settings_dialog) {
         const auto CONFIG_PATH{ emuenv.config_path / "config" };
         const auto CUSTOM_CONFIG_PATH{ CONFIG_PATH / fmt::format("config_{}.xml", emuenv.app_path) };
@@ -316,13 +346,18 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         auto cpu_child = config_child.append_child("cpu");
         cpu_child.append_attribute("cpu-backend") = config.cpu_backend.c_str();
         cpu_child.append_attribute("cpu-opt") = config.cpu_opt;
-
+        cpu_child.append_attribute("cpu-unsafe") = config.cpu_unsafe;
+        
         // GPU
         auto gpu_child = config_child.append_child("gpu");
+        gpu_child.append_attribute("backend-renderer") = config.backend_renderer.c_str();
+        gpu_child.append_attribute("custom-driver-name") = config.custom_driver_name.c_str();
         gpu_child.append_attribute("high-accuracy") = config.high_accuracy;
         gpu_child.append_attribute("resolution-multiplier") = config.resolution_multiplier;
         gpu_child.append_attribute("disable-surface-sync") = config.disable_surface_sync;
         gpu_child.append_attribute("screen-filter") = config.screen_filter.c_str();
+        gpu_child.append_attribute("memory-mapping") = config.memory_mapping.c_str();
+        gpu_child.append_attribute("vk-mapping") = config.vk_mapping.c_str();
         gpu_child.append_attribute("v-sync") = config.v_sync;
         gpu_child.append_attribute("anisotropic-filtering") = config.anisotropic_filtering;
         gpu_child.append_attribute("async-pipeline-compilation") = config.async_pipeline_compilation;
@@ -354,12 +389,17 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
     } else {
         emuenv.cfg.cpu_backend = config.cpu_backend;
         emuenv.cfg.cpu_opt = config.cpu_opt;
+        emuenv.cfg.cpu_unsafe = config.cpu_unsafe;
         emuenv.cfg.modules_mode = config.modules_mode;
         emuenv.cfg.lle_modules = config.lle_modules;
         emuenv.cfg.high_accuracy = config.high_accuracy;
+        emuenv.cfg.backend_renderer = config.backend_renderer;
+        emuenv.cfg.custom_driver_name = config.custom_driver_name;
         emuenv.cfg.resolution_multiplier = config.resolution_multiplier;
         emuenv.cfg.disable_surface_sync = config.disable_surface_sync;
         emuenv.cfg.screen_filter = config.screen_filter;
+        emuenv.cfg.memory_mapping = config.memory_mapping;
+        emuenv.cfg.vk_mapping = config.vk_mapping;
         emuenv.cfg.v_sync = config.v_sync;
         emuenv.cfg.anisotropic_filtering = config.anisotropic_filtering;
         emuenv.cfg.async_pipeline_compilation = config.async_pipeline_compilation;
@@ -389,7 +429,7 @@ std::string get_cpu_backend(GuiState &gui, EmuEnvState &emuenv, const std::strin
     return config.cpu_backend;
 }
 
-static void set_vsync_state(const bool &state) {
+void set_vsync_state(const bool &state) { // has static
     if (state) {
         // Try adaptive vsync first, falling back to regular vsync.
         if (SDL_GL_SetSwapInterval(-1) < 0) {
@@ -419,12 +459,17 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         // Else inherit the values from the global emulator config
         emuenv.cfg.current_config.cpu_backend = emuenv.cfg.cpu_backend;
         emuenv.cfg.current_config.cpu_opt = emuenv.cfg.cpu_opt;
+        emuenv.cfg.current_config.cpu_unsafe = emuenv.cfg.cpu_unsafe;
         emuenv.cfg.current_config.modules_mode = emuenv.cfg.modules_mode;
         emuenv.cfg.current_config.lle_modules = emuenv.cfg.lle_modules;
+        emuenv.cfg.current_config.backend_renderer = emuenv.cfg.backend_renderer;
+        emuenv.cfg.current_config.custom_driver_name = emuenv.cfg.custom_driver_name;
         emuenv.cfg.current_config.high_accuracy = emuenv.cfg.high_accuracy;
         emuenv.cfg.current_config.resolution_multiplier = emuenv.cfg.resolution_multiplier;
         emuenv.cfg.current_config.disable_surface_sync = emuenv.cfg.disable_surface_sync;
         emuenv.cfg.current_config.screen_filter = emuenv.cfg.screen_filter;
+        emuenv.cfg.current_config.memory_mapping = emuenv.cfg.memory_mapping;
+        emuenv.cfg.current_config.vk_mapping = emuenv.cfg.vk_mapping;
         emuenv.cfg.current_config.v_sync = emuenv.cfg.v_sync;
         emuenv.cfg.current_config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
         emuenv.cfg.current_config.async_pipeline_compilation = emuenv.cfg.async_pipeline_compilation;
@@ -439,8 +484,24 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.psn_signed_in = emuenv.cfg.psn_signed_in;
     }
 
+    // can happen when launching directly into a game, the renderer is not even initialized yet
+    if (!emuenv.renderer)
+        return;
+
+#ifndef __APPLE__
+    if (string_utils::toupper(emuenv.cfg.current_config.backend_renderer) == "OPENGL")
+        emuenv.backend_renderer = renderer::Backend::OpenGL;
+    else
+        emuenv.backend_renderer = renderer::Backend::Vulkan;
+#else
+    emuenv.backend_renderer = renderer::Backend::Vulkan;
+#endif
+
     // If backend render or resolution multiplier is changed when app run, reboot emu and app
-    if (!emuenv.io.title_id.empty() && ((emuenv.renderer->current_backend != emuenv.backend_renderer) || (emuenv.renderer->res_multiplier != emuenv.cfg.current_config.resolution_multiplier))) {
+    if (!emuenv.io.title_id.empty()
+        && (emuenv.renderer->current_backend != emuenv.backend_renderer
+            || emuenv.renderer->res_multiplier != emuenv.cfg.current_config.resolution_multiplier
+            || emuenv.renderer->current_custom_driver != emuenv.cfg.current_config.custom_driver_name)) {
         emuenv.load_exec = true;
         emuenv.load_app_path = emuenv.io.app_path;
         emuenv.load_exec_path = emuenv.self_path;
@@ -454,6 +515,8 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
     emuenv.renderer->set_screen_filter(emuenv.cfg.current_config.screen_filter);
     if (emuenv.renderer->current_backend == renderer::Backend::OpenGL)
         set_vsync_state(emuenv.cfg.current_config.v_sync);
+    if (emuenv.renderer->support_custom_drivers())
+        emuenv.renderer->set_turbo_mode(emuenv.cfg.turbo_mode);
 
     emuenv.renderer->res_multiplier = emuenv.cfg.current_config.resolution_multiplier;
     emuenv.renderer->set_anisotropic_filtering(emuenv.cfg.current_config.anisotropic_filtering);
@@ -466,6 +529,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
     if (emuenv.io.title_id.empty()) {
         emuenv.kernel.cpu_backend = set_cpu_backend(emuenv.cfg.current_config.cpu_backend);
         emuenv.kernel.cpu_opt = emuenv.cfg.current_config.cpu_opt;
+        emuenv.kernel.cpu_unsafe = emuenv.cfg.current_config.cpu_unsafe;
         emuenv.audio.set_backend(emuenv.cfg.audio_backend);
     }
 
@@ -477,6 +541,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
+    // Always center this window when appearing
+    const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+
     auto &lang = gui.lang.settings_dialog;
     auto &common = emuenv.common_dialog.lang;
     auto &firmware_font = gui.lang.install_dialog.firmware_install;
@@ -487,7 +554,11 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     // Reference here is intentional
     auto &show_settings_dialog = is_custom_config ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
     ImGui::Begin("##settings", &show_settings_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::SetWindowFontScale(0.7f * RES_SCALE.x);
+    if(emuenv.cfg.screenmode_pos == 3){
+       ImGui::SetWindowFontScale(1.2f * RES_SCALE.y);
+    }else{
+       ImGui::SetWindowFontScale(1.0f * RES_SCALE.x);
+    }
     const auto settings_str = lang.main_window["title"];
     TextColoredCentered(GUI_COLOR_TEXT_TITLE, (is_custom_config ? fmt::format("{}: {} [{}]", settings_str, get_app_index(gui, emuenv.app_path)->title, emuenv.app_path) : settings_str).c_str());
     ImGui::Spacing();
@@ -529,6 +600,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                             config.lle_modules.push_back(m.first);
                     }
                 }
+                ImGui::ScrollWhenDragging();
                 ImGui::EndListBox();
             }
             ImGui::PopItemWidth();
@@ -558,8 +630,18 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginTabItem("CPU")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        static const char *LIST_CPU_BACKEND[] = { "Dynarmic", "Unicorn" };
-        const char *LIST_CPU_BACKEND_DISPLAY[] = { "Dynarmic", lang.cpu["unicorn"].c_str() };
+        static const char *LIST_CPU_BACKEND[] = {
+            "Dynarmic",
+#ifdef USE_UNICORN
+            "Unicorn"
+#endif
+        };
+        static const char *LIST_CPU_BACKEND_DISPLAY[] = {
+            "Dynarmic",
+#ifdef USE_UNICORN
+            lang.cpu["unicorn"].c_str()
+#endif
+        };
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.cpu["cpu_backend"].c_str());
         if (ImGui::Combo("##cpu_backend", reinterpret_cast<int *>(&config_cpu_backend), LIST_CPU_BACKEND_DISPLAY, IM_ARRAYSIZE(LIST_CPU_BACKEND_DISPLAY)))
             config.cpu_backend = LIST_CPU_BACKEND[static_cast<int>(config_cpu_backend)];
@@ -568,6 +650,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
             ImGui::Checkbox(lang.cpu["cpu_opt"].c_str(), &config.cpu_opt);
             SetTooltipEx(lang.cpu["cpu_opt_description"].c_str());
+            ImGui::Spacing();
+            ImGui::Checkbox(lang.cpu["cpu_unsafe"].c_str(), &config.cpu_unsafe);
+            SetTooltipEx(lang.cpu["cpu_unsafe_description"].c_str());
+        
         }
         ImGui::EndTabItem();
     } else
@@ -603,6 +689,30 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Combo(lang.gpu["gpu"].c_str(), &emuenv.cfg.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size()));
             SetTooltipEx(lang.gpu["select_gpu"].c_str());
 
+            if (emuenv.renderer->support_custom_drivers()) {
+                if (emuenv.cfg.gpu_idx == 0)
+                    config.custom_driver_name = "";
+
+                if (ImGui::Button("Add custom driver")) {
+                    app::add_custom_driver(emuenv);
+                    // also set it to stock after
+                    emuenv.cfg.gpu_idx = 0;
+                }
+
+                // first is the stock gpu
+                if (emuenv.cfg.gpu_idx > 0) {
+                    config.custom_driver_name = gpu_list_str[emuenv.cfg.gpu_idx];
+
+                    ImGui::SameLine();
+                    if (ImGui::Button("Remove custom driver")) {
+                        app::remove_custom_driver(emuenv, config.custom_driver_name);
+                        // set back to stock
+                        emuenv.cfg.gpu_idx = 0;
+                        config.custom_driver_name = "";
+                    }
+                }
+            }
+
             if (is_ingame)
                 ImGui::BeginDisabled();
 
@@ -618,7 +728,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             SetTooltipEx(lang.gpu["v_sync_description"].c_str());
             ImGui::SameLine();
         }
-
+        bool has_surface_sync = !is_vulkan || (emuenv.renderer->supported_mapping_methods_mask > 1);
+#ifdef ANDROID
+        has_surface_sync &= is_vulkan;
+#endif
         const bool has_integer_multiplier = static_cast<int>(config.resolution_multiplier * 4.0f) % 4 == 0;
         // OpenGL does not support surface sync with a non-integer resolution multiplier
         if (!is_vulkan && !has_integer_multiplier)
@@ -648,9 +761,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             "FXAA",
             "FSR"
         };
-        const int filters_available = emuenv.renderer->get_supported_filters();
+        const int8_t filters_available = emuenv.renderer->get_supported_filters();
         std::vector<const char *> filters;
-        for (int i = 0; i < possible_filters.size(); i++) {
+        for (uint8_t i = 0; i < possible_filters.size(); i++) {
             if (config.screen_filter == possible_filters[i])
                 curr_filter = filters.size();
 
@@ -669,44 +782,79 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         // Resolution Upscaling
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.gpu["internal_resolution_upscaling"].c_str());
         ImGui::Spacing();
-        ImGui::PushID("Res scal");
-        if (config.resolution_multiplier == 0.5f)
-            ImGui::BeginDisabled();
-        if (ImGui::Button("<", ImVec2(20.f * SCALE.x, 0)))
-            config.resolution_multiplier -= 0.25f;
-        if (config.resolution_multiplier == 0.5f)
-            ImGui::EndDisabled();
-        ImGui::SameLine(0, 5.f * SCALE.x);
-        ImGui::PushItemWidth(-100.f * SCALE.x);
-        int slider_position = static_cast<int>(config.resolution_multiplier * 4);
-        if (ImGui::SliderInt("##res_scal", &slider_position, 2, 32, fmt::format("{}x", config.resolution_multiplier).c_str(), ImGuiSliderFlags_None)) {
-            config.resolution_multiplier = static_cast<float>(slider_position) / 4.0f;
-            if (config.resolution_multiplier != 1.0f && !is_vulkan)
-                config.disable_surface_sync = true;
-        }
-        ImGui::PopItemWidth();
-        SetTooltipEx(lang.gpu["internal_resolution_upscaling_description"].c_str());
-        ImGui::SameLine(0, 5 * SCALE.x);
-        if (config.resolution_multiplier == 8.0f)
-            ImGui::BeginDisabled();
-        if (ImGui::Button(">", ImVec2(20.f * SCALE.x, 0)))
-            config.resolution_multiplier += 0.25f;
-        if (config.resolution_multiplier == 8.0f)
-            ImGui::EndDisabled();
-        ImGui::SameLine();
-        if ((config.resolution_multiplier == 1.0f) && !config.disable_surface_sync)
-            ImGui::BeginDisabled();
-        if (ImGui::Button(lang.gpu["reset"].c_str(), ImVec2(60.f * SCALE.x, 0)))
-            config.resolution_multiplier = 1.0f;
+        static bool manual;
 
-        if ((config.resolution_multiplier == 1.0f) && !config.disable_surface_sync)
-            ImGui::EndDisabled();
-        ImGui::Spacing();
+        if (ImGui::Button("Screen Size mode")){
+            manual = !manual;
+        }
+        ImGui::SameLine();
+
+        if(!manual){
+           ImGui::Text(": Slider");
+           ImGui::Spacing();
+           ImGui::PushID("Res scal");
+           if (config.resolution_multiplier <= 0.25f)
+               ImGui::BeginDisabled();
+           if (ImGui::Button("<", ImVec2(20.f * SCALE.x, 0)))
+               config.resolution_multiplier -= 0.25f;
+           if (config.resolution_multiplier <= 0.25f)
+               ImGui::EndDisabled();
+           ImGui::SameLine(0, 5.f * SCALE.x);
+            if(emuenv.cfg.screenmode_pos == 3){
+                ImGui::PushItemWidth(-70.f * SCALE.x);
+            }else{
+                ImGui::PushItemWidth(-100.f * SCALE.x);
+            }
+           
+           int slider_position = static_cast<int>(config.resolution_multiplier * 4);
+           if (ImGui::SliderInt("##res_scal", &slider_position, 2, 32, fmt::format("{}x", config.resolution_multiplier).c_str(), ImGuiSliderFlags_None)) {
+               config.resolution_multiplier = static_cast<float>(slider_position) / 4.0f;
+               if (config.resolution_multiplier != 1.0f && !is_vulkan)
+                   config.disable_surface_sync = true;
+           }
+           ImGui::PopItemWidth();
+           SetTooltipEx(lang.gpu["internal_resolution_upscaling_description"].c_str());
+           ImGui::SameLine(0, 5 * SCALE.x);
+           if (config.resolution_multiplier >= 8.0f)
+               ImGui::BeginDisabled();
+           if (ImGui::Button(">", ImVec2(20.f * SCALE.x, 0)))
+               config.resolution_multiplier += 0.25f;
+           if (config.resolution_multiplier == 8.0f)
+               ImGui::EndDisabled();
+           ImGui::SameLine();
+           if ((config.resolution_multiplier == 1.0f) && !config.disable_surface_sync)
+               ImGui::BeginDisabled();
+           if (ImGui::Button(lang.gpu["reset"].c_str(), ImVec2(60.f * SCALE.x, 0)))
+               config.resolution_multiplier = 1.0f;
+
+           if ((config.resolution_multiplier == 1.0f) && !config.disable_surface_sync)
+               ImGui::EndDisabled();
+           ImGui::Spacing();
+           ImGui::PopID();
+        }else{
+          ImGui::Text(": Manual Input");
+          ImGui::Spacing();
+          static int setdph = static_cast<int>(544 * config.resolution_multiplier);
+          ImGui::Text("Insert screen height ");
+          ImGui::SameLine();
+          ImGui::InputInt(" ", &setdph);
+          if (ImGui::IsItemHovered())
+              ImGui::SetTooltip("Not all games support manual screen size");
+                    
+          if(setdph < 136){
+             setdph = 136;
+          }else if(setdph > 4352){
+             setdph = 4352;
+          }
+          
+          config.resolution_multiplier = static_cast<float>(setdph) / 544;
+          ImGui::Spacing();
+        }
         const auto res_scal = fmt::format("{}x{}", static_cast<int>(960 * config.resolution_multiplier), static_cast<int>(544 * config.resolution_multiplier));
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(res_scal.c_str()).x / 2.f) - (35.f * SCALE.x));
         ImGui::Text("%s", res_scal.c_str());
         ImGui::PopID();
-
+        
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
@@ -722,7 +870,11 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (config.anisotropic_filtering == 1)
             ImGui::EndDisabled();
         ImGui::SameLine(0, 5 * SCALE.x);
-        ImGui::PushItemWidth(-100.f * SCALE.x);
+        if(emuenv.cfg.screenmode_pos == 3){
+            ImGui::PushItemWidth(-70.f * SCALE.x);
+        }else{
+            ImGui::PushItemWidth(-100.f * SCALE.x);
+        }
         if (ImGui::SliderInt("##aniso_filter", &current_aniso_filter_log, 0, max_aniso_filter_log, fmt::format("{}x", config.anisotropic_filtering).c_str()))
             config.anisotropic_filtering = 1 << current_aniso_filter_log;
         ImGui::PopItemWidth();
@@ -761,11 +913,96 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::Combo(lang.gpu["texture_exporting_format"].c_str(), &export_format_pos, export_formats, IM_ARRAYSIZE(export_formats)))
             config.export_as_png = export_format_pos == 0;
 
+        // FPS hack
+        ImGui::Checkbox(lang.gpu["fps_hack"].c_str(), &config.fps_hack);
+        SetTooltipEx(lang.gpu["fps_hack_description"].c_str());
+
+        if (emuenv.renderer->supported_mapping_methods_mask > 1 && !is_renderer_changed) {
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            if (is_ingame)
+                ImGui::BeginDisabled();
+
+            std::vector<const char *> mapping_methods_strings = {
+                "Disabled",
+                "Double buffer",
+                "External host",
+                "Page table",
+                "Native buffer"
+            };
+            std::vector<std::string_view> mapping_methods_indexes = {
+                "disabled",
+                "double-buffer",
+                "external-host",
+                "page-table",
+                "native-buffer"
+            };
+
+            int list_pos = 0;
+            for (int i = 0; i < 5; i++) {
+                if ((1 << i) & emuenv.renderer->supported_mapping_methods_mask) {
+                    list_pos++;
+                } else {
+                    mapping_methods_strings.erase(mapping_methods_strings.begin() + list_pos);
+                    mapping_methods_indexes.erase(mapping_methods_indexes.begin() + list_pos);
+                }
+            }
+
+            static int current_mapping = std::find(mapping_methods_indexes.begin(), mapping_methods_indexes.end(), config.memory_mapping) - mapping_methods_indexes.begin();
+            if (ImGui::Combo(lang.gpu["mapping_method"].c_str(), &current_mapping, mapping_methods_strings.data(), mapping_methods_strings.size())) {
+                config.memory_mapping = mapping_methods_indexes[current_mapping];
+            }
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("%s", lang.gpu["mapping_method_description"].c_str());
+            }
+
+            if (emuenv.cfg.gpu_idx == 0) {
+                ImGui::Spacing();
+                std::vector<const char *> vk_surface_format_strings = {
+                       "Immediate",
+                       "Mailbox",
+                       "Fifo relaxed",
+                       "Fifo"
+                };
+                std::vector<std::string_view> vk_surface_format_methods_indexes = {
+                       "Immediate",
+                       "mailbox",
+                       "fifo-relaxed",
+                       "fifo"
+                };
+    
+                static int current_surface_format = std::find(vk_surface_format_methods_indexes.begin(), vk_surface_format_methods_indexes.end(), config.vk_mapping) - vk_surface_format_methods_indexes.begin();
+                if (ImGui::Combo(lang.gpu["surface_format_method"].c_str(), &current_surface_format, vk_surface_format_strings.data(), vk_surface_format_strings.size())) {
+                    config.vk_mapping = vk_surface_format_methods_indexes[current_surface_format];
+                }
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("%s", lang.gpu["surface_format_method_description"].c_str());
+                }
+                ImGui::Spacing();
+            }
+            if (is_ingame)
+                ImGui::EndDisabled();
+        }
+
+        if (emuenv.renderer->support_custom_drivers()) {
+            ImGui::Spacing();
+            ImGui::Checkbox("Enable Turbo Mode", &emuenv.cfg.turbo_mode);
+
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("Provides a way to force the GPU to run at the maximum possible clocks (thermal constraints will still be applied)");
+            }
+        }
+
         // Shaders
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.gpu["shaders"].c_str());
         ImGui::Spacing();
-        ImGui::Checkbox(lang.gpu["shader_cache"].c_str(), &emuenv.cfg.shader_cache);
-        SetTooltipEx(lang.gpu["shader_cache_description"].c_str());
+        if (!is_vulkan) {
+            ImGui::Checkbox(lang.gpu["shader_cache"].c_str(), &emuenv.cfg.shader_cache);
+            SetTooltipEx(lang.gpu["shader_cache_description"].c_str());
+        }
+
         if (emuenv.renderer->features.spirv_shader) {
             ImGui::SameLine();
             ImGui::Checkbox(lang.gpu["spirv_shader"].c_str(), &emuenv.cfg.spirv_shader);
@@ -780,10 +1017,6 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 fs::remove_all(emuenv.log_path / "shaderlog");
             }
         }
-
-        // FPS hack
-        ImGui::Checkbox(lang.gpu["fps_hack"].c_str(), &config.fps_hack);
-        SetTooltipEx(lang.gpu["fps_hack_description"].c_str());
 
         ImGui::EndTabItem();
     } else
@@ -809,6 +1042,20 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang.audio["enable_ngs_support"].c_str(), &config.ngs_enable);
         SetTooltipEx(lang.audio["ngs_description"].c_str());
         ImGui::Spacing();
+
+        std::vector<const char *> audiodrv_list;
+        audiodrv_list.push_back("auto");
+        for (int list=0; list < (SDL_GetNumAudioDrivers()-1); list++){
+             audiodrv_list.push_back(SDL_GetAudioDriver(list));
+        }
+
+        static int current_audio_driver = std::find(audiodrv_list.begin(), audiodrv_list.end(), emuenv.cfg.audio_drv) - audiodrv_list.begin();
+        if(ImGui::Combo(lang.audio["audio_driver"].c_str(), &current_audio_driver, audiodrv_list.data(), static_cast<int>(audiodrv_list.size()))) {
+          emuenv.cfg.audio_drv = audiodrv_list[current_audio_driver];
+        }
+        if (ImGui::IsItemHovered()) {
+            SetTooltipEx(lang.audio["select_audio_driver"].c_str());
+        }
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::EndTabItem();
@@ -841,8 +1088,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem(lang.emulator["title"].c_str())) {
         ImGui::PopStyleColor();
+#ifndef ANDROID
         ImGui::Spacing();
         ImGui::Checkbox(lang.emulator["boot_apps_full_screen"].c_str(), &emuenv.cfg.boot_apps_full_screen);
+#endif
         ImGui::Spacing();
 
         const char *LIST_LOG_LEVEL[] = { lang.emulator["trace"].c_str(), gui.lang.main_menubar.debug["title"].c_str(), lang.emulator["info"].c_str(), lang.emulator["warning"].c_str(), lang.emulator["error"].c_str(), lang.emulator["critical"].c_str(), lang.emulator["off"].c_str() };
@@ -850,6 +1099,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             logging::set_level(static_cast<spdlog::level::level_enum>(emuenv.cfg.log_level));
         SetTooltipEx(lang.emulator["select_log_level"].c_str());
         ImGui::Spacing();
+
         ImGui::Checkbox(lang.emulator["archive_log"].c_str(), &emuenv.cfg.archive_log);
         SetTooltipEx(lang.emulator["archive_log_description"].c_str());
         ImGui::SameLine();
@@ -868,11 +1118,16 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SameLine();
         ImGui::Checkbox(lang.emulator["log_compat_warn"].c_str(), &emuenv.cfg.log_compat_warn);
         SetTooltipEx(lang.emulator["log_compat_warn_description"].c_str());
+#ifdef USE_VITA3K_UPDATE
         ImGui::Spacing();
         ImGui::Checkbox(lang.emulator["check_for_updates"].c_str(), &emuenv.cfg.check_for_updates);
         SetTooltipEx(lang.emulator["check_for_updates_description"].c_str());
-        ImGui::Separator();
-        TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.emulator["performance_overlay"].c_str());
+#endif
+        // Dencrypt all executable and libs when install
+        ImGui::Checkbox(lang.emulator["dencrypt_installs"].c_str(), &emuenv.cfg.dencrypt_installs);
+        SetTooltipEx(lang.emulator["dencrypt_installs_description"].c_str());
+
+        TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.emulator["performance_overlay"].c_str())
         ImGui::Spacing();
         ImGui::Checkbox(lang.emulator["performance_overlay"].c_str(), &emuenv.cfg.performance_overlay);
         SetTooltipEx(lang.emulator["performance_overlay_description"].c_str());
@@ -890,6 +1145,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         SetTooltipEx(lang.emulator["case_insensitive_description"].c_str());
 #endif
         ImGui::Separator();
+
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.emulator["emu_storage_folder"].c_str());
         ImGui::Spacing();
         ImGui::PushItemWidth(320);
@@ -912,6 +1168,36 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             }
             SetTooltipEx(lang.emulator["reset_emu_path_description"].c_str());
         }
+
+#ifdef ANDROID
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", "Using a different path requires additional permissions");
+        ImGui::Spacing();
+#endif
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(lang.emulator["sensor_settings"].c_str()).x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.emulator["sensor_settings"].c_str());
+        ImGui::Spacing();
+        if (!emuenv.cfg.tiltsens){
+            ImGui::Spacing();
+            ImGui::Text("%s", lang.emulator["sensor_emu_pos"].c_str());
+            ImGui::RadioButton("0 degrees", &emuenv.cfg.tiltpos, 0);
+            ImGui::RadioButton("90 degrees", &emuenv.cfg.tiltpos, 1);
+            ImGui::RadioButton("-90 degrees", &emuenv.cfg.tiltpos, -1);
+        }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+
+        //Screen position
+        ImGui::Spacing();
+        ImGui::Text("%s", lang.emulator["screenmode_pos"].c_str());
+        ImGui::RadioButton(lang.emulator["screenmode_auto"].c_str(), &emuenv.cfg.screenmode_pos, 0);
+        ImGui::RadioButton(lang.emulator["screenmode_Left"].c_str(), &emuenv.cfg.screenmode_pos, 1);
+        ImGui::RadioButton(lang.emulator["screenmode_right"].c_str(), &emuenv.cfg.screenmode_pos, 2);
+        ImGui::RadioButton(lang.emulator["screenmode_up"].c_str(), &emuenv.cfg.screenmode_pos, 3);
+        SetTooltipEx(lang.emulator["screenmode_up_description"].c_str());
+        
         ImGui::Spacing();
         ImGui::Separator();
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.emulator["custom_config_settings"].c_str());
@@ -973,17 +1259,23 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang.gui["stretch_the_display_area"].c_str(), &config.stretch_the_display_area);
         SetTooltipEx(lang.gui["stretch_the_display_area_description"].c_str());
         ImGui::Spacing();
-        ImGui::Checkbox(lang.gui["apps_list_grid"].c_str(), &emuenv.cfg.apps_list_grid);
-        SetTooltipEx(lang.gui["apps_list_grid_description"].c_str());
-        if (!emuenv.cfg.apps_list_grid) {
+        if(emuenv.cfg.screenmode_pos != 3){
+            ImGui::Checkbox(lang.gui["apps_list_grid"].c_str(), &emuenv.cfg.apps_list_grid);
+            SetTooltipEx(lang.gui["apps_list_grid_description"].c_str());
+            ImGui::SameLine();
+            ImGui::Checkbox(lang.gui["skip_lockscreen"].c_str(), &emuenv.cfg.skip_lockscreen);
+            SetTooltipEx(lang.gui["skip_lockscreen_description"].c_str());
             ImGui::Spacing();
-            ImGui::SliderInt(lang.gui["icon_size"].c_str(), &emuenv.cfg.icon_size, 64, 128);
-            SetTooltipEx(lang.gui["select_icon_size"].c_str());
+            if (!emuenv.cfg.apps_list_grid) {
+                ImGui::Spacing();
+                ImGui::SliderInt(lang.gui["icon_size"].c_str(), &emuenv.cfg.icon_size, 64, 128);
+                SetTooltipEx(lang.gui["select_icon_size"].c_str());
+            }
         }
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, lang.gui["font_support"].c_str());
+         TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, lang.gui["font_support"].c_str());
         ImGui::Spacing();
         if (gui.fw_font) {
             ImGui::Checkbox(lang.gui["asia_font_support"].c_str(), &emuenv.cfg.asia_font_support);
@@ -1123,6 +1415,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             SetTooltipEx(lang.debug["validation_layer_description"].c_str());
         }
         ImGui::Spacing();
+        ImGui::Checkbox(lang.debug["debug_menu"].c_str(), &emuenv.cfg.debug_menu);
+        ImGui::Spacing();
         if (ImGui::Button(emuenv.kernel.debugger.watch_code ? lang.debug["unwatch_code"].c_str() : lang.debug["watch_code"].c_str())) {
             emuenv.kernel.debugger.watch_code = !emuenv.kernel.debugger.watch_code;
             emuenv.kernel.debugger.update_watches();
@@ -1212,7 +1506,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     static const auto BUTTON_SIZE = ImVec2(120.f * SCALE.x, 0.f);
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * SCALE.x));
     if (ImGui::Button(common.common["close"].c_str(), BUTTON_SIZE))
-        show_settings_dialog = false;
+       show_settings_dialog = false;
     ImGui::SameLine(0, 20.f * SCALE.x);
     const auto is_apply = !emuenv.io.app_path.empty() && (!is_custom_config || (emuenv.app_path == emuenv.io.app_path));
     const auto is_reboot = (emuenv.renderer->current_backend != emuenv.backend_renderer) || (config.resolution_multiplier != emuenv.cfg.current_config.resolution_multiplier);
@@ -1223,6 +1517,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     }
     SetTooltipEx(lang.main_window["keep_changes"].c_str());
 
+    ImGui::ScrollWhenDragging();
     ImGui::End();
 }
 

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,6 +26,9 @@
 #include <renderer/vulkan/types.h>
 
 struct Config;
+#ifdef ANDROID
+struct libadreno_var;
+#endif
 
 namespace renderer::vulkan {
 
@@ -88,6 +91,10 @@ struct VKState : public renderer::State {
 
     // only used when memory mapping is enabled
     std::map<Address, MappedMemory, std::greater<Address>> mapped_memories;
+    // used with double buffer memory trapping
+    BufferTrapping buffer_trapping;
+    // modify the behavior of trapping on vertex buffers if there are shader stores
+    bool has_shader_store = false;
 
     // queue where we put requests that need to wait for the GPU
     Queue<WaitThreadRequest> request_queue;
@@ -98,11 +105,21 @@ struct VKState : public renderer::State {
     bool support_fsr = false;
     // support for the VK_KHR_uniform_buffer_standard_layout extension, needed for memory mapping and texture viewport
     bool support_standard_layout = false;
+    bool support_rasterized_order_access = false;
+    
+#ifdef ANDROID
+    bool support_android_buffer_import = false;
+    bool support_unix_fd_import = false;
+#endif
 
     VKState(int gpu_idx);
 
     bool init() override;
+#ifdef ANDROID
+    bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config, const libadreno_var &adreno);
+#else
     bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config);
+#endif
     void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) override;
     void cleanup();
 
@@ -120,7 +137,6 @@ struct VKState : public renderer::State {
     void set_screen_filter(const std::string_view &filter) override;
     int get_max_anisotropic_filtering() override;
     void set_anisotropic_filtering(int anisotropic_filtering) override;
-    int get_max_2d_texture_width() override;
     void set_async_compilation(bool enable) override;
 
     bool map_memory(MemState &mem, Ptr<void> address, uint32_t size) override;
@@ -131,9 +147,12 @@ struct VKState : public renderer::State {
     uint64_t get_matching_device_address(const Address address);
     std::vector<std::string> get_gpu_list() override;
     std::string_view get_gpu_name() override;
+    uint32_t get_gpu_version() override;
 
     void precompile_shader(const ShadersHash &hash) override;
     void preclose_action() override;
+    bool support_custom_drivers() override;
+    void set_turbo_mode(bool set) override;
 
     inline FrameObject &frame() {
         return frames[current_frame_idx];

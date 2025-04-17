@@ -82,8 +82,10 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
     glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_element_array_buffer);
     GLint last_vertex_array;
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
+#ifndef ANDROID
     GLint last_polygon_mode[2];
     glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
+#endif
     GLint last_viewport[4];
     glGetIntegerv(GL_VIEWPORT, last_viewport);
     GLint last_scissor_box[4];
@@ -116,7 +118,9 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_SCISSOR_TEST);
+#ifndef ANDROID
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
     if (state.do_clear_screen)
@@ -149,7 +153,7 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
     glVertexAttribPointer(state.attribute_color_location, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid *)offsetof(ImDrawVert, col));
 
     // Draw
-    for (int n = 0; n < draw_data->CmdListsCount; n++) {
+    for (auto n = 0; n < draw_data->CmdListsCount; n++) {
         const ImDrawList *cmd_list = draw_data->CmdLists[n];
         const ImDrawIdx *idx_buffer_offset = 0;
 
@@ -159,7 +163,7 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state.elements);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx), (const GLvoid *)cmd_list->IdxBuffer.Data, GL_STREAM_DRAW);
 
-        for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++) {
+        for (auto cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++) {
             const ImDrawCmd *pcmd = &cmd_list->CmdBuffer[cmd_i];
             if (pcmd->UserCallback) {
                 pcmd->UserCallback(cmd_list, pcmd);
@@ -200,18 +204,23 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
         glEnable(GL_SCISSOR_TEST);
     else
         glDisable(GL_SCISSOR_TEST);
+#ifndef ANDROID
     glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
-    glViewport(last_viewport[0], last_viewport[1], last_viewport[2], last_viewport[3]);
-    glScissor(last_scissor_box[0], last_scissor_box[1], last_scissor_box[2], last_scissor_box[3]);
+#endif
+    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
+    glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
     glColorMask(last_color_mask[0], last_color_mask[1], last_color_mask[2], last_color_mask[3]);
 }
 
-static void ImGui_ImplSdlGL3_CreateFontsTexture(ImGui_GLState &state) {
+void ImGui_ImplSdlGL3_CreateFontsTexture(ImGui_GLState &state) {
     // Build texture atlas
     ImGuiIO &io = ImGui::GetIO();
     unsigned char *pixels;
     int width, height;
-    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height); // Load as RGBA 32-bits for OpenGL3 demo because it is more likely to be compatible with user's existing shader.
+    io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
+
+    // Disabled, looks like this mode cause LAG A LOT in potato phone
+    // io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height); // Load as RGBA 32-bits for OpenGL3 demo because it is more likely to be compatible with user's existing shader.
 
     // Upload texture to graphics system
     GLint last_texture;
@@ -221,7 +230,19 @@ static void ImGui_ImplSdlGL3_CreateFontsTexture(ImGui_GLState &state) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, pixels);
+
+    // Disabled, looks like this mode cause LAG A LOT in potato phone
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+    const GLint swizzle[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
+#ifdef ANDROID
+    for(uint8_t i = 0; i < 4; i++){
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, swizzle[i]);
+    }
+#else
+    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+#endif
 
     // Store our identifier
     io.Fonts->TexID = (ImTextureID)(intptr_t)state.font_texture;
@@ -331,7 +352,11 @@ IMGUI_API ImGui_GLState *ImGui_ImplSdlGL3_Init(renderer::State *renderer, SDL_Wi
 
     // Store GL version string so we can refer to it later in case we recreate shaders.
     if (glsl_version == NULL)
+#ifdef ANDROID
+        glsl_version = "#version 300 es\nprecision highp float;";
+#else
         glsl_version = "#version 150";
+#endif
     IM_ASSERT((int)strlen(glsl_version) + 2 < IM_ARRAYSIZE(state->glsl_version));
     strcpy(state->glsl_version, glsl_version);
     strcat(state->glsl_version, "\n");

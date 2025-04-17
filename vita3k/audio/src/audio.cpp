@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,7 +17,9 @@
 
 #include <audio/state.h>
 
+#ifdef TRACY_ENABLE
 #include <tracy/Tracy.hpp>
+#endif
 
 #include <audio/impl/cubeb_audio.h>
 #include <audio/impl/sdl_audio.h>
@@ -31,7 +33,9 @@
 #include <cstring>
 
 static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, float global_volume, AudioOutPort &port, const ResumeAudioThread &resume_thread) {
+#ifdef TRACY_ENABLE
     ZoneScopedC(0xF6C2FF); // Tracy - Track function scope with color thistle
+#endif
 
     // How much data is available?
     std::unique_lock<std::mutex> lock(port.mutex);
@@ -62,8 +66,10 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, float g
 }
 
 void AudioAdapter::audio_callback(uint8_t *stream, int len_bytes) {
+#ifdef TRACY_ENABLE
     tracy::SetThreadName("Host audio thread"); // Tracy - Declare belonging of this function to the audio thread
     ZoneScopedC(0xF6C2FF); // Tracy - Track function scope with color thistle
+#endif
 
     std::vector<AudioOutPortPtr> ports;
     {
@@ -80,7 +86,9 @@ void AudioAdapter::audio_callback(uint8_t *stream, int len_bytes) {
         mix_out_port(stream, temp_buffer.data(), len_bytes, state.global_volume, *port.get(), state.resume_thread);
     }
 
+#ifdef TRACY_ENABLE
     FrameMarkNamed("Audio"); // Tracy - End discontinuous frame for audio rendering
+#endif
 }
 
 bool AudioState::init(const ResumeAudioThread &resume_thread, const std::string &adapter_name) {
@@ -146,7 +154,6 @@ void AudioState::audio_output(ThreadState &thread, AudioOutPort &out_port, const
         // Put audio to the port's stream and see how much is left to play.
         std::unique_lock<std::mutex> lock(out_port.mutex);
         SDL_AudioStreamPut(out_port.stream.get(), buffer, out_port.len_bytes);
-
         const int available = SDL_AudioStreamAvailable(out_port.stream.get());
         lock.unlock();
 
@@ -177,7 +184,8 @@ void AudioState::audio_output(ThreadState &thread, AudioOutPort &out_port, const
         // This is because the PS Vita and the host audio parameters do not match exactly
         // So instead only wait 50% of the time
         // also don't sleep for less than 0.5 ms
-        to_wait /= 2;
+        // to_wait /= 2;
+        to_wait /= 4;
         std::this_thread::sleep_for(std::chrono::microseconds(to_wait));
         out_port.last_output = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     } else {

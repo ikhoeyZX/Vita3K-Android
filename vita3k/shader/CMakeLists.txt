@@ -26,4 +26,3 @@ target_link_libraries(shader PRIVATE SPIRV spirv-cross-glsl)
 if(TRACY_ENABLE_ON_CORE_COMPONENTS)
 	target_link_libraries(shader PRIVATE tracy)
 endif()
-

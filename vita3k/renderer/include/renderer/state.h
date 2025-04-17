@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,6 +30,17 @@ struct SDL_Window;
 struct DisplayState;
 struct GxmState;
 struct Config;
+#ifdef ANDROID
+struct libadreno_var;
+#endif
+
+enum struct MappingMethod : int {
+    Disabled,
+    DoubleBuffer,
+    ExernalHost,
+    PageTable,
+    NativeBuffer
+};
 
 namespace renderer {
 
@@ -52,6 +63,8 @@ struct State {
     fs::path shaders_log_path;
 
     Backend current_backend;
+    std::string current_custom_driver;
+
     FeatureState features;
     float res_multiplier;
     bool disable_surface_sync;
@@ -78,7 +91,13 @@ struct State {
 
     bool should_display;
 
-    bool need_page_table = false;
+    // only support disabled by default
+    int supported_mapping_methods_mask = 1;
+    MappingMethod mapping_method = MappingMethod::Disabled;
+
+    // used for driver bug workaround
+    bool is_adreno_stock = false;
+    bool is_adreno_turnip = false;
 
     virtual bool init() = 0;
     virtual void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) = 0;
@@ -100,7 +119,6 @@ struct State {
     virtual void set_screen_filter(const std::string_view &filter) = 0;
     virtual int get_max_anisotropic_filtering() = 0;
     virtual void set_anisotropic_filtering(int anisotropic_filtering) = 0;
-    virtual int get_max_2d_texture_width() = 0;
     virtual void set_async_compilation(bool enable) {}
     void set_surface_sync_state(bool disable) {
         disable_surface_sync = disable;
@@ -114,6 +132,13 @@ struct State {
     virtual void unmap_memory(MemState &mem, Ptr<void> address) {}
     virtual std::vector<std::string> get_gpu_list() {
         return { "Automatic" };
+    }
+    virtual bool support_custom_drivers() {
+        return false;
+    }
+    virtual void set_turbo_mode(bool set) {}
+    virtual uint32_t get_gpu_version() {
+        return 0;
     }
 
     virtual std::string_view get_gpu_name() = 0;

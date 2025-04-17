@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@ public:
     }
 
     template <typename T, typename... Args>
-    bool create(Args &&...args) {
+    bool create(Args &&... args) {
         std::lock_guard<std::mutex> lock(mutex);
         auto ptr = std::make_shared<T>(std::forward<Args>(args)...);
         objs.emplace(TypeInfo::registered<T>::index, ptr);

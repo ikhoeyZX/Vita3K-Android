@@ -1,5 +1,5 @@
-// Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+ // Vita3K emulator project
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -53,4 +53,26 @@ bool load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceUID thread_id, Sc
 Address resolve_export(KernelState &kernel, uint32_t nid);
 uint32_t resolve_nid(KernelState &kernel, Address addr);
 Ptr<void> create_vtable(const std::vector<uint32_t> &nids, MemState &mem);
-void init_exported_vars(EmuEnvState &emuenv);
+
+struct VarExport {
+    uint32_t nid;
+    ImportVarFactory factory;
+    const char *name;
+};
+
+constexpr int var_exports_size =
+#define NID(name, nid)
+#define VAR_NID(name, nid) 1 +
+#include <nids/nids.inc>
+    0;
+#undef VAR_NID
+#undef NID
+
+const std::array<VarExport, var_exports_size> &get_var_exports();
+
+using LibraryInitFn = std::function<void(EmuEnvState &emuenv)>;
+
+#define LIBRARY_INIT(name)                                                              \
+    void export_library_init_##name(EmuEnvState &emuenv);                               \
+    extern const LibraryInitFn import_library_init_##name = export_library_init_##name; \
+    void export_library_init_##name(EmuEnvState &emuenv)

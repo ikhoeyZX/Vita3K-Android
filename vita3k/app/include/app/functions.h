@@ -43,6 +43,9 @@ void update_viewport(EmuEnvState &state);
 void switch_state(EmuEnvState &emuenv, const bool pause);
 void error_dialog(const std::string &message, SDL_Window *window = nullptr);
 
+void add_custom_driver(EmuEnvState &emuenv);
+void remove_custom_driver(EmuEnvState &emuenv, const std::string &driver);
+
 void set_window_title(EmuEnvState &emuenv);
 void calculate_fps(EmuEnvState &emuenv);
 

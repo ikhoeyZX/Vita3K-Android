@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,9 +41,13 @@ RingBuffer::~RingBuffer() {
 
 void RingBuffer::create_and_map() {
     glBindBuffer(purpose_, buffer_[0]);
+#ifdef ANDROID
+    glBufferData(purpose_, capacity_, nullptr, GL_DYNAMIC_DRAW);
+#else
     glBufferStorage(purpose_, capacity_, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+#endif
 
-    base_ = static_cast<std::uint8_t *>(glMapBufferRange(purpose_, 0, capacity_, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT));
+    base_ = static_cast<std::uint8_t *>(glMapBufferRange(purpose_, 0, capacity_, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT));
 
     if (!base_) {
         LOG_ERROR("Failed to map persistent buffer to host!");

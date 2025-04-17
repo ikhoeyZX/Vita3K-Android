@@ -22,7 +22,7 @@ void MotionInput::SetPID(SceFloat new_kp, SceFloat new_ki, SceFloat new_kd) {
 
 void MotionInput::SetAcceleration(const Util::Vec3f &acceleration) {
     accel = acceleration;
-
+    
     accel.x = std::clamp(accel.x, -AccelMaxValue, AccelMaxValue);
     accel.y = std::clamp(accel.y, -AccelMaxValue, AccelMaxValue);
     accel.z = std::clamp(accel.z, -AccelMaxValue, AccelMaxValue);
@@ -30,11 +30,11 @@ void MotionInput::SetAcceleration(const Util::Vec3f &acceleration) {
 
 void MotionInput::SetGyroscope(const Util::Vec3f &gyroscope) {
     gyro = gyroscope;
-
+    
     if (bias_enabled) {
-        gyro -= gyro_bias;
+                gyro -= gyro_bias;
     }
-
+    
     if (deadband_enabled && gyro.Length2() < gyro_deadband2) {
         gyro = {};
     }
@@ -42,7 +42,7 @@ void MotionInput::SetGyroscope(const Util::Vec3f &gyroscope) {
     gyro.x = std::clamp(gyro.x, -GyroMaxValue, GyroMaxValue);
     gyro.y = std::clamp(gyro.y, -GyroMaxValue, GyroMaxValue);
     gyro.z = std::clamp(gyro.z, -GyroMaxValue, GyroMaxValue);
-
+    
     // Auto adjust drift to minimize drift
     if (!IsMoving(0.1f)) {
         gyro_bias = (gyro_bias * 0.9999f) + (gyroscope * 0.0001f);
@@ -235,10 +235,8 @@ void MotionInput::UpdateBasicOrientation() {
     SceFloat angle = angle_threshold * 3.1415926f / 180.0f;
     SceFloat max_angle_threshold_cos = std::cos(angle);
     SceFloat max_angle_threshold_sin = std::sin(angle);
-
     auto unit_accel = accel.Normalized();
     Util::Vec3f unit_xy = { accel.x, accel.y, 0 };
-
     if (std::abs(unit_accel.z) > max_angle_threshold_cos) {
         basic_orientation.x = 0;
         basic_orientation.y = 0;
@@ -258,8 +256,9 @@ void MotionInput::UpdateBasicOrientation() {
             basic_orientation_base = basic_orientation;
         }
     }
+    
     basic_orientation = basic_orientation_base;
-
+    
     if (basic_orientation.z && std::abs(unit_accel.z) < max_angle_threshold_cos) {
         basic_orientation.y = -1;
     } else {

@@ -33,11 +33,8 @@ namespace renderer::vulkan {
 // Only return the formats we support and make sense for now
 // (technically we can read a D24S8 or D32 as R8R8R8R8, but it is not implemented
 // yet and no game I am aware of does it)
-static bool is_depth_stencil_compatible_format(SceGxmTextureBaseFormat format) {
+static bool is_depth_stencil_compatible_format(SceGxmTextureBaseFormat format, bool &can_be_depth) {
     switch (format) {
-        // 8bit stencil
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
         // D16 format
     case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
         // D32 format
@@ -46,6 +43,11 @@ static bool is_depth_stencil_compatible_format(SceGxmTextureBaseFormat format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
         // D24S8 format
     case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
+        can_be_depth = true;
+        [[fallthrough]];
+        // 8bit stencil
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
         return true;
     default:
         return false;
@@ -90,14 +92,15 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
         lookup_result = context.state.surface_cache.retrieve_color_surface_as_texture(texture, format_target_of_texture, &texture_viewport);
     }
 
-    if (!lookup_result.has_value() && is_depth_stencil_compatible_format(base_format)) {
+    bool is_depth_surface = false;
+    if (!lookup_result.has_value() && is_depth_stencil_compatible_format(base_format, is_depth_surface)) {
         // Try to retrieve depth/stencil cache
         lookup_result = context.state.surface_cache.retrieve_depth_stencil_as_texture(texture, &texture_viewport);
     }
 
     if (lookup_result.has_value()) {
         // get the sampler now
-        context.state.texture_cache.cache_and_bind_sampler(texture);
+        context.state.texture_cache.cache_and_bind_sampler(texture, is_depth_surface);
     } else {
         context.state.texture_cache.cache_and_bind_texture(texture, mem);
         auto &image = context.state.texture_cache.current_texture->texture;
@@ -250,6 +253,24 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
 
     samplers.resize(max_sampler_used);
 
+    // check for linear filtering on depth support
+    const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(vk::Format::eD24UnormS8Uint);
+    support_depth_linear_filtering = static_cast<bool>(depth_linear.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
+
+    // check for dxt support
+    const vk::FormatProperties dxt_support = state.physical_device.getFormatProperties(vk::Format::eBc1RgbaSrgbBlock);
+    // support_dxt might have already been set by the bcn patch on android
+    support_dxt |= static_cast<bool>(dxt_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+
+    // check for astc support
+    const vk::FormatProperties astc_support = state.physical_device.getFormatProperties(vk::Format::eAstc4x4SrgbBlock);
+    support_astc = static_cast<bool>(astc_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+
+    LOG_TRACE("max_sampler_used : {}", max_sampler_used);
+    LOG_TRACE("support_depth_linear_filtering : {}",support_depth_linear_filtering);
+    LOG_TRACE("support_dxt : {}", support_dxt);
+    LOG_TRACE("support_astc : {}", support_astc);
+    
     return true;
 }
 
@@ -275,8 +296,65 @@ static vk::Format linear_to_srgb(const vk::Format format) {
     case vk::Format::eBc7UnormBlock:
         return vk::Format::eBc7SrgbBlock;
     default: {
-        LOG_WARN_ONCE("Trying to use gamma correction with non-compatible format {}", vk::to_string(format));
+        LOG_ERROR("BCN : Trying to use gamma correction with non-compatible format {}", vk::to_string(format));
         return format;
+    }
+    }
+}
+
+static vk::Format bcn_to_rgba8(const vk::Format format) {
+    switch (format) {
+    // https://www.reedbeta.com/blog/understanding-bcn-texture-compression-formats/
+    
+    // BC1
+    case vk::Format::eBc1RgbUnormBlock:
+        return vk::Format::eR8G8B8Unorm;
+    case vk::Format::eBc1RgbSrgbBlock:
+        return vk::Format::eR8G8B8Srgb;
+    case vk::Format::eBc1RgbaUnormBlock:
+        return vk::Format::eR8G8B8A8Unorm;
+    case vk::Format::eBc1RgbaSrgbBlock:
+        return vk::Format::eR8G8B8A8Srgb;
+  
+    // BC2
+    case vk::Format::eBc2UnormBlock:
+        return vk::Format::eR8G8B8A8Unorm;
+    case vk::Format::eBc2SrgbBlock:
+        return vk::Format::eR8G8B8A8Srgb;
+
+    // BC3
+    case vk::Format::eBc3UnormBlock:
+        return vk::Format::eR8G8B8A8Unorm;
+    case vk::Format::eBc3SrgbBlock:
+        return vk::Format::eR8G8B8A8Srgb;
+
+    // BC4
+    case vk::Format::eBc4UnormBlock:
+        return vk::Format::eR8Unorm;
+    case vk::Format::eBc4SnormBlock:
+        return vk::Format::eR8Snorm;
+
+    // BC5
+    case vk::Format::eBc5UnormBlock:
+        return vk::Format::eR8G8Unorm;
+    case vk::Format::eBc5SnormBlock:
+        return vk::Format::eR8G8Snorm;
+
+    // BC6
+    case vk::Format::eBc6HUfloatBlock:
+        return vk::Format::eR16G16Sfloat;
+    case vk::Format::eBc6HSfloatBlock:
+        return vk::Format::eR16G16B16Sfloat;
+
+    // BC7
+    case vk::Format::eBc7UnormBlock:
+        return vk::Format::eR16G16B16A16Unorm;
+    case vk::Format::eBc7SrgbBlock:
+        return vk::Format::eR16G16B16A16Unorm;
+
+    default:{
+        LOG_ERROR("Trying to convert bcn format with non-compatible format: {}", vk::to_string(format));
+        return vk::Format::eR8G8B8A8Unorm;
     }
     }
 }
@@ -312,10 +390,14 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     const uint16_t mip_count = renderer::texture::get_upload_mip(gxm_texture.true_mip_count(), width, height);
 
     vk::Format vk_format = texture::translate_format(base_format);
-    if (gxm_texture.gamma_mode) {
+    // we need gamma correction first then decompress if not supported
+    if (gxm_texture.gamma_mode) 
         vk_format = linear_to_srgb(vk_format);
-    }
-
+        
+    if (gxm::is_bcn_format(base_format) && !support_dxt)
+        // texture will be decompressed
+        vk_format = bcn_to_rgba8(vk_format);
+    
     current_texture->mip_count = mip_count;
     current_texture->is_cube = is_cube;
     uint32_t memory_needed = get_image_memory_upper_bound(gxm_texture, vk_format, base_format);
@@ -325,7 +407,7 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
         memory_needed += memory_needed / 2;
     if (is_cube)
         memory_needed *= 6;
-    current_texture->memory_needed = align(memory_needed, 16);
+    current_texture->memory_needed = align(memory_needed, 16); 
     vkutil::Image &image = current_texture->texture;
 
     // In case the cache is full, no need to put the previous image in the destroy queue
@@ -431,6 +513,11 @@ void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
         upload_size = renderer::texture::get_compressed_size(base_format, pixels_per_stride, height);
         pixels_per_stride = align(pixels_per_stride, 4);
         buffer_height = align(buffer_height, 4);
+    } else if (renderer::texture::is_astc_format(base_format)) {
+        upload_size = renderer::texture::get_compressed_size(base_format, pixels_per_stride, height);
+        const uint32_t block_height = gxm::get_block_size(base_format).second;
+        // align can only be used with powers of 2 (not necessarily the case here)
+        buffer_height = (buffer_height + block_height - 1) / block_height * block_height;
     } else {
         size_t bpp = gxm::bits_per_pixel(base_format);
         size_t bytes_per_pixel = (bpp + 7) >> 3;
@@ -478,7 +565,7 @@ void VKTextureCache::upload_done() {
     is_texture_transfer_ready = false;
 }
 
-void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &texture) {
+void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear) {
     vk::Sampler &sampler = samplers[index];
     if (sampler) {
         // the previous one has not been used for a while, we can destroy it
@@ -491,9 +578,16 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
     const SceGxmTextureAddrMode uaddr = static_cast<SceGxmTextureAddrMode>(texture.uaddr_mode);
     const SceGxmTextureAddrMode vaddr = static_cast<SceGxmTextureAddrMode>(texture.vaddr_mode);
     // Note: I don't know what to do with the MIPMAP version of SceGxmTextureFilter
-    const SceGxmTextureFilter mag_filter = static_cast<SceGxmTextureFilter>(texture.mag_filter);
-    const SceGxmTextureFilter min_filter = is_linear_strided ? mag_filter : static_cast<SceGxmTextureFilter>(texture.min_filter);
+    SceGxmTextureFilter mag_filter = static_cast<SceGxmTextureFilter>(texture.mag_filter);
+    SceGxmTextureFilter min_filter = is_linear_strided ? mag_filter : static_cast<SceGxmTextureFilter>(texture.min_filter);
 
+    if (no_linear) {
+        min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+        mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+    }
+
+    const float minLod = static_cast<float>(texture.lod_min0 | (texture.lod_min1 << 2));
+    
     // create sampler
     vk::SamplerCreateInfo sampler_info{
         .magFilter = texture::translate_filter(mag_filter),
@@ -505,8 +599,8 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
         .mipLodBias = (static_cast<float>(texture.lod_bias) - 31.f) / 8.f,
         .maxAnisotropy = static_cast<float>(anisotropic_filtering),
         .compareEnable = VK_FALSE,
-        .minLod = static_cast<float>(texture.lod_min0 | (texture.lod_min1 << 2)),
-        .maxLod = VK_LOD_CLAMP_NONE,
+        .minLod = minLod, // original was (texture.lod_min1 << 2)
+        .maxLod = (minLod + 1.0f), // original was VK_LOD_CLAMP_NONE,
         .unnormalizedCoordinates = VK_FALSE,
     };
 
@@ -517,8 +611,13 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
 }
 
 void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) {
-    const size_t bpp = gxm::bits_per_pixel(base_format);
-    const uint32_t texture_size = align(width, 4) * align(height, 4) * bpp / 8;
+    uint32_t texture_size;
+    if (renderer::texture::is_astc_format(base_format)) {
+        texture_size = renderer::texture::get_compressed_size(base_format, width, height);
+    } else {
+        const size_t bpp = gxm::bits_per_pixel(base_format);
+        texture_size = static_cast<uint32_t>((align(width, 4) * align(height, 4) * bpp) / 8);
+    }
     current_texture->memory_needed = align(texture_size, 16);
 
     current_texture->mip_count = mipcount;
@@ -540,6 +639,9 @@ void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
     if (is_srgb)
         vk_format = linear_to_srgb(vk_format);
 
+    if (!support_dxt)
+        vk_format = bcn_to_rgba8(vk_format); // for mali users
+    
     // manually initialize the image
     image.width = width;
     image.height = height;

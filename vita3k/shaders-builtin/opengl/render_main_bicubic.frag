@@ -5,7 +5,8 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
-#version 410 core
+#version 320 es
+precision highp float
 
 in vec2 uv_frag;
 out vec4 color_frag;

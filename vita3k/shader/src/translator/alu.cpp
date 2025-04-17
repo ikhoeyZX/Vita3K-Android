@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -149,10 +149,9 @@ bool USSETranslatorVisitor::vmad(
         return false;
     }
 
-    auto mul_result = m_b.createBinOp(spv::OpFMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
-    auto add_result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
+    spv::Id fma_result = m_b.createBuiltinCall(m_b.getTypeId(vsrc0), std_builtins, GLSLstd450Fma, { vsrc0, vsrc1, vsrc2 });
 
-    store(inst.opr.dest, add_result, write_mask, dest_repeat_offset);
+    store(inst.opr.dest, fma_result, write_mask, dest_repeat_offset);
     END_REPEAT()
 
     reset_repeat_multiplier();
@@ -193,7 +192,7 @@ bool USSETranslatorVisitor::vmad2(
         op = Opcode::VF16MAD;
     }
 
-    const DataType inst_dt = (dat_fmt) ? DataType::F16 : DataType::F32;
+    const DataType inst_dt = dat_fmt ? DataType::F16 : DataType::F32;
 
     // Decode mandatory info first
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, false, true, 7, m_second_program);
@@ -276,10 +275,9 @@ bool USSETranslatorVisitor::vmad2(
         return false;
     }
 
-    auto mul_result = m_b.createBinOp(spv::OpFMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
-    auto add_result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
+    spv::Id fma_result = m_b.createBuiltinCall(m_b.getTypeId(vsrc0), std_builtins, GLSLstd450Fma, { vsrc0, vsrc1, vsrc2 });
 
-    store(inst.opr.dest, add_result, dest_mask, 0);
+    store(inst.opr.dest, fma_result, dest_mask, 0);
 
     return true;
 }
@@ -492,6 +490,7 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_ma
     case Opcode::VF16DP: {
         const spv::Op op = (m_b.getNumComponents(vsrc1) > 1) ? spv::OpDot : spv::OpFMul;
         result = m_b.createBinOp(op, m_b.makeFloatType(32), vsrc1, vsrc2);
+
         result = postprocess_dot_result_for_store(m_b, result, possible_dest_mask);
         break;
     }
@@ -1768,7 +1767,8 @@ bool USSETranslatorVisitor::vdual(
                 op = decode_src12(op, unified_store_slot_num, unified_store_slot_bank, false,
                     code_info.vector_load, code_info.vector_load ? 8 : 7, m_second_program);
                 // gpi2_slot_num_bit_1 is also unified source ext
-                op.swizzle = decode_dual_swizzle(unified_store_swizz, op1_src_count < 2 && gpi2_slot_num_bit_1, comp_count_type);
+                op.swizzle = decode_dual_swizzle(unified_store_swizz,
+                    op1_src_count >= 2 ? false : gpi2_slot_num_bit_1, comp_count_type);
                 if (op1_src_count < 2 && gpi2_slot_num_bit_0_or_unified_store_abs)
                     op.flags |= RegisterFlags::Absolute;
                 if (unified_store_neg)

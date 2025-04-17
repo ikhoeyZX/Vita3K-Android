@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -55,17 +55,17 @@ bool is_cmd_ready(MemState &mem, CommandList &command_list) {
     return sync->timestamp_current >= timestamp;
 }
 
-static bool wait_cmd(MemState &mem, CommandList &command_list) {
+bool wait_cmd(MemState &mem, CommandList &command_list) {
     // we assume here that the cmd starts with a WaitSyncObject
 
     SceGxmSyncObject *sync = reinterpret_cast<Ptr<SceGxmSyncObject> *>(&command_list.first->data[0])->get(mem);
     const uint32_t timestamp = *reinterpret_cast<uint32_t *>(&command_list.first->data[sizeof(uint32_t)]);
-
+    
     // wait 500 micro seconds and then return in case should_display is set to true
     return renderer::wishlist(sync, timestamp, 500);
 }
 
-static void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, CommandList &command_list) {
+void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, CommandList &command_list) {
     using CommandHandlerFunc = decltype(cmd_handle_set_context);
 
     const static std::map<CommandOpcode, CommandHandlerFunc *> handlers = {
@@ -118,6 +118,9 @@ static void process_batch(renderer::State &state, const FeatureState &features, 
 }
 
 void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config) {
+    // always display a frame every 500ms
+    auto max_time = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 500;
+
     while (!state.should_display) {
         // Try to wait for a batch (about 2 or 3ms, game should be fast for this)
         auto cmd_list = state.command_buffer_queue.top(3);
@@ -128,12 +131,18 @@ void process_batches(renderer::State &state, const FeatureState &features, MemSt
                 return;
 
             // keep the old behavior for opengl with vsync as it looks like the new one causes some issues
-            if (state.current_backend == Backend::OpenGL && config.current_config.v_sync)
-                return;
+            //if (state.current_backend == Backend::OpenGL && config.current_config.v_sync)
+            //    return;
 
-            if (!cmd_list || !wait_cmd(mem, *cmd_list))
+            if (!cmd_list || !wait_cmd(mem, *cmd_list)){
+                auto curr_time = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                if(curr_time >= max_time)
+                    // display a frame even though the game is not diplaying anything
+                    return;
+
                 // this mean the command is still not ready, check if we can display it again
                 continue;
+            }
         }
 
         state.command_buffer_queue.pop();

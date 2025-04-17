@@ -1,4 +1,4 @@
-﻿// Vita3K emulator project
+// Vita3K emulator project
 // Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
@@ -114,6 +114,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
     ImGui::SetCursorPosY(94.f * SCALE.y);
     ImGui::Separator();
+    
     switch (setup) {
     case SELECT_LANGUAGE:
         title_str = lang["select_language"];
@@ -144,6 +145,9 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopStyleVar();
         ImGui::PopStyleColor(3);
         ImGui::Columns(1);
+#ifdef ANDROID
+        ImGui::ScrollWhenDragging();
+#endif
         ImGui::EndChild();
         break;
     case SELECT_PREF_PATH:
@@ -151,10 +155,14 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize());
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["current_emu_path"].c_str());
         ImGui::Spacing();
+#ifdef ANDROID
+        ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(path_warning).x / 2.f));
+        ImGui::TextColored(ImVec4(0.98f, 0.01f, 0.20f, 1.0f), "%s", path_warning);
+#endif
         TextCentered(emuenv.cfg.pref_path.c_str(), 0);
         ImGui::SetCursorPos(!is_default_path ? ImVec2((WINDOW_SIZE.x / 2.f) - BIG_BUTTON_SIZE.x - (20.f * SCALE.x), BIG_BUTTON_POS.y) : BIG_BUTTON_POS);
         if (ImGui::Button(lang["change_emu_path"].c_str(), BIG_BUTTON_SIZE)) {
-            std::filesystem::path emulator_path = "";
+            fs::path emulator_path = "";
             host::dialog::filesystem::Result result = host::dialog::filesystem::pick_folder(emulator_path);
 
             if ((result == host::dialog::filesystem::Result::SUCCESS) && (emulator_path.native() != emuenv.pref_path.native())) {
@@ -200,6 +208,13 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetWindowFontScale(RES_SCALE.x);
             draw_firmware_install_dialog(gui, emuenv);
         }
+        // Dencrypt box
+        if(ImGui::Checkbox(emulator["dencrypt_installs"].c_str(), &emuenv.cfg.dencrypt_installs))
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        SetTooltipEx(emulator["dencrypt_installs_description"].c_str());
+#ifdef ANDROID
+        ImGui::ScrollWhenDragging();
+#endif
         break;
     case SELECT_INTERFACE_SETTINGS:
         title_str = lang["select_interface_settings"];
@@ -250,7 +265,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetCursorPos(ImVec2(display_size.x - BUTTON_SIZE.x - BUTTON_POS.x, BUTTON_POS.y));
     if ((setup < FINISHED) && ImGui::Button(lang["next"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
         setup = (InitialSetup)(setup + 1);
-        config::serialize_config(emuenv.cfg, emuenv.config_path);
+       config::serialize_config(emuenv.cfg, emuenv.config_path);
     }
     ImGui::SetWindowFontScale(1.f);
 

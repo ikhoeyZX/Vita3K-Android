@@ -60,6 +60,17 @@ struct SfoFile;
 struct GDBState;
 struct HTTPState;
 
+#ifdef ANDROID
+struct libadreno_var {
+    bool is_adreno = false;
+    std::string adreno_temp_dir;
+    std::string adreno_lib_dir;
+    std::string adreno_driver_path;
+    std::string adreno_main_so_name;
+    std::string adreno_inject_dir;
+};
+#endif
+
 typedef int32_t SceInt;
 struct IVector2 {
     SceInt x;
@@ -104,9 +115,12 @@ private:
     std::unique_ptr<SfoFile> _sfo_handle;
     std::unique_ptr<GDBState> _gdb;
     std::unique_ptr<HTTPState> _http;
+#ifdef ANDROID
+    std::unique_ptr<libadreno_var> _libadreno;
+#endif
 
 public:
-    // App info contained in its `param.sfo` file
+     // App info contained in its `param.sfo` file
     sfo::SfoAppInfo &app_info;
     std::string app_path{};
     std::string license_content_id{};
@@ -176,6 +190,9 @@ public:
     HTTPState &http;
     int max_font_level = 0;
     int current_font_level = 0;
+#ifdef ANDROID
+    libadreno_var &libadreno; 
+#endif
 
     EmuEnvState();
     // declaring a destructor is necessary to forward declare unique_ptrs

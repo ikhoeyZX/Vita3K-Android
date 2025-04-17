@@ -55,6 +55,72 @@
 #include <X11/Xresource.h>
 #endif
 
+#ifdef ANDROID
+#include <SDL.h>
+#include <boost/range/iterator_range.hpp>
+#include <jni.h>
+
+auto load_custom_driver(const std::string &driver_name) {
+    libadreno_var val = {false, "", "", "", "", ""};
+    fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver_name / "/";
+
+    if (!fs::exists(driver_path)) {
+        LOG_ERROR("Could not find driver {}", driver_name);
+        return val;
+    }
+
+    std::string main_so_name;
+    {
+        fs::path driver_name_file = driver_path / "driver_name.txt";
+        if (!fs::exists(driver_name_file)) {
+            LOG_ERROR("Could not find driver driver_name.txt");
+            return val;
+        }
+
+        fs::ifstream name_file(driver_name_file, std::ios_base::in);
+        name_file >> main_so_name;
+        name_file.close();
+    }
+
+    fs::path temp_dir_path;
+    if (SDL_GetAndroidSDKVersion() < 29) {
+        temp_dir_path = driver_path / "tmp/";
+        fs::create_directory(temp_dir_path);
+    }
+
+    fs::path lib_dir;
+    // retrieve the app lib dir using jni
+    {
+        // retrieve the JNI environment.
+        JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+        env->PushLocalFrame(10);
+        // retrieve the Java instance of the SDLActivity
+        jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+        // the following calls activity.getApplicationInfo().nativeLibraryDir
+        jclass actibity_class = env->GetObjectClass(activity);
+        jmethodID getApplicationInfo_method = env->GetMethodID(actibity_class, "getApplicationInfo", "()Landroid/content/pm/ApplicationInfo;");
+        jobject app_info = env->CallObjectMethod(activity, getApplicationInfo_method);
+        jclass app_info_class = env->GetObjectClass(app_info);
+        jfieldID app_info_field = env->GetFieldID(app_info_class, "nativeLibraryDir", "Ljava/lang/String;");
+        jstring lib_dir_java = reinterpret_cast<jstring>(env->GetObjectField(app_info, app_info_field));
+        const char *lib_dir_ptr = env->GetStringUTFChars(lib_dir_java, nullptr);
+
+        // copy the dir path in our local object
+        lib_dir = fs::path(lib_dir_ptr) / "/";
+
+        env->ReleaseStringUTFChars(lib_dir_java, lib_dir_ptr);
+        // remove all local references
+        env->PopLocalFrame(nullptr);
+    }
+
+    fs::create_directory(driver_path / "file_redirect");
+    std::string inject_path = (driver_path / "file_redirect/").c_str();
+    val = {true, temp_dir_path.c_str(), lib_dir.c_str(), driver_path.c_str(), main_so_name.c_str(), inject_path.c_str()};
+
+    return val;
+}
+#endif
+
 namespace app {
 void update_viewport(EmuEnvState &state) {
     int w = 0;
@@ -83,6 +149,7 @@ void update_viewport(EmuEnvState &state) {
 
     state.system_dpi_scale = static_cast<float>(state.drawable_size.x) / state.window_size.x;
     ImGui::GetIO().FontGlobalScale = 1.f * state.manual_dpi_scale;
+
 
     if (h > 0) {
         const float window_aspect = static_cast<float>(w) / h;
@@ -152,6 +219,25 @@ void update_viewport(EmuEnvState &state) {
 }
 
 void init_paths(Root &root_paths) {
+#ifdef ANDROID
+    fs::path storage_path = fs::path(SDL_AndroidGetExternalStoragePath()) / "";
+    fs::path vita_storage_path = storage_path / "vita/";
+
+    root_paths.set_base_path(storage_path);
+    // note: this one is not actually used, we must use custom functions to retrieve static assets
+    root_paths.set_static_assets_path(storage_path);
+
+    root_paths.set_pref_path(vita_storage_path);
+    root_paths.set_log_path(storage_path);
+    root_paths.set_config_path(storage_path);
+    root_paths.set_shared_path(storage_path);
+    root_paths.set_cache_path(storage_path / "cache" / "");
+    root_paths.set_patch_path(storage_path / "patch" / "");
+
+    auto fscheck = storage_path / "vita3k.log";
+    if(fs::exists(fscheck) && !fs::is_empty(fscheck))
+       fs::copy_file(fscheck , storage_path / "vita3k.log.old", fs::copy_options::overwrite_existing);
+#else
     auto sdl_base_path = SDL_GetBasePath();
     auto base_path = fs_utils::utf8_to_path(sdl_base_path);
     SDL_free(sdl_base_path);
@@ -264,11 +350,11 @@ void init_paths(Root &root_paths) {
         if (XDG_DATA_HOME != NULL) {
             root_paths.set_shared_path(fs::path(XDG_DATA_HOME) / app_name / "");
         }
-
+#endif
         // patch path should be in shared path
         root_paths.set_patch_path(root_paths.get_shared_path() / "patch" / "");
-#endif
     }
+#endif
 
     // Create default preference and cache path for safety
     fs::create_directories(root_paths.get_config_path());
@@ -357,7 +443,34 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         state.pref_path = state.cfg.get_pref_path();
     }
 
-    LOG_INFO("Base path: {}", state.base_path);
+#ifdef ANDROID
+    fs::create_directories(state.cfg.get_pref_path() / "logs");
+    fs::create_directories(state.cfg.get_pref_path() / "shared");
+    fs::create_directories(state.cfg.get_pref_path() / "shared" / "patch");
+    fs::create_directories(state.cfg.get_pref_path() / "shared" / "screenshots");
+    fs::create_directories(state.cfg.get_pref_path() / "shared" / "textures");
+    fs::create_directories(state.cfg.get_pref_path() / "shared" / "textures" / "export");
+    fs::create_directories(state.cfg.get_pref_path() / "shared" / "textures" / "import");
+    fs::create_directories(root_paths.get_shared_path() / "lang");
+    fs::create_directories(root_paths.get_shared_path() / "lang" / "user");
+
+    state.log_path = fs::path(state.cfg.get_pref_path() / "logs" / "");
+    state.shared_path = fs::path(state.cfg.get_pref_path() / "shared" / "");
+    state.patch_path = fs::path(state.cfg.get_pref_path() / "shared" / "patch" / "");
+
+    auto fscheck = fs::path(root_paths.get_base_path()) / "vita3k.log.old";
+    if(fs::exists(fscheck)){
+        if(!fs::equivalent(state.log_path, root_paths.get_base_path())){
+            fs::copy_file(fscheck , state.log_path / "vita3k.log.txt", fs::copy_options::overwrite_existing);
+            SDL_AndroidShowToast(fmt::format("copying logs to {}", state.log_path).c_str(), 1, -1, 0, 0);
+            fs::remove(fscheck);
+        }
+    }
+
+    LOG_INFO("Log path: {}", state.log_path);
+    LOG_INFO("Shared path: {}", state.shared_path);
+#endif
+
 #if defined(__linux__) && !defined(__ANDROID__) && !defined(__APPLE__)
     LOG_INFO("Static assets path: {}", state.static_assets_path);
     LOG_INFO("Shared path: {}", state.shared_path);
@@ -365,6 +478,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     LOG_INFO("User config path: {}", state.config_path);
     LOG_INFO("User cache path: {}", state.cache_path);
 #endif
+    LOG_INFO("Base path: {}", state.base_path);
     LOG_INFO("User pref path: {}", state.pref_path);
 
     if (ImGui::GetCurrentContext() == NULL) {
@@ -375,12 +489,12 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
 
     state.backend_renderer = renderer::Backend::Vulkan;
 
-    if (string_utils::toupper(state.cfg.backend_renderer) == "OPENGL") {
-#ifndef __APPLE__
-        state.backend_renderer = renderer::Backend::OpenGL;
-#else
+    if (string_utils::toupper(state.cfg.current_config.backend_renderer) == "OPENGL") {
+#if defined(__APPLE__)
         state.cfg.backend_renderer = "Vulkan";
         config::serialize_config(state.cfg, state.cfg.config_path);
+#else
+        state.backend_renderer = renderer::Backend::OpenGL;
 #endif
     }
 
@@ -399,19 +513,96 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         break;
     }
 
+#ifdef ANDROID
+    switch(state.cfg.screenmode_pos){
+    case 1:
+        SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft");
+        break;
+    case 2:
+        SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeRight");
+        break;
+    case 3:
+        SDL_SetHint(SDL_HINT_ORIENTATIONS, "Portrait");
+        break;
+    default:
+        SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+        break;
+    }
+    state.display.fullscreen = true;
+    window_type |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    window_type |= SDL_WINDOW_HIDDEN;
+#else
     if (state.cfg.fullscreen) {
         state.display.fullscreen = true;
         window_type |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
+#endif
 
-#ifdef __LINUX__
-    if (SDL_GetCurrentVideoDriver() && std::string(SDL_GetCurrentVideoDriver()) == "x11") {
-        // X11 does not provide High DPI support, so manually set the High DPI scale
-        state.manual_dpi_scale = fetch_x11_display_dpi();
-        if (state.manual_dpi_scale < 1.0) {
-            state.manual_dpi_scale = 1.0;
+#if defined(WIN32) || defined(__linux__)
+    const auto isSteamDeck = []() {
+#if defined(__linux__) && !defined(ANDROID)
+        std::ifstream file("/etc/os-release");
+        if (file.is_open()) {
+            std::string line;
+            while (std::getline(file, line)) {
+                if (line.find("VARIANT_ID=steamdeck") != std::string::npos)
+                    return true;
+            }
         }
+#endif
+        return false;
+    };
+#ifdef ANDROID
+    if(SDL_GetAndroidSDKVersion() > 30) {
+#else
+    if (!isSteamDeck() ) {
+#endif
+        float ddpi, hdpi, vdpi, max = 160.f;
+        SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi);
+        window_type |= SDL_WINDOW_ALLOW_HIGHDPI;
+        LOG_INFO("Display DPI:\nddpi = {}\nhdpi = {}\nvdpi = {}", ddpi, hdpi, vdpi);
+#ifdef ANDROID
+       if(vdpi > 1.f)
+          state.dpi_scale = vdpi / max;
+       else
+          state.dpi_scale = ddpi / max;
+#else
+        state.dpi_scale = ddpi / 96;
+#endif
     }
+#endif
+    state.res_width_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_WIDTH * state.dpi_scale);
+    state.res_height_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.dpi_scale);
+    
+    LOG_INFO("state.res_width_dpi_scale = {}", state.res_width_dpi_scale);
+    LOG_INFO("state.res_height_dpi_scale = {}", state.res_height_dpi_scale);
+    
+#ifdef ANDROID
+    if(state.cfg.boot_fail && state.cfg.gpu_idx != 0){
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Custom driver failed!", fmt::format("GPU driver {}\nnot supported or broken\nApp will use default driver now", state.cfg.custom_driver_name).c_str(), nullptr);
+            state.cfg.gpu_idx = 0;
+            state.cfg.custom_driver_name = "";
+            state.cfg.boot_fail = false;
+            config::serialize_config(state.cfg, state.cfg.config_path);
+    }else if (state.cfg.gpu_idx != 0) {
+          // mark failed boot first because if custom driber fail it will crash app so no way mark it after load custom driver
+          if(!state.cfg.boot_fail){
+                state.cfg.boot_fail = true;
+                config::serialize_config(state.cfg, state.cfg.config_path);
+            }
+        
+           // LOG_INFO("Load custom driver");
+           // set path to load custom driver using libadrenotools
+            state.libadreno = load_custom_driver(state.cfg.current_config.custom_driver_name);
+            if(!state.libadreno.is_adreno){
+                error_dialog("Custom driver corrupted or you use wrong file\nApp will use default driver now", nullptr);
+                state.cfg.gpu_idx = 0;
+                state.cfg.custom_driver_name = "";
+                state.cfg.boot_fail = true;
+                config::serialize_config(state.cfg, state.cfg.config_path);
+            }
+    }
+
 #endif
 
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH * state.manual_dpi_scale, DEFAULT_RES_HEIGHT * state.manual_dpi_scale, window_type | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI), SDL_DestroyWindow);
@@ -432,12 +623,16 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
 
     // initialize the renderer first because we need to know if we need a page table
     if (!state.cfg.console) {
-        if (renderer::init(state.window.get(), state.renderer, state.backend_renderer, state.cfg, root_paths)) {
+        if (renderer::init(state.window.get(), state.renderer, state.backend_renderer, state.cfg, root_paths, state.libadreno)) {
             update_viewport(state);
         } else {
             switch (state.backend_renderer) {
             case renderer::Backend::OpenGL:
+#ifdef ANDROID
+                error_dialog("Could not create OpenGL ES context!\nDoes your GPU support OpenGL ES 3.2?", nullptr);
+#else
                 error_dialog("Could not create OpenGL context!\nDoes your GPU at least support OpenGL 4.4?", nullptr);
+#endif
                 break;
 
             case renderer::Backend::Vulkan:
@@ -452,17 +647,28 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         }
     }
 
+#ifdef ANDROID
+    state.renderer->current_custom_driver = state.cfg.current_config.custom_driver_name;
+#endif
+
     if (!init(state.io, state.cache_path, state.log_path, state.pref_path, state.cfg.console)) {
         LOG_ERROR("Failed to initialize file system for the emulator!");
         return false;
     }
+
+    state.motion.init();
 
 #if USE_DISCORD
     if (discordrpc::init() && state.cfg.discord_rich_presence) {
         discordrpc::update_presence();
     }
 #endif
-
+#ifdef ANDROID
+    if(state.cfg.boot_fail){
+        state.cfg.boot_fail = false;
+        config::serialize_config(state.cfg, state.cfg.config_path);
+    }
+#endif
     return true;
 }
 
@@ -514,10 +720,23 @@ void destroy(EmuEnvState &emuenv, ImGui_State *imgui) {
 }
 
 void switch_state(EmuEnvState &emuenv, const bool pause) {
-    if (pause)
+    if (pause) {
+#ifdef ANDROID
+        emuenv.display.imgui_render = true;
+        gui::set_controller_overlay_state(0);
+#endif
+
         emuenv.kernel.pause_threads();
-    else
+    }
+    else {
+#ifdef ANDROID
+        emuenv.display.imgui_render = false;
+        if (emuenv.cfg.enable_gamepad_overlay)
+            gui::set_controller_overlay_state(gui::get_overlay_display_mask(emuenv.cfg));
+#endif
+
         emuenv.kernel.resume_threads();
+    }
 
     emuenv.audio.switch_state(pause);
 }

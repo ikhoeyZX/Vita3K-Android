@@ -1,5 +1,5 @@
 ﻿// Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -282,6 +282,7 @@ struct GuiState {
 
     bool is_capturing_keys = false;
     bool is_key_capture_dropped = false;
+    bool is_screenshot = false;
     int old_captured_key = 0;
     int captured_key = 0;
 

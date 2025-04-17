@@ -104,22 +104,26 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    if (type == Type::UNDEFINED) {
+     if (type == Type::UNDEFINED) {
         ImGui::SetCursorPosX(POS_BUTTON);
         title = lang["select_install_type"];
         if (ImGui::Button(lang["select_file"].c_str(), BUTTON_SIZE))
             type = Type::FILE;
         ImGui::Spacing();
+
+#ifndef ANDROID
         ImGui::SetCursorPosX(POS_BUTTON);
         if (ImGui::Button(lang["select_directory"].c_str(), BUTTON_SIZE))
             type = Type::DIRECTORY;
         ImGui::Spacing();
+#endif
+
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::SetCursorPosX(POS_BUTTON);
         if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE))
             gui.file_menu.archive_install_dialog = false;
-    } else {
+} else {
         switch (state) {
         case State::UNDEFINED: {
             host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
@@ -267,7 +271,11 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::PopStyleVar();
             ImGui::Separator();
             ImGui::Spacing();
+#ifdef ANDROID
+            delete_archive_file = false;
+#else
             ImGui::Checkbox(lang["delete_archive"].c_str(), &delete_archive_file);
+#endif
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, WINDOW_SIZE.y - BUTTON_SIZE.y - (12.f * SCALE.y)));
             if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
                 for (const auto &archive : contents_archives) {

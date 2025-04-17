@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,37 +38,69 @@
 #include <pugixml.hpp>
 #include <regex>
 
+#ifdef ANDROID
+#include <jni.h>
+
+void create_shortcut(const std::string_view game_path, const std::string_view game_id, const std::string_view game_name){
+    // retrieve the JNI environment.
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+
+    // retrieve the Java instance of the SDLActivity
+    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+
+    // find the Java class of the activity. It should be SDLActivity or a subclass of it.
+    jclass clazz(env->GetObjectClass(activity));
+
+    // find the identifier of the method to call
+    jmethodID method_id = env->GetMethodID(clazz, "createShortcut", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Z");
+    jstring j_game_path = env->NewStringUTF(game_path.data());
+    jstring j_game_id = env->NewStringUTF(game_id.data());
+    jstring j_game_name = env->NewStringUTF(game_name.data());
+
+    jboolean result = env->CallBooleanMethod(activity, method_id, j_game_path, j_game_id, j_game_name);
+
+    // clean up the local references.
+    env->DeleteLocalRef(j_game_name);
+    env->DeleteLocalRef(j_game_id);
+    env->DeleteLocalRef(activity);
+    env->DeleteLocalRef(clazz);
+
+    if(result)
+        SDL_AndroidShowToast("Shortcut successfully created!", 0, -1, 0, 0);
+    else
+        SDL_AndroidShowToast("Failed to create shortcut.", 1, -1, 0, 0);
+}
+#endif
+
 namespace gui {
 
 static std::map<double, std::string> update_history_infos;
 
-static bool get_update_history(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+bool get_update_history(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     update_history_infos.clear();
     const auto change_info_path{ emuenv.pref_path / "ux0/app" / app_path / "sce_sys/changeinfo/" };
 
     std::string fname = fs::exists(change_info_path / fmt::format("changeinfo_{:0>2d}.xml", emuenv.cfg.sys_lang)) ? fmt::format("changeinfo_{:0>2d}.xml", emuenv.cfg.sys_lang) : "changeinfo.xml";
 
     pugi::xml_document doc;
-    if (!doc.load_file((change_info_path / fname).c_str()))
+        if (!doc.load_file((change_info_path / fname).c_str()))
         return false;
-
     for (const auto &info : doc.child("changeinfo")) {
         double app_ver = info.attribute("app_ver").as_double();
         std::string text = info.text().as_string();
-
         // Replace HTML tags and special character entities
         text = std::regex_replace(text, std::regex(R"(<li>)"), reinterpret_cast<const char *>(u8"\u30FB"));
         text = std::regex_replace(text, std::regex(R"(<br/>|<br>|</li>)"), "\n");
         text = std::regex_replace(text, std::regex(R"(<[^>]+>)"), "");
         text = std::regex_replace(text, std::regex(R"(&nbsp;)"), " ");
         text = std::regex_replace(text, std::regex(R"(&reg;)"), reinterpret_cast<const char *>(u8"\u00AE"));
-
         // Remove duplicate newlines and spaces
         auto end = std::unique(text.begin(), text.end(), [](char a, char b) {
             return std::isspace(a) && std::isspace(b);
         });
         if (end != text.begin() && std::isspace(static_cast<unsigned>(end[-1])))
             --end;
+
         text.erase(end, text.end());
 
         update_history_infos[app_ver] = text;
@@ -85,7 +117,7 @@ std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, EmuEnvState &em
     return time_app_index;
 }
 
-static std::string get_time_app_used(GuiState &gui, const int64_t &time_used) {
+std::string get_time_app_used(GuiState &gui, const int64_t &time_used) {
     constexpr uint32_t one_min = 60;
     constexpr uint32_t one_hour = one_min * 60;
     constexpr uint32_t twenty_four_hours = 24;
@@ -134,7 +166,6 @@ void get_time_apps(GuiState &gui, EmuEnvState &emuenv) {
                 for (const auto &user : time_child) {
                     auto user_id = user.attribute("id").as_string();
                     for (const auto &app : user)
-                        // Can't use emplace_back due to Clang 15 for macos
                         gui.time_apps[user_id].push_back({ app.text().as_string(), app.attribute("last-time-used").as_llong(), app.attribute("time-used").as_llong() });
                 }
             }
@@ -145,7 +176,7 @@ void get_time_apps(GuiState &gui, EmuEnvState &emuenv) {
     }
 }
 
-static void save_time_apps(GuiState &gui, EmuEnvState &emuenv) {
+void save_time_apps(GuiState &gui, EmuEnvState &emuenv) {
     pugi::xml_document time_xml;
     auto declarationUser = time_xml.append_child(pugi::node_declaration);
     declarationUser.append_attribute("version") = "1.0";
@@ -187,7 +218,7 @@ void update_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::st
     const auto &time_app_index = get_time_app_index(gui, emuenv, app);
     if (time_app_index != gui.time_apps[emuenv.io.user_id].end())
         time_app_index->last_time_used = std::time(nullptr);
-    else // Can't use emplace_back due to Clang 15 for macos
+    else
         gui.time_apps[emuenv.io.user_id].push_back({ app, std::time(nullptr), 0 });
 
     get_app_index(gui, app)->last_time = std::time(nullptr);
@@ -215,9 +246,9 @@ void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         const auto PATCH_PATH{ emuenv.pref_path / "ux0/patch" / title_id };
         if (fs::exists(PATCH_PATH))
             fs::remove_all(PATCH_PATH);
-        const auto SAVE_DATA_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / APP_INDEX->savedata };
-        if (fs::exists(SAVE_DATA_PATH))
-            fs::remove_all(SAVE_DATA_PATH);
+//        const auto SAVE_DATA_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / APP_INDEX->savedata };
+//        if (fs::exists(SAVE_DATA_PATH))
+//            fs::remove_all(SAVE_DATA_PATH);
         const auto SHADER_CACHE_PATH{ emuenv.cache_path / "shaders" / title_id };
         if (fs::exists(SHADER_CACHE_PATH))
             fs::remove_all(SHADER_CACHE_PATH);
@@ -292,7 +323,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     const auto SHADER_LOG_PATH{ emuenv.cache_path / "shaderlog" / title_id };
     const auto EXPORT_TEXTURES_PATH{ emuenv.shared_path / "textures/export" / title_id };
     const auto IMPORT_TEXTURES_PATH{ emuenv.shared_path / "textures/import" / title_id };
-    const auto ISSUES_URL = "https://github.com/Vita3K/compatibility/issues";
+    constexpr auto ISSUES_URL = "https://github.com/Vita3K/compatibility/issues";
 
     const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
@@ -447,6 +478,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 }
                 ImGui::EndMenu();
             }
+#ifndef ANDROID
             if (ImGui::BeginMenu(lang.main["open_folder"].c_str())) {
                 if (ImGui::MenuItem(app_str["title"].c_str()))
                     open_path(APP_PATH.string());
@@ -466,6 +498,12 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     open_path(IMPORT_TEXTURES_PATH.string());
                 ImGui::EndMenu();
             }
+#else
+            if(ImGui::MenuItem("Create Shortcut")){
+                create_shortcut(emuenv.pref_path.string(), title_id, APP_INDEX->title);
+            }
+#endif
+
             if (!emuenv.cfg.show_live_area_screen && ImGui::BeginMenu("Live Area")) {
                 if (ImGui::MenuItem("Live Area", nullptr, &gui.vita_area.live_area_screen))
                     open_live_area(gui, emuenv, app_path);
@@ -546,6 +584,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 ImGui::PopTextWrapPos();
                 ImGui::TextColored(GUI_COLOR_TEXT, "\n");
             }
+            ImGui::ScrollWhenDragging();
             ImGui::EndChild();
             ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (22.f * SCALE.y)));
@@ -565,7 +604,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::SetCursorPosY((WINDOW_SIZE.y / 2) + 10);
             TextColoredCentered(GUI_COLOR_TEXT, context_dialog.c_str(), 54.f * SCALE.x);
             if (context_dialog == lang.deleting["app_delete"])
-                SetTooltipEx(lang.deleting["app_delete_description"].c_str());
+                ImGui::SetTooltip("%s", lang.deleting["app_delete_description"].c_str());
             ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
             if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
@@ -665,6 +704,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             } else
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang.info["never"].c_str());
         }
+        ImGui::ScrollWhenDragging();
         ImGui::End();
     }
 }

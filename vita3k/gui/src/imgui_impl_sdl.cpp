@@ -29,14 +29,14 @@
 #include <SDL_vulkan.h>
 
 static char *clipboard_text_data = nullptr;
-static const char *ImGui_ImplSdl_GetClipboardText(ImGuiContext *) {
+const char *ImGui_ImplSdl_GetClipboardText(ImGuiContext *) {
     if (clipboard_text_data)
         SDL_free(clipboard_text_data);
     clipboard_text_data = SDL_GetClipboardText();
     return clipboard_text_data;
 }
 
-static void ImGui_ImplSdl_SetClipboardText(ImGuiContext *, const char *text) {
+void ImGui_ImplSdl_SetClipboardText(ImGuiContext *, const char *text) {
     SDL_SetClipboardText(text);
 }
 
@@ -167,7 +167,11 @@ bool ImGui_ImplSdl_ProcessEvent(ImGui_State *state, SDL_Event *event) {
     ImGuiIO &io = ImGui::GetIO();
     switch (event->type) {
     case SDL_MOUSEMOTION: {
+#ifdef ANDROID
+        io.AddMousePosEvent(event->motion.x / io.DisplayFramebufferScale.x, event->motion.y / io.DisplayFramebufferScale.y);
+#else
         io.AddMousePosEvent((float)event->motion.x, (float)event->motion.y);
+#endif
         return true;
     }
     case SDL_MOUSEWHEEL: {
@@ -198,6 +202,12 @@ bool ImGui_ImplSdl_ProcessEvent(ImGui_State *state, SDL_Event *event) {
         }
         if (mouse_button == -1)
             break;
+
+#ifdef ANDROID
+        if (event->type == SDL_MOUSEBUTTONUP && mouse_button == 0 && !(state->MouseButtonsDown & 1))
+            // handle the case when a long touch is turned into a right click
+            return true;
+#endif
 
         io.AddMouseButtonEvent(mouse_button, (event->type == SDL_MOUSEBUTTONDOWN));
         state->mouse_buttons_down = (event->type == SDL_MOUSEBUTTONDOWN) ? (state->mouse_buttons_down | (1 << mouse_button)) : (state->mouse_buttons_down & ~(1 << mouse_button));
@@ -391,7 +401,7 @@ static void ImGui_ImplSDL2_UpdateGamepads(ImGui_State *state) {
     {                                                                                         \
         io.AddKeyEvent(KEY_NO, SDL_GameControllerGetButton(game_controller, BUTTON_NO) != 0); \
     }
-#define MAP_ANALOG(KEY_NO, AXIS_NO, V0, V1)                                                              \
+#define MAP_ANALOG(KEY_NO, AXIS_NO, V0, V1)                                                               \
     {                                                                                                    \
         float vn = (float)(SDL_GameControllerGetAxis(game_controller, AXIS_NO) - V0) / (float)(V1 - V0); \
         vn = IM_SATURATE(vn);                                                                            \
@@ -426,6 +436,26 @@ static void ImGui_ImplSDL2_UpdateGamepads(ImGui_State *state) {
 #undef MAP_ANALOG
 }
 
+static void ImGui_ImplSDL2_HandleTouch(ImGui_State *state) {
+    ImGuiIO &io = ImGui::GetIO();
+
+    if (state->MouseButtonsDown & 1) {
+        // considered left click
+        if (io.MouseDownDuration[0] >= 1.0f && !ImGui::IsMouseDragging(0)) {
+            // we left click without dragging for more than 1sec, turn into right click
+            io.MouseClickedTime[0] = 0;
+            io.MouseClicked[0] = false;
+            io.MouseDown[0] = false;
+            io.MouseReleased[0] = false;
+            io.MouseDownDuration[0] = -1.0f;
+            ImGui::SetActiveID(0, ImGui::GetCurrentContext()->CurrentWindow);
+            io.AddMouseButtonEvent(1, true);
+            io.AddMouseButtonEvent(1, false);
+            state->MouseButtonsDown &= ~1;
+        }
+    }
+}
+
 IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
     ImGuiIO &io = ImGui::GetIO();
 
@@ -453,6 +483,10 @@ IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
 
     // Update game controllers (if enabled and available)
     ImGui_ImplSDL2_UpdateGamepads(state);
+
+#ifdef ANDROID
+    ImGui_ImplSDL2_HandleTouch(state);
+#endif
 
     // Start the frame. This call will update the io.WantCaptureMouse, io.WantCaptureKeyboard flag that you can use to dispatch inputs (or not) to your application.
     ImGui::NewFrame();

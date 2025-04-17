@@ -71,7 +71,7 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     start_tick = rtc_get_ticks(kernel.base_tick.tick);
     last_vblank_waited = 0;
 
-    cpu = init_cpu(kernel.cpu_backend, kernel.cpu_opt, id, static_cast<std::size_t>(core_num), mem, kernel.cpu_protocol.get());
+    cpu = init_cpu(kernel.cpu_backend, kernel.cpu_opt, kernel.cpu_unsafe, id, static_cast<std::size_t>(core_num), mem, kernel.cpu_protocol.get());
     if (!cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
@@ -105,7 +105,7 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     write_tpidruro(*cpu, user_tls_ptr.address());
     if (kernel.tls_address) {
         assert(kernel.tls_psize <= kernel.tls_msize);
-        memcpy(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
+        memmove(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
     }
 
     CPUContext ctx;
@@ -316,7 +316,7 @@ void ThreadState::push_arguments(const std::vector<uint32_t> &args) {
         // TODO align to 16 bytes
         const size_t remain_size = args.size() - 4;
         sp -= 4 * remain_size;
-        memcpy(Ptr<uint32_t>(sp).get(mem), &args[4], remain_size * 4);
+        memmove(Ptr<uint32_t>(sp).get(mem), &args[4], remain_size * 4);
     }
     write_sp(*cpu, sp);
 }

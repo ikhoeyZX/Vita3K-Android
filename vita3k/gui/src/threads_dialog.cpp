@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ void draw_thread_details_dialog(GuiState &gui, EmuEnvState &emuenv) {
     uint32_t sp = read_sp(cpu);
     uint32_t lr = read_lr(cpu);
     uint32_t registers[13];
-    for (size_t a = 0; a < 13; a++)
+    for (uint8_t a = 0; a < 13; a++)
         registers[a] = read_reg(cpu, a);
 
     // TODO: Add THUMB/ARM mode viewer. What arch is the cpu currently using?
@@ -48,12 +48,12 @@ void draw_thread_details_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Text("LR: %08x", lr);
     ImGui::Text("Executing: %s", disassemble(cpu, pc).c_str());
     ImGui::Separator();
-    for (int a = 0; a < 6; a++) {
+    for (uint8_t a = 0; a < 6; a++) {
         ImGui::Text("r%02i: %08x   r%02i: %08x", a, registers[a], a + 6, registers[a + 6]);
     }
     ImGui::Text("r12: %08x", registers[12]);
     ImGui::Separator();
-    for (int i = 0; i < 15; i++) {
+    for (uint8_t i = 0; i < 15; i++) {
         ImGui::Text("Stack %d: %08x", i, *Ptr<uint32_t>(sp + i * 4).get(emuenv.mem));
     }
 

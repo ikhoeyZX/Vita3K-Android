@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -124,15 +124,20 @@ public:
     struct CurrentConfig {
         std::string cpu_backend;
         bool cpu_opt = true;
+        bool cpu_unsafe = false;
         int modules_mode = ModulesMode::AUTOMATIC;
         std::vector<std::string> lle_modules = {};
         int audio_volume = 100;
         bool ngs_enable = true;
         bool pstv_mode = false;
+        std::string backend_renderer = "Vulkan";
+        std::string custom_driver_name{};
         bool high_accuracy = false;
         float resolution_multiplier = 1.0f;
         bool disable_surface_sync = false;
         std::string screen_filter = "Bilinear";
+        std::string memory_mapping = "double-buffer";
+        std::string vk_mapping = "mailbox";
         bool v_sync = true;
         int anisotropic_filtering = 1;
         bool async_pipeline_compilation = true;
