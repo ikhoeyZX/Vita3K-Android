@@ -27,6 +27,8 @@
 
 #include <cstring>
 
+static SceTouchPortType touchscreen_port = SCE_TOUCH_PORT_FRONT;
+
 #ifdef ANDROID
 #include <jni.h>
 
@@ -34,6 +36,7 @@ extern "C" JNIEXPORT void JNICALL
 Java_org_vita3k_emulator_overlay_InputOverlay_setTouchState(JNIEnv *env, jobject thiz, jboolean is_back) {
     touchscreen_port = static_cast<SceTouchPortType>(is_back);
 }
+#endif
 
 static SceTouchData touch_buffers[MAX_TOUCH_BUFFER_SAVED][2];
 static int touch_buffer_idx = 0;
@@ -41,7 +44,6 @@ static bool is_touchpad = false;
 static SDL_TouchFingerEvent finger_buffer[8];
 static SDL_ControllerTouchpadEvent touchpad_buffer[8];
 static uint8_t finger_count = 0;
-static SceTouchPortType touchscreen_port = SCE_TOUCH_PORT_FRONT;
 static bool is_touched[2] = { false, false };
 // Used for mouse support
 static int curr_touch_id[2] = { 0, 0 };
