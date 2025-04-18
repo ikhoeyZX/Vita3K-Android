@@ -20,6 +20,7 @@
 
 #ifdef ANDROID
 #include <SDL.h>
+#include <util/log.h>
 #endif
 
 namespace fs_utils {
