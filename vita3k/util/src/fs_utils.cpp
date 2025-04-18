@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2023 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -111,10 +111,9 @@ static bool read_data(const fs::path &path, std::vector<T> &data) {
     }
     return true;
 }
-#endif
 
 bool read_data(const fs::path &path, std::vector<uint8_t> &data) { return read_data<uint8_t>(path, data); }
 bool read_data(const fs::path &path, std::vector<int8_t> &data) { return read_data<int8_t>(path, data); }
 bool read_data(const fs::path &path, std::vector<char> &data) { return read_data<char>(path, data); }
-
+#endif
 } // namespace fs_utils
