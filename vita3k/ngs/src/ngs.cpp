@@ -212,7 +212,7 @@ Ptr<Patch> Voice::patch(const MemState &mem, const int32_t index, int32_t subind
 }
 
 bool Voice::remove_patch(const MemState &mem, const Ptr<Patch> patch) {
-    if (!patch || !voice_mutex) {
+    if (!patch) {
         return false;
     }
 
@@ -322,7 +322,7 @@ void Voice::invoke_callback(KernelState &kernel, const MemState &mem, const SceU
         return;
     }
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
     const Address callback_info_addr = stack_alloc(*thread->cpu, sizeof(SceNgsCallbackInfo));
 
     SceNgsCallbackInfo *info = Ptr<SceNgsCallbackInfo>(callback_info_addr).get(mem);

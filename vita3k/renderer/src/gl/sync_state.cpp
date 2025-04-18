@@ -146,8 +146,8 @@ void sync_viewport_real(const GLState &state, GLContext &context, const float xO
     const GLfloat x = xOffset - std::abs(xScale);
     const GLfloat y = std::min<GLfloat>(ymin, ymax);
 
-    glViewport(x * state.res_multiplier, y * state.res_multiplier, w * state.res_multiplier, h * state.res_multiplier);
-    glDepthRangef(0.0f, 1.0f);
+    glViewportIndexedf(0, x * state.res_multiplier, y * state.res_multiplier, w * state.res_multiplier, h * state.res_multiplier);
+    glDepthRange(0, 1);
 }
 
 void sync_clipping(const GLState &state, GLContext &context) {

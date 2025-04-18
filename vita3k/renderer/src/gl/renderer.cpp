@@ -507,9 +507,9 @@ static void post_process_pixels_data(GLState &renderer, std::uint32_t *pixels, s
                 } else {
                     const uint16_t *temp_bytes = reinterpret_cast<uint16_t *>(curr_input);
                     uint32_t pixel = 0;
-                    pixel |= (uint32_t(temp_bytes[0] << 17) & (0x3FFFF << 18)); // Exp + 9 bits
-                    pixel |= (uint32_t(temp_bytes[1] << 8) & (0x1FF << 9));
-                    pixel |= (uint32_t(temp_bytes[2] >> 1) & (0x1FF << 0));
+                    pixel |= static_cast<uint32_t>(temp_bytes[0] << 17) & (0x3FFF << 18); // Exp + 9 bits
+                    pixel |= static_cast<uint32_t>(temp_bytes[1] << 8) & (0x1FF << 9);
+                    pixel |= static_cast<uint32_t>(temp_bytes[2] >> 1) & (0x1FF << 0);
                     *reinterpret_cast<uint32_t *>(curr_output) = pixel;
                 }
 
@@ -699,11 +699,20 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
         // Maybe a victim of surface locking (early from client GXM) when no frame yet renders!
         const auto pixels = frame.base.cast<void>().get(mem);
 
+        if (pixels) {
+            open_access_parent_protect_segment(mem, frame.base.address());
+            unprotect_inner(mem, frame.base.address(), texture_data_size);
+        }
+
         glPixelStorei(GL_UNPACK_ROW_LENGTH, frame.pitch);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, frame.image_size.x, frame.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
+        if (pixels) {
+            close_access_parent_protect_segment(mem, frame.base.address());
+        }
 
         texture_size.x = static_cast<float>(frame.image_size.x);
         texture_size.y = static_cast<float>(frame.image_size.y);
@@ -762,6 +771,12 @@ int GLState::get_max_anisotropic_filtering() {
 
 void GLState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
+}
+
+int GLState::get_max_2d_texture_width() {
+    GLint max_texture_size;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
+    return static_cast<int>(max_texture_size);
 }
 
 std::string_view GLState::get_gpu_name() {

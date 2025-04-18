@@ -87,7 +87,7 @@ COMMAND(handle_sync_surface_data) {
     const SceGxmNotification fragment_notification = helper.pop<SceGxmNotification>();
     // with memory mapping, notifications are signaled another way
     // also don't try to signal if there are no notifications
-    bool were_notifications_signaled = renderer.features.enable_memory_mapping
+    bool were_notifications_signaled = renderer.features.support_memory_mapping
         || (!vertex_notification.address && !fragment_notification.address);
 
     auto signal_notifications = [&]() {
@@ -194,7 +194,7 @@ COMMAND(handle_sync_surface_data) {
 COMMAND(handle_mid_scene_flush) {
     TRACY_FUNC_COMMANDS(handle_mid_scene_flush);
 
-    if (!renderer.features.enable_memory_mapping) {
+    if (!renderer.features.support_memory_mapping) {
         // handle it like a simple notification
         cmd_handle_notification(renderer, mem, config, helper, features, render_context);
         return;

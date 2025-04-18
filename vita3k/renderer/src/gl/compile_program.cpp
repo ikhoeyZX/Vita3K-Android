@@ -148,9 +148,6 @@ static SharedGLObject compile_program(ProgramCache &program_cache, const SharedG
     glDetachShader(program->get(), vert_shader->get());
 
     program_cache.emplace(hashes, program);
-
-    glDeleteShader(frag_shader->get());
-    glDeleteShader(vert_shader->get());
     
     return program;
 }
