@@ -60,11 +60,6 @@ void dump_data(const fs::path &path, const void *data, const std::streamsize siz
     }
 }
 
-
-
-
-template <typename T>
-
 #ifdef ANDROID
 std::vector<uint8_t> read_asset_raw(const fs::path &path) {
     static const uint32_t base_path_size = strlen(SDL_AndroidGetExternalStoragePath()) + 1;
@@ -88,6 +83,7 @@ std::vector<uint8_t> read_asset_raw(const fs::path &path) {
     return raw_data;
 }
 #else
+template <typename T>
 static bool read_data(const fs::path &path, std::vector<T> &data) {
     data.clear();
     fs::ifstream file(path, std::ios::binary | std::ios::ate);
