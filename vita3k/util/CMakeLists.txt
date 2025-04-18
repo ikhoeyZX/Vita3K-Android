@@ -21,5 +21,5 @@ target_link_libraries(util PRIVATE libcurl crypto)
 target_compile_definitions(util PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:TRACY_ENABLE>)
 
 if(ANDROID)
-	target_link_libraries(util PUBLIC emuenv android xxHash::xxhash)
+	target_link_libraries(util PUBLIC sdl2 emuenv android xxHash::xxhash)
 endif()
