@@ -74,7 +74,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         if (result == host::dialog::filesystem::Result::SUCCESS) {
             std::thread installation([&emuenv]() {
-                install_pup(emuenv.pref_path, pup_path, progress_callback, emuenv.cfg.dencrypt_installs);
+                install_pup(emuenv.pref_path, pup_path, progress_callback, emuenv.cfg.dencrypt_install);
                 std::lock_guard<std::mutex> lock(install_mutex);
                 finished_installing = true;
                 get_firmware_version(emuenv);

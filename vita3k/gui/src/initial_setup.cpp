@@ -209,9 +209,9 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
             draw_firmware_install_dialog(gui, emuenv);
         }
         // Dencrypt box
-        if(ImGui::Checkbox(emulator["dencrypt_installs"].c_str(), &emuenv.cfg.dencrypt_installs))
+        if(ImGui::Checkbox(emulator["dencrypt_install"].c_str(), &emuenv.cfg.dencrypt_install))
             config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-        SetTooltipEx(emulator["dencrypt_installs_description"].c_str());
+        SetTooltipEx(emulator["dencrypt_install_description"].c_str());
 #ifdef ANDROID
         ImGui::ScrollWhenDragging();
 #endif

@@ -1124,8 +1124,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         SetTooltipEx(lang.emulator["check_for_updates_description"].c_str());
 #endif
         // Dencrypt all executable and libs when install
-        ImGui::Checkbox(lang.emulator["dencrypt_installs"].c_str(), &emuenv.cfg.dencrypt_installs);
-        SetTooltipEx(lang.emulator["dencrypt_installs_description"].c_str());
+        ImGui::Checkbox(lang.emulator["dencrypt_install"].c_str(), &emuenv.cfg.dencrypt_install);
+        SetTooltipEx(lang.emulator["dencrypt_install_description"].c_str());
 
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.emulator["performance_overlay"].c_str())
         ImGui::Spacing();
