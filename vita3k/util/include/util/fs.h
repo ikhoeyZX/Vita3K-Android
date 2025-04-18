@@ -72,6 +72,18 @@ fs::path path_concat(const fs::path &path1, const fs::path &path2);
  */
 void dump_data(const fs::path &path, const void *data, const std::streamsize size);
 
+/**
+ * \brief Read an asset file as raw data, right now shader-builtin, data and lang are considered as asset files
+ * This is needed because Android assets are loaded in a different way compared to the other
+ */
+std::vector<uint8_t> read_asset_raw(const fs::path& path);
+
+/**
+ * \brief Read an asset file as text , right now shader-builtin, data and lang are considered as asset files
+ * This is needed because Android assets are loaded in a different way compared to the other
+ */
+std::string read_asset_text(const fs::path& path);
+
 bool read_data(const fs::path &path, std::vector<uint8_t> &data);
 bool read_data(const fs::path &path, std::vector<int8_t> &data);
 bool read_data(const fs::path &path, std::vector<char> &data);

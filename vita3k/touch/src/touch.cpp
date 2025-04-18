@@ -27,6 +27,14 @@
 
 #include <cstring>
 
+#ifdef ANDROID
+#include <jni.h>
+
+extern "C" JNIEXPORT void JNICALL
+Java_org_vita3k_emulator_overlay_InputOverlay_setTouchState(JNIEnv *env, jobject thiz, jboolean is_back) {
+    touchscreen_port = static_cast<SceTouchPortType>(is_back);
+}
+
 static SceTouchData touch_buffers[MAX_TOUCH_BUFFER_SAVED][2];
 static int touch_buffer_idx = 0;
 static bool is_touchpad = false;
@@ -91,7 +99,14 @@ void touch_vsync_update(const EmuEnvState &emuenv) {
     std::chrono::time_point<std::chrono::steady_clock> ts = std::chrono::steady_clock::now();
     uint64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
 
-    if (finger_count > 0) {
+// disable mouse support on android because the touchscreen is considered as a mouse, and this creates a mess
+#ifdef ANDROID
+    constexpr bool on_android = true;
+#else
+    constexpr bool on_android = false;
+#endif
+
+    if (finger_count > 0 ||  on_android) {
         SceTouchData touch_data = is_touchpad ? recover_touchpad_events(emuenv) : recover_touch_events(emuenv);
         touch_data.timeStamp = timestamp;
 

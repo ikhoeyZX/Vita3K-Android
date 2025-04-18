@@ -18,6 +18,10 @@
 #include <util/fs.h>
 #include <util/string_utils.h>
 
+#ifdef ANDROID
+#include <SDL.h>
+#endif
+
 namespace fs_utils {
 
 fs::path construct_file_name(const fs::path &base_path, const fs::path &folder_path, const fs::path &file_name, const fs::path &extension) {
@@ -55,7 +59,35 @@ void dump_data(const fs::path &path, const void *data, const std::streamsize siz
         of.close();
     }
 }
+
+
+
+
 template <typename T>
+
+#ifdef ANDROID
+std::vector<uint8_t> read_asset_raw(const fs::path &path) {
+    static const uint32_t base_path_size = strlen(SDL_AndroidGetExternalStoragePath()) + 1;
+    std::string file_path = path.string().substr(base_path_size);
+    SDL_RWops *file = SDL_RWFromFile(file_path.c_str(), "r");
+    if (file == nullptr) {
+        LOG_ERROR("Could not open asset file {}", path.string());
+        return {};
+    }
+
+    Sint64 size_read = SDL_RWsize(file);
+    std::vector<uint8_t> raw_data(size_read);
+
+    if (SDL_RWread(file, raw_data.data(), size_read, 1) != 1) {
+        LOG_ERROR("Could not read asset file {}", path.string());
+        return {};
+    }
+
+    SDL_RWclose(file);
+
+    return raw_data;
+}
+#else
 static bool read_data(const fs::path &path, std::vector<T> &data) {
     data.clear();
     fs::ifstream file(path, std::ios::binary | std::ios::ate);
@@ -79,6 +111,7 @@ static bool read_data(const fs::path &path, std::vector<T> &data) {
     }
     return true;
 }
+#endif
 
 bool read_data(const fs::path &path, std::vector<uint8_t> &data) { return read_data<uint8_t>(path, data); }
 bool read_data(const fs::path &path, std::vector<int8_t> &data) { return read_data<int8_t>(path, data); }

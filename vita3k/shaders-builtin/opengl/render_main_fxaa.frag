@@ -1,7 +1,8 @@
 // Vita3K emulator project
 // Code adapted from http://horde3d.org/wiki/index.php?title=Shading_Technique_-_FXAA
 
-#version 410 core
+#version 320 es
+precision highp float
 
 uniform sampler2D fb;
 uniform vec2 inv_frame_size;

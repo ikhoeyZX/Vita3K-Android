@@ -17,6 +17,9 @@
 
 #pragma once
 
+#ifdef ANDROID
+#define VK_USE_PLATFORM_ANDROID_KHR
+#endif
 #ifdef __APPLE__
 #define VK_ENABLE_BETA_EXTENSIONS
 #endif
