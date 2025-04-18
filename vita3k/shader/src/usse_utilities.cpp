@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -179,7 +179,6 @@ static spv::Function *make_fx10_unpack_func(spv::Builder &b, const SpirvUtilFunc
     spv::Function *fx10_unpack_func = b.makeFunctionEntry(
         spv::NoPrecision, type_f32_v3, "unpack3xFX10", { type_f32 }, { "to_unpack" },
         decorations, &fx10_unpack_func_block);
-    fx10_unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
 
     spv::Id extracted = fx10_unpack_func->getParamId(0);
 
@@ -261,7 +260,6 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
     spv::Function *unpack_func = b.makeFunctionEntry(
         spv::NoPrecision, output_type, func_name.c_str(), { type_f32 }, { "to_unpack" },
         decorations, &unpack_func_block);
-    unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
     spv::Id extracted = unpack_func->getParamId(0);
 
     const spv::Id result_type = is_signed ? type_i32 : type_ui32;
@@ -339,7 +337,6 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
         spv::NoPrecision, type_f32, func_name.c_str(), { input_type }, { "to_pack" },
         decorations, &pack_func_block);
 
-    pack_func->addParamPrecision(0, spv::DecorationRelaxedPrecision);
     spv::Id extracted = pack_func->getParamId(0);
     const int comp_bits = 32 / comp_count;
 
@@ -372,7 +369,6 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const SpirvUtilFunct
     spv::Function *f16_unpack_func = b.makeFunctionEntry(
         spv::NoPrecision, type_f32_v2, "unpack2xF16", { type_f32 }, { "to_unpack" },
         decorations, &f16_unpack_func_block);
-    f16_unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
 
     spv::Id extracted = f16_unpack_func->getParamId(0);
 
@@ -399,7 +395,6 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const SpirvUtilFunctio
         spv::NoPrecision, type_f32, "pack2xF16", { type_f32_v2 }, { "to_pack" },
         decorations, &f16_pack_func_block);
 
-    f16_pack_func->addParamPrecision(0, spv::DecorationRelaxedPrecision);
     spv::Id extracted = f16_pack_func->getParamId(0);
 
     // use packHalf2x16
@@ -690,7 +685,7 @@ spv::Id unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureStat
         return b.createFunctionCall(utils.unpack_fx10, { scalar });
     }
     default: {
-        LOG_ERROR("Unsupported unpack type: 0x{:0X}", fmt::underlying(type));
+        LOG_ERROR("Unsupported unpack type: {}", log_hex(type));
         break;
     }
     }
@@ -719,7 +714,7 @@ spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState 
     }
 
     default: {
-        LOG_ERROR("Unsupported pack type: 0x{:0X}", fmt::underlying(source_type));
+        LOG_ERROR("Unsupported pack type: {}", log_hex(fmt::underlying(source_type)));
         break;
     }
     }
@@ -1453,10 +1448,7 @@ static spv::Id create_constant_vector_or_scalar(spv::Builder &b, spv::Id constan
     if (comp_count == 1) {
         return constant;
     }
-    std::vector<spv::Id> oprs;
-    for (int i = 0; i < comp_count; ++i) {
-        oprs.push_back(constant);
-    }
+    std::vector<spv::Id> oprs(comp_count, constant);
     return b.createCompositeConstruct(b.makeVectorType(b.getTypeId(constant), comp_count), oprs);
 }
 

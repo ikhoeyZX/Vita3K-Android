@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 #include <ctime>
 
-#ifdef WIN32
+#ifdef _WIN32
 #define SAFE_GMTIME(time, result) gmtime_s(result, time)
 #define SAFE_LOCALTIME(time, result) localtime_s(result, time)
 #else

@@ -5,7 +5,7 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
-#version 450
+#version 450 core
 
 layout(location = 0) in vec2 uv_frag;
 layout(location = 0) out vec4 color_frag;

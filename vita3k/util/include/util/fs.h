@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,16 +21,6 @@
 #include <boost/filesystem/fstream.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
-
-#ifdef WIN32
-#define fseek _fseeki64
-#define ftell _ftelli64
-#endif
-
-#ifdef WIN32
-#define fseek _fseeki64
-#define ftell _ftelli64
-#endif
 
 namespace fs = boost::filesystem;
 
@@ -82,18 +72,9 @@ fs::path path_concat(const fs::path &path1, const fs::path &path2);
  */
 void dump_data(const fs::path &path, const void *data, const std::streamsize size);
 
-
-/**
- * \brief Read an asset file as raw data, right now shader-builtin, data and lang are considered as asset files
- * This is needed because Android assets are loaded in a different way compared to the other
- */
-std::vector<uint8_t> read_asset_raw(const fs::path& path);
-
-/**
- * \brief Read an asset file as text , right now shader-builtin, data and lang are considered as asset files
- * This is needed because Android assets are loaded in a different way compared to the other
- */
-std::string read_asset_text(const fs::path& path);
+bool read_data(const fs::path &path, std::vector<uint8_t> &data);
+bool read_data(const fs::path &path, std::vector<int8_t> &data);
+bool read_data(const fs::path &path, std::vector<char> &data);
 
 } // namespace fs_utils
 

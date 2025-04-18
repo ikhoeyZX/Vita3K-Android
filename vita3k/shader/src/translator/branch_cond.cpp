@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -202,7 +202,7 @@ static Opcode decode_test_inst(const Imm2 alu_sel, const Imm4 alu_op, const Imm1
     return test_op;
 }
 
-inline bool is_sub_opcode(Opcode test_op) {
+inline static bool is_sub_opcode(Opcode test_op) {
     return (test_op == Opcode::VSUB) || (test_op == Opcode::VF16SUB) || (test_op == Opcode::ISUB8) || (test_op == Opcode::ISUB16) || (test_op == Opcode::ISUB32) || (test_op == Opcode::ISUBU8) || (test_op == Opcode::ISUBU16) || (test_op == Opcode::ISUBU32) || (test_op == Opcode::FPSUB8);
 }
 

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ template <size_t MaxOutSize>
 std::string exec(const std::string &cmd) {
     std::array<char, MaxOutSize> buffer;
     std::string result;
-#ifdef WIN32
+#ifdef _WIN32
     std::unique_ptr<FILE, decltype(&_pclose)> pipe(_popen(cmd.c_str(), "r"), _pclose);
 #else
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
