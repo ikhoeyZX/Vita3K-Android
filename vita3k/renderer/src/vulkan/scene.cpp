@@ -290,7 +290,7 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
 
     for (uint32_t i = 0; i < max_stream_idx; i++) {
         if (state.vertex_streams[i].data) {
-            if (context.state.features.enable_memory_mapping) {
+            if (context.state.features.support_memory_mapping) {
                 auto [buffer, offset] = context.state.get_matching_mapping(state.vertex_streams[i].data.cast<void>());
 
                 context.vertex_stream_offsets[i] = offset;
