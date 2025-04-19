@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -61,9 +61,7 @@ public:
 #endif
 
     std::unique_ptr<ScreenFilter> filter;
-    std::vector<vk::Semaphore> image_acquired_semaphores;
-    std::vector<vk::Semaphore> image_ready_semaphores;
-
+    
     std::vector<vkutil::Image> vita_surface;
     vma::Allocation vita_surface_staging_alloc;
     vma::AllocationInfo vita_surface_staging_info;
