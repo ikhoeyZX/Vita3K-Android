@@ -882,7 +882,7 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
         // we support the requested mapping method
         mapping_method = request_mapping;
 
-    features.enable_memory_mapping = mapping_method != MappingMethod::Disabled;
+    features.support_memory_mapping = mapping_method != MappingMethod::Disabled;
 
 #ifdef ANDROID
     if (mapping_method == MappingMethod::NativeBuffer) {
