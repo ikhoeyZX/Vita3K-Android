@@ -1325,14 +1325,14 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
         break;
 
     case MappingMethod::DoubleBuffer:
-        remove_external_mapping(mem, address.cast<uint8_t>().get(mem), ite->second.size);
+        remove_external_mapping(mem, address.cast<uint8_t>().get(mem));
         // remove all the trapping related to these locations
         buffer_trapping.remove_range(address.address(), address.address() + ite->second.size);
         break;
 
 #ifdef ANDROID
     case MappingMethod::NativeBuffer: {
-        remove_external_mapping(mem, address.cast<uint8_t>().get(mem), ite->second.size);
+        remove_external_mapping(mem, address.cast<uint8_t>().get(mem));
         device.destroyBuffer(ite->second.buffer);
         ExternalBuffer &buffer = std::get<ExternalBuffer>(ite->second.buffer_impl);
         device.freeMemory(buffer.memory);
@@ -1347,7 +1347,7 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
 #endif
 
     case MappingMethod::PageTable:
-        remove_external_mapping(mem, address.cast<uint8_t>().get(mem), ite->second.size);
+        remove_external_mapping(mem, address.cast<uint8_t>().get(mem));
         break;
 
     default:
