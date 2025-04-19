@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ void set_uniform_buffer(VKContext &context, MemState &mem, const ShaderProgram *
     }
 
     const uint32_t data_size_upload = std::min<uint32_t>(size, program->uniform_buffer_sizes.at(block_num) * 4);
-    if (context.state.features.enable_memory_mapping) {
+    if (context.state.features.support_memory_mapping) {
         if(context.state.mapping_method == MappingMethod::DoubleBuffer){
             // we must always cover everything as some small part of the buffer may get changed only
             context.state.buffer_trapping.access_buffer(data.address(), data_size_upload, mem, false, true);
@@ -232,7 +232,7 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
         state.device.updateDescriptorSets(fragment_texture_count, write_descrs.data(), 0, nullptr);
     }
 
-    const uint32_t dynamic_offset_count = state.features.enable_memory_mapping ? 2U : 4U;
+    const uint32_t dynamic_offset_count = state.features.support_memory_mapping ? 2U : 4U;
     const uint32_t dynamic_offsets[] = {
         // GXMRenderVertUniformBlock
         context.vertex_info_uniform_buffer.data_offset,
@@ -418,7 +418,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         LOG_DEBUG(fmt::runtime("Fragment default uniform buffer: {}\n"), spdlog::to_hex(context.ubo_data[SCE_GXM_REAL_MAX_UNIFORM_BUFFER], 16));
     }
 
-    const bool use_memory_mapping = context.state.features.enable_memory_mapping;
+    const bool use_memory_mapping = context.state.features.support_memory_mapping;
 
     // update uniforms if needed
     // first update the buffer and texture count
