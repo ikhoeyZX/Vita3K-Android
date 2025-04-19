@@ -1026,7 +1026,7 @@ uint32_t VKState::get_features_mask() {
     features_mask.value = 0;
     features_mask.use_shader_interlock = features.support_shader_interlock;
     features_mask.use_texture_viewport = features.use_texture_viewport;
-    features_mask.use_memory_mapping = features.enable_memory_mapping;
+    features_mask.use_memory_mapping = features.support_memory_mapping;
     features_mask.use_rgb_attributes = features.support_rgb_attributes;
     features_mask.use_scaled_attributes = pipeline_cache.support_scaled_vertex_attribute;
 
