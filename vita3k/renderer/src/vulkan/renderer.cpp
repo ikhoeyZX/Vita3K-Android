@@ -1334,7 +1334,7 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
     case MappingMethod::NativeBuffer: {
         remove_external_mapping(mem, address.cast<uint8_t>().get(mem));
         device.destroyBuffer(ite->second.buffer);
-        ExternalBuffer &buffer = std::get<ExternalBuffer>(ite->second.buffer_impl);
+        const ExternalBuffer& buffer = std::get<ExternalBuffer>(ite->second.buffer_impl);
         device.freeMemory(buffer.memory);
 
         AHardwareBuffer *hardware_buffer = reinterpret_cast<AHardwareBuffer *>(buffer.extra);
