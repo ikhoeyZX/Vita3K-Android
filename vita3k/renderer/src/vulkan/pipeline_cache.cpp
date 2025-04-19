@@ -104,7 +104,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         };
 
         vk::DescriptorSetLayoutCreateInfo descriptor_info{
-            .bindingCount = state.features.enable_memory_mapping ? 2U : 4U,
+            .bindingCount = state.features.support_memory_mapping ? 2U : 4U,
             .pBindings = layout_bindings.data()
         };
         uniforms_layout = state.device.createDescriptorSetLayout(descriptor_info);
