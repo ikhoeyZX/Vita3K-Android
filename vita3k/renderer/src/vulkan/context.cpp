@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -441,7 +441,7 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     }
 
     ColorSurfaceCacheInfo *surface_info = nullptr;
-    if (state.features.enable_memory_mapping && !state.disable_surface_sync && submit)
+    if (state.features.support_memory_mapping && !state.disable_surface_sync && submit)
         surface_info = state.surface_cache.perform_surface_sync();
 
     prerender_cmd.end();
@@ -474,7 +474,7 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     cmdbuffers_to_submit.clear();
     state.frame().rendered_fences.push_back(fence);
 
-    if (state.features.enable_memory_mapping) {
+    if (state.features.support_memory_mapping) {
         // send it to the wait queue
         state.request_queue.push(FenceWaitRequest{ fence });
 
@@ -540,7 +540,7 @@ void VKContext::check_for_macroblock_change(bool is_draw) {
 }
 
 void new_frame(VKContext &context) {
-    if (context.state.features.enable_memory_mapping) {
+    if (context.state.features.support_memory_mapping) {
         FrameDoneRequest request = { context.frame_timestamp };
         context.state.request_queue.push(request);
 
@@ -557,7 +557,7 @@ void new_frame(VKContext &context) {
     if (!frame.rendered_fences.empty()) {
         // wait for the fences, then reset them
 
-        if (context.state.features.enable_memory_mapping) {
+        if (context.state.features.support_memory_mapping) {
             // this will underflow for the first MAX_FRAMES_RENDERING frames
             // but that's not an issue as frame.rendered_fences will be empty
             uint64_t previous_frame_timestamp = context.frame_timestamp - MAX_FRAMES_RENDERING;
