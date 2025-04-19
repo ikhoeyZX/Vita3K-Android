@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -261,10 +261,11 @@ GLenum translate_internal_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
         return GL_RGB16F;
 
-    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
+/*    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
         return GL_RGBA8;
+*/
 
     // 4 components.
     case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
