@@ -53,7 +53,7 @@ VKContext::VKContext(VKState &state, MemState &mem)
     vertex_info_uniform_buffer.alignment = uniform_alignment;
     fragment_info_uniform_buffer.alignment = uniform_alignment;
 
-    if (state.features.enable_memory_mapping) {
+    if (state.features.support_memory_mapping) {
         // use the default buffer
         std::fill_n(vertex_stream_buffers, SCE_GXM_MAX_VERTEX_STREAMS, state.default_buffer.buffer);
 
@@ -88,7 +88,7 @@ VKContext::VKContext(VKState &state, MemState &mem)
 
     // allocate descriptor pools
     {
-        const uint32_t nb_descriptor = state.features.enable_memory_mapping ? 2U : 4U;
+        const uint32_t nb_descriptor = state.features.support_memory_mapping ? 2U : 4U;
 
         std::array<vk::DescriptorPoolSize, 2> pool_sizes = {
             vk::DescriptorPoolSize{ vk::DescriptorType::eUniformBufferDynamic, 2 },
@@ -235,7 +235,7 @@ void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt) {
 bool create(std::unique_ptr<VertexProgram> &vp, VKState &state, const SceGxmProgram &program) {
     vp = std::make_unique<VertexProgram>();
 
-    if (program.program_flags & SCE_GXM_PROGRAM_FLAG_BUFFER_STORE)
+    if (program.program_flags)
         state.has_shader_store = true;
 
     return true;
