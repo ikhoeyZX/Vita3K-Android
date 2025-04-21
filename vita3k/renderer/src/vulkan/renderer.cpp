@@ -18,6 +18,7 @@
 #ifdef ANDROID
 // must be first
 #define __ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__
+#include <android/hardware_buffer.h>
 #endif
 
 #include <renderer/functions.h>
@@ -1182,14 +1183,14 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         const vk::Buffer mapped_buffer = device.createBuffer(buffer_info.get());
         device.bindBufferMemory(mapped_buffer, device_memory, 0);
 
-	vk::BufferDeviceAddressInfoKHR address_info{
-            .buffer = buffer->buffer
-        };
-        const uint64_t buffer_address = device.getBufferAddress(address_info) + buffer_offset;
-        const vk::Buffer mapped_buffer = buffer->buffer;
-
 	add_external_mapping(mem, address.address(), size, static_cast<uint8_t *>(buffer.mapped_data));
-	mapped_memories[address.address()] = { address.address(), std::move(buffer), mapped_buffer, size, buffer_address };
+	mapped_memories[address.address()] = MappedMemory{
+	        .mapped_address = address.address(),
+	        .external_buffer = std::move(buffer),
+	        .buffer = mapped_buffer,
+	        .size = size,
+	        .address = buffer_address
+    	};
 #else
         LOG_ERROR("Native buffer is only supported on Android!\n");
 #endif
