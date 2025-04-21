@@ -18,7 +18,6 @@
 #ifdef ANDROID
 // must be first
 #define __ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__
-#include <android/hardware_buffer.h>
 #endif
 
 #include <renderer/functions.h>
@@ -1220,7 +1219,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         const vk::Buffer mapped_buffer = buffer.buffer;
 
         add_external_mapping(mem, address.address(), size, static_cast<uint8_t *>(buffer.mapped_data));
-        mapped_memories[address.address()] = { address.address(), std::move(buffer), mapped_buffer, size, buffer_address };
+	mapped_memories[address.address()] = { address.address(), device_memory, mapped_buffer, size, buffer_address };
+        
         break;
     }
 
@@ -1283,7 +1283,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         };
         const uint64_t buffer_address = device.getBufferAddress(address_info);
 
-        mapped_memories[address.address()] = { address.address(), ExternalBuffer{ device_memory, nullptr }, mapped_buffer, size, buffer_address };
+        mapped_memories[address.address()] = { address.address(), device_memory, mapped_buffer, size, buffer_address };
         break;
     }
 
