@@ -1339,10 +1339,14 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
     case MappingMethod::NativeBuffer: {
         remove_external_mapping(mem, address.cast<uint8_t>().get(mem)); 
 	device.destroyBuffer(ite->second.buffer);
+	    
+/*     device.freeMemory(std::get<vk::DeviceMemory>(ite->second.buffer_impl));
+	device.destroyBuffer(ite->second.buffer);
         const ExternalBuffer& buffer = std::get<vk::DeviceMemory>(ite->second.buffer_impl);
         device.freeMemory(buffer.memory);
-
-        AHardwareBuffer *hardware_buffer = reinterpret_cast<AHardwareBuffer *>(buffer.extra);
+*/
+	    
+        AHardwareBuffer *hardware_buffer = reinterpret_cast<AHardwareBuffer *>(ite->second.extra);
         _AHardwareBuffer_unlock(hardware_buffer, nullptr);
         // When using external fd, it takes ownership of the handle, so don't release it in this case
         if (support_android_buffer_import)
