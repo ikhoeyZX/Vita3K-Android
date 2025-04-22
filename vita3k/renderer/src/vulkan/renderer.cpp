@@ -1190,8 +1190,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 	const uint64_t buffer_address = device.getBufferAddress(address_info);
 	    
 	add_external_mapping(mem, address.address(), size, static_cast<uint8_t *>(mapped_location));
-	// mapped_memories[address.address()] = { address.address(), ExternalBuffer{ device_memory, std::move(buffer) }, mapped_buffer, size, buffer_address };
-	mapped_memories[address.address()] = { address.address(), device_memory, mapped_buffer, size, buffer_address };
+	mapped_memories[address.address()] = { address.address(), ExternalBuffer{ device_memory, std::move(buffer) }, mapped_buffer, size, buffer_address };
+	// mapped_memories[address.address()] = { address.address(), device_memory, mapped_buffer, size, buffer_address };
         
 #else
         LOG_ERROR("Native buffer is only supported on Android!\n");
@@ -1341,13 +1341,7 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
         device.destroyBuffer(ite->second.buffer);
         device.freeMemory(std::get<vk::DeviceMemory>(ite->second.buffer_impl));
 	    
-/*     device.freeMemory(std::get<vk::DeviceMemory>(ite->second.buffer_impl));
-	device.destroyBuffer(ite->second.buffer);
-        const ExternalBuffer& buffer = std::get<vk::DeviceMemory>(ite->second.buffer_impl);
-        device.freeMemory(buffer.memory);
-*/
-	    
-        AHardwareBuffer *hardware_buffer = reinterpret_cast<AHardwareBuffer *>(mapped_memories.buffer);
+        AHardwareBuffer *hardware_buffer = reinterpret_cast<AHardwareBuffer *>(buffer.extra);
         _AHardwareBuffer_unlock(hardware_buffer, nullptr);
         // When using external fd, it takes ownership of the handle, so don't release it in this case
         if (support_android_buffer_import)
