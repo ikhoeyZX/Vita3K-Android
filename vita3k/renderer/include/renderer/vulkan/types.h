@@ -121,7 +121,7 @@ struct ExternalBuffer {
 
 struct MappedMemory {
     Address address;
-    std::variant<vk::DeviceMemory, vkutil::Buffer> buffer_impl;
+    std::variant<ExternalBuffer, vkutil::Buffer> buffer_impl;
     vk::Buffer buffer;
     uint32_t size;
     uint64_t buffer_address;
