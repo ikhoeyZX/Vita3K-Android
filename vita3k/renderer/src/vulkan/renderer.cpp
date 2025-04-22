@@ -1346,7 +1346,7 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
         device.freeMemory(buffer.memory);
 */
 	    
-        AHardwareBuffer *hardware_buffer = reinterpret_cast<AHardwareBuffer *>(ite->second.extra);
+        AHardwareBuffer *hardware_buffer = reinterpret_cast<AHardwareBuffer *>(ite->second.buffer);
         _AHardwareBuffer_unlock(hardware_buffer, nullptr);
         // When using external fd, it takes ownership of the handle, so don't release it in this case
         if (support_android_buffer_import)
