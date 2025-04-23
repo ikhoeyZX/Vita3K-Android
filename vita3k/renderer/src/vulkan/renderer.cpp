@@ -1326,7 +1326,8 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
     switch (mapping_method) {
     case MappingMethod::ExernalHost:
         device.destroyBuffer(ite->second.buffer);
-        device.freeMemory(std::get<vk::DeviceMemory>(ite->second.buffer_impl));
+        ExternalBuffer &buffer = std::get<ExternalBuffer>(ite->second.buffer_impl);
+        device.freeMemory(buffer.memory);
         break;
 
     case MappingMethod::DoubleBuffer:
