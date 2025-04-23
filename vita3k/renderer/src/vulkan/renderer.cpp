@@ -1322,7 +1322,7 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
 
     // we need to wait in case the buffer is being used
     device.waitIdle();
-    ExternalBuffer &buffer = nullptr;
+    ExternalBuffer &buffer;
 
     switch (mapping_method) {
     case MappingMethod::ExernalHost:
