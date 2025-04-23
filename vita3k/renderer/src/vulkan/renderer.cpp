@@ -1322,11 +1322,12 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
 
     // we need to wait in case the buffer is being used
     device.waitIdle();
+    ExternalBuffer &buffer = nullptr;
 
     switch (mapping_method) {
     case MappingMethod::ExernalHost:
         device.destroyBuffer(ite->second.buffer);
-        ExternalBuffer &buffer = std::get<ExternalBuffer>(ite->second.buffer_impl);
+        buffer = std::get<ExternalBuffer>(ite->second.buffer_impl);
         device.freeMemory(buffer.memory);
         break;
 
@@ -1340,7 +1341,7 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
     case MappingMethod::NativeBuffer: {
         remove_external_mapping(mem, address.cast<uint8_t>().get(mem)); 
         device.destroyBuffer(ite->second.buffer);
-        ExternalBuffer &buffer = std::get<ExternalBuffer>(ite->second.buffer_impl);
+        buffer = std::get<ExternalBuffer>(ite->second.buffer_impl);
         device.freeMemory(buffer.memory);
 	    
         AHardwareBuffer *hardware_buffer = reinterpret_cast<AHardwareBuffer *>(buffer.extra);
