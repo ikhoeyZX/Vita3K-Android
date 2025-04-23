@@ -1286,7 +1286,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         };
         const uint64_t buffer_address = device.getBufferAddress(address_info);
 
-        mapped_memories[address.address()] = { address.address(), device_memory, mapped_buffer, size, buffer_address };
+        mapped_memories[address.address()] = { address.address(), ExternalBuffer{ device_memory, nullptr }, mapped_buffer, size, buffer_address };
         break;
     }
 
