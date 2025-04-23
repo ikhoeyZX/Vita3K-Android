@@ -301,7 +301,7 @@ COMMAND(handle_transfer_downscale) {
         delete dst;
     };
 
-    if (renderer.current_backend == Backend::Vulkan && renderer.features.enable_memory_mapping && !renderer.disable_surface_sync) {
+    if (renderer.current_backend == Backend::Vulkan && renderer.features.support_memory_mapping && !renderer.disable_surface_sync) {
         if (dynamic_cast<vulkan::VKState &>(renderer).surface_cache.check_for_surface(mem, src->address.address(), downscale_operation, dst->address.address()))
             // let the vulkan surface cache handle it
             return;
