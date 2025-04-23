@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <imgui.h>
+
 #include <cstdint>
 
 struct SDL_Window;
