@@ -48,7 +48,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     static std::string title;
     static std::map<fs::path, std::vector<ContentInfo>> contents_archives;
     static std::vector<fs::path> invalid_archives;
-    static std::filesystem::path archive_path = "";
+    static fs::path archive_path = "";
     static float global_progress = 0.f;
     static size_t archives_count = 0;
 
