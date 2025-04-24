@@ -381,10 +381,10 @@ IMGUI_API ImTextureID ImGui_ImplSdlGL3_CreateTexture(void *data, int width, int 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    return reinterpret_cast<ImTextureID>(static_cast<intptr_t>(texture));
+    return static_cast<ImTextureID>(reinterpret_cast<uintptr_t>(texture));
 }
 
 IMGUI_API void ImGui_ImplSdlGL3_DeleteTexture(ImTextureID texture) {
-    auto texture_name = static_cast<GLuint>(reinterpret_cast<intptr_t>(texture));
+    auto texture_name = static_cast<GLuint>(reinterpret_cast<uintptr_t>(texture));
     glDeleteTextures(1, &texture_name);
 }
