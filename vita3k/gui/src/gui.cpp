@@ -289,14 +289,6 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
 #else
                         io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "SourceHanSansSC-Bold-Min.ttf").c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
 #endif
-                    font_config.MergeMode = false;
-
-                    large_font_config.SizePixels = 134.f;
-                    large_font_config.OversampleH = 2;
-                    large_font_config.OversampleV = 2;
-                    large_font_config.RasterizerDensity = scale;
-                    gui.large_font[i] = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "mplus-1mn-bold.ttf").c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
-
                     LOG_INFO("Using default Vita3K font.");
                 } else
                     LOG_WARN("Could not find default Vita3K font at {}, using default ImGui font.", default_font_path);
@@ -774,12 +766,6 @@ void init(GuiState &gui, EmuEnvState &emuenv) {
         const std::lock_guard<std::mutex> guard(gui.trophy_unlock_display_requests_access_mutex);
         gui.trophy_unlock_display_requests.insert(gui.trophy_unlock_display_requests.begin(), callback_data);
     };
-
-#ifdef ANDROID
-    // must be called once for the java side to get the scale
-       set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_joystick);
-       set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
-#endif
 }
 
 void draw_begin(GuiState &gui, EmuEnvState &emuenv) {
@@ -862,10 +848,10 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
 
     if (gui.vita_area.trophy_collection)
         draw_trophy_collection(gui, emuenv);
-#ifdef USE_VITA3K_UPDATE
+
     if (gui.help_menu.vita3k_update)
         draw_vita3k_update(gui, emuenv);
-#endif
+
     if ((emuenv.cfg.show_info_bar || !emuenv.display.imgui_render || !gui.vita_area.home_screen) && gui.vita_area.information_bar)
         draw_information_bar(gui, emuenv);
 
@@ -896,7 +882,7 @@ void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::PopFont();
 
-    ImGui::PushFont(gui.monospaced_font);
+    ImGui::PushFont(gui.monospaced_font[emuenv.current_font_level]);
 
     if (gui.debug_menu.threads_dialog)
         draw_threads_dialog(gui, emuenv);
@@ -960,17 +946,3 @@ void TextCentered(const char *text, float wrap_width) {
 }
 
 } // namespace gui
-
-namespace ImGui {
-
-void ScrollWhenDragging() {
-    ImGuiContext &g = *ImGui::GetCurrentContext();
-    ImGuiIO &io = ImGui::GetIO();
-    ImGuiWindow *window = g.CurrentWindow;
-    if (g.HoveredWindow == window && ImGui::IsMouseDragging(0)) {
-        ImGui::SetScrollY(window, window->Scroll.y - io.MouseDelta.y);
-        ImGui::SetActiveID(0, window);
-    }
-}
-
-} // namespace ImGui
