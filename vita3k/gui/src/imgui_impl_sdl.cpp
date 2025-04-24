@@ -211,7 +211,7 @@ bool ImGui_ImplSdl_ProcessEvent(ImGui_State *state, SDL_Event *event) {
 #endif
         
         io.AddMouseButtonEvent(mouse_button, (event->type == SDL_MOUSEBUTTONDOWN));
-        state->mouse_buttons_down = (event->type == SDL_MOUSEBUTTONDOWN) ? (state->mouse_buttons_down | (1 << mouse_button)) : (state->mouse_buttons_down & ~(1 << mouse_button));
+        state->MouseButtonsDown = (event->type == SDL_MOUSEBUTTONDOWN) ? (state->mouse_buttons_down | (1 << mouse_button)) : (state->mouse_buttons_down & ~(1 << mouse_button));
         return true;
     }
     case SDL_TEXTINPUT: {
@@ -234,9 +234,9 @@ bool ImGui_ImplSdl_ProcessEvent(ImGui_State *state, SDL_Event *event) {
         //   we delay process the SDL_WINDOWEVENT_LEAVE events by one frame. See issue #5012 for details.
         Uint8 window_event = event->window.event;
         if (window_event == SDL_WINDOWEVENT_ENTER)
-            state->pending_mouse_leave_frame = 0;
+            state->PendingMouseLeaveFrame = 0;
         if (window_event == SDL_WINDOWEVENT_LEAVE)
-            state->pending_mouse_leave_frame = ImGui::GetFrameCount() + 1;
+            state->PendingMouseLeaveFrame = ImGui::GetFrameCount() + 1;
         if (window_event == SDL_WINDOWEVENT_FOCUS_GAINED)
             io.AddFocusEvent(true);
         else if (event->window.event == SDL_WINDOWEVENT_FOCUS_LOST)
@@ -281,7 +281,7 @@ IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window 
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors; // We can honor GetMouseCursor() values (optional)
     io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos; // We can honor io.WantSetMousePos requests (optional, rarely used)
 
-    state->mouse_can_use_global_state = mouse_can_use_global_state;
+    state->MouseCanUseGlobalState = mouse_can_use_global_state;
 
     ImGuiPlatformIO &platform_io = ImGui::GetPlatformIO();
     platform_io.Platform_SetClipboardTextFn = ImGui_ImplSdl_SetClipboardText;
@@ -290,15 +290,15 @@ IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window 
     platform_io.Platform_SetImeDataFn = nullptr;
 
     // Load mouse cursors
-    state->mouse_cursors[ImGuiMouseCursor_Arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-    state->mouse_cursors[ImGuiMouseCursor_TextInput] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
-    state->mouse_cursors[ImGuiMouseCursor_ResizeAll] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
-    state->mouse_cursors[ImGuiMouseCursor_ResizeNS] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
-    state->mouse_cursors[ImGuiMouseCursor_ResizeEW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
-    state->mouse_cursors[ImGuiMouseCursor_ResizeNESW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
-    state->mouse_cursors[ImGuiMouseCursor_ResizeNWSE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
-    state->mouse_cursors[ImGuiMouseCursor_Hand] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
-    state->mouse_cursors[ImGuiMouseCursor_NotAllowed] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
+    state->MouseCursors[ImGuiMouseCursor_Arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+    state->MouseCursors[ImGuiMouseCursor_TextInput] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+    state->MouseCursors[ImGuiMouseCursor_ResizeAll] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+    state->MouseCursors[ImGuiMouseCursor_ResizeNS] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+    state->MouseCursors[ImGuiMouseCursor_ResizeEW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+    state->MouseCursors[ImGuiMouseCursor_ResizeNESW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
+    state->MouseCursors[ImGuiMouseCursor_ResizeNWSE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
+    state->MouseCursors[ImGuiMouseCursor_Hand] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+    state->MouseCursors[ImGuiMouseCursor_NotAllowed] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
 
     // Set platform dependent data in viewport
 #ifdef _WIN32
@@ -358,7 +358,7 @@ static void ImGui_ImplSDL2_UpdateMouseData(ImGui_State *state) {
             SDL_WarpMouseInWindow(state->window, (int)io.MousePos.x, (int)io.MousePos.y);
 
         // (Optional) Fallback to provide mouse position when focused (SDL_MOUSEMOTION already provides this when hovered or captured)
-        if (state->mouse_can_use_global_state && state->mouse_buttons_down == 0) {
+        if (state->MouseCanUseGlobalState && state->MouseButtonsDown == 0) {
             int window_x, window_y, mouse_x_global, mouse_y_global;
             SDL_GetGlobalMouseState(&mouse_x_global, &mouse_y_global);
             SDL_GetWindowPosition(state->window, &window_x, &window_y);
