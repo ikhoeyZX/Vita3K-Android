@@ -17,54 +17,23 @@
 
 #pragma once
 
-#include <imgui.h>
+#include <emuenv/window.h>
+#include <gui/imgui_impl_sdl_state.h>
 
-#include <cstdint>
-
+union SDL_Event;
 struct SDL_Window;
 struct SDL_Cursor;
 
-namespace renderer {
-struct State;
-}
+IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window *window);
+IMGUI_API void ImGui_ImplSdl_Shutdown(ImGui_State *state);
+IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state);
+IMGUI_API void ImGui_ImplSdl_RenderDrawData(ImGui_State *state);
+IMGUI_API bool ImGui_ImplSdl_ProcessEvent(ImGui_State *state, SDL_Event *event);
+IMGUI_API void ImGui_ImplSdl_GetDrawableSize(ImGui_State *state, int &width, int &height);
 
-struct ImGui_State {
-    SDL_Window *window{};
-    renderer::State *renderer{};
+IMGUI_API ImTextureID ImGui_ImplSdl_CreateTexture(ImGui_State *state, void *data, int width, int height);
+IMGUI_API void ImGui_ImplSdl_DeleteTexture(ImGui_State *state, ImTextureID texture);
 
-    uint64_t time = 0;
-    int mouse_buttons_down = 0;
-    SDL_Cursor *mouse_cursors[ImGuiMouseCursor_COUNT] = {};
-    int pending_mouse_leave_frame = 0;
-    bool mouse_can_use_global_state = false;
-
-    bool init = false;
-    bool is_typing = false;
-    bool do_clear_screen = true;
-
-    ImGui_State() = default;
-
-    virtual ~ImGui_State() = default;
-};
-
-class ImGui_Texture {
-    ImGui_State *state = nullptr;
-    ImTextureID texture_id = nullptr;
-
-public:
-    ImGui_Texture() = default;
-    ImGui_Texture(ImGui_State *new_state, void *data, int width, int height);
-    ImGui_Texture(ImGui_Texture &&texture) noexcept;
-
-    void init(ImGui_State *new_state, ImTextureID texture);
-    void init(ImGui_State *new_state, void *data, int width, int height);
-
-    operator bool() const;
-    operator ImTextureID() const;
-    bool operator==(const ImGui_Texture &texture);
-
-    ImGui_Texture &operator=(ImGui_Texture &&texture) noexcept;
-    ImGui_Texture &operator=(const ImGui_Texture &texture) = delete;
-
-    ~ImGui_Texture();
-};
+// Use if you want to reset your rendering device without losing ImGui state.
+IMGUI_API void ImGui_ImplSdl_InvalidateDeviceObjects(ImGui_State *state);
+IMGUI_API bool ImGui_ImplSdl_CreateDeviceObjects(ImGui_State *state);
