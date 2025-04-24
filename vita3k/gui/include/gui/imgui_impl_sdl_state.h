@@ -51,7 +51,7 @@ struct ImGui_State {
 
 class ImGui_Texture {
     ImGui_State *state = nullptr;
-    ImTextureID texture_id = nullptr;
+    ImTextureID texture_id = 0;
 
 public:
     ImGui_Texture() = default;
