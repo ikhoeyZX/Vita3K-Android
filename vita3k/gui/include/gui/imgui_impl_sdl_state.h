@@ -33,8 +33,8 @@ struct ImGui_State {
     renderer::State *renderer{};
 
     uint64_t time;
-    int mouse_buttons_down;
-    SDL_Cursor *mouse_cursors[ImGuiMouseCursor_COUNT];
+    int MouseButtonsDown;
+    SDL_Cursor *MouseCursors[ImGuiMouseCursor_COUNT];
     int PendingMouseLeaveFrame;
     bool MouseCanUseGlobalState;
 
