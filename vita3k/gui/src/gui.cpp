@@ -766,6 +766,12 @@ void init(GuiState &gui, EmuEnvState &emuenv) {
         const std::lock_guard<std::mutex> guard(gui.trophy_unlock_display_requests_access_mutex);
         gui.trophy_unlock_display_requests.insert(gui.trophy_unlock_display_requests.begin(), callback_data);
     };
+
+#ifdef ANDROID
+    // must be called once for the java side to get the scale
+       set_controller_overlay_scale(emuenv.cfg.overlay_scale, emuenv.cfg.overlay_scale_joystick);
+       set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
+#endif
 }
 
 void draw_begin(GuiState &gui, EmuEnvState &emuenv) {
@@ -849,9 +855,11 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.vita_area.trophy_collection)
         draw_trophy_collection(gui, emuenv);
 
+#ifdef USE_VITA3K_UPDATE
     if (gui.help_menu.vita3k_update)
         draw_vita3k_update(gui, emuenv);
-
+#endif
+    
     if ((emuenv.cfg.show_info_bar || !emuenv.display.imgui_render || !gui.vita_area.home_screen) && gui.vita_area.information_bar)
         draw_information_bar(gui, emuenv);
 
@@ -944,5 +952,17 @@ void TextCentered(const char *text, float wrap_width) {
     ImGui::Text("%s", text);
     ImGui::PopTextWrapPos();
 }
-
 } // namespace gui
+
+namespace ImGui {
+void ScrollWhenDragging() {
+    ImGuiContext &g = *ImGui::GetCurrentContext();
+    ImGuiIO &io = ImGui::GetIO();
+    ImGuiWindow *window = g.CurrentWindow;
+    if (g.HoveredWindow == window && ImGui::IsMouseDragging(0)) {
+        ImGui::SetScrollY(window, window->Scroll.y - io.MouseDelta.y);
+        ImGui::SetActiveID(0, window);
+    }
+}
+} // namespace ImGui
+
