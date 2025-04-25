@@ -46,7 +46,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     static State state = State::UNDEFINED;
 
     static std::string title, zRIF;
-    static std::filesystem::path license_path = "";
+    static fs::path license_path = "";
     static bool delete_license_file;
 
     ImGui::SetNextWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
@@ -80,7 +80,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     }
     case State::LICENSE: {
         host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
-        result = fs::open_file(license_path, { { "PlayStation Vita software license file", { "bin", "rif" } } });
+        result = host::dialog::filesystem::open_file(license_path, { { "PlayStation Vita software license file", { "bin", "rif" } } });
         if (result == host::dialog::filesystem::Result::SUCCESS) {
             if (copy_license(emuenv, fs::path(license_path.native())))
                 state = State::SUCCESS;
