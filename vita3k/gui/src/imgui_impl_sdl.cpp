@@ -378,7 +378,7 @@ static void ImGui_ImplSDL2_UpdateMouseCursor(ImGui_State *state) {
         SDL_ShowCursor(SDL_FALSE);
     } else {
         // Show OS mouse cursor
-        SDL_SetCursor(state->MouseCursors[imgui_cursor] ? state->MouseCursors[imgui_cursor] : state->mouse_cursors[ImGuiMouseCursor_Arrow]);
+        SDL_SetCursor(state->MouseCursors[imgui_cursor] ? state->MouseCursors[imgui_cursor] : state->MouseCursors[ImGuiMouseCursor_Arrow]);
         SDL_ShowCursor(SDL_TRUE);
     }
 }
