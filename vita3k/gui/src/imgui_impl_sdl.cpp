@@ -211,7 +211,7 @@ bool ImGui_ImplSdl_ProcessEvent(ImGui_State *state, SDL_Event *event) {
 #endif
         
         io.AddMouseButtonEvent(mouse_button, (event->type == SDL_MOUSEBUTTONDOWN));
-        state->MouseButtonsDown = (event->type == SDL_MOUSEBUTTONDOWN) ? (state->mouse_buttons_down | (1 << mouse_button)) : (state->mouse_buttons_down & ~(1 << mouse_button));
+        state->MouseButtonsDown = (event->type == SDL_MOUSEBUTTONDOWN) ? (state->MouseButtonsDown | (1 << mouse_button)) : (state->MouseButtonsDown & ~(1 << mouse_button));
         return true;
     }
     case SDL_TEXTINPUT: {
@@ -334,7 +334,7 @@ IMGUI_API void ImGui_ImplSdl_Shutdown(ImGui_State *state) {
     if (clipboard_text_data)
         SDL_free(clipboard_text_data);
     for (ImGuiMouseCursor cursor_n = 0; cursor_n < ImGuiMouseCursor_COUNT; cursor_n++)
-        SDL_FreeCursor(state->mouse_cursors[cursor_n]);
+        SDL_FreeCursor(state->MouseCursors[cursor_n]);
 
     ImGuiIO &io = ImGui::GetIO();
     io.BackendPlatformName = nullptr;
@@ -346,7 +346,7 @@ static void ImGui_ImplSDL2_UpdateMouseData(ImGui_State *state) {
     // We forward mouse input when hovered or captured (via SDL_MOUSEMOTION) or when focused (below)
 #if SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE
     // SDL_CaptureMouse() let the OS know e.g. that our imgui drag outside the SDL window boundaries shouldn't e.g. trigger other operations outside
-    SDL_CaptureMouse(state->mouse_buttons_down != 0 ? SDL_TRUE : SDL_FALSE);
+    SDL_CaptureMouse(state->MouseButtonsDown != 0 ? SDL_TRUE : SDL_FALSE);
     SDL_Window *focused_window = SDL_GetKeyboardFocus();
     const bool is_app_focused = (state->window == focused_window);
 #else
@@ -378,7 +378,7 @@ static void ImGui_ImplSDL2_UpdateMouseCursor(ImGui_State *state) {
         SDL_ShowCursor(SDL_FALSE);
     } else {
         // Show OS mouse cursor
-        SDL_SetCursor(state->mouse_cursors[imgui_cursor] ? state->mouse_cursors[imgui_cursor] : state->mouse_cursors[ImGuiMouseCursor_Arrow]);
+        SDL_SetCursor(state->MouseCursors[imgui_cursor] ? state->MouseCursors[imgui_cursor] : state->mouse_cursors[ImGuiMouseCursor_Arrow]);
         SDL_ShowCursor(SDL_TRUE);
     }
 }
@@ -473,9 +473,9 @@ IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
     io.DeltaTime = state->time > 0 ? (float)((double)(current_time - state->time) / frequency) : (1.0f / 60.0f);
     state->time = current_time;
 
-    if (state->pending_mouse_leave_frame && state->pending_mouse_leave_frame >= ImGui::GetFrameCount() && state->mouse_buttons_down == 0) {
+    if (state->PendingMouseLeaveFrame && state->PendingMouseLeaveFrame >= ImGui::GetFrameCount() && state->MouseButtonsDown == 0) {
         io.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
-        state->pending_mouse_leave_frame = 0;
+        state->PendingMouseLeaveFrame = 0;
     }
 
     ImGui_ImplSDL2_UpdateMouseData(state);
