@@ -39,6 +39,7 @@
 #include <util/string_utils.h>
 
 #include <imgui.h>
+#include <imgui_internal.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
