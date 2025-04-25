@@ -76,6 +76,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 BIG_BUTTON_POS((WINDOW_SIZE.x / 2.f) - (BIG_BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BIG_BUTTON_SIZE.y - (20.f * SCALE.y));
 
     auto &lang = gui.lang.initial_setup;
+    auto &emulator = gui.lang.settings_dialog.emulator;
     auto &common = emuenv.common_dialog.lang.common;
     auto &welcome = gui.lang.welcome;
 
@@ -155,12 +156,14 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize());
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["current_emu_path"].c_str());
         ImGui::Spacing();
+/*
 #ifdef ANDROID
         constexpr char path_warning[] = "Using a different path requires additional permissions";
 
         ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(path_warning).x / 2.f));
         ImGui::TextColored(ImVec4(0.98f, 0.01f, 0.20f, 1.0f), "%s", path_warning);
 #endif
+*/
         TextCentered(emuenv.cfg.pref_path.c_str(), 0);
         ImGui::SetCursorPos(!is_default_path ? ImVec2((WINDOW_SIZE.x / 2.f) - BIG_BUTTON_SIZE.x - (20.f * SCALE.x), BIG_BUTTON_POS.y) : BIG_BUTTON_POS);
         if (ImGui::Button(lang["change_emu_path"].c_str(), BIG_BUTTON_SIZE)) {
