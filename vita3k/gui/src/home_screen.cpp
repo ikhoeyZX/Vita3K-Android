@@ -350,54 +350,60 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
             switch (sorted) {
             case ASCENDANT:
                 return lhs.app_ver < rhs.app_ver;
-            default:
-            //case DESCENDANT:
+            case DESCENDANT:
                 return lhs.app_ver > rhs.app_ver;
+            case NOT_SORTED:
+                break;
             }
             break;
         case CATEGORY:
             switch (sorted) {
             case ASCENDANT:
                 return lhs.category < rhs.category;
-            default:
-            //case DESCENDANT:
+            case DESCENDANT:
                 return lhs.category > rhs.category;
+            case NOT_SORTED:
+                break;
             }
             break;
         case COMPAT:
             switch (sorted) {
             case ASCENDANT:
                 return lhs.compat < rhs.compat;
-            default:
-            //case DESCENDANT:
+            case DESCENDANT:
                 return lhs.compat > rhs.compat;
+            case NOT_SORTED:
+                break;
             }
             break;
         case LAST_TIME:
             switch (sorted) {
             case ASCENDANT:
                 return lhs.last_time > rhs.last_time;
-            default:
-            //case DESCENDANT:
+            case DESCENDANT:
                 return lhs.last_time < rhs.last_time;
+            case NOT_SORTED:
+                break;
             }
             break;
         case TITLE:
             switch (sorted) {
             case ASCENDANT:
                 return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
-            default:
-            //case DESCENDANT:
+            case DESCENDANT:
                 return string_utils::toupper(lhs.title) > string_utils::toupper(rhs.title);
+            case NOT_SORTED:
+                break;
             }
             break;
         case TITLE_ID:
             switch (sorted) {
             case ASCENDANT:
                 return lhs.title_id < rhs.title_id;
-            default:
-            //case DESCENDANT:
+            case DESCENDANT:
                 return lhs.title_id > rhs.title_id;
+            case NOT_SORTED:
+                break;
             }
             break;
         default:

@@ -28,6 +28,7 @@
 #include <gui/state.h>
 #include <io/functions.h>
 #include <kernel/state.h>
+#include <motion/state.h>
 #include <ngs/state.h>
 #include <renderer/state.h>
 
