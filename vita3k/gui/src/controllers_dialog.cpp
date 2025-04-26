@@ -457,10 +457,6 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     if (emuenv.ctrl.has_motion_support) {
         ImGui::Spacing();
-        if (ImGui::Checkbox(lang["disable_motion"].c_str(), &emuenv.cfg.disable_motion))
-            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-        ImGui::PushTextWrapPos(ImGui::GetWindowWidth() - (ImGui::GetStyle().WindowPadding.x * 2.f));
-        ImGui::PopTextWrapPos();
 
         auto &emulator = gui.lang.settings_dialog.emulator;
         ImGui::Spacing();
