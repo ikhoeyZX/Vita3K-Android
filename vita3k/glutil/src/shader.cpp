@@ -38,21 +38,24 @@ UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
 
     // Read the vertex/fragment shader code from files
-    std::vector<char> vs_code;
-    auto res = fs_utils::read_data(vertex_file_path, vs_code);
-    if (!res) {
-        LOG_ERROR("Couldn't open shader: {}", vertex_file_path);
-        return {};
+    std::string vs_code;
+    {
+        const std::vector<uint8_t> vs_code_raw = fs_utils::read_asset_raw(fs::path(vertex_file_path));
+        vs_code.resize(vs_code_raw.size());
+        memcpy(vs_code.data(), vs_code_raw.data(), vs_code_raw.size());
     }
-    vs_code.push_back('\0');
 
-    std::vector<char> fs_code;
-    res = fs_utils::read_data(fragment_file_path, fs_code);
-    if (!res) {
-        LOG_ERROR("Couldn't open shader: {}", fragment_file_path);
-        return {};
+    std::string fs_code;
+    {
+        const std::vector<uint8_t> fs_code_raw = fs_utils::read_asset_raw(fs::path(fragment_file_path));
+        fs_code.resize(fs_code_raw.size());
+        memcpy(fs_code.data(), fs_code_raw.data(), fs_code_raw.size());
     }
-    fs_code.push_back('\0');
+
+    if(vs_code.empty() || fs_code.empty()){
+        LOG_ERROR("Couldn't open shader: {}", vertex_file_path);
+        return UniqueGLObject();
+    }
 
     GLint result = 0;
 
