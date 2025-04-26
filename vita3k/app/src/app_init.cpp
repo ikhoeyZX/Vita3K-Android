@@ -572,9 +572,9 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
 #endif
     }
 #endif
-    state.system_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_WIDTH * state.manual_dpi_scale);
-    state.system_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.manual_dpi_scale);
-    
+
+    LOG_INFO("DPI scale width = {}", static_cast<uint32_t>(DEFAULT_RES_WIDTH * state.manual_dpi_scale));
+    LOG_INFO("DPI scale height = {}", static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.manual_dpi_scale);
     LOG_INFO("state.system_dpi_scale = {}", state.manual_dpi_scale);
     
 #ifdef ANDROID
