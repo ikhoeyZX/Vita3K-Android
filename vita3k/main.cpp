@@ -291,6 +291,7 @@ int main(int argc, char *argv[]) {
             app::error_dialog("SDL initialisation failed.");
             return SDLInitFailed;
         }
+    }
 
     LOG_INFO("{}", window_title);
 #ifndef ANDROID
