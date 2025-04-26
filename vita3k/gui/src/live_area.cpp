@@ -638,7 +638,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
     ImVec2 RES_SCALE;
-    if(emuenv.cfg.screenmode_pos == 3){
+    if(emuenv.cfg.screenmode_pos == 3)
         RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y / 2);
     else
         RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
@@ -1062,7 +1062,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         }
     }
 
-    ImGui::SetWindowFontScale(RES_SCALE.x);
+        ImGui::SetWindowFontScale(RES_SCALE.x);
     const auto default_font_scale = (25.f * emuenv.manual_dpi_scale) * (ImGui::GetFontSize() / (19.2f * emuenv.manual_dpi_scale));
     const auto font_size_scale = default_font_scale / ImGui::GetFontSize();
 
@@ -1070,11 +1070,12 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     const std::string BUTTON_STR = app_path == emuenv.io.title_id ? gui.lang.live_area.main["continue"] : gui.lang.live_area.main["start"];
 
     ImVec2 GATE_SIZE;
-    if(emuenv.cfg.screenmode_pos == 3) {
+    if(emuenv.cfg.screenmode_pos == 3)
        GATE_SIZE = ImVec2(280.0f * SCALE.x, 68.0f * SCALE.y);
-    } else {
+    else
        GATE_SIZE = ImVec2(280.0f * SCALE.x, 158.0f * SCALE.y);
-    }
+
+    const auto GATE_POS = ImVec2(WINDOW_SIZE.x - (gate_pos.x * SCALE.x), WINDOW_SIZE.y - (gate_pos.y * SCALE.y));
     const ImVec2 GATE_POS_MIN(WINDOW_POS.x + GATE_POS.x, WINDOW_POS.y + GATE_POS.y);
     const ImVec2 GATE_POS_MAX(GATE_POS_MIN.x + GATE_SIZE.x, GATE_POS_MIN.y + GATE_SIZE.y);
 
@@ -1084,6 +1085,8 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto POS_START = ImVec2(WINDOW_POS.x + POS_BUTTON.x + (START_BUTTON_SIZE.x - START_SIZE.x) / 2.f, WINDOW_POS.y + POS_BUTTON.y + (START_BUTTON_SIZE.y - START_SIZE.y) / 2.f);
     const auto SELECT_SIZE = ImVec2(GATE_SIZE.x - (10.f * SCALE.x), GATE_SIZE.y - (5.f * SCALE.y));
     const auto SELECT_POS = ImVec2(GATE_POS.x + (5.f * SCALE.y), GATE_POS.y + (2.f * SCALE.y));
+
+    const auto BUTTON_SIZE = ImVec2(72.f * SCALE.x, 30.f * SCALE.y);
 
     ImVec2 BUTTON_SIZE;
     if(emuenv.cfg.screenmode_pos == 3){
