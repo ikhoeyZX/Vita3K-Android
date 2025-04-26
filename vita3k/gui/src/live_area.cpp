@@ -1062,7 +1062,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         }
     }
 
-        ImGui::SetWindowFontScale(RES_SCALE.x);
+    ImGui::SetWindowFontScale(RES_SCALE.x);
     const auto default_font_scale = (25.f * emuenv.manual_dpi_scale) * (ImGui::GetFontSize() / (19.2f * emuenv.manual_dpi_scale));
     const auto font_size_scale = default_font_scale / ImGui::GetFontSize();
 
@@ -1085,8 +1085,6 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto POS_START = ImVec2(WINDOW_POS.x + POS_BUTTON.x + (START_BUTTON_SIZE.x - START_SIZE.x) / 2.f, WINDOW_POS.y + POS_BUTTON.y + (START_BUTTON_SIZE.y - START_SIZE.y) / 2.f);
     const auto SELECT_SIZE = ImVec2(GATE_SIZE.x - (10.f * SCALE.x), GATE_SIZE.y - (5.f * SCALE.y));
     const auto SELECT_POS = ImVec2(GATE_POS.x + (5.f * SCALE.y), GATE_POS.y + (2.f * SCALE.y));
-
-    const auto BUTTON_SIZE = ImVec2(72.f * SCALE.x, 30.f * SCALE.y);
 
     ImVec2 BUTTON_SIZE;
     if(emuenv.cfg.screenmode_pos == 3){
