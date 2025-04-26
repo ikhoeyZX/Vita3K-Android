@@ -381,6 +381,25 @@ int main(int argc, char *argv[]) {
             emuenv.cfg.content_path.reset();
     }
 
+    std::chrono::system_clock::time_point present = std::chrono::system_clock::now();
+    std::chrono::system_clock::time_point later = std::chrono::system_clock::now();
+    constexpr double frame_time = 1000.0 / 60.0;
+
+    auto wait_for_frame_done = [&]() {
+        // get the current time & get the time we worked for
+        present = std::chrono::system_clock::now();
+        std::chrono::duration<double, std::milli> work_time = present - later;
+        // check if we are running faster than ~60fps (16.67ms)
+        if (work_time.count() < frame_time) {
+            // sleep for delta time.
+            std::chrono::duration<double, std::milli> delta_ms(frame_time - work_time.count());
+            auto delta_ms_duration = std::chrono::duration_cast<std::chrono::milliseconds>(delta_ms);
+            std::this_thread::sleep_for(std::chrono::milliseconds(delta_ms_duration.count()));
+        }
+        // save the later time
+        later = std::chrono::system_clock::now();
+    };
+
     if (!cfg.console) {
 #if USE_DISCORD
         auto discord_rich_presence_old = emuenv.cfg.discord_rich_presence;
