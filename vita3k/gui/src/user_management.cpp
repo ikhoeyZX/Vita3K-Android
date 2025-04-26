@@ -469,7 +469,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 WINDOW_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
     ImVec2 SCALE;
-    if(emuenv.cfg.screenmode_pos == 3){
+    if(emuenv.cfg.screenmode_pos == 3)
         SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, (RES_SCALE.y * emuenv.manual_dpi_scale) / 2);
     else
         SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
