@@ -574,6 +574,8 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::TextWrapped("%s", selected.c_str());
                     break;
                 }
+                default:
+                    break;
                 }
             }
             break;

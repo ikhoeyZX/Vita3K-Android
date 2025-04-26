@@ -23,6 +23,7 @@
 #include <config/version.h>
 #include <display/state.h>
 #include <emuenv/state.h>
+#include <gui/functions.h>
 #include <gui/imgui_impl_sdl.h>
 #include <gui/state.h>
 #include <io/functions.h>
@@ -563,16 +564,16 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         LOG_INFO("Display DPI:\nddpi = {}\nhdpi = {}\nvdpi = {}", ddpi, hdpi, vdpi);
 #ifdef ANDROID
        if(vdpi > 1.f)
-          state.dpi_scale = vdpi / max;
+          state.manual_dpi_scale = vdpi / max;
        else
-          state.dpi_scale = ddpi / max;
+          state.manual_dpi_scale = ddpi / max;
 #else
-        state.dpi_scale = ddpi / 96;
+        state.manual_dpi_scale = ddpi / 96;
 #endif
     }
 #endif
-    state.res_width_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_WIDTH * state.dpi_scale);
-    state.res_height_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.dpi_scale);
+    state.res_width_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_WIDTH * state.manual_dpi_scalee);
+    state.res_height_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.manual_dpi_scale);
     
     LOG_INFO("state.res_width_dpi_scale = {}", state.res_width_dpi_scale);
     LOG_INFO("state.res_height_dpi_scale = {}", state.res_height_dpi_scale);
