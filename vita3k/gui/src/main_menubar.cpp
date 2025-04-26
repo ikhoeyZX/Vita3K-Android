@@ -164,8 +164,7 @@ static void draw_help_menu(GuiState &gui) {
 
 void draw_main_menu_bar(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginMainMenuBar()) {
-        const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
-        const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+        const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
 
         if(emuenv.cfg.screenmode_pos == 3){
            ImGui::SetWindowFontScale(RES_SCALE.x * 1.6f);

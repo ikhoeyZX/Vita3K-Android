@@ -37,8 +37,8 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     static const auto progress_callback = [&](float updated_progress) {
         progress = updated_progress;
     };
-    static std::filesystem::path pkg_path = "";
-    static std::filesystem::path license_path = "";
+    static fs::path pkg_path = "";
+    static fs::path license_path = "";
     static std::string title, zRIF;
     static bool draw_file_dialog = true;
     static bool delete_pkg_file, delete_license_file;
