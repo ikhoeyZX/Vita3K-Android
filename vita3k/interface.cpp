@@ -562,7 +562,7 @@ static void take_screenshot(EmuEnvState &emuenv) {
 
     const auto img_format = emuenv.cfg.screenshot_format == JPEG ? ".jpg" : ".png";
 
-    const fs::path save_file = save_folder / fmt::format("{}_{:%Y-%m-%d-%H%M%OS}{}", string_utils::remove_special_chars(emuenv.current_app_title), std::localtime(std::time(nullptr)), img_format);
+    const fs::path save_file = save_folder / fmt::format("{}_{:%Y-%m-%d-%H%M%OS}{}", string_utils::remove_special_chars(emuenv.current_app_title), localtime(std::time(nullptr)), img_format);
 
     constexpr int quality = 85; // google recommended value
     bool screenshot_ok = false;
