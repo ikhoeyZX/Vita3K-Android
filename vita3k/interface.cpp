@@ -561,7 +561,13 @@ static void take_screenshot(EmuEnvState &emuenv) {
     fs::create_directories(save_folder);
 
     const auto img_format = emuenv.cfg.screenshot_format == JPEG ? ".jpg" : ".png";
-    const fs::path save_file = save_folder / fmt::format("{}_{:%Y-%m-%d-%H%M%OS}{}", string_utils::remove_special_chars(emuenv.current_app_title), fmt::localtime(std::time(nullptr)), img_format);
+
+#ifdef _WIN32_
+    const fs::path save_file = save_folder / fmt::format("{}_{:%Y-%m-%d-%H%M%OS}{}", string_utils::remove_special_chars(emuenv.current_app_title), fmt::localtime_s(std::time(nullptr)), img_format);
+#else
+    const fs::path save_file = save_folder / fmt::format("{}_{:%Y-%m-%d-%H%M%OS}{}", string_utils::remove_special_chars(emuenv.current_app_title), fmt::localtime_r(std::time(nullptr)), img_format);
+#endif
+
     constexpr int quality = 85; // google recommended value
     bool screenshot_ok = false;
     if (emuenv.cfg.screenshot_format == JPEG) {
@@ -718,7 +724,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             };
 
             // Get Sce Ctrl button from key
-            const auto sce_ctrl_btn = get_sce_ctrl_btn_from_scancode(event.key.keysym.scancode);
+            auto sce_ctrl_btn = get_sce_ctrl_btn_from_scancode(event.key.keysym.scancode);
 
             if (gui.is_capturing_keys && event.key.keysym.scancode) {
                 gui.is_key_capture_dropped = false;
@@ -824,13 +830,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             const auto drop_file = fs_utils::utf8_to_path(event.drop.file);
             const auto extension = string_utils::tolower(drop_file.extension().string());
             if (extension == ".pup") {
-                const std::string fw_version = install_pup(emuenv.pref_path, drop_file);
-                if (!fw_version.empty()) {
-                    LOG_INFO("Firmware {} installed successfully!", fw_version);
-                    gui::get_modules_list(gui, emuenv);
-                    if (emuenv.cfg.initial_setup)
-                        gui::init_theme(gui, emuenv, gui.users[emuenv.cfg.user_id].theme_id);
-                }
+                install_pup(emuenv.pref_path, drop_file);
             } else if ((extension == ".vpk") || (extension == ".zip"))
                 install_archive(emuenv, &gui, drop_file);
             else if ((extension == ".rif") || (drop_file.filename() == "work.bin"))
