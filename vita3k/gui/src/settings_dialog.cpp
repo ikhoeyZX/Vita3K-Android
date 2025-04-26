@@ -38,6 +38,7 @@
 #include <string>
 #include <util/fs.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <SDL.h>
 
@@ -680,7 +681,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         const bool is_vulkan = (emuenv.backend_renderer == renderer::Backend::Vulkan);
         const bool is_ingame = !emuenv.io.title_id.empty();
-        if (is_vulkan) {
+        const bool is_renderer_changed = (emuenv.backend_renderer != emuenv.renderer->current_backend);
+        if (is_vulkan && !is_renderer_changed) {
             const std::vector<std::string> gpu_list_str = emuenv.renderer->get_gpu_list();
             // must convert to a vector of char*
             std::vector<const char *> gpu_list;
@@ -737,7 +739,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (!is_vulkan && !has_integer_multiplier)
             config.disable_surface_sync = true;
 
-        if ((!is_vulkan && has_integer_multiplier) || emuenv.renderer->features.support_memory_mapping) {
+        if ((!is_vulkan && has_integer_multiplier) || emuenv.renderer->features.support_memory_mapping && !is_renderer_changed) {
             // surface sync is supported on vulkan only when memory mapping is enabled
             ImGui::Checkbox(lang.gpu["disable_surface_sync"].c_str(), &config.disable_surface_sync);
             SetTooltipEx(lang.gpu["surface_sync_description"].c_str());
