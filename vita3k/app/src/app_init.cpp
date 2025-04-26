@@ -572,11 +572,10 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
 #endif
     }
 #endif
-    state.res_width_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_WIDTH * state.manual_dpi_scalee);
-    state.res_height_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.manual_dpi_scale);
+    state.system_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_WIDTH * state.manual_dpi_scale);
+    state.system_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.manual_dpi_scale);
     
-    LOG_INFO("state.res_width_dpi_scale = {}", state.res_width_dpi_scale);
-    LOG_INFO("state.res_height_dpi_scale = {}", state.res_height_dpi_scale);
+    LOG_INFO("state.system_dpi_scale = {}", state.manual_dpi_scale);
     
 #ifdef ANDROID
     if(state.cfg.boot_fail && state.cfg.gpu_idx != 0){
@@ -678,7 +677,8 @@ bool late_init(EmuEnvState &state) {
     // the renderer is not using it yet, just storing it for later uses
     state.renderer->late_init(state.cfg, state.app_path, state.mem);
 
-    if (!init(state.mem, state.renderer->need_page_table)) {
+    const bool need_page_table = state.renderer->mapping_method == MappingMethod::PageTable || state.renderer->mapping_method == MappingMethod::NativeBuffer;
+    if (!init(state.mem, need_page_table)) {
         LOG_ERROR("Failed to initialize memory for emulator state!");
         return false;
     }
