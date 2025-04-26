@@ -538,10 +538,13 @@ static void toggle_texture_replacement(EmuEnvState &emuenv) {
 }
 
 static void take_screenshot(EmuEnvState &emuenv) {
+    LOG_ERROR("Currenty broken!");
+    return;
+/*
     if (emuenv.cfg.screenshot_format == None)
         return;
 
-    if (emuenv.io.title_id.empty()) {
+   if (emuenv.io.title_id.empty()) {
         LOG_ERROR("Trying to take a screenshot while not ingame");
     }
 
@@ -587,6 +590,8 @@ static void take_screenshot(EmuEnvState &emuenv) {
         SDL_AndroidShowToast(tmp, 1, -1, 0, 0);
 #endif
     }
+
+    */
 }
 
 bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
