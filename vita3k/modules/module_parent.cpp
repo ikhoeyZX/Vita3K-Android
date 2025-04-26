@@ -69,11 +69,6 @@ static ImportFn resolve_import(uint32_t nid) {
     return {};
 }
 
-struct VarExport {
-    uint32_t nid;
-    ImportVarFactory factory;
-};
-
 void init_exported_vars(EmuEnvState &emuenv) {
     const auto var_exports = std::to_array<VarExport>({
 #define NID(name, nid)
