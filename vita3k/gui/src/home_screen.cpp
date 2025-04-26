@@ -350,7 +350,8 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
             switch (sorted) {
             case ASCENDANT:
                 return lhs.app_ver < rhs.app_ver;
-            case DESCENDANT:
+            default:
+            //case DESCENDANT:
                 return lhs.app_ver > rhs.app_ver;
             }
             break;
@@ -358,7 +359,8 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
             switch (sorted) {
             case ASCENDANT:
                 return lhs.category < rhs.category;
-            case DESCENDANT:
+            default:
+            //case DESCENDANT:
                 return lhs.category > rhs.category;
             }
             break;
@@ -366,7 +368,8 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
             switch (sorted) {
             case ASCENDANT:
                 return lhs.compat < rhs.compat;
-            case DESCENDANT:
+            default:
+            //case DESCENDANT:
                 return lhs.compat > rhs.compat;
             }
             break;
@@ -374,7 +377,8 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
             switch (sorted) {
             case ASCENDANT:
                 return lhs.last_time > rhs.last_time;
-            case DESCENDANT:
+            default:
+            //case DESCENDANT:
                 return lhs.last_time < rhs.last_time;
             }
             break;
@@ -382,7 +386,8 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
             switch (sorted) {
             case ASCENDANT:
                 return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
-            case DESCENDANT:
+            default:
+            //case DESCENDANT:
                 return string_utils::toupper(lhs.title) > string_utils::toupper(rhs.title);
             }
             break;
@@ -390,7 +395,8 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
             switch (sorted) {
             case ASCENDANT:
                 return lhs.title_id < rhs.title_id;
-            case DESCENDANT:
+            default:
+            //case DESCENDANT:
                 return lhs.title_id > rhs.title_id;
             }
             break;

@@ -737,6 +737,8 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Columns(1);
             break;
         }
+        default:
+            break;
         }
         break;
     }
