@@ -538,9 +538,6 @@ static void toggle_texture_replacement(EmuEnvState &emuenv) {
 }
 
 static void take_screenshot(EmuEnvState &emuenv) {
-    LOG_ERROR("Currenty broken!");
-    return;
-/*
     if (emuenv.cfg.screenshot_format == None)
         return;
 
@@ -590,8 +587,6 @@ static void take_screenshot(EmuEnvState &emuenv) {
         SDL_AndroidShowToast(tmp, 1, -1, 0, 0);
 #endif
     }
-
-    */
 }
 
 bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
