@@ -61,7 +61,6 @@ void dump_data(const fs::path &path, const void *data, const std::streamsize siz
     }
 }
 
-#ifdef ANDROID
 std::vector<uint8_t> read_asset_raw(const fs::path &path) {
     static const uint32_t base_path_size = strlen(SDL_AndroidGetExternalStoragePath()) + 1;
     std::string file_path = path.string().substr(base_path_size);
@@ -83,7 +82,7 @@ std::vector<uint8_t> read_asset_raw(const fs::path &path) {
 
     return raw_data;
 }
-#else
+
 template <typename T>
 static bool read_data(const fs::path &path, std::vector<T> &data) {
     data.clear();
@@ -112,5 +111,5 @@ static bool read_data(const fs::path &path, std::vector<T> &data) {
 bool read_data(const fs::path &path, std::vector<uint8_t> &data) { return read_data<uint8_t>(path, data); }
 bool read_data(const fs::path &path, std::vector<int8_t> &data) { return read_data<int8_t>(path, data); }
 bool read_data(const fs::path &path, std::vector<char> &data) { return read_data<char>(path, data); }
-#endif
+
 } // namespace fs_utils
