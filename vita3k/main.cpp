@@ -213,6 +213,8 @@ int main(int argc, char *argv[]) {
     Config cfg{};
     EmuEnvState emuenv;
     const auto config_err = config::init_config(cfg, argc, argv, root_paths);
+    // to make sure config.current_config is properly initialized...
+    gui::set_config(emuenv, "", false);
 
     fs::create_directories(cfg.get_pref_path());
 
