@@ -424,7 +424,7 @@ void save_config(GuiState &gui, EmuEnvState &emuenv) {  // has static
 }
 
 std::string get_cpu_backend(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    if (!get_custom_config(gui, emuenv, app_path))
+    if (!get_custom_config(emuenv, app_path))
         return emuenv.cfg.cpu_backend;
 
     return config.cpu_backend;
