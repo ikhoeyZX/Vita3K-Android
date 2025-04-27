@@ -1,5 +1,5 @@
-set(VITA3K_ORG_NAME "Vita3K")
-set(VITA3K_APP_NAME "Vita3K")
+set(VITA3K_ORG_NAME "Vita3K ZX")
+set(VITA3K_APP_NAME "Vita3K ZX")
 set(VITA3K_APP_VER_HI 0)
 set(VITA3K_APP_VER_MID 2)
 set(VITA3K_APP_VER_LO 0)
@@ -90,6 +90,14 @@ if(NOT MSVC)
 	add_compile_options(-Wformat -Werror=format-security)
 endif()
 
+if(USE_DYNARMIC)
+    add_compile_definitions(USE_DYNARMIC)
+endif()
+if(USE_UNICORN)
+	# for gpl2 reasons, don't use unicorn for release
+	add_compile_definitions(USE_UNICORN)
+endif()
+
 add_subdirectory(app)
 add_subdirectory(audio)
 add_subdirectory(config)
@@ -130,7 +138,41 @@ add_subdirectory(gdbstub)
 add_subdirectory(packages)
 add_subdirectory(vkutil)
 
-add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
+if(ANDROID)
+	add_library(vita3k SHARED main.cpp interface.cpp performance.cpp)
+	target_link_libraries(vita3k PRIVATE sdl2 android)
+
+	if(CMAKE_BUILD_TYPE STREQUAL "Release")
+		# we need to exclude all symbols except SDL
+		set(LIBS_TO_EXCLUDE
+			"libboost_atomic.a"
+			"libboost_container.a"
+			"libboost_date_time.a"
+			"libboost_exception.a"
+			"libboost_filesystem.a"
+			"libboost_program_options.a"
+			"libboost_regex.a"
+			"libboost_system.a"
+			"libssl.a"
+			"libfmt.a"
+			"libcrypto.a"
+			"libavcodec.a"
+			"libavdevice.a"
+			"libavfilter.a"
+			"libavformat.a"
+			"libavutil.a"
+			"libswresample.a"
+			"libswscale.a"
+			)
+		set(LIBS_TO_EXCLUDE_FLAG "")
+		foreach(lib IN LISTS LIBS_TO_EXCLUDE)
+			string(APPEND LIBS_TO_EXCLUDE_FLAG " -Wl,--exclude-libs,${lib}")
+		endforeach()
+		set_target_properties(vita3k PROPERTIES LINK_FLAGS "${LIBS_TO_EXCLUDE_FLAG}")
+	endif()
+else()
+   add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
+endif()
 
 if(WIN32)
 	# This file is a bit special, it is run before anything else and must be added here
@@ -278,7 +320,16 @@ elseif(WIN32)
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_ROOT_DIR}/bin/libssl-3-x64.dll" "$<TARGET_FILE_DIR:vita3k>"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_ROOT_DIR}/bin/libcrypto-3-x64.dll" "$<TARGET_FILE_DIR:vita3k>")
 	endif()
+ elseif(ANDROID)
+	add_custom_command(
+		TARGET vita3k
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "${CMAKE_CURRENT_SOURCE_DIR}/../android/assets/data"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../lang" "${CMAKE_CURRENT_SOURCE_DIR}/../android/assets/lang"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "${CMAKE_CURRENT_SOURCE_DIR}/../android/assets/shaders-builtin"
+	)
 endif()
-
-# Enable Tracy profiling on the main compilation target
-target_link_libraries(vita3k PRIVATE tracy)
+if(TRACY_ENABLE_ON_CORE_COMPONENTS)
+   # Enable Tracy profiling on the main compilation target
+   target_link_libraries(vita3k PRIVATE tracy)
+endif()
