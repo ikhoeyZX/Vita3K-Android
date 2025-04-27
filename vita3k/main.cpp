@@ -466,8 +466,6 @@ int main(int argc, char *argv[]) {
         return Success;
     }
 
-    gui::set_config(gui, emuenv, emuenv.io.app_path);
-
     const auto APP_INDEX = gui::get_app_index(gui, emuenv.io.app_path);
     emuenv.app_info.app_version = APP_INDEX->app_ver;
     emuenv.app_info.app_category = APP_INDEX->category;
