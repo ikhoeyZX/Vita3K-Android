@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -103,7 +103,7 @@ void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
 void reset_controller_binding(EmuEnvState &emuenv);
 void save_apps_cache(GuiState &gui, EmuEnvState &emuenv);
 void save_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id);
-void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path, bool custom = true);
+void set_config(EmuEnvState &emuenv, const std::string &app_path, bool custom = true);
 void select_app(GuiState &gui, const std::string &title_id);
 void set_shaders_compiled_display(GuiState &gui, EmuEnvState &emuenv);
 void update_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
