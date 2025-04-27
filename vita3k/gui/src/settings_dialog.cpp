@@ -454,7 +454,7 @@ void set_vsync_state(const bool &state) { // has static
 void set_config(EmuEnvState &emuenv, const std::string &app_path, bool custom) {
     // If a config file is in use, call `get_custom_config()` and set the config
     // parameters with the values stored in the app-specific custom config file
-    if (custom && get_custom_config(gui, emuenv, app_path))
+    if (custom && get_custom_config(emuenv, app_path))
         emuenv.cfg.current_config = config;
     else {
         // Else inherit the values from the global emulator config
@@ -1515,7 +1515,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::Button(is_apply ? (is_reboot ? lang.main_window["save_reboot"].c_str() : lang.main_window["save_apply"].c_str()) : common.save_data.save["title"].c_str(), BUTTON_SIZE)) {
         save_config(gui, emuenv);
         if (is_apply)
-            set_config(gui, emuenv, emuenv.io.app_path);
+            set_config(emuenv, emuenv.io.app_path);
     }
     SetTooltipEx(lang.main_window["keep_changes"].c_str());
 
