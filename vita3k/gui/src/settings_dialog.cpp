@@ -243,7 +243,7 @@ std::vector<std::string> list_user_lang;  // has static
 void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     // If no app-specific config file is being used for the initialized application,
     // set up `config` with the values set in the global emulator configuration
-    if (!get_custom_config(gui, emuenv, app_path)) {
+    if (!get_custom_config(emuenv, app_path)) {
         config.cpu_backend = emuenv.cfg.cpu_backend;
         config.cpu_opt = emuenv.cfg.cpu_opt;
         config.cpu_unsafe = emuenv.cfg.cpu_unsafe;
