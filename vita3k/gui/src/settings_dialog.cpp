@@ -451,10 +451,10 @@ void set_vsync_state(const bool &state) { // has static
  * @param emuenv State of the emulated PlayStation Vita environment
  * @param app_path Path to the app or game to get the custom config for
  */
-void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path, bool custom) {
     // If a config file is in use, call `get_custom_config()` and set the config
     // parameters with the values stored in the app-specific custom config file
-    if (get_custom_config(gui, emuenv, app_path))
+    if (custom && get_custom_config(gui, emuenv, app_path))
         emuenv.cfg.current_config = config;
     else {
         // Else inherit the values from the global emulator config
