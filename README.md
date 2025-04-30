@@ -1,16 +1,15 @@
 # THIS IS NOT MAIN REPO VITA3K!
 
 # Minimum system requirement
-- Vulkan 1.1 (All SoC) / OpenGLES 3.2 (Adreno only)
-- Android 9, 64 bit CPU for Snapdragon variant
-- Android 11, 64 bit CPU for Mediatek / Exynos / Rockchip (kirin still not supported?, idk why and since i dont have that phone variant there is no way to find out)
-- **PowerVR GPU NOT SUPPORTED** because it's have limited Vulkan feature (not yet find workaround since i don't have PowerVR phones)
+- Vulkan 1.1 (All SoC) / OpenGLES 3.2 (Adreno only).
+- Android 9, 64 bit CPU for All SoC.
 - At least 4GB of RAM
 - 6GB Free storage
 
 # Known Issue
 Adreno GPU Driver only supported v11.5 (old sdl2 version) and [v12_build10](https://github.com/ikhoeyZX/Vita3K-Android/releases/tag/v12_build10) or newer (new sdl2 version)
 - Vulkan 1.0 can run but it's too buggy, use OpenGL(ES) instead (adreno only, other SoC didn't support openGLES in this emu for now, because most mobile devices other than snapdragon doesn't support Vertex Shader SSBO) 
+- PowerVR GPU now supported in [v12_build14](https://github.com/ikhoeyZX/Vita3K-Android/releases/tag/v12_build14) but  because it's have limited vulkan feature, not all games can run well.
 
 # Vita3K
 
