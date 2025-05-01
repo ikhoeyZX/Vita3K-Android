@@ -49,11 +49,8 @@ void end_single_time_command(vk::Device device, vk::Queue queue, vk::CommandPool
     device.freeCommandBuffers(cmd_pool, cmd_buffer);
 }
 
-vk::ShaderModule load_shader(vk::Device device, const fs::path &shader_path) {
-    std::vector<uint8_t> shader_code(0);
-    auto res = fs_utils::read_data(shader_path, shader_code);
-    if (!res)
-        return {};
+vk::ShaderModule load_shader(vk::Device device, const fs::path &path) {
+    const std::vector<uint8_t> shader_code = fs_utils::read_asset_raw(fs::path(path));
     return load_shader(device, shader_code.data(), shader_code.size());
 }
 
@@ -169,7 +166,7 @@ vk::ComponentMapping color_to_texture_swizzle(const vk::ComponentMapping &swizzl
     const vk::ComponentSwizzle *color = reinterpret_cast<const vk::ComponentSwizzle *>(&swizzle_color);
     const vk::ComponentSwizzle *texture = reinterpret_cast<const vk::ComponentSwizzle *>(&swizzle_texture);
 
-    for (int i = 0; i < 4; i++) {
+    for (uint8_t i = 0; i < 4; i++) {
         vk::ComponentSwizzle component = texture[i];
         int component_val = static_cast<int>(component);
         if (component_val < VK_COMPONENT_SWIZZLE_R) {
@@ -177,7 +174,7 @@ vk::ComponentMapping color_to_texture_swizzle(const vk::ComponentMapping &swizzl
         } else {
             result[i] = vk::ComponentSwizzle::eZero;
             // look in the color swizzle if there is a component writing to the same channel
-            for (int j = 0; j < 4; j++) {
+            for (uint8_t j = 0; j < 4; j++) {
                 if (component == color[j])
                     result[i] = static_cast<vk::ComponentSwizzle>(VK_COMPONENT_SWIZZLE_R + j);
             }
