@@ -2037,16 +2037,21 @@ GeneratedShader convert_gxp(const SceGxmProgram &program, const std::string &sha
     return shader;
 }
 
-void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath_utf8) {
-    std::vector<char> gxp_program(0);
-    fs::path shader_filepath_str = fs_utils::utf8_to_path(shader_filepath_utf8);
-    if (!fs_utils::read_data(shader_filepath_str, gxp_program))
+void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
+    const fs::path shader_filepath_str{ shader_filepath };
+    std::ifstream gxp_stream(shader_filepath, std::ifstream::binary);
+
+    if (!gxp_stream.is_open())
         return;
 
-    FeatureState features{
-        .support_shader_interlock = true,
-        .direct_fragcolor = false
-    };
+    const auto gxp_file_size = fs::file_size(shader_filepath_str);
+    const auto gxp_program = static_cast<SceGxmProgram *>(calloc(gxp_file_size, 1));
+
+    gxp_stream.read(reinterpret_cast<char *>(gxp_program), gxp_file_size);
+
+    FeatureState features;
+    features.direct_fragcolor = false;
+    features.support_shader_interlock = true;
 
     // use some default hints because we don't have them available
     Hints hints{
@@ -2056,7 +2061,9 @@ void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath_utf8) 
     std::fill_n(hints.vertex_textures, SCE_GXM_MAX_TEXTURE_UNITS, SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR);
     std::fill_n(hints.fragment_textures, SCE_GXM_MAX_TEXTURE_UNITS, SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR);
 
-    convert_gxp(*reinterpret_cast<SceGxmProgram *>(gxp_program.data()), shader_filepath_str.filename().string(), features, shader::Target::GLSLOpenGL, hints, false, true);
+    convert_gxp(*gxp_program, shader_filepath_str.filename().string(), features, shader::Target::GLSLOpenGL, hints, false, true);
+
+    free(gxp_program);
 }
 
 } // namespace shader
