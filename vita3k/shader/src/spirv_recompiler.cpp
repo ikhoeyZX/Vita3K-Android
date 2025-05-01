@@ -903,7 +903,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     int last_base = 0;
     int total_members = 0;
 
-    if (!features.support_memory_mapping && !buffer_sizes.empty()) {
+    if (!features.enable_memory_mapping && !buffer_sizes.empty()) {
         std::vector<spv::Id> buffer_container_member_types;
         const bool is_vert = (program_type == SceGxmProgramType::Vertex);
 
@@ -970,7 +970,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     spv::Id render_buf_type;
     int curr_field_id = 0;
 
-    const uint16_t uniform_buffer_count = features.support_memory_mapping ? buffer_count : 0;
+    const uint16_t uniform_buffer_count = features.enable_memory_mapping ? buffer_count : 0;
     const uint16_t uniform_texture_count = features.use_texture_viewport ? texture_count : 0;
 
     if (program_type == SceGxmProgramType::Vertex) {
@@ -1085,7 +1085,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     for (const auto &buffer : program_input.uniform_buffers) {
         int host_idx = convert_buffer_idx_to_host(buffer.index);
         if (buffer.reg_block_size > 0) {
-            if (features.support_memory_mapping) {
+            if (features.enable_memory_mapping) {
                 Operand dest{
                     .num = static_cast<uint16_t>(buffer.reg_start_offset),
                     .bank = RegisterBank::SECATTR,
@@ -1260,7 +1260,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
                                int index = convert_buffer_idx_to_host(s.index);
 
-                               if (features.support_memory_mapping) {
+                               if (features.enable_memory_mapping) {
                                    // encode the index in the upper 4 bits
                                    base = (index << 28) + s.base;
                                } else {
@@ -1766,7 +1766,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     b.setSourceFile(shader_hash);
     b.setEmitOpLines();
     b.addSourceExtension("gxp");
-    if (features.support_memory_mapping)
+    if (features.enable_memory_mapping)
         b.setMemoryModel(spv::AddressingModelPhysicalStorageBuffer64, spv::MemoryModelGLSL450);
     else
         b.setMemoryModel(spv::AddressingModelLogical, spv::MemoryModelGLSL450);
@@ -1777,7 +1777,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
         b.addCapability(spv::CapabilityImageQuery);
     if (features.support_unknown_format)
         b.addCapability(spv::CapabilityStorageImageReadWithoutFormat);
-    if (features.support_memory_mapping) {
+    if (features.enable_memory_mapping) {
         b.addExtension("SPV_KHR_physical_storage_buffer");
         b.addCapability(spv::CapabilityPhysicalStorageBufferAddresses);
     }
@@ -1818,7 +1818,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
 
     std::vector<spv::Id> empty_args;
 
-    if (translation_state.is_vulkan && !features.support_memory_mapping)
+    if (translation_state.is_vulkan && !features.enable_memory_mapping)
         // core in spv 1.3
         b.addExtension("SPV_KHR_storage_buffer_storage_class");
 
