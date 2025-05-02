@@ -446,29 +446,21 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     };
 #ifdef ANDROID
     if(SDL_GetAndroidSDKVersion() > 30 && !state.cfg.native_screen) {
-#else
-    if (!isSteamDeck() ) {
-#endif
         float ddpi, hdpi, vdpi, max = 160.f;
         SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi);
         window_type |= SDL_WINDOW_ALLOW_HIGHDPI;
-        LOG_INFO("Display DPI:\nddpi = {}\nhdpi = {}\nvdpi = {}", ddpi, hdpi, vdpi);
-#ifdef ANDROID
-       if(vdpi > 1.f)
-          state.dpi_scale = vdpi / max;
-       else
-          state.dpi_scale = ddpi / max;
-#else
-        state.dpi_scale = ddpi / 96;
-#endif
+        LOG_INFO("Display DPI: ddpi = {}, hdpi = {}, vdpi = {}", ddpi, hdpi, vdpi);
+
+        state.dpi_scale = vdpi / max;
     }
 #endif
+    
     if(state.cfg.native_screen){
        SDL_DisplayMode DM;
        SDL_GetCurrentDisplayMode(0, &DM);
-       auto width = DM.w;
-       auto height = DM.h;
-       state.dpi_scale = static_cast<float>(width/DEFAULT_RES_WIDTH);
+       uint32_t width = DM.w;
+       uint32_t height = DM.h;
+       state.dpi_scale = static_cast<float>(width) / DEFAULT_RES_WIDTH;
        LOG_INFO("Native screen size: H = {}, W = {}", height, width);
        LOG_INFO("DPI scale = {}", state.dpi_scale);
     }
@@ -476,8 +468,8 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     state.res_width_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_WIDTH * state.dpi_scale);
     state.res_height_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.dpi_scale);
     
-    LOG_INFO("state.res_width_dpi_scale = {}", state.res_width_dpi_scale);
-    LOG_INFO("state.res_height_dpi_scale = {}", state.res_height_dpi_scale);
+    LOG_INFO("Width dpi scale = {}", state.res_width_dpi_scale);
+    LOG_INFO("Height dpi scale = {}", state.res_height_dpi_scale);
     
 #ifdef ANDROID
     if(state.cfg.boot_fail && state.cfg.gpu_idx != 0){
@@ -511,12 +503,12 @@ bool init(EmuEnvState &state, const Root &root_paths) {
 
     if (!state.window) {
         LOG_ERROR("SDL failed to create window! check your hardware or config!");
-        if(state.cfg.backend_renderer == "Vulkan"){
-           error_dialog("SDL failed to create window!\nnDoes your driver or GPU support Vulkan?\napp will changed to OpenGL ES render", nullptr);
-           state.cfg.backend_renderer = "OpenGL";
-        }else{
+        if(state.cfg.backend_renderer == "OpenGL"){
            error_dialog("SDL failed to create window!\nDoes your GPU support OpenGL ES 3.2?\napp will changed to Vulkan render", nullptr);
            state.cfg.backend_renderer = "Vulkan";
+        }else{
+            error_dialog("SDL failed to create window!\nnDoes your driver or GPU support Vulkan?\napp will changed to OpenGL ES render", nullptr);
+            state.cfg.backend_renderer = "OpenGL";
         }
         state.cfg.boot_fail = true;
         config::serialize_config(state.cfg, state.cfg.config_path);
