@@ -444,6 +444,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
 #endif
         return false;
     };
+#endif
 #ifdef ANDROID
     if(SDL_GetAndroidSDKVersion() > 30 && !state.cfg.native_screen) {
         float ddpi, hdpi, vdpi, max = 160.f;
