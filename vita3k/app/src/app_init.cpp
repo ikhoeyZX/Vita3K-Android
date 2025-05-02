@@ -469,7 +469,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
        auto width = DM.w;
        auto height = DM.h;
        state.dpi_scale = static_cast<float>(height/DEFAULT_RES_HEIGHT);
-       LOG_INFO("Native screen size: H = {}, W = {}", height, weight);
+       LOG_INFO("Native screen size: H = {}, W = {}", height, width);
        LOG_INFO("DPI scale = {}", state.dpi_scale);
     }
         
