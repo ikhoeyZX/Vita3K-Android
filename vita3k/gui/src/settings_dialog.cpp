@@ -1288,6 +1288,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             }
         }
         ImGui::Spacing();
+        ImGui::Checkbox(lang.gui["native_screen"].c_str(), &emuenv.cfg.native_screen);
+        SetTooltipEx(lang.gui["native_screen_description"].c_str());
+        ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
         const auto font_size = ImGui::CalcTextSize(lang.gui["font_support"].c_str()).x;
