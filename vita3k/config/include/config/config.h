@@ -171,6 +171,7 @@ enum ScreenshotFormat {
     code(bool, "invert-gyro", false, invert_gyro)                                                       \
     code(int, "screenmode-pos", 0, screenmode_pos)                                                      \
     code(uint64_t, "current-ime-lang", 4, current_ime_lang)                                             \
+    code(bool, "native-screen", false, native_screen)                                                   \
     code(int, "psn-signed-in", false, psn_signed_in)                                                    \
     code(bool, "http-enable", true, http_enable)                                                        \
     code(int, "http-timeout-attempts", 50, http_timeout_attempts)                                       \
