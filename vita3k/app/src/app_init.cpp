@@ -445,7 +445,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
         return false;
     };
 #ifdef ANDROID
-    if(SDL_GetAndroidSDKVersion() > 30) {
+    if(SDL_GetAndroidSDKVersion() > 30 && !state.cfg.native_screen) {
 #else
     if (!isSteamDeck() ) {
 #endif
@@ -463,6 +463,16 @@ bool init(EmuEnvState &state, const Root &root_paths) {
 #endif
     }
 #endif
+    if(state.cfg.native_screen){
+       SDL_DisplayMode DM;
+       SDL_GetCurrentDisplayMode(0, &DM);
+       auto width = DM.w;
+       auto height = DM.h;
+       state.dpi_scale = static_cast<float>(height/DEFAULT_RES_HEIGHT);
+       LOG_INFO("Native screen size: H = {}, W = {}", height, weight);
+       LOG_INFO("DPI scale = {}", state.dpi_scale);
+    }
+        
     state.res_width_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_WIDTH * state.dpi_scale);
     state.res_height_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.dpi_scale);
     
