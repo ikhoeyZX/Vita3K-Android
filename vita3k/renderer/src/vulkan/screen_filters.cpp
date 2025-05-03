@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -279,13 +279,13 @@ void SinglePassScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_im
         const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
         constexpr float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
         const bool fullscreen_hd_res_pixel_perfect_en = screen.state.fullscreen_hd_res_pixel_perfect & screen.state.fullscreen & !(screen.extent.width % DEFAULT_RES_WIDTH) & !(screen.extent.height % (DEFAULT_RES_HEIGHT - 4));
-        if (screen.state.stretch_the_display_area && !fullscreen_hd_res_pixel_perfect_en) {
+        if (screen.state.stretch_the_display_area) {
             // Match the aspect ratio to the screen size.
             vk_viewport.width = static_cast<float>(screen.extent.width);
             vk_viewport.height = static_cast<float>(screen.extent.height);
             vk_viewport.x = 0.0f;
             vk_viewport.y = 0.0f;
-        } else if ((window_aspect > vita_aspect) && !fullscreen_hd_res_pixel_perfect_en) {
+        } else if ((window_aspect > vita_aspect)) {
             // Window is wide. Pin top and bottom.
             vk_viewport.width = screen.extent.height * vita_aspect;
             vk_viewport.height = static_cast<float>(screen.extent.height);
