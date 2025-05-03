@@ -250,7 +250,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         fs::path default_font_path = emuenv.static_assets_path / "data/fonts";
 #ifdef ANDROID
 	// use default fonts from android instead (reduce apk size)
-	const std::vector<uint8_t> font_mplus = fs_utils::read_asset_raw(default_font_path / "DroidSans.ttf");
+	const std::vector<uint8_t> font_mplus = fs_utils::read_asset_raw("/system/fonts/DroidSans.ttf");
 #else
         const std::vector<uint8_t> font_mplus = fs_utils::read_asset_raw(default_font_path / "mplus-1mn-bold.ttf");
 #endif
@@ -269,7 +269,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
 
             const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
             if (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S) {
-		const std::vector<uint8_t> font_source = fs_utils::read_asset_raw(fs::path(default_font_path / "NotoSerifCJK-Regular.ttc")); // Built-in Android font
+		const std::vector<uint8_t> font_source = fs_utils::read_asset_raw(fs::path("/system/fonts/NotoSerifCJK-Regular.ttc")); // Built-in Android font
 
                 if (!font_source.empty()) {
                     font_data = malloc(font_source.size());
