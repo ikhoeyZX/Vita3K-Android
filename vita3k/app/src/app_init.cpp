@@ -461,7 +461,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
        SDL_GetCurrentDisplayMode(0, &DM);
        uint32_t width = DM.w;
        uint32_t height = DM.h;
-       state.dpi_scale = static_cast<float>(width) / DEFAULT_RES_WIDTH;
+       state.dpi_scale = static_cast<float>(width) / DEFAULT_RES_HEIGHT;
        LOG_INFO("Native screen size: H = {}, W = {}", height, width);
        LOG_INFO("DPI scale = {}", state.dpi_scale);
     }
