@@ -244,8 +244,10 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         gui.large_font = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(latin_fw_font_path).c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
     } else {
         LOG_WARN("Could not find firmware font file at \"{}\", install firmware fonts package to fix this.", latin_fw_font_path);
+        
+        /*
         font_config.SizePixels = 22.f * atlas_font_scale;
-
+        
         // Set up default font path
         fs::path default_font_path = "/system/fonts";
         const std::vector<uint8_t> font_mplus = fs_utils::read_asset_raw(default_font_path / "DroidSans.ttf");
@@ -254,12 +256,12 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         if (!font_mplus.empty()) {
             // when calling AddFontFromMemoryTTF, we tranfer ownership to imgui and it is up to it to free the data
             void* font_data = malloc(font_mplus.size());
-            memcpy(font_data, font_mplus.data(), font_mplus.size());
+            memmove(font_data, font_mplus.data(), font_mplus.size());
             gui.vita_font = io.Fonts->AddFontFromMemoryTTF(font_data, font_mplus.size(), font_config.SizePixels, &font_config, latin_range);
 
             font_config.MergeMode = true;
             font_data = malloc(font_mplus.size());
-            memcpy(font_data, font_mplus.data(), font_mplus.size());
+            memmove(font_data, font_mplus.data(), font_mplus.size());
             io.Fonts->AddFontFromMemoryTTF(font_data, font_mplus.size(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
             
 
@@ -283,6 +285,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
             LOG_INFO("Using default Vita3K font.");
         } else
             LOG_WARN("Could not find default Vita3K font at \"{}\", using default ImGui font.", default_font_path);
+        */
     }
 
     ImGui::GetIO().FontGlobalScale = emuenv.dpi_scale / atlas_font_scale;
