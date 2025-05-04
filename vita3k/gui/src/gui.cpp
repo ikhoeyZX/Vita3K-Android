@@ -248,44 +248,35 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
 
         // Set up default font path
         fs::path default_font_path = "/system/fonts";
-#ifdef ANDROID
-	// use default fonts from android instead (reduce apk size)
-	const std::vector<uint8_t> font_mplus = fs_utils::path_to_utf8((default_font_path / "DroidSans.ttf").c_str());
-#else
-        const std::vector<uint8_t> font_mplus = fs_utils::path_to_utf8((default_font_path / "mplus-1mn-bold.ttf").c_str());
-#endif
+        const std::vector<uint8_t> font_mplus = fs_utils::read_asset_raw(default_font_path / "DroidSans.ttf");
+
         // Check existence of default font file
         if (!font_mplus.empty()) {
             // when calling AddFontFromMemoryTTF, we tranfer ownership to imgui and it is up to it to free the data
-         //   void* font_data = malloc(font_mplus.size());
-         //   memcpy(font_data, font_mplus.data(), font_mplus.size());
-         //   gui.vita_font = io.Fonts->AddFontFromMemoryTTF(font_data, font_mplus.size(), font_config.SizePixels, &font_config, latin_range);
-            gui.vita_font = io.Fonts->AddFontFromMemoryTTF(font_mplus, font_mplus.size(), font_config.SizePixels, &font_config, latin_range);
-
+            void* font_data = malloc(font_mplus.size());
+            memcpy(font_data, font_mplus.data(), font_mplus.size());
+            gui.vita_font = io.Fonts->AddFontFromMemoryTTF(font_data, font_mplus.size(), font_config.SizePixels, &font_config, latin_range);
 
             font_config.MergeMode = true;
-          /*  font_data = malloc(font_mplus.size());
+            font_data = malloc(font_mplus.size());
             memcpy(font_data, font_mplus.data(), font_mplus.size());
             io.Fonts->AddFontFromMemoryTTF(font_data, font_mplus.size(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
-            */
+            
 
             const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
             if (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S) {
-		const std::vector<uint8_t> font_source = fs_utils::path_to_utf8((fs::path(default_font_path / "NotoSerifCJK-Regular.ttc")).c_str()); // Built-in Android font
+                const std::vector<uint8_t> font_source = fs_utils::read_asset_raw(default_font_path / "NotoSerifCJK-Regular.ttc");
 
                 if (!font_source.empty()) {
-                  /*  font_data = malloc(font_source.size());
+                    font_data = malloc(font_source.size());
                     memcpy(font_data, font_source.data(), font_source.size());
                     io.Fonts->AddFontFromMemoryTTF(font_data, font_source.size(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
-		*/
-		   io.Fonts->AddFontFromMemoryTTF(font_source, font_source.size(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
-                
                 }
             }
             font_config.MergeMode = false;
 
-          //  font_data = malloc(font_mplus.size());
-           // memcpy(font_data, font_mplus.data(), font_mplus.size());
+            font_data = malloc(font_mplus.size());
+            memcpy(font_data, font_mplus.data(), font_mplus.size());
             large_font_config.SizePixels = 134.f * atlas_font_scale;
             gui.large_font = io.Fonts->AddFontFromMemoryTTF(font_data, font_mplus.size(), large_font_config.SizePixels, &large_font_config, large_font_chars);
 
