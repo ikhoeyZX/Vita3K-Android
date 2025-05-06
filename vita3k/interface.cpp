@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -460,7 +460,12 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     if (vfs::read_app_file(param_sfo, emuenv.pref_path, emuenv.io.app_path, "sce_sys/param.sfo"))
         sfo::load(emuenv.sfo_handle, param_sfo);
     
-    init_exported_vars(emuenv);
+    // todo: VAR_NID(__sce_libcparam, 0xDF084DFA) is loaded wrong
+    for (const auto &var : init_exported_vars(emuenv)) {
+        auto addr = var.factory(emuenv);
+        emuenv.kernel.export_nids.emplace(var.nid, addr);
+    }
+    
 
     // Load main executable
     emuenv.self_path = !emuenv.cfg.self_path.empty() ? emuenv.cfg.self_path : EBOOT_PATH;
