@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -123,9 +123,10 @@ EXPORT(int, sceAppMgrAppParamGetInt) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceInt32, sceAppMgrAppParamGetString, int pid, int param, char *string, int length) {
+EXPORT(SceInt32, sceAppMgrAppParamGetString, int pid, int param, char *string, SceSize length) {
     TRACY_FUNC(sceAppMgrAppParamGetString, pid, param, string, length);
-    return CALL_EXPORT(_sceAppMgrAppParamGetString, pid, param, string, length);
+    sceAppMgrAppParamGetStringOptParam opt{ length, 0, 0, 0 };
+    return CALL_EXPORT(_sceAppMgrAppParamGetString, pid, param, string, &opt);
 }
 
 EXPORT(int, sceAppMgrAppParamSetString) {
