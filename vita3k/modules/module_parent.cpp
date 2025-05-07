@@ -192,6 +192,7 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
         invalidate_jit_cache(cpu, pc, 3 * sizeof(uint32_t));
     }
        }
+       }
 }
 
 SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
