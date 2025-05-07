@@ -122,8 +122,12 @@ static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id
 }
 
 void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread_id) {
-    Address export_pc = emuenv.kernel.export_nids.find(nid);
-
+    auto it = emuenv.kernel.export_nids.find(nid);
+    Address export_pc;
+    if (it != emuenv.kernel.export_nids.end()) {
+        export_pc = it->second; // Assuming the map's value type is compatible with Address
+    } 
+    
     if (!export_pc) {
        // HLE - call our C++ function
        if (emuenv.kernel.debugger.watch_import_calls) {
