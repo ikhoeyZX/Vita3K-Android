@@ -122,7 +122,7 @@ static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id
 }
 
 void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread_id) {
-    Address export_pc = resolve_export(emuenv.kernel, nid);
+    Address export_pc = emuenv.kernel.export_nids.find(nid);
 
     if (!export_pc) {
        // HLE - call our C++ function
