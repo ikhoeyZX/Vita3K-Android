@@ -857,8 +857,9 @@ EXPORT(void, memcpy, void *destination, const void *source, uint32_t num) {
     memcpy(destination, source, num);
 }
 
-EXPORT(int, memcpy_s) {
-    TRACY_FUNC(memcpy_s);
+EXPORT(void, memcpy_s, void *restrict destination, const void *restrict source, uint32_t num) {
+    TRACY_FUNC(memcpy_s, destination, source, num);
+    memcpy(destination, source, num);
     return UNIMPLEMENTED();
 }
 
@@ -867,8 +868,9 @@ EXPORT(void, memmove, void *destination, const void *source, uint32_t num) {
     memmove(destination, source, num);
 }
 
-EXPORT(int, memmove_s) {
-    TRACY_FUNC(memmove_s);
+EXPORT(void, memmove_s, void *restrict destination, const void *restrict source, uint32_t num) {
+    TRACY_FUNC(memmove_s, destination, source, num);
+    memmove(destination, source, num);
     return UNIMPLEMENTED();
 }
 
@@ -1024,8 +1026,9 @@ EXPORT(int, quick_exit) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, rand) {
+EXPORT(int, rand, int value) {
     TRACY_FUNC(rand);
+    value = rand();
     return UNIMPLEMENTED();
 }
 
@@ -1271,9 +1274,10 @@ EXPORT(Ptr<char>, strncpy, Ptr<char> destination, Ptr<char> source, SceSize size
     return destination;
 }
 
-EXPORT(int, strncpy_s) {
-    TRACY_FUNC(strncpy_s);
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, strncpy_s, Ptr<char> restrict destination, Ptr<char> restrict source, SceSize size) {
+    TRACY_FUNC(strncpy, destination, source, size);
+    strncpy_s(destination.get(emuenv.mem), source.get(emuenv.mem), size);
+    return destination;
 }
 
 EXPORT(int, strnlen_s) {
