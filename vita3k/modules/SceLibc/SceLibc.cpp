@@ -1274,15 +1274,19 @@ EXPORT(Ptr<char>, strncpy, Ptr<char> destination, Ptr<char> source, SceSize size
     return destination;
 }
 
-EXPORT(Ptr<char>, strncpy_s, Ptr<char> restrict destination, Ptr<char> restrict source, SceSize size) {
-    TRACY_FUNC(strncpy, destination, source, size);
-    strncpy_s(destination.get(emuenv.mem), source.get(emuenv.mem), size);
-    return destination;
+EXPORT(int, strncpy_s) {
+    TRACY_FUNC(strncpy_s);
+    return UNIMPLEMENTED();
 }
 
-EXPORT(int, strnlen_s) {
-    TRACY_FUNC(strnlen_s);
-    return UNIMPLEMENTED();
+EXPORT(int, strnlen_s, char *str, SceSize strz) {
+    TRACY_FUNC(strnlen_s, str, strz);
+    if(str == nullptr || str == NULL)
+        return 0;
+    else if (sizeof(str) > strz)
+        return static_cast<int>(sizeof(strz) - strlen(str));
+    else
+    return static_cast<int>(strlen(str));
 }
 
 EXPORT(int, strpbrk) {
