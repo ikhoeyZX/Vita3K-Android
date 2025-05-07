@@ -460,12 +460,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     if (vfs::read_app_file(param_sfo, emuenv.pref_path, emuenv.io.app_path, "sce_sys/param.sfo"))
         sfo::load(emuenv.sfo_handle, param_sfo);
     
-    // todo: VAR_NID(__sce_libcparam, 0xDF084DFA) is loaded wrong
-    for (const auto &var : init_exported_vars(emuenv)) {
-        auto addr = var.factory(emuenv);
-        emuenv.kernel.export_nids.emplace(var.nid, addr);
-    }
-    
+    init_exported_vars(emuenv)
 
     // Load main executable
     emuenv.self_path = !emuenv.cfg.self_path.empty() ? emuenv.cfg.self_path : EBOOT_PATH;
