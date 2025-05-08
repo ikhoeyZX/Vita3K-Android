@@ -857,7 +857,7 @@ EXPORT(void, memcpy, void *destination, const void *source, uint32_t num) {
     memcpy(destination, source, num);
 }
 
-EXPORT(void, memcpy_s, void *restrict destination, const void *restrict source, uint32_t num) {
+EXPORT(void, memcpy_s, void *destination, const void *source, uint32_t num) {
     TRACY_FUNC(memcpy_s, destination, source, num);
     if (destination == nullptr || source == nullptr) {
         LOG_ERROR("memcpy_s NULLPTR handler not supported yet");
@@ -873,7 +873,7 @@ EXPORT(void, memmove, void *destination, const void *source, uint32_t num) {
     memmove(destination, source, num);
 }
 
-EXPORT(void, memmove_s, void *restrict destination, const void *restrict source, uint32_t num) {
+EXPORT(void, memmove_s, void *destination, const void *source, uint32_t num) {
     TRACY_FUNC(memmove_s, destination, source, num);
     if (destination == nullptr || source == nullptr) {
         LOG_ERROR("memmove_s NULLPTR handler not supported yet");
