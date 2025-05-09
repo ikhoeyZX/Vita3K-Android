@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 
 #include "patch/patch.h"
 
+#include <util/fs.h>
 #include <util/log.h>
 
 std::vector<Patch> get_patches(fs::path &path, const std::string &titleid) {
@@ -26,9 +27,9 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid) {
     LOG_INFO("Looking for patches for titleid {}", titleid);
 
     for (auto &entry : fs::directory_iterator(path)) {
-        auto filename = entry.path().filename().string();
+        auto filename = fs_utils::path_to_utf8(entry.path().filename());
         // Just in case users decide to use lowercase filenames
-        auto upper_filename = std::transform(filename.begin(), filename.end(), filename.begin(), ::toupper);
+        std::transform(filename.begin(), filename.end(), filename.begin(), ::toupper);
 
         if (filename.find(titleid) != std::string::npos && filename.ends_with(".TXT")) {
             // Read the file
