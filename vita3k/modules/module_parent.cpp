@@ -122,13 +122,13 @@ static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id
 }
 
 void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread_id) {
-  /*  auto it = emuenv.kernel.export_nids.find(nid);
+    auto it = emuenv.kernel.export_nids.find(nid);
     Address export_pc;
     if (it != emuenv.kernel.export_nids.end()) {
-        export_pc = it->second;
+        export_pc = it->second; 
     } 
     
-    if (!export_pc) { */
+    if (!export_pc) {
        // HLE - call our C++ function
        if (emuenv.kernel.debugger.watch_import_calls) {
            const std::unordered_set<uint32_t> hle_nid_blacklist = {
@@ -152,12 +152,8 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
                if (!LOG_UNK_NIDS_ALWAYS)
                    emuenv.missing_nids.insert(nid);
            }
-           auto it = emuenv.kernel.export_nids.find(nid);
-               Address export_pc;
-               if (it != emuenv.kernel.export_nids.end()) {
-                   export_pc = it->second;
-//       }
- //   } else {
+       }
+    } else {
         // Note: the following code is absolutely not thread safe, invalidating the memory
         // on other processes won't change anything about it
         // If two threads recompile the nid call instruction at the same time, the second one
@@ -190,7 +186,6 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
         // invalidate this small region (without it, this code will be called again)
         invalidate_jit_cache(cpu, pc, 3 * sizeof(uint32_t));
     }
-       }
 }
 
 SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
