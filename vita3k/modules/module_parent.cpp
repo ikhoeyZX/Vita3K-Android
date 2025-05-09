@@ -151,12 +151,11 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
                LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);
                if (!LOG_UNK_NIDS_ALWAYS)
                    emuenv.missing_nids.insert(nid);
-
-               auto it = emuenv.kernel.export_nids.find(nid);
+           }
+           auto it = emuenv.kernel.export_nids.find(nid);
                Address export_pc;
                if (it != emuenv.kernel.export_nids.end()) {
                    export_pc = it->second;
-  //         }
 //       }
  //   } else {
         // Note: the following code is absolutely not thread safe, invalidating the memory
@@ -191,7 +190,6 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
         // invalidate this small region (without it, this code will be called again)
         invalidate_jit_cache(cpu, pc, 3 * sizeof(uint32_t));
     }
-       }
        }
 }
 
