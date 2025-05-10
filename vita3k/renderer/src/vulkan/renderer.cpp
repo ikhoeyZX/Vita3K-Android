@@ -413,6 +413,10 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         instance = vk::createInstance(instance_info);
         VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
 
+	/*
+	//
+	// DISABLED
+	//
         if (has_validation_layer && !found_debug_extension.empty() && config.validation_layer) {
             // we support two debugging extensions
             if (found_debug_extension == VK_EXT_DEBUG_UTILS_EXTENSION_NAME) {
@@ -433,6 +437,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
                 debug_report = instance.createDebugReportCallbackEXT(report_info);
             }
         }
+	*/
     }
 
 #ifdef __APPLE__
