@@ -35,8 +35,6 @@
 #include <miniz.h>
 #include <self.h>
 
-#include <spdlog/fmt/fmt.h>
-
 #include <cassert>
 #include <cstring>
 #include <fstream>
@@ -84,7 +82,7 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
             constexpr auto STUB_SYMVAL = 0xDEADBEEF;
             LOG_DEBUG("\tNID NOT FOUND {} ({}) at {}, setting to stub value {}", log_hex(nid), name, log_hex(entry.address()), log_hex(STUB_SYMVAL));
 
-            auto alloc_name = fmt::format("Stub var import reloc symval, NID {} ({})", log_hex(nid), name);
+            auto alloc_name = fmt::format("Stub var import reloc symval, NID {} ({})", log_hex(nid), (char*)name);
             auto stub_symval_ptr = Ptr<uint32_t>(alloc(mem, 4, alloc_name.c_str()));
             *stub_symval_ptr.get(mem) = STUB_SYMVAL;
 
