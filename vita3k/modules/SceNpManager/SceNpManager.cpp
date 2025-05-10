@@ -115,8 +115,8 @@ EXPORT(int, sceNpManagerGetChatRestrictionFlag, SceInt *isRestricted) {
 EXPORT(int, sceNpManagerGetContentRatingFlag, SceInt *isRestricted, SceInt *age) {
     TRACY_FUNC(sceNpManagerGetContentRatingFlag, isRestricted, age);
     *isRestricted = 0; // User is never restricted
-    *age = 21; // Assume user is 21 years old
-    return STUBBED("isRestricted = 0; age = 21; return 0;");
+    *age = 25; // Assume user is 25 years old
+    return STUBBED("isRestricted = 0; age = 25; return 0;");
 }
 
 EXPORT(int, sceNpManagerGetNpId, np::SceNpId *id) {
