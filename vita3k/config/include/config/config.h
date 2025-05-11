@@ -106,7 +106,7 @@ enum ScreenshotFormat {
     code(int, "delay-background", 4, delay_background)                                                  \
     code(int, "delay-start", 10, delay_start)                                                           \
     code(float, "background-alpha", .300f, background_alpha)                                            \
-    code(int, "log-level", static_cast<int>(spdlog::level::off), log_level)                             \
+    code(int, "log-level", static_cast<int>(spdlog::level::trace), log_level)                           \
     code(std::string, "cpu-backend", "Dynarmic", cpu_backend)                                           \
     code(bool, "cpu-opt", true, cpu_opt)                                                                \
     code(bool, "cpu-unsafe", false, cpu_unsafe)                                                         \
