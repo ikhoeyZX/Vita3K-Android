@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,8 +29,8 @@ namespace renderer::vulkan {
 struct VKState;
 struct VKRenderTarget;
 
-constexpr uint8_t MAX_FRAMES_RENDERING = 3;
-constexpr uint8_t NB_TEXTURE_STAGING_BUFFERS = 16;
+constexpr int MAX_FRAMES_RENDERING = 3;
+constexpr int NB_TEXTURE_STAGING_BUFFERS = 16;
 
 struct TextureStagingBuffer {
     vkutil::Buffer buffer;
@@ -73,7 +73,7 @@ struct VKTextureCache : public TextureCache {
     void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) override;
     void upload_done() override;
 
-    void configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear) override;
+    void configure_sampler(size_t index, const SceGxmTexture &texture) override;
 
     void import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) override;
 
@@ -114,50 +114,15 @@ struct MappedMemoryBuffer {
     vk::Buffer buffer;
 };
 
-struct ExternalBuffer {
-    vk::DeviceMemory memory;
-    void* extra;
-};
-
 struct MappedMemory {
     Address address;
-    std::variant<ExternalBuffer, vkutil::Buffer> buffer_impl;
+    std::variant<vk::DeviceMemory, vkutil::Buffer> buffer_impl;
     vk::Buffer buffer;
     uint32_t size;
     uint64_t buffer_address;
 };
 
-enum struct BufferType {
-    Storage,
-    Vertex,
-    Index16,
-    Index32
-};
-
-struct TrappedBuffer {
-    uint32_t size;
-    // used by the index buffer to keep the max index
-    uint32_t extra;
-    // no need for it to be atomic
-    bool dirty = false;
-    uint8_t* mapped_location;
-
-    TrappedBuffer() {}
-};
-
-// structure to track which buffer were trapped and if they have been modified
-// this is used for: storage buffers, index buffers and vertex buffers
-struct BufferTrapping {
-    std::map<Address, TrappedBuffer> trapped_buffers;
-    // Used when no buffer trapping is applied
-    TrappedBuffer temp_buffer;
-
-    VKState& state;
-
-    BufferTrapping(VKState& state);
-    TrappedBuffer* access_buffer(Address addr, uint32_t size, MemState& mem, bool always_trap = false, bool cover_everything = false);
-    void remove_range(Address start, Address end);
-};
+struct ColorSurfaceCacheInfo;
 
 // Use vulkan queries to implement visibility buffer
 struct VisibilityBuffer {
@@ -186,7 +151,6 @@ struct SyncSignalRequest {
     SceGxmSyncObject *sync;
     uint32_t timestamp;
 };
-struct ColorSurfaceCacheInfo;
 
 struct PostSurfaceSyncRequest {
     ColorSurfaceCacheInfo *cache_info;
@@ -199,13 +163,6 @@ struct CallbackRequest {
     CallbackRequestFunction *callback;
 };
 
-// only used with the DoubleBuffer Method
-// copy the range [location, location+size] from the GPU buffer to the CPU buffer
-struct BufferSyncRequest {
-    Address location;
-    uint32_t size;
-};
-
 // A parallel thread is handling these request and telling other waiting threads
 // when they are done
 // only used if memory mapping is enabled
@@ -213,7 +170,6 @@ typedef std::variant<
     FenceWaitRequest,
     NotificationRequest,
     FrameDoneRequest,
-    BufferSyncRequest,
     PostSurfaceSyncRequest,
     SyncSignalRequest,
     CallbackRequest>
@@ -325,9 +281,9 @@ struct VKContext : public renderer::Context {
 
     explicit VKContext(VKState &state, MemState &mem);
     // TODO: properly destroy the context
-    ~VKContext() override = default;
+    ~VKContext() override;
 
-    void start_recording(bool first_in_scene = false);
+    void start_recording();
     void start_render_pass(bool create_descriptor_set = true);
     void stop_render_pass();
     void stop_recording(const SceGxmNotification &notif1, const SceGxmNotification &notif2, bool submit = true);
