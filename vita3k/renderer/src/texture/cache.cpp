@@ -549,6 +549,16 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             pixels = texture_pixels_lineared.data();
         }
 
+        if (!support_dxt && gxm::is_bcn_format(base_format)) {
+            // decompress the texture
+            const int num_comp = gxm::get_num_components(base_format);
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * num_comp);
+            decompress_compressed_texture(base_format, texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
+            pixels = texture_data_decompressed.data();
+            bpp = num_comp * 8;
+            upload_format = get_matching_decompressed_format(base_format);
+        }
+        
         upload_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
         if (export_textures)
             export_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
