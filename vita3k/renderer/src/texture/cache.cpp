@@ -780,7 +780,7 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
         cache_and_bind_sampler(gxm_texture);
 }
 
-int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture) {
+int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool is_depth) {
     uint32_t compact_repr = 0;
     if (gxm_texture.texture_type() != SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         compact_repr = 0b01
@@ -800,6 +800,10 @@ int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture) {
             | (gxm_texture.mag_filter << 8);
     }
 
+    // the depth part only matters if we can't apply linear filtering to it
+    is_depth &= !support_depth_linear_filtering;
+    compact_repr |= (static_cast<uint32_t>(is_depth) << 23);
+    
     auto it = sampler_lookup.find(compact_repr);
     if (it != sampler_lookup.end()) {
         sampler_queue.set_as_mru(it->second);
@@ -818,7 +822,7 @@ int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture) {
     sampler_lookup[compact_repr] = info;
 
     info->value = compact_repr;
-    configure_sampler(info->index, gxm_texture);
+    configure_sampler(info->index, gxm_texture, is_depth);
     last_bound_sampler_index = info->index;
     return last_bound_sampler_index;
 }
