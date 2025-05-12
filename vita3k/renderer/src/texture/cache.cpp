@@ -35,7 +35,7 @@
 #define XXH_INLINE_ALL
 #include <xxhash.h>
 #endif
-#ifdef _WIN32
+#ifdef WIN32
 #include <execution>
 #endif
 
@@ -558,7 +558,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             bpp = num_comp * 8;
             upload_format = get_matching_decompressed_format(base_format);
         }
-        
+
         upload_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
         if (export_textures)
             export_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
@@ -700,6 +700,8 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
             upload = previous_hash != info->hash;
         } else {
+            range_protect_begin = align(gxm_texture.data_addr << 2, mem.page_size);
+            range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.page_size);
             upload = info->dirty;
         }
     }
@@ -715,6 +717,8 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
     }
 
     importing_texture = false;
+    // to restore the state, in case for whatever reason we could not load the replacement texture
+    bool previous_configure = configure;
     if (upload && import_textures) {
         auto it = available_textures_hash.find(info->hash);
         if (it != available_textures_hash.end()) {
@@ -755,8 +759,8 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
         if (!info->use_hash) {
             info->dirty = false;
-            add_protect(mem, range_protect_begin, range_protect_end - range_protect_begin, MemPerm::ReadOnly, [info, gxm_texture](Address, bool) {
-                if (memcmp(&info->texture, &gxm_texture, sizeof(SceGxmTexture)) == 0) {
+            add_protect(mem, range_protect_begin, range_protect_end - range_protect_begin, MemPerm::ReadOnly, [info, texture_repr](Address, bool) {
+                if (memcmp(&info->texture, &texture_repr, sizeof(SceGxmTexture)) == 0) {
                     info->dirty = true;
                 }
 
@@ -803,7 +807,7 @@ int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool 
     // the depth part only matters if we can't apply linear filtering to it
     is_depth &= !support_depth_linear_filtering;
     compact_repr |= (static_cast<uint32_t>(is_depth) << 23);
-    
+
     auto it = sampler_lookup.find(compact_repr);
     if (it != sampler_lookup.end()) {
         sampler_queue.set_as_mru(it->second);
