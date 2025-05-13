@@ -213,7 +213,6 @@ static Ptr<uint8_t> get_buffer(const PlayerPtr &player, MediaType media_type,
         for (uint32_t a = 0; a < PlayerInfoState::RING_BUFFER_COUNT; a++) {
             if (buffers[a])
                 free(mem, buffers[a]);
-            else if (buffers[a].empty()) {} // skip free mem
         }
         for (uint32_t a = 0; a < PlayerInfoState::RING_BUFFER_COUNT; a++) {
             std::string alloc_name = fmt::format("AvPlayer {} Media Ring {}",
@@ -251,6 +250,7 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
 
         // Create temp media file
         const auto temp_file_path = emuenv.cache_path / "temp_vita_media.mp4";
+        LOG_TRACE("temp media created at : {}", temp_file_path);
         fs::ofstream temp_file(temp_file_path, std::ios::out | std::ios::binary);
 
         const Address buf = alloc(emuenv.mem, KiB(512), "AvPlayer buffer");
@@ -467,8 +467,11 @@ EXPORT(bool, sceAvPlayerIsActive, SceUID player_handle) {
     return !player_info->player.video_playing.empty();
 }
 
-EXPORT(int, sceAvPlayerJumpToTime) {
-    return UNIMPLEMENTED();
+EXPORT(uint64_t, sceAvPlayerJumpToTime, SceUID player_handle, uint32_t times) {
+    const auto state = emuenv.kernel.obj_store.get<AvPlayerState>();
+    const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
+
+    return player_info->player.last_timestamp = times;
 }
 
 EXPORT(int, sceAvPlayerPause, SceUID player_handle) {
