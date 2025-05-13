@@ -213,7 +213,7 @@ static Ptr<uint8_t> get_buffer(const PlayerPtr &player, MediaType media_type,
         for (uint32_t a = 0; a < PlayerInfoState::RING_BUFFER_COUNT; a++) {
             if (buffers[a])
                 free(mem, buffers[a]);
-            else if (!uffers[a].empty()) {} // skip free mem
+            else if (buffers[a].empty()) {} // skip free mem
         }
         for (uint32_t a = 0; a < PlayerInfoState::RING_BUFFER_COUNT; a++) {
             std::string alloc_name = fmt::format("AvPlayer {} Media Ring {}",
