@@ -213,7 +213,7 @@ static Ptr<uint8_t> get_buffer(const PlayerPtr &player, MediaType media_type,
         for (uint32_t a = 0; a < PlayerInfoState::RING_BUFFER_COUNT; a++) {
             if (buffers[a])
                 free(mem, buffers[a]);
-            else if (!buffers[a]) {} // skip free mem
+            else if (!uffers[a].empty()) {} // skip free mem
         }
         for (uint32_t a = 0; a < PlayerInfoState::RING_BUFFER_COUNT; a++) {
             std::string alloc_name = fmt::format("AvPlayer {} Media Ring {}",
@@ -467,9 +467,8 @@ EXPORT(bool, sceAvPlayerIsActive, SceUID player_handle) {
     return !player_info->player.video_playing.empty();
 }
 
-EXPORT(int, sceAvPlayerJumpToTime, uint32_t times) {
-    frame_info->timestamp = times;
-  //  return UNIMPLEMENTED();
+EXPORT(int, sceAvPlayerJumpToTime) {
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvPlayerPause, SceUID player_handle) {
