@@ -654,6 +654,10 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
             LOG_WARN_ONCE("Texture cache is full. Starting to replace textures");
             texture_lookup.erase(std::bit_cast<TextureGxmDataRepr>(info->texture));
         }
+        if (info->texture_size > 0) {
+            LOG_ERROR("Texture cache still full. need fix this!");
+        }
+            
         texture_lookup[texture_repr] = info;
 
         configure = true;
