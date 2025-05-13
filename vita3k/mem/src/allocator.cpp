@@ -96,7 +96,7 @@ void BitmapAllocator::free(const std::uint32_t offset, const int size) {
     force_fill(offset, size, true);
 }
 
-int BitmapAllocator::allocate_from(const std::uint32_t start_offset, int &size, const bool best_fit) {
+int BitmapAllocator::allocate_from(const std::uint32_t start_offset, std::uint32_t &size, const bool best_fit) {
     if (words.empty()) {
         return -1;
     }
@@ -143,7 +143,9 @@ int BitmapAllocator::allocate_from(const std::uint32_t start_offset, int &size, 
                         if (!best_fit) {
                             // Force allocate and then return
                             const int offset = static_cast<int>(31 - boff + ((bword - &words[0]) << 5));
-                            if ((static_cast<std::size_t>(offset) + size) <= max_offset) {
+                            if(offset < 0)
+                                return 0;
+                            else if ((static_cast<std::size_t>(offset) + size) <= max_offset) {
                                 size = force_fill(static_cast<const std::uint32_t>(offset), size, false);
                                 return offset;
                             }
@@ -167,7 +169,7 @@ int BitmapAllocator::allocate_from(const std::uint32_t start_offset, int &size, 
     if (best_fit && bofmin != -1) {
         // Force allocate and then return
         const int offset = static_cast<int>(31 - bofmin + ((wordmin - &words[0]) << 5));
-        if ((static_cast<std::size_t>(offset) + size) <= max_offset) {
+        if ((static_cast<size_t>(offset) + size) <= max_offset) {
             size = force_fill(static_cast<std::uint32_t>(offset), size, false);
             return offset;
         }
@@ -176,7 +178,7 @@ int BitmapAllocator::allocate_from(const std::uint32_t start_offset, int &size, 
     return -1;
 }
 
-int BitmapAllocator::allocate_at(const std::uint32_t start_offset, int size) {
+int BitmapAllocator::allocate_at(const std::uint32_t start_offset, std::uint32_t size) {
     if (free_slot_count(start_offset, start_offset + size) != size) {
         return -1;
     }
