@@ -33,8 +33,8 @@ public:
 
     void set_maximum(const std::size_t total_bits);
 
-    int allocate_from(const std::uint32_t start_offset, int &size, const bool best_fit = false);
-    int allocate_at(const std::uint32_t start_offset, int size);
+    int allocate_from(const std::uint32_t start_offset, std::uint32_t &size, const bool best_fit = false);
+    int allocate_at(const std::uint32_t start_offset, std::uint32_t size);
     void free(const std::uint32_t offset, const int size);
     void reset();
 
