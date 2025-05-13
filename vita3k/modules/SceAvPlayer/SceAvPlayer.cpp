@@ -213,6 +213,9 @@ static Ptr<uint8_t> get_buffer(const PlayerPtr &player, MediaType media_type,
         for (uint32_t a = 0; a < PlayerInfoState::RING_BUFFER_COUNT; a++) {
             if (buffers[a])
                 free(mem, buffers[a]);
+            else if (!buffers[a]) {} // skip free mem
+        }
+        for (uint32_t a = 0; a < PlayerInfoState::RING_BUFFER_COUNT; a++) {
             std::string alloc_name = fmt::format("AvPlayer {} Media Ring {}",
                 media_type == MediaType::VIDEO ? "Video" : "Audio", a);
 
@@ -303,6 +306,7 @@ EXPORT(int, sceAvPlayerDisableStream) {
 }
 
 EXPORT(int32_t, sceAvPlayerStreamCount, SceUID player_handle) {
+    LOG_TRACE("player_handle : {}", player_handle);
     STUBBED("ALWAYS RETURN 2 (VIDEO AND AUDIO)");
     return 2;
 }
@@ -378,6 +382,7 @@ EXPORT(uint32_t, sceAvPlayerGetStreamInfo, SceUID player_handle, SceUInt32 strea
         stream_info->stream_details.audio.size = player_info->player.last_channels * player_info->player.last_sample_count * sizeof(int16_t);
         strcpy(stream_info->stream_details.audio.language, "ENG");
     } else {
+        LOG_TRACE("sceAvPlayerGetStreamInfo number: {}", stream_no);
         return SCE_AVPLAYER_ERROR_INVALID_ARGUMENT;
     }
     return 0;
@@ -412,7 +417,7 @@ EXPORT(bool, sceAvPlayerGetVideoData, SceUID player_handle, SceAvPlayerFrameInfo
             buffer = get_buffer(player_info, MediaType::VIDEO, emuenv.mem, H264DecoderState::buffer_size(size), true);
 
             std::vector<uint8_t> data = player_info->player.receive_video();
-            std::memcpy(buffer.get(emuenv.mem), data.data(), data.size());
+            std::memmove(buffer.get(emuenv.mem), data.data(), data.size());
         }
     } else {
         buffer = get_buffer(player_info, MediaType::VIDEO, emuenv.mem, H264DecoderState::buffer_size(size), false);
@@ -462,8 +467,9 @@ EXPORT(bool, sceAvPlayerIsActive, SceUID player_handle) {
     return !player_info->player.video_playing.empty();
 }
 
-EXPORT(int, sceAvPlayerJumpToTime) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAvPlayerJumpToTime, uint32_t times) {
+    frame_info->timestamp = times;
+  //  return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvPlayerPause, SceUID player_handle) {
