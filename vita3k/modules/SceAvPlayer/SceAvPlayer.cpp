@@ -468,6 +468,7 @@ EXPORT(bool, sceAvPlayerIsActive, SceUID player_handle) {
 }
 
 EXPORT(uint64_t, sceAvPlayerJumpToTime, SceUID player_handle, uint32_t times) {
+    LOG_TRACE("sceAvPlayerJumpToTime IS CALLED");
     const auto state = emuenv.kernel.obj_store.get<AvPlayerState>();
     const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
 
