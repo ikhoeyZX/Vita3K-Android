@@ -48,7 +48,7 @@ uint64_t TOTAL_MEM_SIZE = GiB(3);
 static AccessViolationHandler access_violation_handler;
 static void register_access_violation_handler(const AccessViolationHandler &handler);
 
-static Address alloc_inner(MemState &state, uint32_t start_page, int page_count, const char *name, const bool force);
+static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force);
 static void delete_memory(uint8_t *memory);
 
 #ifdef WIN32
