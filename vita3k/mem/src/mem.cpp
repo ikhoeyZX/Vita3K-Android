@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -138,9 +138,9 @@ bool init(MemState &state, const bool use_page_table) {
 
     state.use_page_table = use_page_table;
     if (use_page_table) {
-        state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / KiB(4)]);
+        state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / state.page_size]);
         // we use an absolute offset (it is faster), so each entry is the same
-        std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE / KiB(4), state.memory.get());
+        std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE / state.page_size, state.memory.get());
     }
 
     return true;
@@ -168,7 +168,7 @@ bool is_valid_addr_range(const MemState &state, Address start, Address end) {
     return state.allocator.free_slot_count(start_page, end_page) == 0;
 }
 
-static Address alloc_inner(MemState &state, uint32_t start_page, int page_count, const char *name, const bool force) {
+static Address alloc_inner(MemState &state, uint32_t start_page, std::uint32_t page_count, const char *name, const bool force) {
     int page_num;
     if (force) {
         if (state.allocator.allocate_at(start_page, page_count) < 0) {
