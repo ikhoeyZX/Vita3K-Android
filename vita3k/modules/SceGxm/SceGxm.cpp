@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,8 +43,8 @@
 #include <renderer/state.h>
 #include <renderer/types.h>
 #include <util/bytes.h>
+#include <util/lock_and_find.h>
 #include <util/log.h>
-#include <util/align.h>
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceGxm);
@@ -901,7 +901,7 @@ static void display_entry_thread(EmuEnvState &emuenv) {
         LOG_CRITICAL("display_thread not found. thid:{}", emuenv.gxm.display_queue_thread);
         return;
     }
-    
+
     while (true) {
         auto display_callback = display_queue.top();
         if (!display_callback)
@@ -914,7 +914,7 @@ static void display_entry_thread(EmuEnvState &emuenv) {
         renderer::wishlist(old_sync, display_callback->old_sync_timestamp);
         if (old_sync != new_sync)
             renderer::wishlist(new_sync, display_callback->new_sync_timestamp);
-	    
+
         // now we can remove the thread from the display queue
         display_queue.pop();
 
@@ -939,7 +939,7 @@ static Ptr<void> gxmRunDeferredMemoryCallback(KernelState &kernel, const MemStat
     const std::uint32_t size, const SceUID thread_id) {
     const std::lock_guard<std::mutex> guard(global_lock);
 
-    const ThreadStatePtr thread = kernel.get_thread(thread_id);
+    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
     const Address final_size_addr = stack_alloc(*thread->cpu, 4);
 
     Ptr<void> result(thread->run_callback(callback.address(), { userdata.address(), size, final_size_addr }));
@@ -1153,7 +1153,7 @@ struct SceGxmContext {
         renderer::Command *new_command = nullptr;
 
         if (state.type == SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
-            if (command_allocator_size > 0 && command_next_free_pos <= command_last_free_pos.load(std::memory_order_acquire)) {
+            if (command_allocator_size > 0 && command_next_free_pos <= command_last_free_pos) {
                 size_t offset = command_next_free_pos % command_allocator_size;
                 command_next_free_pos++;
                 new_command = alloc_space.cast<renderer::Command>().get(mem) + offset;
@@ -1177,15 +1177,11 @@ struct SceGxmContext {
             if (cmd->flags & renderer::Command::FLAG_FROM_HOST) {
                 delete cmd;
             } else {
-                command_last_free_pos.fetch_add(1, std::memory_order_release);
+                ++command_last_free_pos;
             }
         }
     }
 };
-
-// the size of the context on a PS Vita is 2048 bytes
-// the +4 is for alignment reasons
-static_assert(sizeof(SceGxmContext) + 4 <= 2048);
 
 struct SceGxmRenderTarget {
     std::unique_ptr<renderer::RenderTarget> renderer;
@@ -1242,7 +1238,7 @@ static constexpr std::uint32_t DEFAULT_RING_SIZE = 4096;
 
 static VertexCacheHash hash_data(const void *data, size_t size) {
     auto hash = XXH3_64bits(data, size);
-    return static_cast<VertexCacheHash>(hash);
+    return VertexCacheHash(hash);
 }
 
 static bool operator<(const SceGxmRegisteredProgram &a, const SceGxmRegisteredProgram &b) {
@@ -1318,7 +1314,7 @@ EXPORT(int, sceGxmAddRazorGpuCaptureBuffer) {
     return UNIMPLEMENTED();
 }
 
-void update_viewport(renderer::State &state, SceGxmContext *context) {
+static void update_viewport(renderer::State &state, SceGxmContext *context) {
     if (context->state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
         renderer::set_viewport_real(state, context->renderer.get(), context->state.viewport.offset.x,
             context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x,
@@ -1743,17 +1739,14 @@ EXPORT(int, sceGxmColorSurfaceSetGammaMode, SceGxmColorSurface *surface, SceGxmC
     surface->gamma = static_cast<uint32_t>(gammaMode) >> 12;
     SceGxmTextureGammaMode texture_gamma;
     switch (gammaMode) {
-    case SCE_GXM_COLOR_SURFACE_GAMMA_NONE:
-        texture_gamma = SCE_GXM_TEXTURE_GAMMA_NONE;
-        break;
-    case SCE_GXM_COLOR_SURFACE_GAMMA_R:
-        texture_gamma = SCE_GXM_TEXTURE_GAMMA_R;
+    case SCE_GXM_COLOR_SURFACE_GAMMA_BGR:
+        texture_gamma = SCE_GXM_TEXTURE_GAMMA_BGR;
         break;
     case SCE_GXM_COLOR_SURFACE_GAMMA_GR:
         texture_gamma = SCE_GXM_TEXTURE_GAMMA_GR;
         break;
     default:
-        texture_gamma = SCE_GXM_TEXTURE_GAMMA_BGR;
+        texture_gamma = SCE_GXM_TEXTURE_GAMMA_NONE;
         break;
     }
     return CALL_EXPORT(sceGxmTextureSetGammaMode, &surface->backgroundTex, texture_gamma);
@@ -1774,8 +1767,7 @@ EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmCo
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    // This structure needs 8-byte alignment
-    *context = Ptr<SceGxmContext>(align(params->hostMem.address(), 8));
+    *context = params->hostMem.cast<SceGxmContext>();
 
     SceGxmContext *const ctx = context->get(emuenv.mem);
     new (ctx) SceGxmContext(emuenv.gxm.callback_lock);
@@ -1823,7 +1815,7 @@ EXPORT(int, sceGxmCreateDeferredContext, SceGxmDeferredContextParams *params, Pt
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    *deferredContext = Ptr<SceGxmContext>(align(params->hostMem.address(), 8));
+    *deferredContext = params->hostMem.cast<SceGxmContext>();
     SceGxmContext *const ctx = deferredContext->get(emuenv.mem);
     new (ctx) SceGxmContext(emuenv.gxm.callback_lock);
 
@@ -2034,8 +2026,6 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
 
     if (!renderTarget)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-  //  if (!renderTarget.valid(mem))
-  //      return RET_ERROR(SCE_GXM_ERROR_DRIVER);
 
     renderer::destroy_render_target(*emuenv.renderer, renderTarget.get(mem)->renderer);
 
@@ -2055,7 +2045,7 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
 
     DisplayFrameInfo *frame = predict_next_image(emuenv, newBuffer.address());
 
-    // Block future rendering by setting value of sync object
+    // Block future rendering by setting values of sync object
     SceGxmSyncObject *oldBufferSync = oldBuffer.get(emuenv.mem);
     SceGxmSyncObject *newBufferSync = newBuffer.get(emuenv.mem);
 
@@ -2071,7 +2061,6 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
     oldBufferSync->last_display = ++oldBufferSync->timestamp_ahead;
     if (oldBufferSync != newBufferSync)
         newBufferSync->last_display = ++newBufferSync->timestamp_ahead;
-	
     emuenv.gxm.last_display_global = emuenv.gxm.global_timestamp.fetch_add(1, std::memory_order_relaxed);
 
     // function may be blocking here (expected behavior)
@@ -2594,7 +2583,7 @@ EXPORT(int, sceGxmGetParameterBufferThreshold, uint32_t *parameterBufferSize) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceUInt32, sceGxmGetPrecomputedDrawSize, const SceGxmVertexProgram *vertexProgram) {
+EXPORT(uint32_t, sceGxmGetPrecomputedDrawSize, const SceGxmVertexProgram *vertexProgram) {
     TRACY_FUNC(sceGxmGetPrecomputedDrawSize, vertexProgram);
     assert(vertexProgram);
 
@@ -2606,33 +2595,20 @@ EXPORT(SceUInt32, sceGxmGetPrecomputedDrawSize, const SceGxmVertexProgram *verte
     return static_cast<uint32_t>((max_stream_index + 1) * sizeof(StreamData));
 }
 
-// Fallback value returned when computed size is zero.
-static constexpr SceUInt32 SCE_GXM_PRECOMPUTED_OVERHEAD = 8u;
-
-// Precomputed state size is the sum of the sizes of all uniform buffers and textures.
-static SceUInt32 get_precomputed_state_size(const uint16_t buffer_count, const uint16_t texture_count) {
-    const SceUInt32 state_size = static_cast<SceUInt32>((buffer_count * sizeof(UniformBuffer)) + (texture_count * sizeof(SceGxmTexture)));
-
-    // Some games expect sceGxmGetPrecomputed*StateSize to return non-zero,
-    // even when buffer and texture counts are both zero.
-    // This fallback avoids crashes or undefined behavior.
-    return state_size > 0 ? state_size : SCE_GXM_PRECOMPUTED_OVERHEAD;
-}
-
-EXPORT(SceUInt32, sceGxmGetPrecomputedFragmentStateSize, const SceGxmFragmentProgram *fragmentProgram) {
+EXPORT(uint32_t, sceGxmGetPrecomputedFragmentStateSize, const SceGxmFragmentProgram *fragmentProgram) {
     TRACY_FUNC(sceGxmGetPrecomputedFragmentStateSize, fragmentProgram);
     assert(fragmentProgram);
 
     auto &renderer_data = fragmentProgram->renderer_data;
-    return get_precomputed_state_size(renderer_data->buffer_count, renderer_data->texture_count);
+    return renderer_data->texture_count * sizeof(TextureData) + renderer_data->buffer_count * sizeof(UniformBuffer);
 }
 
-EXPORT(SceUInt32, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram *vertexProgram) {
+EXPORT(uint32_t, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram *vertexProgram) {
     TRACY_FUNC(sceGxmGetPrecomputedVertexStateSize, vertexProgram);
     assert(vertexProgram);
 
     auto &renderer_data = vertexProgram->renderer_data;
-    return get_precomputed_state_size(renderer_data->buffer_count, renderer_data->texture_count);
+    return renderer_data->texture_count * sizeof(TextureData) + renderer_data->buffer_count * sizeof(UniformBuffer);
 }
 
 EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize) {
@@ -2640,8 +2616,8 @@ EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params
     if (!params || !hostMemSize)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    *hostMemSize = static_cast<uint32_t>(KiB(96));
-    return STUBBED("96KiB emuenv mem");
+    *hostMemSize = static_cast<uint32_t>(KiB(64));
+    return STUBBED("64KiB emuenv mem");
 }
 
 EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
@@ -2681,11 +2657,9 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
     return 0;
 }
 
-EXPORT(bool, sceGxmIsDebugVersion) {
+EXPORT(int, sceGxmIsDebugVersion) {
     TRACY_FUNC(sceGxmIsDebugVersion);
-    STUBBED("always return success");
-    // return UNIMPLEMENTED();
-    return true;
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, uint32_t size, uint32_t *offset) {
@@ -2708,34 +2682,21 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-   Address aligned_base;
-   if ((base.address() % KiB(4) != 0) || (size % KiB(4) != 0)){
-        LOG_WARN("Mapping unaligned GPU memory");
-
-       // Make sure the base address and size are 4KiB-aligned
-       aligned_base = align_down(base.address(), KiB(4));
-       size = align(base.address() + size, KiB(4)) - aligned_base;
-    } else {
-       LOG_WARN("No need aligning GPU memory");
-       aligned_base = base.address();
-    }
-
     // Check if it has already been mapped
     // Some games intentionally overlapping mapped region. Nothing we can do. Allow it, bear your own consequences.
     GxmState &gxm = emuenv.gxm;
 
-    auto ite = gxm.memory_mapped_regions.lower_bound(aligned_base);
-    if ((ite == gxm.memory_mapped_regions.end()) || (ite->first != aligned_base)) {
-        if ((ite != gxm.memory_mapped_regions.end()) && ((aligned_base + size) > ite->first)) {
+    auto ite = gxm.memory_mapped_regions.lower_bound(base.address());
+    if (ite == gxm.memory_mapped_regions.end() || ite->first != base.address()) {
+        if (ite != gxm.memory_mapped_regions.end() && base.address() + size > ite->first) {
             LOG_ERROR("Overlapping mapped memory detected");
 
             if (emuenv.renderer->features.enable_memory_mapping) {
                 // overlapping memory mapping is not supported
-                LOG_ERROR("overlapping memory mapping is not supported");
                 return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
             }
         }
-        gxm.memory_mapped_regions.emplace(aligned_base, MemoryMapInfo{ aligned_base, size, attribs });
+        gxm.memory_mapped_regions.emplace(base.address(), MemoryMapInfo{ base.address(), size, attribs });
 
         // little big planet maps regions of size 0
         if (emuenv.renderer->features.enable_memory_mapping && size > 0)
@@ -2749,8 +2710,8 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
 
 EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, uint32_t size, uint32_t *offset) {
     TRACY_FUNC(sceGxmMapVertexUsseMemory, base, size, offset);
-  
     STUBBED("always return success");
+
     if (!base || !offset) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -4108,11 +4069,9 @@ EXPORT(int, sceGxmSetUserMarker) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(bool, sceGxmSetValidationEnable) {
+EXPORT(int, sceGxmSetValidationEnable) {
     TRACY_FUNC(sceGxmSetValidationEnable);
-    STUBBED("Always false");
-    return false;
-   // return UNIMPLEMENTED();
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmSetVertexDefaultUniformBuffer, SceGxmContext *context, Ptr<const void> bufferData) {
@@ -5471,23 +5430,13 @@ EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    Address aligned_base;
-    if (base.address() % KiB(4) != 0){
-        LOG_WARN("Unmapping unaligned GPU memory");
-
-       // Make sure the base address are 4KiB-aligned
-       aligned_base = align_down(base.address(), KiB(4));
-    } else {
-	LOG_WARN("Aligned GPU memory");
-	aligned_base = base.address();
-    }
-    auto ite = emuenv.gxm.memory_mapped_regions.find(aligned_base);
+    auto ite = emuenv.gxm.memory_mapped_regions.find(base.address());
     if (ite == emuenv.gxm.memory_mapped_regions.end()) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-	
+
     if (emuenv.renderer->features.enable_memory_mapping && ite->second.size > 0)
-        renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryUnmap, true, aligned_base);
+        renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryUnmap, true, base);
 
     emuenv.gxm.memory_mapped_regions.erase(ite);
     return 0;
