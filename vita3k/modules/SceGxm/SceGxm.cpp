@@ -1318,7 +1318,7 @@ EXPORT(int, sceGxmAddRazorGpuCaptureBuffer) {
     return UNIMPLEMENTED();
 }
 
-static void update_viewport(renderer::State &state, SceGxmContext *context) {
+void update_viewport(renderer::State &state, SceGxmContext *context) {
     if (context->state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
         renderer::set_viewport_real(state, context->renderer.get(), context->state.viewport.offset.x,
             context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x,
@@ -2034,8 +2034,8 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
 
     if (!renderTarget)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    if (!renderTarget.valid(mem))
-        return RET_ERROR(SCE_GXM_ERROR_DRIVER);
+  //  if (!renderTarget.valid(mem))
+  //      return RET_ERROR(SCE_GXM_ERROR_DRIVER);
 
     renderer::destroy_render_target(*emuenv.renderer, renderTarget.get(mem)->renderer);
 
@@ -2716,7 +2716,7 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
        aligned_base = align_down(base.address(), KiB(4));
        size = align(base.address() + size, KiB(4)) - aligned_base;
     } else {
-       LOG_WARN_ONCE("No need aligning GPU memory");
+       LOG_WARN("No need aligning GPU memory");
        aligned_base = base.address();
     }
 
@@ -5473,11 +5473,12 @@ EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
 
     Address aligned_base;
     if (base.address() % KiB(4) != 0){
-        LOG_WARN_ONCE("Unmapping unaligned GPU memory");
+        LOG_WARN("Unmapping unaligned GPU memory");
 
        // Make sure the base address are 4KiB-aligned
        aligned_base = align_down(base.address(), KiB(4));
     } else {
+	LOG_WARN("Aligned GPU memory");
 	aligned_base = base.address();
     }
     auto ite = emuenv.gxm.memory_mapped_regions.find(aligned_base);
