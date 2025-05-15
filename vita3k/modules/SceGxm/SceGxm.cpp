@@ -1853,9 +1853,6 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
     if (!renderTarget) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-	
-    if (!renderTarget.valid(mem))
-        return RET_ERROR(SCE_GXM_ERROR_DRIVER);
 
     *renderTarget = alloc<SceGxmRenderTarget>(emuenv.mem, __FUNCTION__);
     if (!*renderTarget) {
