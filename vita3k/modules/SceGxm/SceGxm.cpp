@@ -1361,7 +1361,7 @@ static void gxmContextStateRestore(renderer::State &state, SceGxmContext *contex
             context->state.region_clip_min.x, context->state.region_clip_max.x, context->state.region_clip_min.y,
             context->state.region_clip_max.y);
 
-        update_viewport(*emuenv.renderer, context);
+        update_viewport(state, context);
     }
 
     renderer::set_cull_mode(state, context->renderer.get(), context->state.cull_mode);
