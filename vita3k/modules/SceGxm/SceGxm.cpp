@@ -2034,6 +2034,8 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
 
     if (!renderTarget)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    if (!renderTarget.valid(mem))
+        return RET_ERROR(SCE_GXM_ERROR_DRIVER);
 
     renderer::destroy_render_target(*emuenv.renderer, renderTarget.get(mem)->renderer);
 
@@ -5481,15 +5483,6 @@ EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
     auto ite = emuenv.gxm.memory_mapped_regions.find(aligned_base);
     if (ite == emuenv.gxm.memory_mapped_regions.end()) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    }
-
-    // this memory range may contain trapped region, so untrap everything to make sure
-    // we don't run into issues later
-    // TODO: call a mem function to invalidate the range instead
-    uint8_t* addr_start = aligned_base.cast<uint8_t>().get(emuenv.mem);
-    for(volatile uint8_t* addr = addr_start; addr < addr_start + ite->second.size; addr += emuenv.mem.page_size){
-        // this should cause a read and a write
-        *addr = *addr;
     }
 	
     if (emuenv.renderer->features.enable_memory_mapping && ite->second.size > 0)
