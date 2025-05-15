@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -108,8 +108,9 @@ struct VKState : public renderer::State {
     bool support_rasterized_order_access = false;
     
 #ifdef ANDROID
-    bool support_android_buffer_import = false;
-    bool support_unix_fd_import = false;
+// SDK > 26
+    bool support_android_buffer_import = true;
+    bool support_unix_fd_import = true;
 #endif
 
     VKState(int gpu_idx);
