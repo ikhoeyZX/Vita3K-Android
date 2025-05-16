@@ -501,7 +501,11 @@ bool init(EmuEnvState &state, const Root &root_paths) {
 #endif
 
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
-
+    if (!state.window) {
+        LOG_ERROR("SDL failed to create window!, disabling some feature!");
+        state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, SDL_WINDOW_FULLSCREEN_DESKTOP), nullptr);
+    }
+        
     if (!state.window) {
         LOG_ERROR("SDL failed to create window! check your hardware or config!");
         if(state.cfg.backend_renderer == "OpenGL"){
