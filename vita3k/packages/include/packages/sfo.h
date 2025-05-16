@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@
 
 #pragma once
 
-#include <cstdint>
 #include <io/vfs.h>
 
 #include <cstdint>
@@ -34,6 +33,13 @@
 #include <vector>
 
 static const char *EBOOT_PATH = "eboot.bin";
+
+enum SfoDataFormat : uint16_t {
+    UTF8 = 0x0004, // UTF-8 Encoding
+    UTF8_NULL = 0x0204, // UTF-8 Null Terminated
+    ASCII = 0x0402, // ASCII Encoding
+    UINT32_T = 0x0404, // 32-bit Unsigned Integer
+};
 
 struct SfoHeader {
     uint32_t magic;
