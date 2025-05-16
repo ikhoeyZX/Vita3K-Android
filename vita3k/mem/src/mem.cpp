@@ -42,7 +42,7 @@ constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
 constexpr bool LOG_PROTECT = false;
 constexpr bool PAGE_NAME_TRACKING = false;
 constexpr uint64_t MAX_TOTAL_MEM_SIZE = GiB(8);
-uint64_t TOTAL_MEM_SIZE = GiB(3);
+uint64_t TOTAL_MEM_SIZE = MiB(3500);
 
 // TODO: support multiple handlers
 static AccessViolationHandler access_violation_handler;
