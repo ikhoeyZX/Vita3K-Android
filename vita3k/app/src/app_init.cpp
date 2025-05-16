@@ -502,7 +502,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     if (!state.window) {
         LOG_ERROR("SDL failed to create window!, disabling some feature!");
         window_type = 0;
-        if(state.cfg.backend_renderer == "OpenGL"){
+        if(state.cfg.backend_renderer == "OpenGL")
             window_type = SDL_WINDOW_OPENGL;
         else
             window_type = SDL_WINDOW_VULKAN;
