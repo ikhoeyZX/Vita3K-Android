@@ -230,9 +230,10 @@ static bool select_queues(VKState &vk_state,
             vk_state.transfer_family_index = i;
             found_graphics = true;
             found_transfer = true;
-        }
+        
         // for now use the same queue for graphics and transfer, to be improved on later
-        /* else if (!found_transfer && queue_family.queueFlags&vk::QueueFlagBits::eTransfer) {
+	// this area was disabled before!
+	} else if (!found_transfer && queue_family.queueFlags&vk::QueueFlagBits::eTransfer) {
             vk::DeviceQueueCreateInfo queue_create_info{
                 .queueFamilyIndex = i,
                 .queueCount = queue_family.queueCount,
@@ -242,7 +243,7 @@ static bool select_queues(VKState &vk_state,
             vk_state.transfer_family_index = i;
             found_transfer = true;
         }
-        */
+        // end disabled area
 
         if (found_graphics && found_transfer)
             break;
@@ -301,11 +302,12 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 #endif
     // Create Instance
     {
+	LOG_TRACE("Create SDL_Vulkan_GetVkGetInstanceProcAddr");
         PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
         
 #ifdef ANDROID
-        if(adreno.is_adreno){
+        if(adreno.is_adreno && config.gpu_idx != 0){
     	    const char *temp_dir = nullptr;
         	if (SDL_GetAndroidSDKVersion() < 29) { // ANDROID 9
         		temp_dir = adreno.adreno_temp_dir.c_str();
@@ -467,10 +469,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     }
 #endif
 
-    // Create Surface
-    if (!screen_renderer.create(window))
-        return false;
-
     // Select Physical Device
     {
         std::vector<vk::PhysicalDevice> physical_devices = instance.enumeratePhysicalDevices();
@@ -495,6 +493,12 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             LOG_ERROR("Failed to select Vulkan physical device.");
             return false;
         }
+	    
+	// Create Surface
+        if (!screen_renderer.create(window)) {
+	   LOG_ERROR("screen_renderer.create(window) failed!");
+           return false;
+	}
         physical_device_properties = physical_device.getProperties();
         physical_device_features = physical_device.getFeatures();
         physical_device_memory = physical_device.getMemoryProperties();
