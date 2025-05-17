@@ -453,9 +453,9 @@ bool init(EmuEnvState &state, const Root &root_paths) {
 
         state.dpi_scale = vdpi / max;
     }
-#endif
+
     
-    if(state.cfg.native_screen){
+    if(state.cfg.native_screen || SDL_GetAndroidSDKVersion() < 30){
        SDL_DisplayMode DM;
        SDL_GetCurrentDisplayMode(0, &DM);
        uint32_t width = DM.w;
@@ -464,7 +464,8 @@ bool init(EmuEnvState &state, const Root &root_paths) {
        LOG_INFO("Native screen size: H = {}, W = {}", height, width);
        LOG_INFO("DPI scale = {}", state.dpi_scale);
     }
-        
+#endif
+    
     state.res_width_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_WIDTH * state.dpi_scale);
     state.res_height_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.dpi_scale);
     
@@ -500,7 +501,8 @@ bool init(EmuEnvState &state, const Root &root_paths) {
 
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
     if (!state.window) {
-        LOG_ERROR("SDL failed to create window!, disabling some feature!");
+        LOG_ERROR("SDL failed to create window!\n Reason:{}\n disabling some feature!", SDL_GetError());
+        SDL_ClearError();
         window_type = 0;
         if(state.cfg.backend_renderer == "OpenGL")
             window_type = SDL_WINDOW_OPENGL;
@@ -511,7 +513,8 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     }
         
     if (!state.window) {
-        LOG_ERROR("SDL still fail to create window! check your hardware or config!");
+        LOG_ERROR("SDL still fail to create window!\n Reason: {}\n check your hardware or config!", SDL_GetError());
+        SDL_ClearError();
         if(state.cfg.backend_renderer == "OpenGL"){
            error_dialog("SDL failed to create window!\nDoes your GPU support OpenGL ES 3.2?\napp will exit and changed to Vulkan render", nullptr);
            state.cfg.backend_renderer = "Vulkan";
