@@ -478,11 +478,6 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
 
     // assumes little endian host
-    if (self_header.magic != 0x00454353) {
-        LOG_CRITICAL("SELF {} is corrupt or encrypted. Decryption is not yet supported.", self_path);
-        return -1;
-    }
-
     if (self_header.version != 3) {
         LOG_CRITICAL("SELF {} version {} is not supported.", self_path, self_header.version);
         return -1;
@@ -494,8 +489,9 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     }
 
     if (self_path == "app0:sce_module/steroid.suprx") {
-        LOG_CRITICAL("You're trying to load a vitamin dump. It is not supported.");
-        return -1;
+        LOG_WARN("Vitamin dump not safe, keep running anyway");
+        // LOG_CRITICAL("You're trying to load a vitamin dump. It is not supported.");
+        //return -1;
     }
 
     const uint8_t *const elf_bytes = self_bytes + self_header.elf_offset;
