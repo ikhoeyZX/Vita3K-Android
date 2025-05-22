@@ -886,6 +886,12 @@ std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> fself, const uint8
     const segment_info *const seg_infos = reinterpret_cast<const segment_info *>(&fself[self_header.section_info_offset]);
     const AppInfoHeader app_info_hdr = AppInfoHeader((char *)&fself[self_header.appinfo_offset]);
 
+    // Check if a valid SELF or is still in encrypted layer
+    if (self_header.magic != SCE_MAGIC) {
+        LOG_ERROR("Invalid SELF: file is either not a SELF or is still encrypted (unsupported).");
+        return {};
+    }
+    
     // Check the encryption self type
     if (seg_infos->encryption == 2)
         return fself; // Self is not encrypted, return the original self
