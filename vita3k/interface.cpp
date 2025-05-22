@@ -253,12 +253,14 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
 
         std::string m_filename = std::string(file_stat.m_filename);
         if (m_filename.find("sce_module/steroid.suprx") != std::string::npos) {
-            LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
+ //           LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
+            LOG_CRITICAL("A Vitamin dump was detected, continue anyway");
 #ifdef ANDROID
-            SDL_AndroidShowToast("Vitamin dumps are not supported!", 1, -1, 0, 0);
+//            SDL_AndroidShowToast("Vitamin dumps are not supported!", 1, -1, 0, 0);
+              SDL_AndroidShowToast("Vitamin dumps are unsafe!\n do at your own risk", 1, -1, 0, 0);
 #endif
-            content_path.clear();
-            break;
+//            content_path.clear();
+//            break;
         }
 
         const auto is_content = (m_filename.find(sfo_path) != std::string::npos) || (m_filename.find(theme_path) != std::string::npos);
