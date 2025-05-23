@@ -252,7 +252,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     
     if(!gpu_name.find("dreno")){
        gl_state.features.direct_fragcolor = false;
-       gl_state.features.use_mask_bit = true
+       gl_state.features.use_mask_bit = true;
     }else{
        gl_state.features.use_mask_bit = false;
     }
