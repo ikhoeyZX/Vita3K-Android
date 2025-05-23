@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -223,9 +223,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     LOG_INFO("GPU = {}", gpu_name);
     LOG_INFO("GL_VERSION = {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
-    LOG_INFO("GL_MAX_UNIFORM_BLOCK_SIZE = {} bytes", GL_MAX_UNIFORM_BLOCK_SIZE);
-    LOG_INFO("GL_MAX_SHADER_STORAGE_BLOCK_SIZE = {} bytes", GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
-
+    
 #ifndef NDEBUG
     glDebugMessageCallback(reinterpret_cast<GLDEBUGPROC>(debug_output_callback), nullptr);
 #endif
@@ -251,7 +249,14 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
             check_extensions.erase(find_result);
         }
     }
-
+    
+    if(!gpu_name.find("dreno");{
+       gl_state.features.direct_fragcolor = false;
+       gl_state.features.use_mask_bit = true
+    }else{
+       gl_state.features.use_mask_bit = false;
+    }
+    
     if (gl_state.features.direct_fragcolor) {
         LOG_INFO("Your GPU supports direct access to last fragment color. Your performance with programmable blending games will be optimized.");
     } else if (gl_state.features.support_shader_interlock) {
@@ -264,12 +269,13 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
     }
 
+    /*
 #ifdef ANDROID
     gl_state.features.use_mask_bit = false;
 #else
     gl_state.features.use_mask_bit = true;
 #endif
-
+*/
     return gl_state.init();
 }
 
