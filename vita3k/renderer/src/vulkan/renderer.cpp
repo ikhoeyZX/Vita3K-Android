@@ -478,6 +478,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     }
     
     bool support_dedicated_allocations = false;
+    bool support_memory_mapping = false;
     // Create Device
     {
         std::vector<vk::DeviceQueueCreateInfo> queue_infos;
@@ -547,7 +548,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             }
         }
 
-        bool support_memory_mapping = true;
         if (support_buffer_device_address) {
             auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceBufferDeviceAddressFeatures>();
             support_buffer_device_address &= static_cast<bool>(features.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress);
@@ -709,7 +709,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         if (support_dedicated_allocations)
             allocator_info.flags |= vma::AllocatorCreateFlagBits::eKhrDedicatedAllocation;
 
-        if (feature.enable_memory_mapping)
+        if (support_memory_mapping)
             allocator_info.flags |= vma::AllocatorCreateFlagBits::eBufferDeviceAddress;
 
         allocator = vma::createAllocator(allocator_info);
