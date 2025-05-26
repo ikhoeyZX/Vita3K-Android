@@ -1368,6 +1368,10 @@ std::vector<std::string> VKState::get_gpu_list() {
 }
 #endif
 
+uint32_t VKState::get_gpu_version() {
+    return physical_device_properties.driverVersion;
+}
+	
 std::string_view VKState::get_gpu_name() {
     return physical_device_properties.deviceName.data();
 }
