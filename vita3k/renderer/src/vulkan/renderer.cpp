@@ -1128,7 +1128,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         };
         const uint64_t buffer_address = device.getBufferAddress(address_info);
 
-        add_external_mapping(mem, address.address(), size, reinterpret_cast<uint8_t *>(mapped_location));
+	// add_external_mapping(mem, address.address(), size, reinterpret_cast<uint8_t *>(mapped_location));
+        add_external_mapping(mem, address.address(), size, std::bit_cast<uint8_t *>(mapped_location));
         mapped_memories[address.address()] = { address.address(), ExternalBuffer{ device_memory, buffer }, mapped_buffer, size, buffer_address };
 #else
         LOG_ERROR("Native buffer is only supported on Android!\n");
@@ -1248,7 +1249,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 }
 
 void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
-    assert(features.support_memory_mapping);
+    assert(features.enable_memory_mapping);
 
     auto ite = mapped_memories.find(address.address());
     if (ite == mapped_memories.end()) {
@@ -1259,11 +1260,43 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
     // we need to wait in case the buffer is being used
     device.waitIdle();
 
-    if (!mem.use_page_table) {
+    switch (mapping_method) {
+    case MappingMethod::ExernalHost:
         device.destroyBuffer(ite->second.buffer);
-        device.freeMemory(std::get<vk::DeviceMemory>(ite->second.buffer_impl));
-    } else {
-        remove_external_mapping(mem, address.cast<uint8_t>().get(mem));
+        device.freeMemory(std::get<ExternalBuffer>(ite->second.buffer_impl).memory);
+        break;
+
+    case MappingMethod::DoubleBuffer:
+        remove_external_mapping(mem, address.cast<uint8_t>().get(mem), ite->second.size);
+        // remove all the trapping related to these locations
+        buffer_trapping.remove_range(address.address(), address.address() + ite->second.size);
+        break;
+
+#ifdef ANDROID
+    case MappingMethod::NativeBuffer: {
+        remove_external_mapping(mem, address.cast<uint8_t>().get(mem), ite->second.size);
+        device.destroyBuffer(ite->second.buffer);
+        ExternalBuffer &buffer = std::get<ExternalBuffer>(ite->second.buffer_impl);
+        device.freeMemory(buffer.memory);
+
+      //  AHardwareBuffer *hardware_buffer = reinterpret_cast<AHardwareBuffer *>(buffer.extra);
+	  AHardwareBuffer *hardware_buffer = std::bit_cast<AHardwareBuffer *>(buffer.extra);
+        
+        _AHardwareBuffer_unlock(hardware_buffer, nullptr);
+        // When using external fd, it takes ownership of the handle, so don't release it in this case
+        if (support_android_buffer_import)
+            _AHardwareBuffer_release(hardware_buffer);
+        break;
+    }
+#endif
+
+    case MappingMethod::PageTable:
+        remove_external_mapping(mem, address.cast<uint8_t>().get(mem), ite->second.size);
+        break;
+
+    default:
+        LOG_CRITICAL("Mapping method not handled, report it to the devs!");
+        break;
     }
     mapped_memories.erase(ite);
 }
@@ -1296,10 +1329,6 @@ int VKState::get_max_anisotropic_filtering() {
 
 void VKState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
-}
-
-int VKState::get_max_2d_texture_width() {
-    return static_cast<int>(physical_device_properties.limits.maxImageDimension2D);
 }
 
 void VKState::set_async_compilation(bool enable) {
