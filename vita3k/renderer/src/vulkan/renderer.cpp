@@ -478,7 +478,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     }
     
     bool support_dedicated_allocations = false;
-    bool support_memory_mapping = false;
+    bool support_memory_mapping = true;
     // Create Device
     {
         std::vector<vk::DeviceQueueCreateInfo> queue_infos;
@@ -843,7 +843,7 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
 
     LOG_INFO("Using the following memory mapping method: {}", mapping_string[static_cast<int>(mapping_method)]);
     
-    pipeline_cache.init(false);
+    pipeline_cache.init(true);
 
     texture_cache.init(false, texture_folder(), game_id);
 }
