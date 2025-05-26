@@ -579,11 +579,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
                 auto props = physical_device.getProperties2KHR<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>();
                 support_external_memory = (props.get<vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>().minImportedHostPointerAlignment <= 4096);
             }
-
-            if (!support_external_memory) {
-                LOG_INFO("Using a page table for memory mapping");
-                need_page_table = true;
-            }
             
             if (support_external_memory)
                 supported_mapping_methods_mask |= (1 << static_cast<int>(MappingMethod::ExernalHost));
@@ -714,7 +709,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         if (support_dedicated_allocations)
             allocator_info.flags |= vma::AllocatorCreateFlagBits::eKhrDedicatedAllocation;
 
-        if (support_memory_mapping)
+        if (feature.enable_memory_mapping)
             allocator_info.flags |= vma::AllocatorCreateFlagBits::eBufferDeviceAddress;
 
         allocator = vma::createAllocator(allocator_info);
@@ -848,7 +843,7 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
 
     LOG_INFO("Using the following memory mapping method: {}", mapping_string[static_cast<int>(mapping_method)]);
     
-    pipeline_cache.init();
+    pipeline_cache.init(false);
 
     texture_cache.init(false, texture_folder(), game_id);
 }
