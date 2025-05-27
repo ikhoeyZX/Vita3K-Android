@@ -477,7 +477,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         is_adreno_turnip = major_driver_version < 100;
     }
     
-    bool support_dedicated_allocations = false;
+    bool support_dedicated_allocations = true;
     bool support_memory_mapping = true;
     // Create Device
     {
@@ -537,6 +537,17 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             // Needed to create the MoltenVK device
             { vk::KHRPortabilitySubsetExtensionName, &temp_bool },
 #endif
+            // used for coherent framebuffer fetch
+            { VK_EXT_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_EXTENSION_NAME, &support_rasterized_order_access },
+#ifdef ANDROID
+            // dependencies of VK_ANDROID_external_memory_android_hardware_buffer
+            { VK_KHR_BIND_MEMORY_2_EXTENSION_NAME, &temp_bool },
+            { VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME, &temp_bool },
+            { VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME, &temp_bool },
+            // used for memory trapping in android
+            { VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME, &support_android_buffer_import },
+            { VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME, &support_unix_fd_import },
+#endif
         };
 
         for (const vk::ExtensionProperties &ext : physical_device.enumerateDeviceExtensionProperties()) {
@@ -573,12 +584,12 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             supported_mapping_methods_mask |= (1 << static_cast<int>(MappingMethod::DoubleBuffer));
             supported_mapping_methods_mask |= (1 << static_cast<int>(MappingMethod::PageTable));
 
-            if (support_external_memory) {
+         /*   if (support_external_memory) {
                 // disable this extension on GPUs with an alignment requirement higher than 4096 (should only
                 // concern a few intel iGPUs)
                 auto props = physical_device.getProperties2KHR<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>();
                 support_external_memory = (props.get<vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>().minImportedHostPointerAlignment <= 4096);
-            }
+            } */
             
             if (support_external_memory)
                 supported_mapping_methods_mask |= (1 << static_cast<int>(MappingMethod::ExernalHost));
@@ -589,11 +600,11 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 #endif
         }
 
-//        if (physical_device_properties.vendorID == 4318) {
+        if (physical_device_properties.vendorID == 4318) {
             // Nvidia does not allow us to set the device priority higher than normal
             // no need to remove the priority extension
             support_global_priority = false;
-//        }
+        }
         // this is an emulator, tell the system it should have a high priority
         const vk::DeviceQueueGlobalPriorityCreateInfoEXT queue_priority{
             .globalPriority = vk::QueueGlobalPriorityEXT::eHigh
@@ -612,6 +623,13 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             support_fsr = static_cast<bool>(props.get<vk::PhysicalDeviceShaderFloat16Int8Features>().shaderFloat16);
         }
 
+	if (support_rasterized_order_access) {
+            auto props = physical_device.getFeatures2KHR<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>();
+            support_rasterized_order_access = static_cast<bool>(props.get<vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>().rasterizationOrderColorAttachmentAccess);
+            // although both should never be supported at the same time, rasterized order access is far better than shader interlock
+            support_shader_interlock = false;
+        }
+
         support_shader_interlock &= static_cast<bool>(physical_device_features.fragmentStoresAndAtomics);
         if (support_shader_interlock) {
             auto props = physical_device.getFeatures2KHR<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>();
@@ -624,6 +642,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             vk::PhysicalDeviceUniformBufferStandardLayoutFeatures,
             vk::PhysicalDeviceShaderFloat16Int8Features,
             vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>
+            vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>
             device_info{
                 vk::DeviceCreateInfo{
                     .pEnabledFeatures = &enabled_features },
@@ -635,7 +654,9 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
                     // FSR uses float16
                     .shaderFloat16 = VK_TRUE },
                 vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT{
-                    .fragmentShaderSampleInterlock = VK_TRUE }
+                    .fragmentShaderSampleInterlock = VK_TRUE },
+		vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT{
+                    .rasterizationOrderColorAttachmentAccess = VK_TRUE }
             };
         device_info.get().setQueueCreateInfos(queue_infos);
         device_info.get().setPEnabledExtensionNames(device_extensions);
@@ -648,6 +669,9 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         if (!support_fsr)
             device_info.unlink<vk::PhysicalDeviceShaderFloat16Int8Features>();
+
+	if (!support_rasterized_order_access)
+            device_info.unlink<vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>();
 
         if (!support_shader_interlock)
             device_info.unlink<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>();
@@ -843,9 +867,9 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
 
     LOG_INFO("Using the following memory mapping method: {}", mapping_string[static_cast<int>(mapping_method)]);
     
-    pipeline_cache.init(true);
+    pipeline_cache.init(support_rasterized_order_access);
 
-    texture_cache.init(false, texture_folder(), game_id);
+    texture_cache.init(true, texture_folder(), game_id);
 }
 
 void VKState::cleanup() {
