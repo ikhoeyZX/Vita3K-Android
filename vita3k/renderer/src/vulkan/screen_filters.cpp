@@ -284,17 +284,17 @@ void SinglePassScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_im
             vk_viewport.height = static_cast<float>(screen.extent.height);
             vk_viewport.x = 0.0f;
             vk_viewport.y = 0.0f;
+        } else if (screen.state.portrait_mode) {
+            // Window is wide. Pin top and bottom.
+            vk_viewport.width = screen.extent.height * vita_aspect;
+            vk_viewport.height = static_cast<float>(screen.extent.height);
+            vk_viewport.x = (screen.extent.width - vk_viewport.width) / 2.0f;
+            vk_viewport.y = 0.0f;
         } else if ((window_aspect > vita_aspect)) {
             // Window is wide. Pin top and bottom.
             vk_viewport.width = screen.extent.height * vita_aspect;
             vk_viewport.height = static_cast<float>(screen.extent.height/2);
             vk_viewport.x = 0.0f;
-            vk_viewport.y = 0.0f;
-        } else if (screen.state.portrait_modd) {
-            // Window is wide. Pin top and bottom.
-            vk_viewport.width = screen.extent.height * vita_aspect;
-            vk_viewport.height = static_cast<float>(screen.extent.height);
-            vk_viewport.x = (screen.extent.width - vk_viewport.width) / 2.0f;
             vk_viewport.y = 0.0f;
         } else {
             // Window is tall. Pin left and right.
