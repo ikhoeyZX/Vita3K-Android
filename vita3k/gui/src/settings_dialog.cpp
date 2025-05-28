@@ -523,6 +523,11 @@ void set_config(EmuEnvState &emuenv, const std::string &app_path, bool custom) {
     emuenv.renderer->res_multiplier = emuenv.cfg.current_config.resolution_multiplier;
     emuenv.renderer->set_anisotropic_filtering(emuenv.cfg.current_config.anisotropic_filtering);
     emuenv.renderer->set_stretch_display(emuenv.cfg.stretch_the_display_area);
+    if(emuenv.cfg.screenmode_pos == 3)
+       emuenv.renderer->set_portrait_mode(true);
+    else
+       emuenv.renderer->set_portrait_mode(false);
+    
     emuenv.renderer->get_texture_cache()->set_replacement_state(emuenv.cfg.current_config.import_textures, emuenv.cfg.current_config.export_textures, emuenv.cfg.current_config.export_as_png);
     emuenv.renderer->set_async_compilation(emuenv.cfg.current_config.async_pipeline_compilation);
     emuenv.display.fps_hack = emuenv.cfg.current_config.fps_hack;
