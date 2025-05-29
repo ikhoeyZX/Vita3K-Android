@@ -301,7 +301,7 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     TRACY_FUNC(sceKernelGetFreeMemorySize, info);
 
     // Default memory configuration
-    uint32_t max_user = MB(256);
+    uint32_t max_user = MiB(256);
 
     // if DevKit then max_user = MB(512); else check sfo file for memory expansion mode
     // Fetch the "ATTRIBUTE2" key from the SFO file to check for memory expansion mode
