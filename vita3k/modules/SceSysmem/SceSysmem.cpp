@@ -71,6 +71,10 @@ struct SysmemState {
     Blocks vm_blocks;
     SceUID next_uid = 1;
 
+    uint32_t allocated_user = 0;
+    uint32_t allocated_cdram = 0;
+    uint32_t allocated_phycont = 0;
+
     SceUID get_next_uid() {
         return next_uid++;
     }
@@ -158,6 +162,21 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *pName, SceKernelMemBlockType 
     std::strncpy(sceKernelMemBlock->name, pName, KERNELOBJECT_MAX_NAME_LENGTH);
     state->blocks.emplace(uid, sceKernelMemBlock);
 
+    switch (type) {
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
+        state->allocated_user += size;
+        break;
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
+        state->allocated_cdram += size;
+        break;
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
+        state->allocated_phycont += size;
+        break;
+    }
+
     return uid;
 }
 
@@ -187,6 +206,7 @@ EXPORT(int, sceKernelAllocMemBlockForVM, const char *pName, SceSize size) {
     std::strncpy(sceKernelMemBlock->name, pName, KERNELOBJECT_MAX_NAME_LENGTH);
     state->blocks.emplace(uid, sceKernelMemBlock);
     state->vm_blocks.emplace(uid, sceKernelMemBlock);
+    state->allocated_user += size;
 
     return uid;
 }
@@ -236,6 +256,25 @@ EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_BLOCK_ID);
 
     free(emuenv.mem, block->second->mappedBase.address());
+
+    switch (block->second->type) {
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
+        state->allocated_user -= block->second->size;
+        break;
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
+        state->allocated_cdram -= block->second->size;
+        break;
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
+        state->allocated_phycont -= block->second->size;
+        break;
+    default:
+        state->allocated_user -= block->second->size;
+        break;
+    }
+
     state->blocks.erase(block);
 
     return SCE_KERNEL_OK;
@@ -251,6 +290,7 @@ EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
     assert(block != state->vm_blocks.end());
 
     free(emuenv.mem, block->second->mappedBase.address());
+    state->allocated_user -= block->second->size;
     state->blocks.erase(block);
     state->vm_blocks.erase(block);
 
@@ -261,7 +301,7 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     TRACY_FUNC(sceKernelGetFreeMemorySize, info);
 
     // Default memory configuration
-    uint32_t max_user = MiB(256);
+    uint32_t max_user = MB(256);
 
     // if DevKit then max_user = MB(512); else check sfo file for memory expansion mode
     // Fetch the "ATTRIBUTE2" key from the SFO file to check for memory expansion mode
@@ -286,29 +326,30 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
         LOG_WARN_ONCE("ATTRIBUTE2 key not found in SFO data.");
 
     // Define other memory limits
-    constexpr uint32_t max_cdram = MiB(112); // Max cdram memory (112 MiB)
-    constexpr uint32_t max_phycont = MiB(26); // Max physically contiguous memory (26 MiB)
-    uint32_t total_allocated = GiB(4) - mem_available(emuenv.mem);
-    uint32_t allocated_cdram = 0;
-    uint32_t allocated_phycont = 0;
-    {
-        const auto state = emuenv.kernel.obj_store.get<SysmemState>();
-        const auto guard = std::lock_guard<std::mutex>(state->mutex);
+    constexpr uint32_t max_cdram = MiB(100); // Max cdram memory (112 MiB)
+    constexpr uint32_t max_phycont = MiB(25); // Max physically contiguous memory (26 MiB)
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
+    const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
-        for (auto &[_, block] : state->blocks) {
-            if (block->type == SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW) {
-                allocated_cdram += block->mappedSize;
-            } else if (block->type == SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW || block->type == SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW) {
-                allocated_phycont += block->mappedSize;
-            }
-        }
+    int tmp = mem_available(emuenv.mem);
+    LOG_INFO("sceKernelGetFreeMemorySize -> Free mem: {}MB", tmp);
+    LOG_INFO("sceKernelGetFreeMemorySize -> need mem: {}MB", max_user);
+    LOG_INFO("sceKernelGetFreeMemorySize -> cdram used mem: {}MB", max_user);
+    LOG_INFO("sceKernelGetFreeMemorySize -> phycont mem: {}MB", max_user);
+
+    if ((tmp - max_user - max_user - max_user) <= 0){
+        LOG_ERROR("sceKernelGetFreeMemorySize -> Out of memory!");
+        const auto free_memory = align(mem_available(emuenv.mem) / 3, 0x1000);
+        LOG_INFO("sceKernelGetFreeMemorySize -> Free mem: {}MB", free_memory);
+        info->size_cdram = free_memory/3;
+        info->size_user = free_memory;
+        info->size_phycont = free_memory/8;
+    }else{
+       // Set the free memory size info
+       info->size_cdram = std::max<int>(max_cdram - state->allocated_cdram, 0);
+       info->size_user = std::max<int>(max_user - state->allocated_user, 0);
+       info->size_phycont = std::max<int>(max_phycont - state->allocated_phycont, 0);
     }
-
-    // Set the free memory size info
-    info->size_cdram = std::max<int>(max_cdram - allocated_cdram, 0);
-    info->size_user = std::max<int>(max_user - (total_allocated - allocated_cdram - allocated_phycont), 0);
-    info->size_phycont = std::max<int>(max_phycont - allocated_phycont, 0);
-
     return 0;
 }
 
