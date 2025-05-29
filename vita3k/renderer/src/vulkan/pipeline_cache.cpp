@@ -203,11 +203,12 @@ void PipelineCache::init(bool support_rasterized_order_access) {
             vk::Format::eR8G8B8Uscaled, vk::Format::eR8G8B8Sscaled,
             vk::Format::eR8G8B8Uint, vk::Format::eR8G8B8Sint
         };
+        VkResult result = static_cast<VkResult>(reinterpret_cast<uintptr_t>(formatPointer));
         for (auto fmt : formats) {
             vk::FormatProperties rgb_property = state.physical_device.getFormatProperties(fmt);
             if (!(rgb_property.bufferFeatures & vk::FormatFeatureFlagBits::eVertexBuffer)) {
                 unsupported_rgb_vertex_attribute_formats.emplace(fmt);
-                LOG_WARN("Devices Doesn't Support RGB feature: {}", VkResult(formats));
+                LOG_WARN("Devices Doesn't Support RGB feature: {}", VkResult(static_cast<VkResult>(reinterpret_cast<uintptr_t>(formats));
             }
         }
 
