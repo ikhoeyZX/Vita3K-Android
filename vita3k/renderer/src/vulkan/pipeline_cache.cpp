@@ -28,7 +28,6 @@
 
 #include <util/fs.h>
 #include <util/log.h>
-#include <vulkan/vk_enum_string_helper.h>
 
 #include <SDL.h>
 
@@ -208,7 +207,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
             vk::FormatProperties rgb_property = state.physical_device.getFormatProperties(fmt);
             if (!(rgb_property.bufferFeatures & vk::FormatFeatureFlagBits::eVertexBuffer)) {
                 unsupported_rgb_vertex_attribute_formats.emplace(fmt);
-                LOG_WARN("Devices Doesn't Support RGB feature: {}", string_VkResult(formats));
+                LOG_WARN("Devices Doesn't Support RGB feature: {}", VkResult(formats));
             }
         }
 
