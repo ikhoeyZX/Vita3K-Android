@@ -296,7 +296,7 @@ void SinglePassScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_im
             vk_viewport.height = screen.extent.width / vita_aspect;
             vk_viewport.x = 0.0f;
             if(screen.state.portrait_mode)
-                vk_viewport.y = (screen.extent.height - vk_viewport.height) / 4;
+                vk_viewport.y = vk_viewport.height / 4;
             else
                 vk_viewport.y = (screen.extent.height - vk_viewport.height) / 2;
         }
@@ -530,7 +530,7 @@ void FSRScreenFilter::on_resize() {
         output_size.height = static_cast<uint32_t>(std::round(screen.extent.width / vita_aspect));
         output_offset.width = 0.0f;
         if(screen.state.portrait_mode)
-            output_offset.height = static_cast<uint32_t>(std::round((screen.extent.height - output_size.height) / 4.0f));
+            output_offset.height = static_cast<uint32_t>(std::round(output_size.height / 4.0f));
         else
             output_offset.height = static_cast<uint32_t>(std::round((screen.extent.height - output_size.height) / 2.0f));
     }
