@@ -207,7 +207,6 @@ void PipelineCache::init(bool support_rasterized_order_access) {
             vk::FormatProperties rgb_property = state.physical_device.getFormatProperties(fmt);
             if (!(rgb_property.bufferFeatures & vk::FormatFeatureFlagBits::eVertexBuffer)) {
                 unsupported_rgb_vertex_attribute_formats.emplace(fmt);
-                LOG_WARN("Devices Doesn't Support RGB feature: {}", VkResult(static_cast<VkResult>(reinterpret_cast<uintptr_t>(formats));
             }
         }
 
