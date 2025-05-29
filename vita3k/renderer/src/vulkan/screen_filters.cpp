@@ -278,13 +278,7 @@ void SinglePassScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_im
         // compute viewport now
         const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
         constexpr float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
-        if (screen.state.portrait_mode) {
-            // portrait
-            vk_viewport.width = static_cast<float>(screen.extent.width);
-            vk_viewport.height = screen.extent.width / vita_aspect;
-            vk_viewport.x = 0.0f;
-            vk_viewport.y = screen.extent.height / 1.5f;
-        } if (screen.state.stretch_the_display_area) {
+        if (screen.state.stretch_the_display_area) {
             // Match the aspect ratio to the screen size.
             vk_viewport.width = static_cast<float>(screen.extent.width);
             vk_viewport.height = static_cast<float>(screen.extent.height);
@@ -301,7 +295,10 @@ void SinglePassScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_im
             vk_viewport.width = static_cast<float>(screen.extent.width);
             vk_viewport.height = screen.extent.width / vita_aspect;
             vk_viewport.x = 0.0f;
-            vk_viewport.y = (screen.extent.height - vk_viewport.height) / 2;
+            if(screen.state.portrait_mode)
+                vk_viewport.y = (screen.extent.height - vk_viewport.height) / 4;
+            else
+                vk_viewport.y = (screen.extent.height - vk_viewport.height) / 2;
         }
         screen.current_cmd_buffer.setViewport(0, vk_viewport);
     }
@@ -515,12 +512,7 @@ void FSRScreenFilter::on_resize() {
     // compute the extent
     const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
     const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
-    if (screen.state.portrait_mode) {
-        output_size.width = screen.extent.width;
-        output_size.height = static_cast<uint32_t>(std::round(screen.extent.width / vita_aspect));
-        output_offset.width = 0.0f;
-        output_offset.height = static_cast<uint32_t>(std::round((screen.extent.height / 1.5f)));
-    } else if (screen.state.stretch_the_display_area) {
+    if (screen.state.stretch_the_display_area) {
         // Match the aspect ratio to the screen size.
         output_size.width = static_cast<float>(screen.extent.width);
         output_size.height = static_cast<float>(screen.extent.height);
@@ -537,7 +529,10 @@ void FSRScreenFilter::on_resize() {
         output_size.width = screen.extent.width;
         output_size.height = static_cast<uint32_t>(std::round(screen.extent.width / vita_aspect));
         output_offset.width = 0.0f;
-        output_offset.height = static_cast<uint32_t>(std::round((screen.extent.height - output_size.height) / 2.0f));
+        if(screen.state.portrait_mode)
+            output_offset.height = static_cast<uint32_t>(std::round((screen.extent.height - output_size.height) / 4.0f));
+        else
+            output_offset.height = static_cast<uint32_t>(std::round((screen.extent.height - output_size.height) / 2.0f));
     }
 
     // recreate the intermediate images
