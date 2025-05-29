@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 // Copyright (c) 2009 Benjamin Dobell, Glass Echidna
 //
 // This program is free software; you can redistribute it and/or modify
@@ -69,12 +69,6 @@ SceGxmTextureBaseFormat get_matching_decompressed_format(SceGxmTextureBaseFormat
     switch (fmt) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
         return SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC1:
-        return SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC2:
-        return SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC3:
-        return SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8;
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
         return SCE_GXM_TEXTURE_BASE_FORMAT_U8;
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
@@ -106,9 +100,7 @@ void resolve_z_order_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest,
         break;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC2: // unk
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC3: // unk
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
         block_size = 16;
