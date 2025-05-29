@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 // Copyright (c) 2009 Benjamin Dobell, Glass Echidna
 //
 // This program is free software; you can redistribute it and/or modify
@@ -67,8 +67,6 @@ bool convert_base_texture_format_to_base_color_format(SceGxmTextureBaseFormat fo
 
 SceGxmTextureBaseFormat get_matching_decompressed_format(SceGxmTextureBaseFormat fmt) {
     switch (fmt) {
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
-        return SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8;
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
         return SCE_GXM_TEXTURE_BASE_FORMAT_U8;
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
