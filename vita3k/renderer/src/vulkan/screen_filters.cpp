@@ -278,23 +278,23 @@ void SinglePassScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_im
         // compute viewport now
         const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
         constexpr float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
-        if (screen.state.stretch_the_display_area) {
+        if (screen.state.portrait_mode) {
+            // portrait
+            vk_viewport.width = static_cast<float>(screen.extent.width);
+            vk_viewport.height = screen.extent.width / vita_aspect;
+            vk_viewport.x = 0.0f;
+            vk_viewport.y =  (screen.extent.height - vk_viewport.height) / 4;
+        } if (screen.state.stretch_the_display_area) {
             // Match the aspect ratio to the screen size.
             vk_viewport.width = static_cast<float>(screen.extent.width);
             vk_viewport.height = static_cast<float>(screen.extent.height);
             vk_viewport.x = 0.0f;
             vk_viewport.y = 0.0f;
-        } else if (screen.state.portrait_mode) {
-            // portrait
-            vk_viewport.width = static_cast<float>(screen.extent.width);
-            vk_viewport.height = screen.extent.width / vita_aspect;
-            vk_viewport.x = 0.0f;
-            vk_viewport.y = 0.0f;
         } else if ((window_aspect > vita_aspect)) {
             // Window is wide. Pin top and bottom.
             vk_viewport.width = screen.extent.height * vita_aspect;
-            vk_viewport.height = static_cast<float>(screen.extent.height/2);
-            vk_viewport.x = 0.0f;
+            vk_viewport.height = static_cast<float>(screen.extent.height);
+            vk_viewport.x = (screen.extent.width - vk_viewport.width) / 2.0f;
             vk_viewport.y = 0.0f;
         } else {
             // Window is tall. Pin left and right.
