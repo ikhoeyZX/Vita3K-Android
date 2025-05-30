@@ -451,7 +451,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
         window_type |= SDL_WINDOW_ALLOW_HIGHDPI;
         LOG_INFO("Display DPI: ddpi = {}, hdpi = {}, vdpi = {}", ddpi, hdpi, vdpi);
 
-        state.dpi_scale = vdpi / max;
+        state.dpi_scale = ddpi / max;
     }
 
     
