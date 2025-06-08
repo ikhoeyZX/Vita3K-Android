@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -497,8 +497,9 @@ typedef struct SceNetCheckDialogResult {
 
 EXPORT(int, sceNetCheckDialogGetResult, SceNetCheckDialogResult *result) {
     TRACY_FUNC(sceNetCheckDialogGetResult, result);
-    result->result = 0;
-    return STUBBED("result->result = 0");
+   // result->result = 0;
+    // return STUBBED("result->result = 0");
+    return result->result;
 }
 
 EXPORT(SceCommonDialogStatus, sceNetCheckDialogGetStatus) {
