@@ -499,6 +499,7 @@ EXPORT(int, sceNetCheckDialogGetResult, SceNetCheckDialogResult *result) {
     TRACY_FUNC(sceNetCheckDialogGetResult, result);
    // result->result = 0;
     // return STUBBED("result->result = 0");
+    LOG_TRACE("sceNetCheckDialogGetResult : {}", result->result);
     return result->result;
 }
 
