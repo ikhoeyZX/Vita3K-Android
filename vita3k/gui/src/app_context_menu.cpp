@@ -166,7 +166,7 @@ void get_time_apps(GuiState &gui, EmuEnvState &emuenv) {
                 for (const auto &user : time_child) {
                     auto user_id = user.attribute("id").as_string();
                     for (const auto &app : user)
-                        gui.time_apps[user_id].push_back({ app.text().as_string(), static_cast<time_t>(app.attribute("last-time-used").as_llong()), static_cast<time_t>(app.attribute("time-used").as_llong)});
+                        gui.time_apps[user_id].push_back({ app.text().as_string(), static_cast<time_t>(app.attribute("last-time-used").as_llong()), static_cast<time_t>(app.attribute("time-used").as_llong())});
                 }
             }
         } else {
