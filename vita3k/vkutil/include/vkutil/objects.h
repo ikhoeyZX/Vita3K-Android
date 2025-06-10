@@ -166,7 +166,7 @@ public:
             return;
 
         destroy_list.push_back(static_cast<uint64_t>(T::objectType));
-#ifndef __arm__ || __x86__
+#ifndef __arm__
         destroy_list.push_back(std::bit_cast<uint64_t>(vk_object));
 #else
         auto raw_handle = static_cast<typename T::CType>(vk_object);
