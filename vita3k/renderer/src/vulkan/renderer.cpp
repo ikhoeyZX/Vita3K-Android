@@ -355,7 +355,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         SDL_Vulkan_GetInstanceExtensions(window, &instance_req_ext_count, instance_extensions.data());
 
         const std::set<std::string> optional_instance_extensions = {
-            vk::KHRGetPhysicalDeviceProperties2ExtensionName,Add commentMore actions
+            vk::KHRGetPhysicalDeviceProperties2ExtensionName, //Add comment More actions
             vk::KHRExternalMemoryCapabilitiesExtensionName,
             vk::KHRDeviceGroupCreationExtensionName,
 #ifdef __APPLE__
@@ -529,7 +529,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             { vk::EXTGlobalPriorityExtensionName, &support_global_priority },
             // can be used to specify which format will be used by mutable images
             { vk::KHRImageFormatListExtensionName, &surface_cache.support_image_format_specifier },
-            { vk::KHRExternalMemoryExtensionName, &temp_bool },Add commentMore actions
+            { vk::KHRExternalMemoryExtensionName, &temp_bool }, // Add comment More actions
             { vk::KHRDeviceGroupExtensionName, &temp_bool },
             // can host memory directly be used for gxm memory
             { vk::EXTExternalMemoryHostExtensionName, &support_external_memory },

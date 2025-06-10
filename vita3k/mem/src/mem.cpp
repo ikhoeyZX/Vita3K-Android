@@ -277,7 +277,7 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
             // this may come from an external mapping
 #ifdef __arm__
             uintptr_t addr_val = reinterpret_cast<uintptr_t>(addr);
-#elif __aarch64__
+#else
             uintptr_t addr_val = std::bit_cast<uintptr_t>(addr);
 #endif
             auto it = state.external_mapping.lower_bound(addr_val);
