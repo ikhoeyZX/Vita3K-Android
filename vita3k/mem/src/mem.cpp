@@ -275,7 +275,11 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
     if (fault_addr < memory_addr || fault_addr >= memory_addr + TOTAL_MEM_SIZE) {
         if (state.use_page_table) {
             // this may come from an external mapping
-            uint64_t addr_val = std::bit_cast<uint64_t>(addr);
+#ifdef __arm__
+            uintptr_t addr_val = reinterpret_cast<uintptr_t>(addr);
+#elif __aarch64__
+            uintptr_t addr_val = std::bit_cast<uintptr_t>(addr);
+#endif
             auto it = state.external_mapping.lower_bound(addr_val);
             if (it != state.external_mapping.end() && addr_val < it->first + it->second.size) {
                 vaddr = static_cast<Address>(addr_val - it->first + it->second.address);
@@ -382,7 +386,7 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     if (!mem.use_page_table)
         return;
 
-    uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
+    uintptr_t addr_value = std::bit_cast<uintptr_t>(addr_ptr);
     uint8_t *page_table_entry = addr_ptr - addr;
     uint8_t *original_address = &mem.memory[addr];
     for (int block = 0; block < size / KiB(4); block++) {
@@ -402,7 +406,7 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
 }
 
 void remove_external_mapping(MemState &mem, uint8_t *addr_ptr, uint32_t size) {
-    uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
+    uintptr_t addr_value = std::bit_cast<uintptr_t>(addr_ptr);
     MemExternalMapping mapping;
     if(mem.use_page_table) {
         const std::unique_lock<std::mutex> lock(mem.protect_mutex);
@@ -559,7 +563,20 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
 static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     auto context = static_cast<ucontext_t *>(uct);
 
-#ifdef __aarch64__
+#ifdef __arm__
+    _arm_ctx *ctx = reinterpret_cast<_arm_ctx *>(context->uc_mcontext.__reserved);
+    // get the ESR register
+    while (ctx->magic != ESR_MAGIC) {
+        if (ctx->magic == 0)
+            [[unlikely]]
+            raise(SIGTRAP);
+        else
+            [[likely]]
+            ctx = reinterpret_cast<_arm_ctx *>(reinterpret_cast<uint8_t *>(ctx) + ctx->size);
+    }
+
+    const uint64_t esr = reinterpret_cast<esr_context *>(ctx)->esr;
+#elif __aarch64__
 #ifdef __APPLE__
     const uint32_t esr = context->uc_mcontext->__es.__esr;
 #else
@@ -597,7 +614,7 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
         }
     }
 
-    LOG_CRITICAL("Unhandled access to {}", log_hex(*reinterpret_cast<uint64_t *>(&info->si_addr)));
+    LOG_CRITICAL("Unhandled access to {}", log_hex(*reinterpret_cast<uintptr_t *>(&info->si_addr)));
     raise(SIGTRAP);
     return;
 }
