@@ -86,7 +86,7 @@ bool KernelState::init(MemState &mem, const CallImportFunc &call_import, CPUBack
     constexpr std::size_t MAX_CORE_COUNT = 150;
 
     corenum_allocator.set_max_core_count(MAX_CORE_COUNT);
-#if defined(USE_DYNARMIC) && !defined(__arm__)
+#ifdef USE_DYNARMIC
     exclusive_monitor = new_exclusive_monitor(MAX_CORE_COUNT);
 #endif
     start_tick = rtc_get_ticks(rtc_base_ticks());

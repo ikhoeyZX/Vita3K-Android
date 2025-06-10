@@ -111,7 +111,7 @@ static void get_save_data_list(GuiState &gui, EmuEnvState &emuenv) {
             SAFE_LOCALTIME(&last_written, &updated_tm);
 
             const auto size = get_recursive_directory_size(save);
-            save_data_list.push_back({ get_app_index(gui, title_id)->title, title_id, static_cast<size_t>(size), updated_tm });
+            save_data_list.push_back({ get_app_index(gui, title_id)->title, title_id, size, updated_tm });
         }
     }
     std::sort(save_data_list.begin(), save_data_list.end(), [](const SaveData &sa, const SaveData &sb) {

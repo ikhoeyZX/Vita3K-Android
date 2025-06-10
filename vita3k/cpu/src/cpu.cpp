@@ -18,7 +18,7 @@
 #include <cpu/disasm/functions.h>
 #include <cpu/functions.h>
 
-#if defined(USE_DYNARMIC) && !defined(__arm__)
+#ifdef USE_DYNARMIC
 #include <cpu/impl/dynarmic_cpu.h>
 #endif
 #include <cpu/impl/interface.h>
@@ -62,7 +62,7 @@ CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, bool cpu_unsafe, SceUID t
     }
 
     switch (backend) {
-#if defined(USE_DYNARMIC) && !defined(__arm__)
+#ifdef USE_DYNARMIC
     case CPUBackend::Dynarmic: {
         Dynarmic::ExclusiveMonitor *monitor = static_cast<Dynarmic::ExclusiveMonitor *>(protocol->get_exclusive_monitor());
         state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, monitor, cpu_opt, cpu_unsafe);

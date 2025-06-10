@@ -137,7 +137,7 @@ struct KernelState {
     CPUBackend cpu_backend;
     CorenumAllocator corenum_allocator;
     CPUProtocolPtr cpu_protocol;
-#if defined(USE_DYNARMIC) && !defined(__arm__)
+#ifdef USE_DYNARMIC
     ExclusiveMonitorPtr exclusive_monitor;
 #endif
 
