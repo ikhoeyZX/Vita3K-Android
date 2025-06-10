@@ -32,9 +32,7 @@ check_submodules_present()
 set(CMAKE_FOLDER externals)
 
 # Define the Architecture variable, right now it should only contain "x86_64" or "arm64"
-if (ARCHITECTURE STREQUAL "x86_64" OR ARCHITECTURE STREQUAL "arm64")
 include("dynarmic/CMakeModules/DetectArchitecture.cmake")
-endif()
 
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(CAPSTONE_ARCHITECTURE_DEFAULT "Whether architectures are enabled by default" OFF)
