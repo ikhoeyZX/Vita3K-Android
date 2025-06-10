@@ -90,8 +90,10 @@ if(NOT MSVC)
 	add_compile_options(-Wformat -Werror=format-security)
 endif()
 
-if(USE_DYNARMIC)
-    add_compile_definitions(USE_DYNARMIC)
+if (ARCHITECTURE STREQUAL "x86_64" OR ARCHITECTURE STREQUAL "arm64")
+	if(USE_DYNARMIC)
+		add_compile_definitions(USE_DYNARMIC)
+	endif()
 endif()
 if(USE_UNICORN)
 	# for gpl2 reasons, don't use unicorn for release

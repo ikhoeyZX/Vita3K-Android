@@ -29,7 +29,7 @@ struct CPUProtocol : public CPUProtocolBase {
     ~CPUProtocol() override = default;
     void call_svc(CPUState &cpu, uint32_t svc, Address pc, ThreadState &thread) override;
     Address get_watch_memory_addr(Address addr) override;
-#ifdef USE_DYNARMIC
+#if defined(USE_DYNARMIC) && !defined(__arm__)
     ExclusiveMonitorPtr get_exclusive_monitor() override;
 #endif
 
