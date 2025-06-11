@@ -43,8 +43,12 @@
 #ifdef ANDROID
 #include <emuenv/state.h>
 #include <SDL.h>
+
+#ifndef __arm__
 #include <adrenotools/bcenabler.h>
 #include <adrenotools/driver.h>
+#endif
+
 #include <boost/range/iterator_range.hpp>
 #include <sys/mman.h>
 #include <util/float_to_half.h>
@@ -140,7 +144,7 @@ const static std::vector<const char *> required_device_extensions = {
 
 namespace renderer::vulkan {
 
-#ifdef ANDROID
+#if defined(ANDROID) && !defined(__arm__)
 static bool detect_patch_bcn(bool *support_dxt) {
     // some Adreno GPUs support BCn textures even though they say they don't
     // and we might need to patch a function for it to work
@@ -304,7 +308,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
         
-#ifdef ANDROID
+#if defined(ANDROID) && !defined(__arm__)
         if(adreno.is_adreno){
     	    const char *temp_dir = nullptr;
         	if (SDL_GetAndroidSDKVersion() < 29) { // ANDROID 9
