@@ -39,6 +39,10 @@ jobs:
           sudo apt-get install -y ninja-build
           vcpkg install boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
 
+      - name: Compute git short sha
+        shell: bash
+        run: echo "git_short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        
       - name: Decode Keystore
         env:
           KEYSTORE_ENCODED: ${{ secrets.KEYSTORE }}
@@ -67,6 +71,15 @@ jobs:
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
           ./gradlew --stacktrace --info --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease
 
+      - name: Rename APK
+        run: |
+          mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-release.apk
+          
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vita3k-${{ env.git_short_sha }}-release.zip
+          path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-release.apk
+
       - name: Gradle build 32bit
         env:
           SIGNING_STORE_PATH: "/home/runner/keystore.jks"
@@ -85,15 +98,11 @@ jobs:
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
           ./gradlew --stacktrace --info --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease
 
-      - name: Compute git short sha
-        shell: bash
-        run: echo "git_short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-        
       - name: Rename APK
         run: |
-          mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-${{ env.git_short_sha }}-release.apk
+          mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release.apk
           
       - uses: actions/upload-artifact@v4
         with:
           name: vita3k-${{ env.git_short_sha }}-release.zip
-          path: android/build/outputs/apk/release/vita3k-${{ env.git_short_sha }}-release.apk
+          path: android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release.apk
