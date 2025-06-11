@@ -89,11 +89,7 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
           bash -c "yes || Yes || true" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
-          
-          mkdir android/assets/data
-          cp -r data/image android/assets/data/image
-          cp -r lang android/assets
-          cp -r vita3k/shaders-builtin android/assets
+          rm -rf android/build/*
           rm android/build.gradle
           mv android/32bit.gradle android/build.gradle
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
