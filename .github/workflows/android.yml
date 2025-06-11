@@ -78,7 +78,7 @@ jobs:
           
       - uses: actions/upload-artifact@v4
         with:
-          name: vita3k-${{ env.git_short_sha }}-release.zip
+          name: vita3k-${{ env.git_short_sha }}-release_arm64.zip
           path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-release.apk
 
       - name: Gradle build 32bit
@@ -101,5 +101,5 @@ jobs:
           
       - uses: actions/upload-artifact@v4
         with:
-          name: vita3k-${{ env.git_short_sha }}-release.zip
+          name: vita3k-${{ env.git_short_sha }}-release_armv7a.zip
           path: android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release.apk
