@@ -50,10 +50,10 @@ target_link_libraries(renderer PUBLIC display mem stb shader glutil threads conf
 target_link_libraries(renderer PRIVATE ddspp sdl2 stb ffmpeg xxHash::xxhash concurrentqueue)
 
 if(ANDROID)
-   if (ARCHITECTURE STREQUAL "arm64")
-	target_link_libraries(renderer PRIVATE android adrenotools)
+   if (ARCHITECTURE STREQUAL "arm")
+	target_link_libraries(renderer PRIVATE android)
    else()
-        target_link_libraries(renderer PRIVATE android)
+        target_link_libraries(renderer PRIVATE android adrenotools)
    endif()
 endif()
 
