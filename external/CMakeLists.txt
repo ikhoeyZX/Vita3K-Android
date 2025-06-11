@@ -140,7 +140,9 @@ elseif (ARCHITECTURE STREQUAL "x86_64")
 endif ()
 
 if(ANDROID)
+  if (ARCHITECTURE STREQUAL "arm64")
 	add_subdirectory(libadrenotools)
+ endif()
 endif()
 
 if(WIN32)
@@ -153,13 +155,11 @@ endif()
 
 
 # Only enable Dynarmic for x86-64 and aarch64 architectures
-if (ARCHITECTURE STREQUAL "x86_64" OR ARCHITECTURE STREQUAL "arm64")
-	message(STATUS "Dynarmic support enabled for architecture: ${ARCHITECTURE}")
-	add_compile_definitions(DYNARMIC_ENABLED)
-else()
+if (ARCHITECTURE STREQUAL "x86" OR ARCHITECTURE STREQUAL "arm")
 	message(STATUS "Dynarmic support disabled for architecture: ${ARCHITECTURE}")
 	add_subdirectory(dynarmic EXCLUDE_FROM_ALL)
 	set(USE_DYNARMIC FALSE)
+        set(USE_UNICORN TRUE)
 endif()
 
 if(USE_UNICORN)
