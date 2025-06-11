@@ -52,6 +52,7 @@
 #include <boost/range/iterator_range.hpp>
 #include <jni.h>
 
+#ifndef __arm__
 auto load_custom_driver(const std::string &driver_name) {
     libadreno_var val = {false, "", "", "", "", ""};
     fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver_name / "/";
@@ -111,7 +112,8 @@ auto load_custom_driver(const std::string &driver_name) {
 
     return val;
 }
-#endif
+#endif // ifndef __arm__
+#endif // ifdef android
 
 namespace app {
 void update_viewport(EmuEnvState &state) {
@@ -485,7 +487,8 @@ bool init(EmuEnvState &state, const Root &root_paths) {
                 state.cfg.boot_fail = true;
                 config::serialize_config(state.cfg, state.cfg.config_path);
             }
-        
+
+#ifndef __arm__
            // LOG_INFO("Load custom driver");
            // set path to load custom driver using libadrenotools
             state.libadreno = load_custom_driver(state.cfg.current_config.custom_driver_name);
@@ -496,8 +499,9 @@ bool init(EmuEnvState &state, const Root &root_paths) {
                 state.cfg.boot_fail = false;
                 config::serialize_config(state.cfg, state.cfg.config_path);
             }
+#endif // ifndef __arm__
     }
-#endif
+#endif // ifdef android
 
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
     if (!state.window) {
