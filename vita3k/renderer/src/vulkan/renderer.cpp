@@ -44,7 +44,7 @@
 #include <emuenv/state.h>
 #include <SDL.h>
 
-#ifndef __arm__
+#ifdef __aarch64__
 #include <adrenotools/bcenabler.h>
 #include <adrenotools/driver.h>
 #endif
