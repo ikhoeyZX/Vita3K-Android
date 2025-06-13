@@ -295,6 +295,14 @@ target_include_directories(vma INTERFACE
 
 if(ANDROID)
 	set(USE_STATIC_ANDROID_FFMPEG ON)
+        LINK_OPTS=(
+            -Wl,--gc-sections
+            -Wl,--allow-multiple-definition
+            -Wl,-Bsymbolic
+            -lm -lz -pthread
+	    -landroid
+            -lmediandk
+        )
 	# if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt/${ANDROID_ABI}/libavcodec.so")
 	# 	file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg/shared/android/${ANDROID_ABI}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt")
 	# endif()
