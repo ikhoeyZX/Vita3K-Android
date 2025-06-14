@@ -156,7 +156,9 @@ endif()
 
 
 # Only enable Dynarmic for x86-64 and aarch64 architectures
-if (ARCHITECTURE STREQUAL "x86" OR ARCHITECTURE STREQUAL "arm")
+if (ARCHITECTURE STREQUAL "x64" OR ARCHITECTURE STREQUAL "arm64")
+        message(STATUS "Dynarmic supported for architecture: ${ARCHITECTURE}")
+else()
 	message(STATUS "Dynarmic support disabled for architecture: ${ARCHITECTURE}")
 	add_subdirectory(dynarmic EXCLUDE_FROM_ALL)
 	set(USE_DYNARMIC FALSE)
