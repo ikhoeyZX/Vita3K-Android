@@ -10,14 +10,16 @@ src/disasm.cpp
 src/cpu.cpp
 )
 
-set(SOURCE_UNICORN_CPU
-include/cpu/impl/unicorn_cpu.h
+if(USE_UNICORN)
+   set(SOURCE_UNICORN_CPU
+   include/cpu/impl/unicorn_cpu.h
 
-src/unicorn_cpu.cpp
-)
+   src/unicorn_cpu.cpp
+   )
+endif()
 
 if(USE_DYNARMIC)
-  if(ARCHITECTURE STREQUAL "arm64"))
+  if(ARCHITECTURE STREQUAL "arm64")
      set(SOURCE_DYNARMIC_CPU
      include/cpu/impl/dynarmic_cpu.h
 
@@ -46,6 +48,8 @@ if(USE_UNICORN)
     target_link_libraries(cpu PRIVATE unicorn)
 endif()
 
-if(USE_DYNARMIC AND ARCHITECTURE STREQUAL "arm64")
-    target_link_libraries(cpu PRIVATE dynarmic merry::mcl)
+if(USE_DYNARMIC)
+   if(ARCHITECTURE STREQUAL "arm64")
+       target_link_libraries(cpu PRIVATE dynarmic merry::mcl)
+  endif()
 endif()
