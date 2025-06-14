@@ -17,10 +17,12 @@ src/unicorn_cpu.cpp
 )
 
 if(USE_DYNARMIC)
-   set(SOURCE_DYNARMIC_CPU
-   include/cpu/impl/dynarmic_cpu.h
+  if(ARCHITECTURE STREQUAL "arm64"))
+     set(SOURCE_DYNARMIC_CPU
+     include/cpu/impl/dynarmic_cpu.h
 
-   src/dynarmic_cpu.cpp
+     src/dynarmic_cpu.cpp
+   endif()
 )
 endif()
 
@@ -29,8 +31,10 @@ if(USE_UNICORN)
     target_sources( cpu PRIVATE ${SOURCE_UNICORN_CPU})
 endif()
 
-if(USE_DYNARMIC AND ARCHITECTURE STREQUAL "arm64")
-    target_sources( cpu PRIVATE ${SOURCE_DYNARMIC_CPU})
+if(USE_DYNARMIC)
+   if(ARCHITECTURE STREQUAL "arm64")
+      target_sources( cpu PRIVATE ${SOURCE_DYNARMIC_CPU})
+   endif()
 endif()
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_LIST})
