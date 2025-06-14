@@ -16,18 +16,20 @@ include/cpu/impl/unicorn_cpu.h
 src/unicorn_cpu.cpp
 )
 
-set(SOURCE_DYNARMIC_CPU
-include/cpu/impl/dynarmic_cpu.h
+if(USE_DYNARMIC)
+   set(SOURCE_DYNARMIC_CPU
+   include/cpu/impl/dynarmic_cpu.h
 
-src/dynarmic_cpu.cpp
+   src/dynarmic_cpu.cpp
 )
+endif()
 
 add_library( cpu STATIC ${SOURCE_LIST})
 if(USE_UNICORN)
     target_sources( cpu PRIVATE ${SOURCE_UNICORN_CPU})
 endif()
 
-if(USE_DYNARMIC)
+if(USE_DYNARMIC AND ARCHITECTURE STREQUAL "arm64")
     target_sources( cpu PRIVATE ${SOURCE_DYNARMIC_CPU})
 endif()
 
@@ -40,6 +42,6 @@ if(USE_UNICORN)
     target_link_libraries(cpu PRIVATE unicorn)
 endif()
 
-if(USE_DYNARMIC)
+if(USE_DYNARMIC AND ARCHITECTURE STREQUAL "arm64")
     target_link_libraries(cpu PRIVATE dynarmic merry::mcl)
 endif()
