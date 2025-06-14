@@ -24,8 +24,8 @@ if(USE_DYNARMIC)
      include/cpu/impl/dynarmic_cpu.h
 
      src/dynarmic_cpu.cpp
+     )
    endif()
-)
 endif()
 
 add_library( cpu STATIC ${SOURCE_LIST})
