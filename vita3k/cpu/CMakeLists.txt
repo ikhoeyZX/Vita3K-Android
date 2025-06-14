@@ -10,22 +10,18 @@ src/disasm.cpp
 src/cpu.cpp
 )
 
-if(USE_UNICORN)
-   set(SOURCE_UNICORN_CPU
+set(SOURCE_UNICORN_CPU
    include/cpu/impl/unicorn_cpu.h
 
    src/unicorn_cpu.cpp
-   )
-endif()
+)
 
-if(USE_DYNARMIC)
-  if(ARCHITECTURE STREQUAL "arm64")
+if(ARCHITECTURE STREQUAL "arm64")
      set(SOURCE_DYNARMIC_CPU
      include/cpu/impl/dynarmic_cpu.h
 
      src/dynarmic_cpu.cpp
      )
-   endif()
 endif()
 
 add_library( cpu STATIC ${SOURCE_LIST})
