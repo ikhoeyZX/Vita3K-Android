@@ -89,7 +89,7 @@
 [submodule "external/ffmpeg-core"]
 	path = external/ffmpeg
 	url = https://github.com/ikhoeyZX/ffmpeg-core.git
-        branch = all
+        branch = master
 [submodule "external/dynarmic"]
 	path = external/dynarmic
 	url = https://github.com/ikhoeyZX/dynarmic.git
