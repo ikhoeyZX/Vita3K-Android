@@ -1745,7 +1745,9 @@ EXPORT(int, sceKernelTryLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int loc
 
 EXPORT(int, sceKernelTryLockLwMutex_16, Ptr<SceKernelLwMutexWork> workarea, int lock_count) {
     TRACY_FUNC(sceKernelTryLockLwMutex_16, workarea, lock_count);
-    return CALL_EXPORT(sceKernelTryLockLwMutex, workarea, lock_count);
+   // return CALL_EXPORT(sceKernelTryLockLwMutex, workarea, lock_count);
+    const auto lwmutexid = workarea.get(emuenv.mem)->uid;
+    return mutex_try_lock(emuenv.kernel, emuenv.mem, export_name, thread_id, lwmutexid, lock_count, SyncWeight::Heavy);
 }
 
 EXPORT(int, sceKernelTryReceiveMsgPipe, SceUID msgpipe_id, char *recv_buf, SceSize msg_size, SceUInt32 wait_mode, SceSize *result) {
