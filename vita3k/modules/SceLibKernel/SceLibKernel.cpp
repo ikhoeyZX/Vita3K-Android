@@ -628,6 +628,9 @@ EXPORT(SceUID, sceIoOpen, const char *file, const int flags, const SceMode mode)
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
 
+    if (emuenv.cfg.current_config.file_loading_delay > 0)
+        std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.current_config.file_loading_delay));
+
     LOG_INFO("Opening file: {}", file);
     return open_file(emuenv.io, file, flags, emuenv.pref_path, export_name);
 }
@@ -1743,11 +1746,9 @@ EXPORT(int, sceKernelTryLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int loc
     return mutex_try_lock(emuenv.kernel, emuenv.mem, export_name, thread_id, lwmutexid, lock_count, SyncWeight::Light);
 }
 
-EXPORT(int, sceKernelTryLockLwMutex_16, Ptr<SceKernelLwMutexWork> workarea, int lock_count) {
-    TRACY_FUNC(sceKernelTryLockLwMutex_16, workarea, lock_count);
-   // return CALL_EXPORT(sceKernelTryLockLwMutex, workarea, lock_count);
-    const auto lwmutexid = workarea.get(emuenv.mem)->uid;
-    return mutex_try_lock(emuenv.kernel, emuenv.mem, export_name, thread_id, lwmutexid, lock_count, SyncWeight::Heavy);
+EXPORT(int, sceKernelTryLockLwMutex_16XX, Ptr<SceKernelLwMutexWork> workarea, int lock_count) {
+    TRACY_FUNC(sceKernelTryLockLwMutex_16XX, workarea, lock_count);
+    return CALL_EXPORT(sceKernelTryLockLwMutex, workarea, lock_count);
 }
 
 EXPORT(int, sceKernelTryReceiveMsgPipe, SceUID msgpipe_id, char *recv_buf, SceSize msg_size, SceUInt32 wait_mode, SceSize *result) {
