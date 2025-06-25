@@ -74,7 +74,6 @@ static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &u
 
     gui.users_avatar[user_id] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
-    fclose(f);
 
     // Calculate avatar size and position based of aspect ratio
     // Resize for all size of avatar
