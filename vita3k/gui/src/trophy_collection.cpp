@@ -334,7 +334,7 @@ static void get_trophy_list(GuiState &gui, EmuEnvState &emuenv, const std::strin
             continue;
         }
 
-        gui.trophy_list[trophy_id].init(gui.imgui_state.get(), data, width, height);
+        gui.trophy_list[trophy_id] = ImGui_Texture((gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
 
         auto &common = gui.lang.common.main;
