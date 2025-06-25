@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -334,7 +334,7 @@ static void get_trophy_list(GuiState &gui, EmuEnvState &emuenv, const std::strin
             continue;
         }
 
-        gui.trophy_list[trophy_id] = ImGui_Texture((gui.imgui_state.get(), data, width, height));
+        gui.trophy_list[trophy_id] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
 
         auto &common = gui.lang.common.main;
