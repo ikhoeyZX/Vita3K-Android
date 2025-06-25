@@ -10,7 +10,7 @@
     <integer name="BUTTON_TRIANGLE_Y">240</integer>
     <integer name="BUTTON_SELECT_X">70</integer>
     <integer name="BUTTON_SELECT_Y">840</integer>
-    <integer name="BUTTON_START_X">870</integer>
+    <integer name="BUTTON_START_X">860</integer>
     <integer name="BUTTON_START_Y">840</integer>
     <integer name="DPAD_UP_X">15</integer>
     <integer name="DPAD_UP_Y">245</integer>
