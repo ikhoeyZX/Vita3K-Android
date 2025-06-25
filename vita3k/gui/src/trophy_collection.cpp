@@ -253,7 +253,7 @@ void init_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                         continue;
                     }
 
-                    gui.trophy_np_com_id_list_icons[np_com_id][group.first].init(gui.imgui_state.get(), data, width, height);
+                    gui.trophy_np_com_id_list_icons[np_com_id][group.first] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
                     stbi_image_free(data);
                 }
             }
