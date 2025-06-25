@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <integer name="BUTTON_CROSS_X">860</integer>
-    <integer name="BUTTON_CROSS_Y">490</integer>
+    <integer name="BUTTON_CROSS_Y">495</integer>
     <integer name="BUTTON_CIRCLE_X">925</integer>
-    <integer name="BUTTON_CIRCLE_Y">365</integer>
+    <integer name="BUTTON_CIRCLE_Y">370</integer>
     <integer name="BUTTON_SQUARE_X">795</integer>
-    <integer name="BUTTON_SQUARE_Y">365</integer>
+    <integer name="BUTTON_SQUARE_Y">370</integer>
     <integer name="BUTTON_TRIANGLE_X">860</integer>
-    <integer name="BUTTON_TRIANGLE_Y">240</integer>
+    <integer name="BUTTON_TRIANGLE_Y">245</integer>
     <integer name="BUTTON_SELECT_X">70</integer>
     <integer name="BUTTON_SELECT_Y">840</integer>
     <integer name="BUTTON_START_X">860</integer>
@@ -15,7 +15,7 @@
     <integer name="DPAD_UP_X">15</integer>
     <integer name="DPAD_UP_Y">245</integer>
     <integer name="STICK_LEFT_X">223</integer>
-    <integer name="STICK_LEFT_Y">622</integer>
+    <integer name="STICK_LEFT_Y">626</integer>
     <integer name="STICK_RIGHT_X">620</integer>
     <integer name="STICK_RIGHT_Y">670</integer>
     <integer name="TRIGGER_L_X">30</integer>
