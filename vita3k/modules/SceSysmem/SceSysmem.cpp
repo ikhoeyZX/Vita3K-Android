@@ -332,16 +332,16 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
     int tmp = mem_available(emuenv.mem);
-    LOG_INFO("sceKernelGetFreeMemorySize -> Free mem: {}MB", tmp);
-    LOG_INFO("sceKernelGetFreeMemorySize -> need mem: {}MB", max_user);
-    LOG_INFO("sceKernelGetFreeMemorySize -> cdram used mem: {}MB", max_user);
-    LOG_INFO("sceKernelGetFreeMemorySize -> phycont mem: {}MB", max_user);
+    int tmp2 = tmp - max_user;
+    LOG_INFO("sceKernelGetFreeMemorySize -> Free mem: {}MB", MiB(tmp));
+    LOG_INFO("sceKernelGetFreeMemorySize -> need mem: {}MB", MiB(max_user));
+    LOG_INFO("sceKernelGetFreeMemorySize -> Used mem: {}MB", MiB(tmp2));
 
-    if ((tmp - max_user - max_user - max_user) <= 0){
+    if (tmp2 <= 0){
         LOG_ERROR("sceKernelGetFreeMemorySize -> Out of memory!");
         const auto free_memory = align(mem_available(emuenv.mem) / 3, 0x1000);
-        LOG_INFO("sceKernelGetFreeMemorySize -> Free mem: {}MB", free_memory);
-        info->size_cdram = free_memory/3;
+        LOG_INFO("sceKernelGetFreeMemorySize -> Free mem: {}MB", MiB(free_memory));
+        info->size_cdram = free_memory/4;
         info->size_user = free_memory;
         info->size_phycont = free_memory/8;
     }else{
