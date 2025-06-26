@@ -143,16 +143,19 @@ static spv::Id get_type_basic(spv::Builder &b, const Input &input) {
     switch (input.type) {
         // clang-format off
     case DataType::F16:
+        return b.makeFloatType(16);
     case DataType::F32:
          return b.makeFloatType(32);
 
     case DataType::UINT8:
     case DataType::UINT16:
+        return b.makeUintType(16);
     case DataType::UINT32:
         return b.makeUintType(32);
 
     case DataType::INT8:
     case DataType::INT16:
+        return b.makeIntType(16);
     case DataType::INT32:
         return b.makeIntType(32);
 
@@ -1921,14 +1924,13 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
 
 #ifdef ANDROID
     options.fragment.default_float_precision = options.Highp;
-//    options.fragment.default_int_precision = options.Mediump;
+    options.fragment.default_int_precision = options.Highp;
     
     options.version = 320;
     options.es = true;
     options.enable_row_major_load_workaround = false; // spirv.hpp say when true it reduce performance in some android devices
-    options.vertex.fixup_clipspace = false;
- //   options.enable_420pack_extension = false; // because opengles and default value is true
-#else
+    options.vertex.fixup_clipspace = true;
+ #else
     options.version = 430;
     options.es = false;
     options.enable_420pack_extension = true;
