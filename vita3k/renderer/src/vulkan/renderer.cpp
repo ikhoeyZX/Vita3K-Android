@@ -335,8 +335,10 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     	          VULKAN_HPP_DEFAULT_DISPATCHER.init( vkGetInstanceProcAddr );
             }
         }
-        
-        if (!detect_patch_bcn(&texture_cache.support_dxt))
+
+	if(config.use_astc)
+	   return false;
+        else if (!detect_patch_bcn(&texture_cache.support_dxt))
             return false;
 #endif
 
@@ -597,12 +599,12 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             supported_mapping_methods_mask |= (1 << static_cast<int>(MappingMethod::DoubleBuffer));
             supported_mapping_methods_mask |= (1 << static_cast<int>(MappingMethod::PageTable));
 
-            if (support_external_memory) {
+    //        if (support_external_memory) {
                 // disable this extension on GPUs with an alignment requirement higher than 4096 (should only
                 // concern a few intel iGPUs)
                 auto props = physical_device.getProperties2KHR<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>();
                 support_external_memory = (props.get<vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>().minImportedHostPointerAlignment <= 4096);
-            }
+   //         }
 
             if (support_external_memory)
                 supported_mapping_methods_mask |= (1 << static_cast<int>(MappingMethod::ExernalHost));
@@ -872,11 +874,11 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
     if (mapping_method == MappingMethod::NativeBuffer) {
         // dynamically load the symbols
         void *libandroid = dlopen("libandroid.so", RTLD_LAZY);
-        _AHardwareBuffer_getNativeHandle = reinterpret_cast<decltype(_AHardwareBuffer_getNativeHandle)>(dlsym(libandroid, "AHardwareBuffer_getNativeHandle"));
-        _AHardwareBuffer_allocate = reinterpret_cast<decltype(_AHardwareBuffer_allocate)>(dlsym(libandroid, "AHardwareBuffer_allocate"));
-        _AHardwareBuffer_lock = reinterpret_cast<decltype(_AHardwareBuffer_lock)>(dlsym(libandroid, "AHardwareBuffer_lock"));
-        _AHardwareBuffer_unlock = reinterpret_cast<decltype(_AHardwareBuffer_unlock)>(dlsym(libandroid, "AHardwareBuffer_unlock"));
-        _AHardwareBuffer_release = reinterpret_cast<decltype(_AHardwareBuffer_release)>(dlsym(libandroid, "AHardwareBuffer_release"));
+        _AHardwareBuffer_getNativeHandle = std::bit_cast<decltype(_AHardwareBuffer_getNativeHandle)>(dlsym(libandroid, "AHardwareBuffer_getNativeHandle"));
+        _AHardwareBuffer_allocate = std::bit_cast<decltype(_AHardwareBuffer_allocate)>(dlsym(libandroid, "AHardwareBuffer_allocate"));
+        _AHardwareBuffer_lock = std::bit_cast<decltype(_AHardwareBuffer_lock)>(dlsym(libandroid, "AHardwareBuffer_lock"));
+        _AHardwareBuffer_unlock = std::bit_cast<decltype(_AHardwareBuffer_unlock)>(dlsym(libandroid, "AHardwareBuffer_unlock"));
+        _AHardwareBuffer_release = std::bit_cast<decltype(_AHardwareBuffer_release)>(dlsym(libandroid, "AHardwareBuffer_release"));
     }
 #endif
 
@@ -1183,8 +1185,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         // also make sure later the mapped address is 4K aligned
         vkutil::Buffer buffer(size + KiB(4));
         constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
-            .flags = vma::AllocationCreateFlagBits::eStrategyBestFit,
-	  //  .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
+            .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
           //  .usage = vma::MemoryUsage::eAutoPreferHost,
 	    .usage = vma::MemoryUsage::eAuto,
             .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
@@ -1239,7 +1240,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 
         vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportMemoryHostPointerInfoEXT, vk::MemoryAllocateFlagsInfo> alloc_info{
             vk::MemoryAllocateInfo{
-                .allocationSize = size,
+                .allocationSize = size + KiB(4),
                 .memoryTypeIndex = static_cast<uint32_t>(mapped_memory_type) },
             vk::ImportMemoryHostPointerInfoEXT{
                 .handleType = vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT,
@@ -1251,7 +1252,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 
         vk::StructureChain<vk::BufferCreateInfo, vk::ExternalMemoryBufferCreateInfoKHR> buffer_info{
             vk::BufferCreateInfo{
-                .size = size,
+                .size = size + KiB(4),
                 .usage = mapped_memory_flags,
                 .sharingMode = vk::SharingMode::eExclusive },
             vk::ExternalMemoryBufferCreateInfoKHR{
@@ -1265,7 +1266,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         };
         const uint64_t buffer_address = device.getBufferAddress(address_info);
 
-        mapped_memories[address.address()] = { address.address(), ExternalBuffer{ device_memory, nullptr }, mapped_buffer, size, buffer_address };
+        mapped_memories[address.address()] = { address.address(), std::move(ExternalBuffer{ device_memory, nullptr }), mapped_buffer, size, buffer_address };
         break;
     }
 
