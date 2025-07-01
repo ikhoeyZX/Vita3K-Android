@@ -583,6 +583,8 @@ struct LangState {
             { "spirv_shader", "Use Spir-V Shader (deprecated)" },
             { "spirv_shader_description", "Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled,\nand not all GPUs are compatible with this." },
             { "clean_shaders", "Clean Shaders Cache and Log" },
+            { "use_astc", "Use ASTC texture" },
+            { "use_astc_description", "Use ASTC texture compression instead DXT (BCn), render output maybe similiar to Mali GPU" },
             { "fps_hack", "FPS Hack" },
             { "fps_hack_description", "Game hack which allows some games running at 30 FPS to run at 60 FPS on the emulator.\nNote that this is a hack and will only work on some games.\nOn other games, it may have no effect or make them run twice as fast." }
         };
