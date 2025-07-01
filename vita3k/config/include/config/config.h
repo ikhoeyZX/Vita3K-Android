@@ -166,6 +166,7 @@ enum ScreenshotFormat {
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(bool, "fps-hack", false, fps_hack)                                                             \
+    code(bool, "use-astc", true, use_astc)                                                              \
     code(bool, "acceleration-and-gyroscope", true, tiltsens)                                            \
     code(int, "acceleration-pos", 0, tiltpos)                                                           \
     code(bool, "invert-gyro", false, invert_gyro)                                                       \
