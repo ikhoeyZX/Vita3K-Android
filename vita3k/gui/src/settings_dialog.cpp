@@ -1007,6 +1007,13 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("Provides a way to force the GPU to run at the maximum possible clocks (thermal constraints will still be applied)");
             }
+
+            ImGui::Spacing();
+            ImGui::Checkbox(lang.gpu["use_astc"].c_str(), &emuenv.cfg.use_astc);
+
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip(lang.gpu["use_astc_description"].c_str());
+            }
         }
 
         // Shaders
