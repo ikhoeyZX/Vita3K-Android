@@ -583,6 +583,8 @@ struct LangState {
             { "spirv_shader", "Use Spir-V Shader (deprecated)" },
             { "spirv_shader_description", "Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled,\nand not all GPUs are compatible with this." },
             { "clean_shaders", "Clean Shaders Cache and Log" },
+            { "turbo", "Enable Turbo Mode" },
+            { "turbo_description", "Provides a way to force the GPU to run at the maximum possible clocks (thermal constraints will still be applied)" },
             { "use_astc", "Use ASTC texture" },
             { "use_astc_description", "Use ASTC texture compression instead DXT (BCn), render output maybe similiar to Mali GPU" },
             { "fps_hack", "FPS Hack" },
