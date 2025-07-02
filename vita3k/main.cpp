@@ -314,6 +314,7 @@ int main(int argc, char *argv[]) {
 
     if (!app::init(emuenv, root_paths)) {
         app::error_dialog("Emulated environment initialization failed.", emuenv.window.get());
+        SDL_Quit();
         return 1;
     }
 
