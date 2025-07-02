@@ -337,9 +337,9 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         }
 
 	if(config.use_astc)
-	   return false;
+	   LOG_INFO("DXT (BCn) support disabled");
         else if (!detect_patch_bcn(&texture_cache.support_dxt))
-            return false;
+	   LOG_ERROR("Failed to enable DXT (BCn) support!, system will use ASTC instead");
 #endif
 
         vk::ApplicationInfo app_info{
