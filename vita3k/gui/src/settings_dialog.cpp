@@ -1001,7 +1001,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         if (emuenv.renderer->support_custom_drivers()) {
             ImGui::Spacing();
-            ImGui::Checkbox(lang.gpu["turbo"], &emuenv.cfg.turbo_mode);
+            ImGui::Checkbox(lang.gpu["turbo"].c_str(), &emuenv.cfg.turbo_mode);
 
             if (ImGui::IsItemHovered()) {
                 SetTooltipEx(lang.emulator["turbo_description"].c_str());
