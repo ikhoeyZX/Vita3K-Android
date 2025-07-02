@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -52,7 +52,6 @@
 #include <boost/range/iterator_range.hpp>
 #include <jni.h>
 
-#ifndef __arm__
 auto load_custom_driver(const std::string &driver_name) {
     libadreno_var val = {false, "", "", "", "", ""};
     fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver_name / "/";
@@ -112,8 +111,7 @@ auto load_custom_driver(const std::string &driver_name) {
 
     return val;
 }
-#endif // ifndef __arm__
-#endif // ifdef android
+#endif
 
 namespace app {
 void update_viewport(EmuEnvState &state) {
@@ -185,7 +183,6 @@ void init_paths(Root &root_paths) {
     root_paths.set_config_path(storage_path);
     root_paths.set_shared_path(storage_path);
     root_paths.set_cache_path(storage_path / "cache" / "");
-    root_paths.set_patch_path(storage_path / "patch" / "");
 
     auto fscheck = storage_path / "vita3k.log";
     if(fs::exists(fscheck) && !fs::is_empty(fscheck))
@@ -214,7 +211,6 @@ void init_paths(Root &root_paths) {
         root_paths.set_config_path(portable_path);
         root_paths.set_shared_path(portable_path);
         root_paths.set_cache_path(portable_path / "cache" / "");
-        root_paths.set_patch_path(portable_path / "patch" / "");
     } else {
         // SDL_GetPrefPath is deferred as it creates the directory.
         // When using a portable directory, it is not needed.
@@ -246,7 +242,6 @@ void init_paths(Root &root_paths) {
         root_paths.set_config_path(base_path);
         root_paths.set_shared_path(base_path);
         root_paths.set_cache_path(base_path / "cache" / "");
-        root_paths.set_patch_path(base_path / "patch" / "");
 
 #if defined(__linux__) && !defined(__APPLE__)
         // XDG Data Dirs.
@@ -300,12 +295,18 @@ void init_paths(Root &root_paths) {
         if (env_home != NULL)
             root_paths.set_shared_path(fs::path(env_home) / ".local/share" / app_name / "");
 
-        if (XDG_DATA_HOME != NULL) {
+        if (XDG_DATA_DIRS != NULL) {
+            auto env_paths = string_utils::split_string(XDG_DATA_DIRS, ':');
+            for (auto &i : env_paths) {
+                if (fs::exists(fs::path(i) / app_name)) {
+                    root_paths.set_shared_path(fs::path(i) / app_name / "");
+                    break;
+                }
+            }
+        } else if (XDG_DATA_HOME != NULL) {
             root_paths.set_shared_path(fs::path(XDG_DATA_HOME) / app_name / "");
         }
 #endif
-        // patch path should be in shared path
-        root_paths.set_patch_path(root_paths.get_shared_path() / "patch" / "");
     }
 #endif
 
@@ -314,7 +315,6 @@ void init_paths(Root &root_paths) {
     fs::create_directories(root_paths.get_cache_path());
     fs::create_directories(root_paths.get_log_path() / "shaderlog");
     fs::create_directories(root_paths.get_log_path() / "texturelog");
-    fs::create_directories(root_paths.get_shared_path() / "patch");
 }
 
 bool init(EmuEnvState &state, const Root &root_paths) {
@@ -325,7 +325,6 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     state.cache_path = root_paths.get_cache_path();
     state.shared_path = root_paths.get_shared_path();
     state.static_assets_path = root_paths.get_static_assets_path();
-    state.patch_path = root_paths.get_patch_path();
 
     // If configuration does not provide a preference path, use SDL's default
     if (state.cfg.pref_path == root_paths.get_pref_path() || state.cfg.pref_path.empty())
@@ -340,7 +339,10 @@ bool init(EmuEnvState &state, const Root &root_paths) {
 #ifdef ANDROID
     fs::create_directories(state.cfg.get_pref_path() / "logs");
     fs::create_directories(state.cfg.get_pref_path() / "shared");
-    fs::create_directories(state.cfg.get_pref_path() / "shared" / "patch");
+
+    state.log_path = fs::path(state.cfg.get_pref_path() / "logs" / "");
+    state.shared_path = fs::path(state.cfg.get_pref_path() / "shared" / "");
+
     fs::create_directories(state.cfg.get_pref_path() / "shared" / "screenshots");
     fs::create_directories(state.cfg.get_pref_path() / "shared" / "textures");
     fs::create_directories(state.cfg.get_pref_path() / "shared" / "textures" / "export");
@@ -348,15 +350,10 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     fs::create_directories(root_paths.get_shared_path() / "lang");
     fs::create_directories(root_paths.get_shared_path() / "lang" / "user");
 
-    state.log_path = fs::path(state.cfg.get_pref_path() / "logs" / "");
-    state.shared_path = fs::path(state.cfg.get_pref_path() / "shared" / "");
-    state.patch_path = fs::path(state.cfg.get_pref_path() / "shared" / "patch" / "");
-
     auto fscheck = fs::path(root_paths.get_base_path()) / "vita3k.log.old";
     if(fs::exists(fscheck)){
         if(!fs::equivalent(state.log_path, root_paths.get_base_path())){
             fs::copy_file(fscheck , state.log_path / "vita3k.log.txt", fs::copy_options::overwrite_existing);
-            SDL_AndroidShowToast(fmt::format("copying logs to {}", state.log_path).c_str(), 1, -1, 0, 0);
             fs::remove(fscheck);
         }
     }
@@ -445,35 +442,21 @@ bool init(EmuEnvState &state, const Root &root_paths) {
 #endif
         return false;
     };
-#endif
-#ifdef ANDROID
-    if(SDL_GetAndroidSDKVersion() >= 30 && !state.cfg.native_screen) {
-        float ddpi, hdpi, vdpi, max = 160.f;
+
+    if (!isSteamDeck()) {
+        float ddpi, hdpi, vdpi;
         SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi);
         window_type |= SDL_WINDOW_ALLOW_HIGHDPI;
-        LOG_INFO("Display DPI: ddpi = {}, hdpi = {}, vdpi = {}", ddpi, hdpi, vdpi);
-
-        state.dpi_scale = ddpi / max;
-    }
-
-    
-    if(state.cfg.native_screen || SDL_GetAndroidSDKVersion() < 30){
-       SDL_DisplayMode DM;
-       SDL_GetCurrentDisplayMode(0, &DM);
-       uint32_t width = DM.w;
-       uint32_t height = DM.h;
-       state.dpi_scale = static_cast<float>(width) / DEFAULT_RES_HEIGHT;
-       LOG_INFO("Native screen size: H = {}, W = {}", height, width);
-       LOG_INFO("DPI scale = {}", state.dpi_scale);
+#ifdef ANDROID
+        state.dpi_scale = ddpi / 160;
+#else
+        state.dpi_scale = ddpi / 96;
+#endif
     }
 #endif
-    
     state.res_width_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_WIDTH * state.dpi_scale);
     state.res_height_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.dpi_scale);
-    
-    LOG_INFO("Width dpi scale = {}", state.res_width_dpi_scale);
-    LOG_INFO("Height dpi scale = {}", state.res_height_dpi_scale);
-    
+
 #ifdef ANDROID
     if(state.cfg.boot_fail && state.cfg.gpu_idx != 0){
             SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Custom driver failed!", fmt::format("GPU driver {}\nnot supported or broken\nApp will use default driver now", state.cfg.custom_driver_name).c_str(), nullptr);
@@ -482,13 +465,12 @@ bool init(EmuEnvState &state, const Root &root_paths) {
             state.cfg.boot_fail = false;
             config::serialize_config(state.cfg, state.cfg.config_path);
     }else if (state.cfg.gpu_idx != 0) {
-          // mark failed boot first because if custom driver fail it will crash app so no way mark it after load custom driver
+          // mark failed boot first because if custom driber fail it will crash app so no way mark it after load custom driver
           if(!state.cfg.boot_fail){
                 state.cfg.boot_fail = true;
                 config::serialize_config(state.cfg, state.cfg.config_path);
             }
-
-#ifndef __arm__
+        
            // LOG_INFO("Load custom driver");
            // set path to load custom driver using libadrenotools
             state.libadreno = load_custom_driver(state.cfg.current_config.custom_driver_name);
@@ -496,39 +478,17 @@ bool init(EmuEnvState &state, const Root &root_paths) {
                 error_dialog("Custom driver corrupted or you use wrong file\nApp will use default driver now", nullptr);
                 state.cfg.gpu_idx = 0;
                 state.cfg.custom_driver_name = "";
-                state.cfg.boot_fail = false;
+                state.cfg.boot_fail = true;
                 config::serialize_config(state.cfg, state.cfg.config_path);
             }
-#endif // ifndef __arm__
     }
-#endif // ifdef android
+
+#endif
 
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
+
     if (!state.window) {
-        LOG_ERROR("SDL failed to create window!\n Reason:{}\n disabling some feature!", SDL_GetError());
-        SDL_ClearError();
-        window_type = 0;
-        if(state.cfg.backend_renderer == "OpenGL")
-            window_type = SDL_WINDOW_OPENGL;
-        else
-            window_type = SDL_WINDOW_VULKAN;
-            
-        state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type), SDL_DestroyWindow);
-    }
-        
-    if (!state.window) {
-        LOG_ERROR("SDL still fail to create window!\n Reason: {}\n check your hardware or config!", SDL_GetError());
-        SDL_ClearError();
-        if(state.cfg.backend_renderer == "OpenGL"){
-           error_dialog("SDL failed to create window!\nDoes your GPU support OpenGL ES 3.2?\napp will exit and changed to Vulkan render", nullptr);
-           state.cfg.backend_renderer = "Vulkan";
-        }else{
-            error_dialog("SDL failed to create window!\nnDoes your driver or GPU support Vulkan?\napp will exit and changed to OpenGL ES render", nullptr);
-            state.cfg.backend_renderer = "OpenGL";
-        }
-        state.cfg.boot_fail = true;
-        config::serialize_config(state.cfg, state.cfg.config_path);
-        SDL_Quit();
+        LOG_ERROR("SDL failed to create window!");
         return false;
     }
 
