@@ -994,6 +994,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 if (ImGui::IsItemHovered()) {
                     SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
                     ImGui::Spacing();
+                }
             }
             if (is_ingame)
                 ImGui::EndDisabled();
