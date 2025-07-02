@@ -992,9 +992,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     config.vk_mapping = vk_surface_format_methods_indexes[current_surface_format];
                 }
                 if (ImGui::IsItemHovered()) {
-                    ImGui::SetTooltip("%s", lang.gpu["surface_format_method_description"].c_str());
-                }
-                ImGui::Spacing();
+                    SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
+                    ImGui::Spacing();
             }
             if (is_ingame)
                 ImGui::EndDisabled();
@@ -1002,17 +1001,17 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         if (emuenv.renderer->support_custom_drivers()) {
             ImGui::Spacing();
-            ImGui::Checkbox("Enable Turbo Mode", &emuenv.cfg.turbo_mode);
+            ImGui::Checkbox(lang.gpu["turbo"], &emuenv.cfg.turbo_mode);
 
             if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("Provides a way to force the GPU to run at the maximum possible clocks (thermal constraints will still be applied)");
+                SetTooltipEx(lang.emulator["turbo_description"].c_str());
             }
 
-            ImGui::Spacing();
+            ImGui::SameLine();
             ImGui::Checkbox(lang.gpu["use_astc"].c_str(), &emuenv.cfg.use_astc);
 
             if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip(lang.gpu["use_astc_description"].c_str());
+                SetTooltipEx(lang.emulator["use_astc_description"].c_str());
             }
         }
 
