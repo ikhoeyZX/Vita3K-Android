@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -149,7 +149,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
 
         // first vertex
         std::array<vk::DescriptorSetLayoutBinding, 16> layout_bindings;
-        for (uint8_t i = 0; i < 16; i++) {
+        for (uint32_t i = 0; i < 16; i++) {
             layout_bindings[i] = {
                 .binding = i,
                 .descriptorType = vk::DescriptorType::eCombinedImageSampler,
@@ -157,7 +157,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
                 .stageFlags = vk::ShaderStageFlagBits::eVertex
             };
         }
-        for (uint8_t i = 1; i <= 16; i++) {
+        for (uint32_t i = 1; i <= 16; i++) {
             vk::DescriptorSetLayoutCreateInfo descriptor_info{
                 .bindingCount = i,
                 .pBindings = layout_bindings.data()
@@ -166,10 +166,10 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         }
 
         // then fragment
-        for (uint8_t i = 0; i < 16; i++) {
+        for (uint32_t i = 0; i < 16; i++) {
             layout_bindings[i].stageFlags = vk::ShaderStageFlagBits::eFragment;
         }
-        for (uint8_t i = 1; i <= 16; i++) {
+        for (uint32_t i = 1; i <= 16; i++) {
             vk::DescriptorSetLayoutCreateInfo descriptor_info{
                 .bindingCount = i,
                 .pBindings = layout_bindings.data()
@@ -179,8 +179,8 @@ void PipelineCache::init(bool support_rasterized_order_access) {
     }
 
     // compute all possible pipeline layouts
-    for (uint8_t vert_texture_count = 0; vert_texture_count <= 16; vert_texture_count++) {
-        for (uint8_t frag_texture_count = 0; frag_texture_count <= 16; frag_texture_count++) {
+    for (uint32_t vert_texture_count = 0; vert_texture_count <= 16; vert_texture_count++) {
+        for (uint32_t frag_texture_count = 0; frag_texture_count <= 16; frag_texture_count++) {
             vk::PipelineLayoutCreateInfo layout_info{};
             vk::DescriptorSetLayout set_layouts[] = { uniforms_layout, attachments_layout, vertex_textures_layout[vert_texture_count], fragment_textures_layout[frag_texture_count] };
             layout_info.setSetLayouts(set_layouts);
@@ -188,7 +188,6 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         }
     }
 
-#ifndef ANDROID
     {
         // look for rgb vertex attribute support
         // we need to look at each format because it is not the same for all usual 3-component formats (checked on AMD Radeon HD 7800)
@@ -222,8 +221,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         }
         state.features.support_rgb_attributes = unsupported_rgb_vertex_attribute_formats.empty();
     }
-#endif
-    
+
     support_coherent_framebuffer_fetch = support_rasterized_order_access;
 
     const int nb_logical_threads = SDL_GetCPUCount();
@@ -519,7 +517,7 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
     vk::AttachmentLoadOp load_op = force_load ? vk::AttachmentLoadOp::eLoad : vk::AttachmentLoadOp::eClear;
     vk::AttachmentStoreOp store_op = force_store ? vk::AttachmentStoreOp::eStore : vk::AttachmentStoreOp::eDontCare;
     vk::AttachmentDescription ds_attachment{
-        .format = vk::Format::eD24UnormS8Uint,
+        .format = vk::Format::eD32SfloatS8Uint,
         .samples = vk::SampleCountFlagBits::e1,
         .loadOp = load_op,
         .storeOp = store_op,
