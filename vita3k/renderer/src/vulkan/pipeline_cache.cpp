@@ -149,7 +149,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
 
         // first vertex
         std::array<vk::DescriptorSetLayoutBinding, 16> layout_bindings;
-        for (auto i = 0; i < 16; i++) {
+        for (uint32_t i = 0; i < 16; i++) {
             layout_bindings[i] = {
                 .binding = i,
                 .descriptorType = vk::DescriptorType::eCombinedImageSampler,
@@ -157,7 +157,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
                 .stageFlags = vk::ShaderStageFlagBits::eVertex
             };
         }
-        for (auto i = 1; i <= 16; i++) {
+        for (uint32_t i = 1; i <= 16; i++) {
             vk::DescriptorSetLayoutCreateInfo descriptor_info{
                 .bindingCount = i,
                 .pBindings = layout_bindings.data()
@@ -166,10 +166,10 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         }
 
         // then fragment
-        for (auto i = 0; i < 16; i++) {
+        for (uint32_t i = 0; i < 16; i++) {
             layout_bindings[i].stageFlags = vk::ShaderStageFlagBits::eFragment;
         }
-        for (auto i = 1; i <= 16; i++) {
+        for (uint32_t i = 1; i <= 16; i++) {
             vk::DescriptorSetLayoutCreateInfo descriptor_info{
                 .bindingCount = i,
                 .pBindings = layout_bindings.data()
@@ -179,8 +179,8 @@ void PipelineCache::init(bool support_rasterized_order_access) {
     }
 
     // compute all possible pipeline layouts
-    for (auto vert_texture_count = 0; vert_texture_count <= 16; vert_texture_count++) {
-        for (auto frag_texture_count = 0; frag_texture_count <= 16; frag_texture_count++) {
+    for (uint32_t vert_texture_count = 0; vert_texture_count <= 16; vert_texture_count++) {
+        for (uint32_t frag_texture_count = 0; frag_texture_count <= 16; frag_texture_count++) {
             vk::PipelineLayoutCreateInfo layout_info{};
             vk::DescriptorSetLayout set_layouts[] = { uniforms_layout, attachments_layout, vertex_textures_layout[vert_texture_count], fragment_textures_layout[frag_texture_count] };
             layout_info.setSetLayouts(set_layouts);
@@ -189,7 +189,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
     }
 
 // #ifndef ANDROID
-    if(!is_adreno_stock || !is_adreno_turnip){ // does add this support cause black screen in adreno?
+    if(!state.is_adreno_stock || !state.is_adreno_turnip){ // does add this support cause black screen in adreno?
     {
         // look for rgb vertex attribute support
         // we need to look at each format because it is not the same for all usual 3-component formats (checked on AMD Radeon HD 7800)
