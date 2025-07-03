@@ -975,15 +975,15 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (emuenv.cfg.gpu_idx == 0) {
                 ImGui::Spacing();
                 std::vector<const char *> vk_surface_format_strings = {
-                       "Immediate",
+             //         "Immediate",
                        "Mailbox",
-                       "Fifo relaxed",
+             //          "Fifo relaxed",
                        "Fifo"
                 };
                 std::vector<std::string_view> vk_surface_format_methods_indexes = {
-                       "Immediate",
+              //         "Immediate",
                        "mailbox",
-                       "fifo-relaxed",
+              //         "fifo-relaxed",
                        "fifo"
                 };
     
