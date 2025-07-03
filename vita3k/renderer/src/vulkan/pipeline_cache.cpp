@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -149,7 +149,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
 
         // first vertex
         std::array<vk::DescriptorSetLayoutBinding, 16> layout_bindings;
-        for (uint32_t i = 0; i < 16; i++) {
+        for (auto i = 0; i < 16; i++) {
             layout_bindings[i] = {
                 .binding = i,
                 .descriptorType = vk::DescriptorType::eCombinedImageSampler,
@@ -157,7 +157,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
                 .stageFlags = vk::ShaderStageFlagBits::eVertex
             };
         }
-        for (uint32_t i = 1; i <= 16; i++) {
+        for (auto i = 1; i <= 16; i++) {
             vk::DescriptorSetLayoutCreateInfo descriptor_info{
                 .bindingCount = i,
                 .pBindings = layout_bindings.data()
@@ -166,10 +166,10 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         }
 
         // then fragment
-        for (uint32_t i = 0; i < 16; i++) {
+        for (auto i = 0; i < 16; i++) {
             layout_bindings[i].stageFlags = vk::ShaderStageFlagBits::eFragment;
         }
-        for (uint32_t i = 1; i <= 16; i++) {
+        for (auto i = 1; i <= 16; i++) {
             vk::DescriptorSetLayoutCreateInfo descriptor_info{
                 .bindingCount = i,
                 .pBindings = layout_bindings.data()
@@ -179,8 +179,8 @@ void PipelineCache::init(bool support_rasterized_order_access) {
     }
 
     // compute all possible pipeline layouts
-    for (uint32_t vert_texture_count = 0; vert_texture_count <= 16; vert_texture_count++) {
-        for (uint32_t frag_texture_count = 0; frag_texture_count <= 16; frag_texture_count++) {
+    for (auto vert_texture_count = 0; vert_texture_count <= 16; vert_texture_count++) {
+        for (auto frag_texture_count = 0; frag_texture_count <= 16; frag_texture_count++) {
             vk::PipelineLayoutCreateInfo layout_info{};
             vk::DescriptorSetLayout set_layouts[] = { uniforms_layout, attachments_layout, vertex_textures_layout[vert_texture_count], fragment_textures_layout[frag_texture_count] };
             layout_info.setSetLayouts(set_layouts);
@@ -188,11 +188,14 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         }
     }
 
+// #ifndef ANDROID
+    if(!is_adreno_stock || !is_adreno_turnip){ // does add this support cause black screen in adreno?
     {
         // look for rgb vertex attribute support
         // we need to look at each format because it is not the same for all usual 3-component formats (checked on AMD Radeon HD 7800)
-        // no need to test for 32-bit types, they are always supported
+        // we also need to test for 32-bit types, some potato GPU maybe not supported
         vk::Format formats[] = {
+            vk::Format::eR32G32B32Sint, vk::Format::eR32G32B32Uint,
             vk::Format::eR16G16B16Unorm, vk::Format::eR16G16B16Snorm,
             vk::Format::eR16G16B16Uscaled, vk::Format::eR16G16B16Sscaled,
             vk::Format::eR16G16B16Uint, vk::Format::eR16G16B16Sint,
@@ -220,9 +223,15 @@ void PipelineCache::init(bool support_rasterized_order_access) {
                 unsupported_rgb_vertex_attribute_formats.erase(fmt);
         }
         state.features.support_rgb_attributes = unsupported_rgb_vertex_attribute_formats.empty();
-    }
 
+        LOG_INFO("support_scaled_attribute_formats = {}", state.features.support_scaled_attribute_formats);
+        LOG_INFO("support_rgb_attributes = {}", state.features.support_rgb_attributes); 
+    }
+    }
+// #endif
+    
     support_coherent_framebuffer_fetch = support_rasterized_order_access;
+    LOG_INFO("support_rasterized_order_access = {}", support_rasterized_order_access);
 
     const int nb_logical_threads = SDL_GetCPUCount();
     // took this from RPCS3 (slightly modified)
@@ -441,9 +450,10 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
 
     const std::string hash_text = hex_string(hash);
 
-    LOG_INFO("Generating vulkan spv shader {}", hash_text);
     const std::string shader_version = fmt::format("vk{}", shader::CURRENT_VERSION);
 
+    LOG_INFO("Generating vulkan spv shader {}, VERSION: {}", hash_text, shader_version);
+    
     shader::usse::SpirvCode source = load_spirv_shader(*program, state.features, true, hints, maskupdate, state.shaders_path, state.shaders_log_path, shader_version, true);
 
     vk::ShaderModuleCreateInfo shader_info{
@@ -517,7 +527,7 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
     vk::AttachmentLoadOp load_op = force_load ? vk::AttachmentLoadOp::eLoad : vk::AttachmentLoadOp::eClear;
     vk::AttachmentStoreOp store_op = force_store ? vk::AttachmentStoreOp::eStore : vk::AttachmentStoreOp::eDontCare;
     vk::AttachmentDescription ds_attachment{
-        .format = vk::Format::eD32SfloatS8Uint,
+        .format = vk::Format::eD24UnormS8Uint,
         .samples = vk::SampleCountFlagBits::e1,
         .loadOp = load_op,
         .storeOp = store_op,
@@ -634,6 +644,7 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
         if (info.regformat) {
             // use the data from the shader itself
             component_count = info.component_count;
+
             switch (info.gxm_type) {
             case SCE_GXM_PARAMETER_TYPE_U8:
             case SCE_GXM_PARAMETER_TYPE_S8:
@@ -670,6 +681,7 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
             }
         } else {
             // some Android GPUs do not support scaled attributes, do the conversion in the GPU instead
+            LOG_INFO("support_scaled_vertex_attribute = {}", support_scaled_vertex_attribute);
             if (!support_scaled_vertex_attribute)
                 info.is_integer = true;
 
@@ -829,6 +841,13 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
         vk::DynamicState::eStencilWriteMask,
         vk::DynamicState::eDepthBias,
         vk::DynamicState::eLineWidth,
+    
+        vk::DynamicState::eBlendConstants,
+        vk::DynamicState::eDepthBounds,
+        vk::DynamicState::ePrimitiveTopology,
+        vk::DynamicState::eViewportWithCount,
+        vk::DynamicState::eScissorWithCount,
+        vk::DynamicState::eStencilOp,
     };
     vk::PipelineDynamicStateCreateInfo dynamic_info{};
     dynamic_info.setDynamicStates(dynamic_states);
