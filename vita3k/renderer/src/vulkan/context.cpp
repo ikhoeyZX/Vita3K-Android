@@ -156,7 +156,7 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     if (context.state.features.support_shader_interlock)
         // we must always store the depth stencil
         force_store = true;
-    context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, force_load, force_store);
+    context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, force_load, force_store, false);
     if (context.state.features.support_shader_interlock)
         // also retrieve / create the shader interlock pass
         context.current_shader_interlock_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, true, true, true);
@@ -487,8 +487,9 @@ void VKContext::check_for_macroblock_change(bool is_draw) {
         // so fallback to the slow path (one scene per draw, can't really do better)
         // TODO: with the feedback loop extension we can do better
         ignore_macroblock = true;
+        LOG_INFO("ignore_macroblock = {}", ignore_macroblock);
         // in this case we must load and store the depth stencil each time
-        current_render_pass = state.pipeline_cache.retrieve_render_pass(current_color_format, true, true);
+        current_render_pass = state.pipeline_cache.retrieve_render_pass(current_color_format, true, true, !record.color_surface.data);
     }
 
     // use the scissor to know in which macroblock we are
