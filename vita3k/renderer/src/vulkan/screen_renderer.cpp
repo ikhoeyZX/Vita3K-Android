@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -108,16 +108,17 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
 
     switch(vk_idx){
         case 1:
-            present_mode = vk::PresentModeKHR::eMailbox;
+            present_mode = vk::PresentModeKHR::eFifo;
             break;
-        case 2:
+/*        case 2:
             present_mode = vk::PresentModeKHR::eFifoRelaxed;
             break;
         case 3:
-            present_mode = vk::PresentModeKHR::eFifo;
-            break;
-        default:
             present_mode = vk::PresentModeKHR::eImmediate;
+            break;
+*/
+        default:
+            present_mode = vk::PresentModeKHR::eMailbox;
             break;
     }
 
@@ -569,7 +570,7 @@ void ScreenRenderer::create_surface_image() {
 
     vk::BufferCreateInfo buffer_info{
         // make sure it is big enough
-        .size = 1024 * 720 * sizeof(uint32_t),
+        .size = 1024 * 1024 * sizeof(uint32_t),
         .usage = vk::BufferUsageFlagBits::eTransferSrc,
         .sharingMode = vk::SharingMode::eExclusive
     };
