@@ -460,11 +460,6 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
         state.request_queue.push(FenceWaitRequest{ fence });
 
         if(state.mapping_method == MappingMethod::DoubleBuffer){
-            // sync all the visibility buffers
-            for(auto& range : occlusion_ranges){
-                state.request_queue.push(BufferSyncRequest{ current_visibility_buffer->address + range.offset * 4, range.size * 4 });
-            }
-
             // we must sync the two buffers
             if(surface_info && surface_info->need_buffer_sync)
                 state.request_queue.push(BufferSyncRequest{surface_info->data.address(), static_cast<uint32_t>(surface_info->total_bytes)});
