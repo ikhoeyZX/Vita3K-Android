@@ -188,13 +188,12 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         }
     }
 
-// #ifndef ANDROID
+#ifndef ANDROID
     {
         // look for rgb vertex attribute support
         // we need to look at each format because it is not the same for all usual 3-component formats (checked on AMD Radeon HD 7800)
-        // we also need to test for 32-bit types, some potato GPU maybe not supported
+        // no need to test for 32-bit types, they are always supported
         vk::Format formats[] = {
-            vk::Format::eR32G32B32Sint, vk::Format::eR32G32B32Uint,
             vk::Format::eR16G16B16Unorm, vk::Format::eR16G16B16Snorm,
             vk::Format::eR16G16B16Uscaled, vk::Format::eR16G16B16Sscaled,
             vk::Format::eR16G16B16Uint, vk::Format::eR16G16B16Sint,
@@ -222,14 +221,10 @@ void PipelineCache::init(bool support_rasterized_order_access) {
                 unsupported_rgb_vertex_attribute_formats.erase(fmt);
         }
         state.features.support_rgb_attributes = unsupported_rgb_vertex_attribute_formats.empty();
-
-        LOG_INFO("support_scaled_attribute_formats = {}", state.features.support_scaled_attribute_formats);
-        LOG_INFO("support_rgb_attributes = {}", state.features.support_rgb_attributes); 
     }
-// #endif
+#endif
     
     support_coherent_framebuffer_fetch = support_rasterized_order_access;
-    LOG_INFO("support_rasterized_order_access = {}", support_rasterized_order_access);
 
     const int nb_logical_threads = SDL_GetCPUCount();
     // took this from RPCS3 (slightly modified)
@@ -448,10 +443,9 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
 
     const std::string hash_text = hex_string(hash);
 
+    LOG_INFO("Generating vulkan spv shader {}", hash_text);
     const std::string shader_version = fmt::format("vk{}", shader::CURRENT_VERSION);
 
-    LOG_INFO("Generating vulkan spv shader {}, VERSION: {}", hash_text, shader_version);
-    
     shader::usse::SpirvCode source = load_spirv_shader(*program, state.features, true, hints, maskupdate, state.shaders_path, state.shaders_log_path, shader_version, true);
 
     vk::ShaderModuleCreateInfo shader_info{
@@ -642,7 +636,6 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
         if (info.regformat) {
             // use the data from the shader itself
             component_count = info.component_count;
-
             switch (info.gxm_type) {
             case SCE_GXM_PARAMETER_TYPE_U8:
             case SCE_GXM_PARAMETER_TYPE_S8:
@@ -838,13 +831,6 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
         vk::DynamicState::eStencilWriteMask,
         vk::DynamicState::eDepthBias,
         vk::DynamicState::eLineWidth,
-    
-        vk::DynamicState::eBlendConstants,
-        vk::DynamicState::eDepthBounds,
-        vk::DynamicState::ePrimitiveTopology,
-        vk::DynamicState::eViewportWithCount,
-        vk::DynamicState::eScissorWithCount,
-        vk::DynamicState::eStencilOp,
     };
     vk::PipelineDynamicStateCreateInfo dynamic_info{};
     dynamic_info.setDynamicStates(dynamic_states);
