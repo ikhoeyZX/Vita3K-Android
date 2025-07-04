@@ -62,11 +62,12 @@ void VKContext::wait_thread_function(const MemState &mem) {
 
                                // same as in handle_sync_surface_data
                                std::unique_lock<std::mutex> lock(state.notification_mutex);
-
                                if (request.notifications[0].address)
-                                   *request.notifications[0].address.get(mem) = request.notifications[0].value;
+                                   *request.notifications[0].address.get(
+                                           mem) = request.notifications[0].value;
                                if (request.notifications[1].address)
-                                   *request.notifications[1].address.get(mem) = request.notifications[1].value;
+                                   *request.notifications[1].address.get(
+                                           mem) = request.notifications[1].value;
 
                                // unlocking before a notify should be faster
                                lock.unlock();
@@ -82,6 +83,17 @@ void VKContext::wait_thread_function(const MemState &mem) {
                            last_frame_waited = request.frame_timestamp;
                            lock.unlock();
                            new_frame_condv.notify_one();
+                       },
+                       [&](BufferSyncRequest& request) {
+                           wait_for_fences();
+                           auto mem_it = state.mapped_memories.lower_bound(request.location);
+                           if(mem_it == state.mapped_memories.end() || mem_it->first + mem_it->second.size < request.location + request.size){
+                                LOG_ERROR("Buffer Sync request for {}-{} is not fully mapped", log_hex(request.location), log_hex(request.location + request.size));
+                                return;
+                           }
+                           uint8_t* src = reinterpret_cast<uint8_t *>(std::get<vkutil::Buffer>(mem_it->second.buffer_impl).mapped_data);
+                           src += request.location - mem_it->first;
+                           memcpy(Ptr<void>(request.location).get(mem), src, request.size);
                        },
                        [&](PostSurfaceSyncRequest &request) {
                            wait_for_fences();
