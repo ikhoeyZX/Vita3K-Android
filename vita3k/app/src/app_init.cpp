@@ -43,12 +43,10 @@
 
 #include <gdbstub/functions.h>
 
-#include <SDL.h>
-#include <SDL_video.h>
-#include <SDL_vulkan.h>
+#include <SDL3/SDL_filesystem.h>
+#include <SDL3/SDL_video.h>
 
 #ifdef ANDROID
-#include <SDL.h>
 #include <boost/range/iterator_range.hpp>
 #include <jni.h>
 
@@ -120,23 +118,11 @@ void update_viewport(EmuEnvState &state) {
     int w = 0;
     int h = 0;
 
-    switch (state.renderer->current_backend) {
-    case renderer::Backend::OpenGL:
-        SDL_GL_GetDrawableSize(state.window.get(), &w, &h);
-        break;
-
-    case renderer::Backend::Vulkan:
-        SDL_Vulkan_GetDrawableSize(state.window.get(), &w, &h);
-        break;
-
-    default:
-        LOG_ERROR("Unimplemented backend renderer: {}.", static_cast<int>(state.renderer->current_backend));
-        break;
-    }
+    SDL_GetWindowSizeInPixels(state.window.get(), &w, &h);
 
     state.drawable_size.x = w;
     state.drawable_size.y = h;
-
+    
     if (h > 0) {
         const float window_aspect = static_cast<float>(w) / h;
         const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
@@ -193,7 +179,6 @@ void init_paths(Root &root_paths) {
 #else
     auto sdl_base_path = SDL_GetBasePath();
     auto base_path = fs_utils::utf8_to_path(sdl_base_path);
-    SDL_free(sdl_base_path);
 
     root_paths.set_base_path(base_path);
     root_paths.set_static_assets_path(base_path);
@@ -447,17 +432,22 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     };
 #endif
 #ifdef ANDROID
+    
     if(SDL_GetAndroidSDKVersion() >= 30 && !state.cfg.native_screen) {
-        float ddpi, hdpi, vdpi, max = 160.f;
-        SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi);
-        window_type |= SDL_WINDOW_ALLOW_HIGHDPI;
-        LOG_INFO("Display DPI: ddpi = {}, hdpi = {}, vdpi = {}", ddpi, hdpi, vdpi);
+        window_type |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
+        float dpi = SDL_GetDisplayContentScale(SDL_GetDisplayForWindow(state.window.get()));
+        if(dpi == 0.0f){ // if system can't scalling
+           float hdpi, vdpi, max = 160.f;
+           SDL_GetDisplayDPI(0, &dpi, &hdpi, &vdpi);
+           LOG_INFO("Display DPI = {}", dpi);
 
-        state.dpi_scale = ddpi / max;
+           state.dpi_scale = dpi / max;
+        }else{
+           state.dpi_scale = dpi;
+        }
     }
 
-    
-    if(state.cfg.native_screen || SDL_GetAndroidSDKVersion() < 30){
+    if(state.cfg.native_screen){
        SDL_DisplayMode DM;
        SDL_GetCurrentDisplayMode(0, &DM);
        uint32_t width = DM.w;
@@ -503,7 +493,8 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     }
 #endif // ifdef android
 
-    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
+    state.window = WindowPtr(SDL_CreateWindow(window_title, DEFAULT_RES_WIDTH * state.dpi_scale, DEFAULT_RES_HEIGHT * state.dpi_scale, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
+   // state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
     if (!state.window) {
         LOG_ERROR("SDL failed to create window!\n Reason:{}\n disabling some feature!", SDL_GetError());
         SDL_ClearError();
