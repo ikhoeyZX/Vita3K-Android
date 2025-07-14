@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,8 +29,8 @@
 #include <util/log.h>
 #include <util/safe_time.h>
 
-#include <SDL.h>
-#include <SDL_misc.h>
+#include <SDL3/SDL_cpuinfo.h>
+#include <SDL3/SDL_misc.h>
 #undef main
 
 #include <boost/algorithm/string/replace.hpp>
