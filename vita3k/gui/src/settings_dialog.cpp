@@ -41,7 +41,7 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#include <SDL.h>
+#include <SDL3/SDL_video.h>
 
 #include <algorithm>
 #include <pugixml.hpp>
@@ -434,7 +434,7 @@ std::string get_cpu_backend(GuiState &gui, EmuEnvState &emuenv, const std::strin
 void set_vsync_state(const bool &state) { // has static
     if (state) {
         // Try adaptive vsync first, falling back to regular vsync.
-        if (SDL_GL_SetSwapInterval(-1) < 0) {
+        if (!SDL_GL_SetSwapInterval(-1)) {
             SDL_GL_SetSwapInterval(1);
         }
     } else
