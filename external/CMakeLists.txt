@@ -92,30 +92,7 @@ target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui"
 add_library(miniz STATIC miniz/miniz.c miniz/miniz.h)
 target_include_directories(miniz PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/miniz")
 
-add_library(sdl2 INTERFACE)
-if(ANDROID)
-
-  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/sdl/android/lib/${ANDROID_ABI}/libSDL2.a")
-    execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${CMAKE_CURRENT_SOURCE_DIR}/sdl/android/libSDL2.zip"
-      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/sdl/android/")
-  endif()
-  
-	target_include_directories(sdl2 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/sdl/android/include")
-	target_link_libraries(sdl2 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/sdl/android/lib/${ANDROID_ABI}/libSDL2.a")
-	target_link_libraries(sdl2 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/sdl/android/lib/${ANDROID_ABI}/libcpufeatures.a")
-	target_link_libraries(sdl2 INTERFACE GLESv1_CM GLESv2)
-else()
-	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/sdl2-cmake-scripts")
-	if(APPLE)
-		set(SDL2_PATH "${CMAKE_CURRENT_SOURCE_DIR}/sdl/macos" CACHE PATH "Where SDL2 is located" FORCE)
-	elseif(WIN32)
-		set(SDL2_PATH "${CMAKE_CURRENT_SOURCE_DIR}/sdl/windows" CACHE PATH "Where SDL2 is located" FORCE)
-		set(SDL2_INCLUDE_DIR "${SDL2_PATH}/include" CACHE PATH "Where the SDL2 include files can be found" FORCE)
-	endif()
-	find_package(SDL2 REQUIRED)
-	target_include_directories(sdl2 INTERFACE "${SDL2_INCLUDE_DIR}")
-	target_link_libraries(sdl2 INTERFACE "${SDL2_LIBRARY}")
-endif()
+add_library(sdl INTERFACE)
 
 # Cubeb setup, from https://github.com/RPCS3/rpcs3/blob/master/3rdparty/cubeb/CMakeLists.txt
 set(BUILD_SHARED_LIBS FALSE CACHE BOOL "Don't build shared libs")
