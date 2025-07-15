@@ -54,19 +54,18 @@
 #include <tracy/Tracy.hpp>
 #endif
 
-#ifdef ANDROID
-#include <jni.h>
-#include <thread>
-#include <unistd.h>
-#include <xxh3.h>
-#endif
-
-#include <SDL.h>
+#include <SDL3/SDL_cpuinfo.h>
+#include <SDL3/SDL_hints.h>
+#include <SDL3/SDL_init.h>
 #include <chrono>
 #include <cstdlib>
 #include <thread>
 
 #ifdef ANDROID
+#include <jni.h>
+#include <thread>
+#include <unistd.h>
+#include <xxh3.h>
 
 static void set_current_game_id(const std::string_view game_id) {
     // retrieve the JNI environment.
@@ -275,6 +274,7 @@ int main(int argc, char *argv[]) {
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_ENHANCED_REPORTS, "1");
         
         // Enable Switch controller
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH, "1");
@@ -285,7 +285,7 @@ int main(int argc, char *argv[]) {
         if (audio_mode != "auto")
             SDL_SetHint(SDL_HINT_AUDIODRIVER, audio_mode.c_str());
 
-        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_SENSOR) < 0) {
+        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC)) {
             auto fail_text = fmt::format("SDL initialization failed.\n Reason: {}", SDL_GetError());
             LOG_ERROR("{}", fail_text);
             app::error_dialog(fail_text);
