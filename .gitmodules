@@ -35,6 +35,9 @@
 [submodule "external/pugixml"]
 	path = external/pugixml
 	url = https://github.com/zeux/pugixml
+[submodule "external/sdl2-cmake-scripts"]
+	path = external/sdl2-cmake-scripts
+	url = https://github.com/tcbrindle/sdl2-cmake-scripts
 [submodule "external/spdlog"]
 	path = external/spdlog
 	url = https://github.com/gabime/spdlog
@@ -95,7 +98,8 @@
 	url = https://github.com/bylaws/libadrenotools.git
 [submodule "sdl"]
 	path = external/sdl
-	url = https://github.com/libsdl-org/SDL.git
+	url = https://github.com/ikhoeyZX/sdl-Android.git
+	branch = android
 [submodule "external/tracy"]
 	path = external/tracy
 	url = https://github.com/wolfpld/tracy.git
