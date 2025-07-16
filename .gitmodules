@@ -95,7 +95,7 @@
 	url = https://github.com/bylaws/libadrenotools.git
 [submodule "sdl"]
 	path = external/sdl
-	url = url = https://github.com/libsdl-org/SDL.git
+	url = https://github.com/libsdl-org/SDL.git
 [submodule "external/tracy"]
 	path = external/tracy
 	url = https://github.com/wolfpld/tracy.git
