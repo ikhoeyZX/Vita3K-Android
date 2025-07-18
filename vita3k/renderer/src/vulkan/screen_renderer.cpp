@@ -18,8 +18,8 @@
 #include "renderer/vulkan/screen_renderer.h"
 
 #include <SDL3/SDL_vulkan.h>
-#include <SDL3/SDL_error.h>
-#include <SDL3/SDL_video.h>
+// #include <SDL3/SDL_error.h>
+// #include <SDL3/SDL_video.h>
 
 #include "renderer/vulkan/state.h"
 #include "util/log.h"
@@ -52,7 +52,7 @@ bool ScreenRenderer::create(SDL_Window *window) {
     }
 
     VkSurfaceKHR surface = VK_NULL_HANDLE;
-    bool surface_error = SDL_Vulkan_CreateSurface(window, state.instance, &surface);
+    bool surface_error = SDL_Vulkan_CreateSurface(window, state.instance, nullptr, &surface);
     if (!surface_error) {
         const char *error = SDL_GetError();
         LOG_ERROR("Failed to create vulkan surface. SDL Error: {}.", error);
