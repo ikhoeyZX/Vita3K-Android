@@ -109,7 +109,7 @@ void touch_vsync_update(const EmuEnvState &emuenv) {
     constexpr bool on_android = false;
 #endif
     
-    if (finger_count > 0 || touchpad_finger_count > 0 || on_android) {
+    if (finger_count > 0 || on_android) {
         SceTouchData touch_data = is_touchpad ? recover_touchpad_events(emuenv) : recover_touch_events(emuenv);
         touch_data.timeStamp = timestamp;
 
@@ -156,8 +156,8 @@ void touch_vsync_update(const EmuEnvState &emuenv) {
                 };
 
                 const SceFVector2 touch_pos_viewport = {
-                    (touch_pos_drawable.x - emuenv.drawable_viewport_pos.x) / emuenv.drawable_viewport_size.x,
-                    (touch_pos_drawable.y - emuenv.drawable_viewport_pos.y) / emuenv.drawable_viewport_size.y
+                    (touch_pos_drawable.x - emuenv.viewport_pos.x) / emuenv.viewport_size.x,
+                    (touch_pos_drawable.y - emuenv.viewport_pos.y) / emuenv.viewport_size.y
                 };
 
                 if ((touch_pos_viewport.x >= 0) && (touch_pos_viewport.y >= 0) && (touch_pos_viewport.x < 1) && (touch_pos_viewport.y < 1)) {
