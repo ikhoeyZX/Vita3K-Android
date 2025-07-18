@@ -67,7 +67,7 @@ std::vector<uint8_t> read_asset_raw(const fs::path &path) {
 #ifdef ANDROID
     static const uint32_t base_path_size = strlen(SDL_GetAndroidExternalStoragePath()) + 1;
     std::string file_path = path.string().substr(base_path_size);
-    SDL_RWops *file = SDL_IOFromFile(file_path.c_str(), "r");
+    SDL_IOStream *file = SDL_IOFromFile(file_path.c_str(), "r");
     if (file == nullptr) {
         LOG_ERROR("Could not open asset file {}", path.string());
         return {};
