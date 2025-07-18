@@ -564,12 +564,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 #endif
         };
 
-	LOG_INFO("EXT CHECK:");
-        LOG_INFO("support_global_priority = {}", support_global_priority);
-        LOG_INFO("support_buffer_device_address = {}", support_buffer_device_address);
-        LOG_INFO("support_external_memory = {}", support_external_memory);
-        LOG_INFO("support_shader_interlock = {}", support_shader_interlock);
-
         for (const vk::ExtensionProperties &ext : physical_device.enumerateDeviceExtensionProperties()) {
             auto it = optional_extensions.find(ext.extensionName.data());
             if (it != optional_extensions.end()) {
@@ -579,18 +573,14 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             }
         }
 
-	bool support_memory_mapping = false;
+        bool support_memory_mapping = true;
         if (support_buffer_device_address) {
-	    support_memory_mapping = true;
-	    LOG_INFO("GET DEVICE: support_buffer_device_address");
             auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceBufferDeviceAddressFeatures>();
             support_buffer_device_address &= static_cast<bool>(features.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress);
         }
         support_memory_mapping &= support_buffer_device_address;
 
         if (support_standard_layout) {
-	    support_memory_mapping = true;
-            LOG_INFO("GET DEVICE: support_standard_layout");
             auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
             support_standard_layout &= static_cast<bool>(features.get<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>().uniformBufferStandardLayout);
         }
@@ -609,12 +599,12 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             supported_mapping_methods_mask |= (1 << static_cast<int>(MappingMethod::DoubleBuffer));
             supported_mapping_methods_mask |= (1 << static_cast<int>(MappingMethod::PageTable));
 
-      //      if (support_external_memory) {
+    //        if (support_external_memory) {
                 // disable this extension on GPUs with an alignment requirement higher than 4096 (should only
                 // concern a few intel iGPUs)
                 auto props = physical_device.getProperties2KHR<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>();
                 support_external_memory = (props.get<vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>().minImportedHostPointerAlignment <= 4096);
-      //      }
+   //         }
 
             if (support_external_memory)
                 supported_mapping_methods_mask |= (1 << static_cast<int>(MappingMethod::ExernalHost));
@@ -700,11 +690,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         if (!support_shader_interlock)
             device_info.unlink<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>();
-
-	LOG_INFO("support_memory_mapping = {}", support_memory_mapping);
-        LOG_INFO("support_standard_layout = {}", support_standard_layout);
-        LOG_INFO("support_rasterized_order_access = {}", support_rasterized_order_access);
-        LOG_INFO("support_shader_interlock = {}", support_shader_interlock);
 
         try {
             device = physical_device.createDevice(device_info.get());
