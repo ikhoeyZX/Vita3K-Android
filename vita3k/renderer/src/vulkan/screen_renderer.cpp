@@ -26,7 +26,6 @@
 #include "vkutil/vkutil.h"
 
 #ifdef __ANDROID__
-#include <SDL.h>
 #include <jni.h>
 
 static bool has_surface = false;
