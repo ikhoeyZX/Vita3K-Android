@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2023 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 #include <util/string_utils.h>
 
 #ifdef ANDROID
-#include <SDL.h>
+#include  <SDL3/SDL_system.h>
 #endif
 
 namespace fs_utils {
@@ -64,7 +64,7 @@ void dump_data(const fs::path &path, const void *data, const std::streamsize siz
 
 std::vector<uint8_t> read_asset_raw(const fs::path &path) {
 #ifdef ANDROID
-    static const uint32_t base_path_size = strlen(SDL_AndroidGetExternalStoragePath()) + 1;
+    static const uint32_t base_path_size = strlen(SDL_GetAndroidExternalStoragePath()) + 1;
     std::string file_path = path.string().substr(base_path_size);
     SDL_RWops *file = SDL_RWFromFile(file_path.c_str(), "r");
     if (file == nullptr) {
