@@ -21,6 +21,7 @@
 
 #ifdef ANDROID
 #include  <SDL3/SDL_system.h>
+#include  <SDL3/SDL_iostream.h>
 #endif
 
 namespace fs_utils {
@@ -66,21 +67,21 @@ std::vector<uint8_t> read_asset_raw(const fs::path &path) {
 #ifdef ANDROID
     static const uint32_t base_path_size = strlen(SDL_GetAndroidExternalStoragePath()) + 1;
     std::string file_path = path.string().substr(base_path_size);
-    SDL_RWops *file = SDL_RWFromFile(file_path.c_str(), "r");
+    SDL_RWops *file = SDL_IOFromFile(file_path.c_str(), "r");
     if (file == nullptr) {
         LOG_ERROR("Could not open asset file {}", path.string());
         return {};
     }
 
-    Sint64 size_read = SDL_RWsize(file);
+    Sint64 size_read = SDL_GetIOSize(file);
     std::vector<uint8_t> raw_data(size_read);
 
-    if (SDL_RWread(file, raw_data.data(), size_read, 1) != 1) {
+    if (SDL_ReadIO(file, raw_data.data(), size_read, 1) != 1) {
         LOG_ERROR("Could not read asset file {}", path.string());
         return {};
     }
 
-    SDL_RWclose(file);
+    SDL_CloseIO(file);
 
     return raw_data;
 #else
