@@ -61,8 +61,8 @@ static SceTouchData recover_touch_events(const EmuEnvState &emuenv) {
         touch_data.report[i].id = static_cast<uint8_t>(finger_buffer[i].touchID);
         touch_data.report[i].force = forceTouchEnabled[touchscreen_port] ? 128 : 0;
 
-        float x = (finger_buffer[i].x * emuenv.drawable_size.x - emuenv.drawable_viewport_pos.x) / emuenv.drawable_viewport_size.x;
-        float y = (finger_buffer[i].y * emuenv.drawable_size.y - emuenv.drawable_viewport_pos.y) / emuenv.drawable_viewport_size.y;
+        float x = (finger_buffer[i].x * emuenv.drawable_size.x - emuenv.viewport_pos.x) / emuenv.viewport_size.x;
+        float y = (finger_buffer[i].y * emuenv.drawable_size.y - emuenv.viewport_pos.y) / emuenv.viewport_size.y;
         touch_data.report[i].x = static_cast<uint16_t>(x * 1920);
 
         if (touchscreen_port == SCE_TOUCH_PORT_FRONT) {
@@ -222,6 +222,10 @@ int handle_touch_event(SDL_TouchFingerEvent &finger) {
         }
         break;
     }
+        
+    default:
+        LOG_ERROR("handle_touch_event : UNK FUNCTION!");
+        break;
     }
 
     return 0;
@@ -256,6 +260,10 @@ int handle_touchpad_event(SDL_GamepadTouchpadEvent &touchpad) {
                 touchpad_buffer[i].which = touch_id;
             }
         }
+        break;
+        
+    default:
+        LOG_ERROR("handle_touchpad_event : UNK FUNCTION!");
         break;
     }
 
