@@ -52,12 +52,12 @@ constexpr bool is_device_landscape = true;
 
 static void init_device_sensors(MotionState& state){
     int i, num_sensors;
-    SDL_SensorID *sensors = SDL_GetSensors(&num_sensors);
+    SDL_Sensor *sensors = SDL_GetSensors(&num_sensors);
     if (sensors) {
         for (i = 0; i < num_sensors; ++i) {
             LOG_INFO("Sensor name: {}", SDL_GetSensorNameForID(sensors[i]));
             LOG_INFO("Sensor type: {}", SDL_GetSensorTypeForID(sensors[i]));
-    
+
             bool sensor_used = true;
             switch (SDL_GetSensorType(sensors)){
                 case SDL_SENSOR_ACCEL:
