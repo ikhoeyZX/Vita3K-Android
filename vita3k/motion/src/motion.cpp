@@ -59,13 +59,13 @@ static void init_device_sensors(MotionState& state){
             LOG_INFO("Sensor type: {}", SDL_GetSensorTypeForID(sensors[i]));
     
             bool sensor_used = true;
-            switch (SDL_GetSensorType(sensor)){
+            switch (SDL_GetSensorType(sensors)){
                 case SDL_SENSOR_ACCEL:
-                    state.device_accel = sensor;
+                    state.device_accel = sensors;
                     break;
                 
                 case SDL_SENSOR_GYRO:
-                    state.device_gyro = sensor;
+                    state.device_gyro = sensors;
                     break;
         
                 default:
@@ -74,7 +74,7 @@ static void init_device_sensors(MotionState& state){
             }
         }
         if(!sensor_used){
-            SDL_CloseSensor(sensor);
+            SDL_CloseSensor(sensors);
             SDL_free(sensors);
         }
     }
