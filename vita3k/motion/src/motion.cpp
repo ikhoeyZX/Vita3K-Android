@@ -51,7 +51,7 @@ constexpr bool is_device_landscape = true;
 #endif
 
 static void init_device_sensors(MotionState& state){
-    uint32_t i, num_sensors;
+    int i, num_sensors;
     SDL_SensorID *sensors = SDL_GetSensors(&num_sensors);
     if (sensors) {
         for (i = 0; i < num_sensors; ++i) {
