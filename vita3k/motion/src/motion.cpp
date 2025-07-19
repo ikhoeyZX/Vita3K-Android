@@ -51,27 +51,34 @@ constexpr bool is_device_landscape = true;
 #endif
 
 static void init_device_sensors(MotionState& state){
-    const int16_t num_sensors = SDL_GetSensors();
-    for(int16_t idx = 0; idx < num_sensors; idx++){
-        SDL_Sensor* sensor = SDL_OpenSensor(idx);
-        bool sensor_used = true;
-        switch (SDL_GetSensorType(sensor))
-        {
-        case SDL_SENSOR_ACCEL:
-            state.device_accel = sensor;
-            break;
-
-        case SDL_SENSOR_GYRO:
-            state.device_gyro = sensor;
-            break;
+    uint32_t i, num_sensors;
+    SDL_SensorID *sensors = SDL_GetSensors(&num_sensors);
+    if (sensors) {
+        for (i = 0; i < num_sensors; ++i) {
+            LOG_INFO("Sensor name: {}", SDL_GetSensorNameForID(sensors[i]));
+            LOG_INFO("Sensor type: {}", SDL_GetSensorTypeForID(sensors[i]));
+    
+            bool sensor_used = true;
+            switch (SDL_GetSensorType(sensor)){
+                case SDL_SENSOR_ACCEL:
+                    state.device_accel = sensor;
+                    break;
+                
+                case SDL_SENSOR_GYRO:
+                    state.device_gyro = sensor;
+                    break;
         
-        default:
-            sensor_used = false;
-            break;
+                default:
+                    sensor_used = false;
+                    break;
+            }
         }
-        if(!sensor_used)
+        if(!sensor_used){
             SDL_CloseSensor(sensor);
+            SDL_free(sensors);
+        }
     }
+    
     state.has_device_motion_support = (state.device_accel && state.device_gyro);
 
 #ifdef ANDROID
