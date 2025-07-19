@@ -519,7 +519,7 @@ bool TextureCache::import_configure_texture() {
             LOG_ERROR_ONCE("BCn textures are not supported by this device");
 #ifdef ANDROID
             // this issue is most likely to happen on android
-            SDL_AndroidShowToast("BCn textures are not supported by this device!", 1, -1, 0, 0);
+            SDL_ShowAndroidToast("BCn textures are not supported by this device!", 1, -1, 0, 0);
 #endif
             return false;
         }
