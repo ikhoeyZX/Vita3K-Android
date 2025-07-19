@@ -224,8 +224,7 @@ int handle_touch_event(SDL_TouchFingerEvent &finger) {
     }
         
     default:
-        LOG_ERROR("handle_touch_event : UNK FUNCTION!");
-        break;
+         break;
     }
 
     return 0;
@@ -263,7 +262,6 @@ int handle_touchpad_event(SDL_GamepadTouchpadEvent &touchpad) {
         break;
         
     default:
-        LOG_ERROR("handle_touchpad_event : UNK FUNCTION!");
         break;
     }
 
