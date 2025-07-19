@@ -18,7 +18,7 @@
 #pragma once
 
 #include <motion/motion_input.h>
-#include <SDL3/SDL_gamepad.h>
+#include <SDL3/SDL_sensor.h>
 
 #include <mutex>
 
