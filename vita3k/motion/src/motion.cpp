@@ -23,17 +23,18 @@
 #include <util/log.h>
 
 #include <SDL3/SDL_gamepad.h>
+#include <SDL3/SDL_sensor.h>
 #include <numbers>
 
 #ifdef ANDROID
-
+#include <SDL3/SDL_system.h>
 #include <jni.h>
 
 static bool is_device_landscape = false;
 
 static void init_device_orientation(){
-    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
-    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
+    jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
     jclass clazz(env->GetObjectClass(activity));
 
     jmethodID method_id = env->GetMethodID(clazz, "isDefaultOrientationLandscape", "()Z");
@@ -50,11 +51,11 @@ constexpr bool is_device_landscape = true;
 #endif
 
 static void init_device_sensors(MotionState& state){
-    const int16_t num_sensors = SDL_NumSensors();
+    const int16_t num_sensors = SDL_GetSensors();
     for(int16_t idx = 0; idx < num_sensors; idx++){
-        SDL_Sensor* sensor = SDL_SensorOpen(idx);
+        SDL_Sensor* sensor = SDL_OpenSensor(idx);
         bool sensor_used = true;
-        switch (SDL_SensorGetType(sensor))
+        switch (SDL_GetSensorType(sensor))
         {
         case SDL_SENSOR_ACCEL:
             state.device_accel = sensor;
@@ -69,7 +70,7 @@ static void init_device_sensors(MotionState& state){
             break;
         }
         if(!sensor_used)
-            SDL_SensorClose(sensor);
+            SDL_CloseSensor(sensor);
     }
     state.has_device_motion_support = (state.device_accel && state.device_gyro);
 
@@ -86,11 +87,11 @@ void MotionState::init(){
 
     // close them as having them opened uses battery
     if(device_accel){
-        SDL_SensorClose(device_accel);
+        SDL_CloseSensor(device_accel);
         device_accel = nullptr;
     }
     if(device_gyro){
-        SDL_SensorClose(device_gyro);
+        SDL_CloseSensor(device_gyro);
         device_gyro = nullptr;
     }
 }
