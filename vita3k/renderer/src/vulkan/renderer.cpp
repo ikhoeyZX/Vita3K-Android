@@ -1402,7 +1402,7 @@ std::vector<std::string> VKState::get_gpu_list() {
     std::vector<std::string> gpu_list = { "Default" };
 
     // First value is the stock driver
-    fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver";
+    fs::path driver_path = fs::path(SDL_GetAndroidInternalStoragePath()) / "driver";
     fs::create_directories(driver_path);
 
     for (const auto &entry : boost::make_iterator_range(fs::directory_iterator(driver_path), {})) {
