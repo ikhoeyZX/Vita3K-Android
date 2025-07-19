@@ -27,7 +27,7 @@
 #include <mutex>
 #include <utility>
 
-#include <SDL_cpuinfo.h> // to call size of memory free
+#include <SDL3/SDL_cpuinfo.h> // to call size of memory free
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
