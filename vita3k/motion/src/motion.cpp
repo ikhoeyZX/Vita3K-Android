@@ -76,9 +76,10 @@ static void init_device_sensors(MotionState& state){
                     sensor_used = false;
                     break;
             }
-        }
-        if(!sensor_used){
-            SDL_CloseSensor(sensor);
+        
+            if(!sensor_used){
+               SDL_CloseSensor(sensor);
+            }
         }
     }
     
