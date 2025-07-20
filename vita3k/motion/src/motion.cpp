@@ -55,8 +55,8 @@ static void init_device_sensors(MotionState& state){
     SDL_SensorID *sensors = SDL_GetSensors(&num_sensors);
     if (sensors) {
         for (i = 0; i < num_sensors; ++i) {
-            LOG_INFO("Sensor name: {}", SDL_GetSensorNameForID(sensors[i]).c_str());
-            LOG_INFO("Sensor type: {}", SDL_GetSensorTypeForID(sensors[i]).c_str());
+            LOG_INFO("Sensor name: {}", SDL_GetSensorNameForID(sensors[i]));
+            LOG_INFO("Sensor type: {}", SDL_GetSensorTypeForID(sensors[i]));
 
             bool sensor_used = true;
 
