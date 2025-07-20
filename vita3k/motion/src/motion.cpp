@@ -52,20 +52,24 @@ constexpr bool is_device_landscape = true;
 
 static void init_device_sensors(MotionState& state){
     int i, num_sensors;
-    SDL_Sensor *sensors = SDL_GetSensors(&num_sensors);
+    SDL_SensorID *sensors = SDL_GetSensors(&num_sensors);
     if (sensors) {
         for (i = 0; i < num_sensors; ++i) {
-            LOG_INFO("Sensor name: {}", SDL_GetSensorNameForID(sensors[i]));
-            LOG_INFO("Sensor type: {}", SDL_GetSensorTypeForID(sensors[i]));
+            LOG_INFO("Sensor name: {}", SDL_GetSensorNameForID(sensors[i]).c_str());
+            LOG_INFO("Sensor type: {}", SDL_GetSensorTypeForID(sensors[i]).c_str());
 
             bool sensor_used = true;
-            switch (SDL_GetSensorType(sensors)){
+
+            SDL_Sensor* sensor = SDL_OpenSensor(sensors[i]);
+            SDL_SensorType type = SDL_GetSensorType(sensor);
+
+            switch (type){
                 case SDL_SENSOR_ACCEL:
-                    state.device_accel = sensors;
+                    state.device_accel = sensor;
                     break;
                 
                 case SDL_SENSOR_GYRO:
-                    state.device_gyro = sensors;
+                    state.device_gyro = sensor;
                     break;
         
                 default:
@@ -74,8 +78,7 @@ static void init_device_sensors(MotionState& state){
             }
         }
         if(!sensor_used){
-            SDL_CloseSensor(sensors);
-            SDL_free(sensors);
+            SDL_CloseSensor(sensor);
         }
     }
     
