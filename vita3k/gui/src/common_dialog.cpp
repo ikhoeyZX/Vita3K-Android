@@ -24,7 +24,7 @@
 #include <dialog/state.h>
 #include <util/string_utils.h>
 
-#include <SDL3/SDL_timer>
+#include <SDL3/SDL_timer.h>
 
 namespace gui {
 static void draw_ime_dialog(DialogState &common_dialog, float FONT_SCALE) {
