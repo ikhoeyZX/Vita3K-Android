@@ -116,8 +116,8 @@ SceFVector3 get_acceleration(const MotionState &state) {
     };
 }
 
-Util::Vec3f gyroscope = state.motion_data.GetGyroscope() * 2.f * std::numbers::pi_v<float>;
-    Util::Vec3f gyroscope = state.motion_data.GetGyroscope() * static_cast<float>(2.f * M_PI);
+SceFVector3 get_gyroscope(const MotionState &state) {
+    Util::Vec3f gyroscope = state.motion_data.GetGyroscope() * 2.f * std::numbers::pi_v<float>;
     return {
         gyroscope.x,
         gyroscope.y,
