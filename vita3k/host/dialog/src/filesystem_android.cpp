@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2022 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,8 @@
 
 #include <map>
 
-#include <SDL.h>
+#include <SDL3/SDL_system.h>
+#include <SDL3/SDL_timer.h>
 #include <jni.h>
 
 static std::atomic<bool> file_dialog_running = false;
@@ -84,10 +85,10 @@ std::string format_file_filter_extension_list(const std::vector<std::string> &fi
 static void call_dialog_java_function(const char* name, bool need_write){
     // These permissions are not needed on Android 11+
     if(SDL_GetAndroidSDKVersion() < 30) {
-        SDL_AndroidRequestPermission("android.permission.READ_EXTERNAL_STORAGE");
+        SDL_RequestAndroidPermission("android.permission.READ_EXTERNAL_STORAGE");
 
         if(need_write) {
-            SDL_AndroidRequestPermission("android.permission.WRITE_EXTERNAL_STORAGE");
+            SDL_RequestAndroidPermission("android.permission.WRITE_EXTERNAL_STORAGE");
         }
     }
 
