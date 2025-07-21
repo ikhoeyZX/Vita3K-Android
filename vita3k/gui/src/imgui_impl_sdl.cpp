@@ -228,11 +228,11 @@ bool ImGui_ImplSdl_ProcessEvent(ImGui_State *state, SDL_Event *event) {
         //   causing SDL_WINDOWEVENT_LEAVE on previous frame to interrupt drag operation by clear mouse position. This is why
         //   we delay process the SDL_WINDOWEVENT_LEAVE events by one frame. See issue #5012 for details.
     case SDL_EVENT_WINDOW_MOUSE_ENTER: {
-        state->PendingMouseLeaveFrame = 0;
+        state->pending_mouse_leave_frame = 0;
         return true;
     }
     case SDL_EVENT_WINDOW_MOUSE_LEAVE: {
-        state->PendingMouseLeaveFrame = ImGui::GetFrameCount() + 1;
+        state->pending_mouse_leave_frame = ImGui::GetFrameCount() + 1;
         return true;
     }
     case SDL_EVENT_WINDOW_FOCUS_GAINED: {
@@ -473,9 +473,9 @@ IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
     io.DeltaTime = state->time > 0 ? (float)((double)(current_time - state->time) / frequency) : (1.0f / 60.0f);
     state->time = current_time;
 
-    if (state->PendingMouseLeaveFrame && state->PendingMouseLeaveFrame >= ImGui::GetFrameCount() && state->MouseButtonsDown == 0) {
+    if (state->pending_mouse_leave_frame && state->pending_mouse_leave_frame >= ImGui::GetFrameCount() && state->MouseButtonsDown == 0) {
         io.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
-        state->PendingMouseLeaveFrame = 0;
+        state->pending_mouse_leave_frame = 0;
     }
 
     ImGui_ImplSDL3_UpdateMouseData(state);
