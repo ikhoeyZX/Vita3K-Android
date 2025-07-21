@@ -35,10 +35,6 @@
 #include <chrono>
 #include <stb_image.h>
 
-#ifdef ANDROID
-#include <SDL_system.h>
-#endif
-
 namespace gui {
 
 bool get_sys_apps_state(GuiState &gui) {
