@@ -85,18 +85,18 @@ std::string format_file_filter_extension_list(const std::vector<std::string> &fi
 static void call_dialog_java_function(const char* name, bool need_write){
     // These permissions are not needed on Android 11+
     if(SDL_GetAndroidSDKVersion() < 30) {
-        SDL_RequestAndroidPermission("android.permission.READ_EXTERNAL_STORAGE");
+        SDL_RequestAndroidPermission("android.permission.READ_EXTERNAL_STORAGE",nullptr, nullptr);
 
         if(need_write) {
-            SDL_RequestAndroidPermission("android.permission.WRITE_EXTERNAL_STORAGE");
+            SDL_RequestAndroidPermission("android.permission.WRITE_EXTERNAL_STORAGE", nullptr, nullptr);
         }
     }
 
     // retrieve the JNI environment.
-    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
 
     // retrieve the Java instance of the SDLActivity
-    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+    jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
 
     // find the Java class of the activity. It should be SDLActivity or a subclass of it.
     jclass clazz(env->GetObjectClass(activity));
