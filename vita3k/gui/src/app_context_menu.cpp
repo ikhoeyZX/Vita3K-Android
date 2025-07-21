@@ -67,9 +67,9 @@ void create_shortcut(const std::string_view game_path, const std::string_view ga
     env->DeleteLocalRef(clazz);
 
     if(result)
-        SDL_AndroidShowToast("Shortcut successfully created!", 0, -1, 0, 0);
+        SDL_ShowAndroidToast("Shortcut successfully created!", 0, -1, 0, 0);
     else
-        SDL_AndroidShowToast("Failed to create shortcut.", 1, -1, 0, 0);
+        SDL_ShowAndroidToast("Failed to create shortcut.", 1, -1, 0, 0);
 }
 #endif
 
