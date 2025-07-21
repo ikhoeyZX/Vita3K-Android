@@ -42,6 +42,7 @@
 #include <util/string_utils.h>
 
 #include <SDL3/SDL_video.h>
+#include <SDL3/SDL_audio.h>
 
 #include <algorithm>
 #include <pugixml.hpp>
