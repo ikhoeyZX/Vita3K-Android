@@ -202,12 +202,12 @@ bool ImGui_ImplSdl_ProcessEvent(ImGui_State *state, SDL_Event *event) {
         default: return false;
         }
 #ifdef ANDROID
-        if (event->type == SDL_EVENT_MOUSE_BUTTON_UP && mouse_button == 0 && !(state->MouseButtonsDown & 1))
+        if (event->type == SDL_EVENT_MOUSE_BUTTON_UP && mouse_button == 0 && !(state->mouse_buttons_down & 1))
             // handle the case when a long touch is turned into a right click
             return true;
 #endif
         io.AddMouseButtonEvent(mouse_button, (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN));
-        state->MouseButtonsDown = (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN) ? (state->MouseButtonsDown | (1 << mouse_button)) : (state->MouseButtonsDown & ~(1 << mouse_button));
+        state->mouse_buttons_down = (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN) ? (state->mouse_buttons_down | (1 << mouse_button)) : (state->mouse_buttons_down & ~(1 << mouse_button));
         return true;
     }
     case SDL_EVENT_TEXT_INPUT: {
@@ -358,7 +358,7 @@ static void ImGui_ImplSDL3_UpdateMouseData(ImGui_State *state) {
 
         // (Optional) Fallback to provide mouse position when focused (SDL_EVENT_MOUSE_MOTION already provides this when hovered or captured)
         const bool is_relative_mouse_mode = SDL_GetWindowRelativeMouseMode(state->window);
-        if (state->mouse_can_use_global_state && state->MouseButtonsDown == 0 && !is_relative_mouse_mode) {
+        if (state->mouse_can_use_global_state && state->mouse_buttons_down == 0 && !is_relative_mouse_mode) {
             // Single-viewport mode: mouse position in client window coordinates (io.MousePos is (0,0) when the mouse is on the upper-left corner of the app window)
             float mouse_x_global, mouse_y_global;
             int window_x, window_y;
@@ -439,7 +439,7 @@ static void ImGui_ImplSDL3_UpdateGamepads(ImGui_State *state) {
 static void ImGui_ImplSDL3_HandleTouch(ImGui_State *state) {
     ImGuiIO &io = ImGui::GetIO();
 
-    if (state->MouseButtonsDown & 1) {
+    if (state->mouse_buttons_down & 1) {
         // considered left click
         if (io.MouseDownDuration[0] >= 1.0f && !ImGui::IsMouseDragging(0)) {
             // we left click without dragging for more than 1sec, turn into right click
@@ -451,7 +451,7 @@ static void ImGui_ImplSDL3_HandleTouch(ImGui_State *state) {
             ImGui::SetActiveID(0, ImGui::GetCurrentContext()->CurrentWindow);
             io.AddMouseButtonEvent(1, true);
             io.AddMouseButtonEvent(1, false);
-            state->MouseButtonsDown &= ~1;
+            state->mouse_buttons_down &= ~1;
         }
     }
 }
@@ -473,7 +473,7 @@ IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
     io.DeltaTime = state->time > 0 ? (float)((double)(current_time - state->time) / frequency) : (1.0f / 60.0f);
     state->time = current_time;
 
-    if (state->pending_mouse_leave_frame && state->pending_mouse_leave_frame >= ImGui::GetFrameCount() && state->MouseButtonsDown == 0) {
+    if (state->pending_mouse_leave_frame && state->pending_mouse_leave_frame >= ImGui::GetFrameCount() && state->mouse_buttons_down == 0) {
         io.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
         state->pending_mouse_leave_frame = 0;
     }
