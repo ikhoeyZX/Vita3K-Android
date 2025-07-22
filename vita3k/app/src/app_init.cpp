@@ -48,12 +48,14 @@
 
 #ifdef ANDROID
 #include <boost/range/iterator_range.hpp>
+#include <SDL3/SDL_hints.h>
+#include <SDL3/SDL_system.h>
 #include <jni.h>
 
 #ifndef __arm__
 auto load_custom_driver(const std::string &driver_name) {
     libadreno_var val = {false, "", "", "", "", ""};
-    fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver_name / "/";
+    fs::path driver_path = fs::path(SDL_GetAndroidInternalStoragePath()) / "driver" / driver_name / "/";
 
     if (!fs::exists(driver_path)) {
         LOG_ERROR("Could not find driver {}", driver_name);
@@ -83,10 +85,10 @@ auto load_custom_driver(const std::string &driver_name) {
     // retrieve the app lib dir using jni
     {
         // retrieve the JNI environment.
-        JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+        JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
         env->PushLocalFrame(10);
         // retrieve the Java instance of the SDLActivity
-        jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+        jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
         // the following calls activity.getApplicationInfo().nativeLibraryDir
         jclass actibity_class = env->GetObjectClass(activity);
         jmethodID getApplicationInfo_method = env->GetMethodID(actibity_class, "getApplicationInfo", "()Landroid/content/pm/ApplicationInfo;");
@@ -159,7 +161,7 @@ void update_viewport(EmuEnvState &state) {
 
 void init_paths(Root &root_paths) {
 #ifdef ANDROID
-    fs::path storage_path = fs::path(SDL_AndroidGetExternalStoragePath()) / "";
+    fs::path storage_path = fs::path(SDL_GetAndroidExternalStoragePath()) / "";
     fs::path vita_storage_path = storage_path / "vita/";
 
     root_paths.set_base_path(storage_path);
