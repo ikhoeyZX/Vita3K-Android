@@ -23,6 +23,7 @@
 #include <dialog/state.h>
 #include <emuenv/state.h>
 #include <gui/functions.h>
+#include <motion/state.h>
 
 #include <SDL3/SDL_events.h>
 
