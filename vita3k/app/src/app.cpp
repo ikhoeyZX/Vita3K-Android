@@ -92,7 +92,7 @@ void add_custom_driver(EmuEnvState &emuenv) {
     // remove the .zip extension
     std::string driver = file_path.filename().stem().string();
 
-    fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver;
+    fs::path driver_path = fs::path(SDL_GetAndroidInternalStoragePath()) / "driver" / driver;
 
     if (fs::exists(driver_path)) {
         LOG_ERROR("Driver {} already exists", driver);
@@ -155,7 +155,7 @@ void add_custom_driver(EmuEnvState &emuenv) {
 }
 
 void remove_custom_driver(EmuEnvState &emuenv, const std::string &driver) {
-    fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver;
+    fs::path driver_path = fs::path(SDL_GetAndroidInternalStoragePath()) / "driver" / driver;
 
     if (!fs::exists(driver_path)) {
         LOG_ERROR("Path {} does not exist", driver_path.c_str());
