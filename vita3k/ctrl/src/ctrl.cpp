@@ -41,7 +41,7 @@ extern "C" {
 
 JNIEXPORT void JNICALL
 Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobject thiz) {
-    virtual_joystick_id = SDL_AddJoystick(SDL_JOYSTICK_TYPE_GAMECONTROLLER, 6, 18, 0);
+    virtual_joystick_id = SDL_AddJoystick(SDL_JOYSTICK_TYPE_GAMEPAD, 6, 18, 0);
     if (virtual_joystick_id == -1) {
         LOG_CRITICAL("Could not create overlay virtual controller");
         return;
@@ -119,10 +119,10 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
         if (state.controllers_num >= SCE_CTRL_MAX_WIRELESS_NUM) {
             break;
         }
-        const SDL_GUID guid = SDL_GetJoystickGUIDForID(gamepad_id);
+        const SDL_GUID guid = SDL_GetJoystickGUIDForID(gamepad_index);
 #ifdef ANDROID
             // for whatever reasons, fingerprint sensors are detected as controllers, filter them out
-            const char *controller_name = SDL_GetGamepadNameForID(joystick_index);
+            const char *controller_name = SDL_GetGamepadNameForID(gamepad_index);
             if (controller_name != nullptr && 
                 (std::string_view(controller_name).starts_with("uinput-")
                 || std::string_view(controller_name).starts_with("gf_")
@@ -130,7 +130,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 || std::string_view(controller_name).starts_with("sensor"))) // maybe other sensor are detected as controller
                 continue;
             
-            if(!SDL_IsJoystickVirtual(joystick_index)){
+            if(!SDL_IsJoystickVirtual(gamepad_index)){
                 if (virtual_joystick_id == -1) {
 
                 }else{
