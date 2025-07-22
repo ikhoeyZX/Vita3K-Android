@@ -41,10 +41,18 @@ extern "C" {
 
 JNIEXPORT void JNICALL
 Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobject thiz) {
-    virtual_joystick_id = SDL_AttachVirtualJoystick(SDL_JOYSTICK_TYPE_GAMEPAD);
+
+    SDL_VirtualJoystickDesc virtual_ctrl = {0};
+    virtual_ctrl.version = SDL_VIRTUAL_JOYSTICK_DESC_VERSION;
+    virtual_ctrl.type = SDL_JOYSTICK_TYPE_GAMEPAD;
+    virtual_ctrl.naxes = 6;    
+    virtual_ctrl.nbuttons = 18; 
+    virtual_ctrl.nhats = 0;     
+
+    virtual_joystick_id = SDL_AttachVirtualJoystick(&virtual_ctrl);
     if (virtual_joystick_id == -1) {
-        LOG_CRITICAL("Could not create overlay virtual controller");
-        return;
+       LOG_CRITICAL("Could not create overlay virtual controller");
+       return;
     }
 
     virtual_joystick = SDL_OpenJoystick(virtual_joystick_id);
