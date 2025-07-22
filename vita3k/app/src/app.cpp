@@ -30,6 +30,7 @@
 #ifdef ANDROID
 #include <host/dialog/filesystem.h>
 #include <miniz.h>
+#include <SDL3/SDL_system.h>
 #endif
 
 namespace app {
