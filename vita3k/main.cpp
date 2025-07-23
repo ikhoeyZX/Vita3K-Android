@@ -62,6 +62,10 @@
 #include <thread>
 
 #ifdef ANDROID
+#include <SDL3/SDL_platform.h>
+#include <SDL3/SDL_hints.h>
+#include <SDL3/SDL_system.h>
+
 #include <jni.h>
 #include <thread>
 #include <unistd.h>
@@ -69,10 +73,10 @@
 
 static void set_current_game_id(const std::string_view game_id) {
     // retrieve the JNI environment.
-    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
 
     // retrieve the Java instance of the SDLActivity
-    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+    jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
 
     // find the Java class of the activity. It should be SDLActivity or a subclass of it.
     jclass clazz(env->GetObjectClass(activity));
