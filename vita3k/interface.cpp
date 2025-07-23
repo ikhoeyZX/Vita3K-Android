@@ -258,8 +258,8 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
  //           LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
             LOG_CRITICAL("A Vitamin dump was detected, continue anyway");
 #ifdef ANDROID
-//            SDL_AndroidShowToast("Vitamin dumps are not supported!", 1, -1, 0, 0);
-              SDL_AndroidShowToast("Vitamin dumps are unsafe!\n do at your own risk", 1, -1, 0, 0);
+//            SDL_ShowAndroidToast("Vitamin dumps are not supported!", 1, -1, 0, 0);
+              SDL_ShowAndroidToast("Vitamin dumps are unsafe!\n do at your own risk", 1, -1, 0, 0);
 #endif
 //            content_path.clear();
 //            break;
@@ -574,13 +574,13 @@ static void take_screenshot(EmuEnvState &emuenv) {
         const auto tmp = fmt::format("Successfully saved screenshot to {:s}", save_file);
         LOG_INFO("{}", tmp);
 #ifdef ANDROID
-        SDL_AndroidShowToast("Screenshot saved at pref-path/shared/screenshots", 1, -1, 0, 0);
+        SDL_ShowAndroidToast("Screenshot saved at pref-path/shared/screenshots", 1, -1, 0, 0);
 #endif
     }else{
         const auto tmp = "Failed to save screenshot";
         LOG_INFO("{}", tmp);
 #ifdef ANDROID
-        SDL_AndroidShowToast(tmp, 1, -1, 0, 0);
+        SDL_ShowAndroidToast(tmp, 1, -1, 0, 0);
 #endif
     }
 }
@@ -715,7 +715,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             };
 
             // Get Sce Ctrl button from key
-            const auto sce_ctrl_btn = get_sce_ctrl_btn_from_scancode(event.key.scancode);
+            auto sce_ctrl_btn = get_sce_ctrl_btn_from_scancode(event.key.scancode);
 
             if (gui.is_capturing_keys && event.key.scancode) {
                 gui.is_key_capture_dropped = false;
@@ -733,7 +733,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 continue;
 
 #ifdef ANDROID
-            if(event.key.sym == SDLK_AC_BACK)
+            if(event.key.scancode == SDLK_AC_BACK)
                 sce_ctrl_btn = SCE_CTRL_PSBUTTON;
             if(gui.is_screenshot || event.key.scancode == emuenv.cfg.keyboard_take_screenshot){
                 take_screenshot(emuenv);
