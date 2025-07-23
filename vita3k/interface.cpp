@@ -765,14 +765,14 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 }
                 last_buttons.insert(sce_ctrl_btn);
                 ui_navigation(sce_ctrl_btn);
-
+            }
 #ifdef ANDROID
             if(!was_in_livearea && gui.vita_area.live_area_screen){
                 emuenv.display.imgui_render = true;
                 gui::set_controller_overlay_state(0);
             }
 #endif
-
+        
             break;
         }
         case SDL_EVENT_KEY_UP:
@@ -831,14 +831,14 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         case SDL_EVENT_DROP_FILE: {
             const auto tmp = "File dropped: is not supported in Android.";
             LOG_ERROR(tmp);
-            SDL_AndroidShowToast(tmp, 1, -1, 0, 0);
+            SDL_ShowAndroidToast(tmp, 1, -1, 0, 0);
         }
         }
     }
+    
 
     return true;
 }
-
 
 ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv) {
     if (load_app_impl(main_module_id, emuenv) != Success) {
