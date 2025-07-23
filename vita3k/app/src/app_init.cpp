@@ -447,10 +447,10 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     }
 
     if(state.cfg.native_screen){
-       SDL_DisplayMode DM;
-       SDL_GetCurrentDisplayMode(0, 0, &DM); // DisplayIndex, ModeIndex, size(WxH)
-       uint32_t width = DM.w;
-       uint32_t height = DM.h;
+       SDL_DisplayID displayID = SDL_GetPrimaryDisplay();
+       const SDL_DisplayMode* mode = SDL_GetCurrentDisplayMode(displayID);
+       uint32_t width = mode.w;
+       uint32_t height = mode.h;
        state.dpi_scale = static_cast<float>(width) / DEFAULT_RES_HEIGHT;
        LOG_INFO("Native screen size: H = {}, W = {}", height, width);
        LOG_INFO("DPI scale = {}", state.dpi_scale);
@@ -502,8 +502,8 @@ bool init(EmuEnvState &state, const Root &root_paths) {
             window_type = SDL_WINDOW_OPENGL;
         else
             window_type = SDL_WINDOW_VULKAN;
-            
-        state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type), SDL_DestroyWindow);
+
+        state.window = WindowPtr(SDL_CreateWindow(window_title, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type), SDL_DestroyWindow);
     }
         
     if (!state.window) {
@@ -518,7 +518,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
         }
         state.cfg.boot_fail = true;
         config::serialize_config(state.cfg, state.cfg.config_path);
-        SDL_Quit();
+        
         return false;
     }
 
