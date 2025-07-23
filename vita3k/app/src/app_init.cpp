@@ -49,6 +49,7 @@
 #ifdef ANDROID
 #include <boost/range/iterator_range.hpp>
 #include <SDL3/SDL_hints.h>
+#include <SDL3/SDL_messagebox.h>
 #include <SDL3/SDL_system.h>
 #include <jni.h>
 
@@ -410,7 +411,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
         break;
     }
     state.display.fullscreen = true;
-    window_type |= SDL_WINDOW_FULLSCREEN
+    window_type |= SDL_WINDOW_FULLSCREEN;
 #else
     if (state.cfg.fullscreen) {
         state.display.fullscreen = true;
