@@ -51,6 +51,7 @@
 
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_video.h>
+
 #include <fmt/chrono.h>
 #include <stb_image_write.h>
 
@@ -58,6 +59,9 @@
 
 #include <glad/glad.h>
 
+#ifdef ANDROID
+#include <SDL3/SDL_system.h>
+#endif
 
 #if USE_DISCORD
 #include <app/discord.h>
