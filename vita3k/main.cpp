@@ -290,7 +290,7 @@ int main(int argc, char *argv[]) {
     	
         const auto audio_mode = emuenv.cfg.audio_drv;
         if (audio_mode != "auto")
-            SDL_SetHint(SDL_HINT_AUDIODRIVER, audio_mode.c_str());
+            SDL_SetHint(SDL_HINT_AUDIO_DRIVER, audio_mode.c_str());
 
         if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC)) {
             auto fail_text = fmt::format("SDL initialization failed.\n Reason: {}", SDL_GetError());
