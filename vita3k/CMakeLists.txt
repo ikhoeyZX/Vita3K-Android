@@ -140,7 +140,7 @@ add_subdirectory(vkutil)
 
 if(ANDROID)
 	add_library(vita3k SHARED main.cpp interface.cpp performance.cpp)
-	target_link_libraries(vita3k PRIVATE sdl2 android)
+	target_link_libraries(vita3k PRIVATE SDL3::SDL3 android)
 
 	if(CMAKE_BUILD_TYPE STREQUAL "Release")
 		# we need to exclude all symbols except SDL
@@ -300,7 +300,7 @@ elseif(WIN32)
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../lang" "$<TARGET_FILE_DIR:vita3k>/lang"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/external/sdl/windows/lib/x64/SDL2.dll" "$<TARGET_FILE_DIR:vita3k>")
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/external/sdl/windows/lib/x64/SDL3.dll" "$<TARGET_FILE_DIR:vita3k>")
 	if(USE_VITA3K_UPDATE)
 		add_custom_command(
 		TARGET vita3k
