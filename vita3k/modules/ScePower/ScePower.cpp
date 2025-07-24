@@ -142,7 +142,7 @@ EXPORT(int, scePowerGetBatteryTemp) {
     // return UNIMPLEMENTED();
 }
 
-EXPORT(int, scePowerGetBatteryVolt) {
+EXPORT(float, scePowerGetBatteryVolt) {
     TRACY_FUNC(scePowerGetBatteryVolt);
     LOG_TRACE("scePowerGetBatteryVolt ALWAYS 4.2v");
     return 4.2f; // 100%
