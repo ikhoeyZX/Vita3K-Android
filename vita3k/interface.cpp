@@ -737,7 +737,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 continue;
 
 #ifdef ANDROID
-            if(event.key.scancode == SDLK_AC_BACK)
+            if(event.key.keysym.sym == SDLK_AC_BACK)
                 sce_ctrl_btn = SCE_CTRL_PSBUTTON;
             if(gui.is_screenshot || event.key.scancode == emuenv.cfg.keyboard_take_screenshot){
                 take_screenshot(emuenv);
