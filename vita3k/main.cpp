@@ -94,10 +94,10 @@ static void set_current_game_id(const std::string_view game_id) {
 
 static void run_execv(char *argv[], EmuEnvState &emuenv) {
     // retrieve the JNI environment.
-    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
 
     // retrieve the Java instance of the SDLActivity
-    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+    jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
 
     // find the Java class of the activity. It should be SDLActivity or a subclass of it.
     jclass clazz(env->GetObjectClass(activity));
@@ -268,23 +268,26 @@ int main(int argc, char *argv[]) {
         std::atexit(SDL_Quit);
 
         // Enable HIDAPI rumble for DS4/DS
-        SDL_SetHint(SDL_HINT_TV_REMOTE_AS_JOYSTICK, "0");    	
-    	SDL_SetHint(SDL_HINT_JOYSTICK_ROG_CHAKRAM, "1");
-    	SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI, "1");
-    	SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_STEAM, "1");
-    	SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_WII, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS3, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5, "1");
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE, "1");
-        SDL_SetHint(SDL_HINT_JOYSTICK_ENHANCED_REPORTS, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_ENHANCED_REPORTS, "auto");
         
         // Enable Switch controller
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS, "0");
 
+        // other controller
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_8BITDO, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_STEAM_HORI, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_STADIA, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SHIELD, "1");
+        SDL_SetHint(SDL_HINT_TV_REMOTE_AS_JOYSTICK, "0");    	
+    	SDL_SetHint(SDL_HINT_JOYSTICK_ROG_CHAKRAM, "1");
+    	SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI, "1");
+    	SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_STEAM, "1");
+    	
         const auto audio_mode = emuenv.cfg.audio_drv;
         if (audio_mode != "auto")
             SDL_SetHint(SDL_HINT_AUDIODRIVER, audio_mode.c_str());
@@ -304,7 +307,7 @@ int main(int argc, char *argv[]) {
     LOG_INFO("CPU: {} | {} Threads | {} GHz", CppCommon::CPU::Architecture(), CppCommon::CPU::LogicalCores(), static_cast<float>(CppCommon::CPU::ClockSpeed()) / 1000.f);
 #else
     LOG_INFO("System OS: {}, API: {}", SDL_GetPlatform(), SDL_GetAndroidSDKVersion());
-    LOG_INFO("Total of CPU Cores: {}", SDL_GetCPUCount());
+    LOG_INFO("Total of CPU Cores: {}", SDL_GetNumLogicalCPUCores());
 #endif
     LOG_INFO("Available RAM memory: {} MiB", SDL_GetSystemRAM());
     LOG_INFO("Audio driver: {}", SDL_GetCurrentAudioDriver());
