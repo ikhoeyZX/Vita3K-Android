@@ -86,7 +86,7 @@ public class Emulator extends SDLActivity
         return mSurface;
     }
 
-    Override
+    @Override
     public int writeReport(byte[] report, boolean feature) {
        // no need
        return 0;
