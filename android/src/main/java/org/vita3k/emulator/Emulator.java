@@ -47,6 +47,12 @@ public class Emulator extends SDLActivity
         return mSurface.getmOverlay();
     }
 
+    @Override
+    protected void setupLayout(ViewGroup layout){
+        super.setupLayout(layout);
+        layout.addView(getmOverlay());
+    }
+    
     @Keep
     public void setCurrentGameId(String gameId){
         currentGameId = gameId;
