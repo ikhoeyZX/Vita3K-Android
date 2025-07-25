@@ -86,6 +86,24 @@ public class Emulator extends SDLActivity
         return mSurface;
     }
 
+    Override
+    public int writeReport(byte[] report, boolean feature) {
+       // no need
+       return 0;
+    }
+
+    @Override
+    public int readReport(byte[] report, boolean feature) {
+       // no need
+       return 0;
+    }
+
+    @Override
+    public int getFeatureReport(byte[] report) {
+        // no need
+       return 0;
+    }
+    
     private final String APP_RESTART_PARAMETERS = "AppStartParameters";
 
     @Override
@@ -316,24 +334,6 @@ public class Emulator extends SDLActivity
         // so the default one is also landscape if and only if the rotation is 0 or 180
         int rotation = getWindowManager().getDefaultDisplay().getRotation();
         return rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180;
-    }
-
-    @Keep
-    public int writeReport(byte[] report, boolean feature) {
-       // no need
-       return 0;
-    }
-
-    @Keep
-    public int readReport(byte[] report, boolean feature) {
-       // no need
-       return 0;
-    }
-
-    @Keep
-    public int getFeatureReport(byte[] report) {
-        // no need
-       return 0;
     }
     
     public native void filedialogReturn(String result_path, int result_fd);
