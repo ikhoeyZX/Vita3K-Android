@@ -54,6 +54,8 @@
 #include <tracy/Tracy.hpp>
 #endif
 
+#include <SDL3/SDL.h>
+
 #include <SDL3/SDL_cpuinfo.h>
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_init.h>
