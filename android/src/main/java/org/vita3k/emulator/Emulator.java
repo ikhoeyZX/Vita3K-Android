@@ -61,7 +61,7 @@ public class Emulator extends SDLActivity
     @Override
     protected String[] getLibraries() {
         return new String[] {
-                "SDL3",
+                // "SDL3",
                 // "SDL3_audio",
                 // "SDL3_image",
                 // "SDL3_mixer",
