@@ -79,9 +79,135 @@ public class Emulator extends SDLActivity
     }
 
     @Override
-    protected void setupLayout(ViewGroup layout){
-        super.setupLayout(layout);
-        layout.addView(getmOverlay());
+    protected void onCreate(Bundle savedInstanceState) {
+        Log.v(TAG, "Manufacturer: " + Build.MANUFACTURER);
+        Log.v(TAG, "Device: " + Build.DEVICE);
+        Log.v(TAG, "Model: " + Build.MODEL);
+        Log.v(TAG, "onCreate()");
+        super.onCreate(savedInstanceState);
+
+
+        /* Control activity re-creation */
+        if (mSDLMainFinished || mActivityCreated) {
+              boolean allow_recreate = SDLActivity.nativeAllowRecreateActivity();
+              if (mSDLMainFinished) {
+                  Log.v(TAG, "SDL main() finished");
+              }
+              if (allow_recreate) {
+                  Log.v(TAG, "activity re-created");
+              } else {
+                  Log.v(TAG, "activity finished");
+                  System.exit(0);
+                  return;
+              }
+        }
+
+        mActivityCreated = true;
+
+        try {
+            Thread.currentThread().setName("SDLActivity");
+        } catch (Exception e) {
+            Log.v(TAG, "modify thread properties failed " + e.toString());
+        }
+
+        // Load shared libraries
+        String errorMsgBrokenLib = "";
+        try {
+            loadLibraries();
+            mBrokenLibraries = false; /* success */
+        } catch(UnsatisfiedLinkError e) {
+            System.err.println(e.getMessage());
+            mBrokenLibraries = true;
+            errorMsgBrokenLib = e.getMessage();
+        } catch(Exception e) {
+            System.err.println(e.getMessage());
+            mBrokenLibraries = true;
+            errorMsgBrokenLib = e.getMessage();
+        }
+
+        if (mBrokenLibraries) {
+            mSingleton = this;
+            AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(this);
+            dlgAlert.setMessage("An error occurred while trying to start the application. Please try again and/or reinstall."
+                  + System.getProperty("line.separator")
+                  + System.getProperty("line.separator")
+                  + "Error: " + errorMsgBrokenLib);
+            dlgAlert.setTitle("SDL Error");
+            dlgAlert.setPositiveButton("Exit",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog,int id) {
+                        // if this button is clicked, close current activity
+                        SDLActivity.mSingleton.finish();
+                    }
+                });
+           dlgAlert.setCancelable(false);
+           dlgAlert.create().show();
+
+           return;
+        }
+
+
+        /* Control activity re-creation */
+        /* Robustness: check that the native code is run for the first time.
+         * (Maybe Activity was reset, but not the native code.) */
+        {
+            int run_count = SDLActivity.nativeCheckSDLThreadCounter(); /* get and increment a native counter */
+            if (run_count != 0) {
+                boolean allow_recreate = SDLActivity.nativeAllowRecreateActivity();
+                if (allow_recreate) {
+                    Log.v(TAG, "activity re-created // run_count: " + run_count);
+                } else {
+                    Log.v(TAG, "activity finished // run_count: " + run_count);
+                    System.exit(0);
+                    return;
+                }
+            }
+        }
+
+        // Set up JNI
+        SDL.setupJNI();
+
+        // Initialize state
+        SDL.initialize();
+
+        // So we can call stuff from static callbacks
+        mSingleton = this;
+        SDL.setContext(this);
+
+        mClipboardHandler = new SDLClipboardHandler();
+
+        mHIDDeviceManager = HIDDeviceManager.acquire(this);
+
+        // Set up the surface
+        mSurface = createSDLSurface(this);
+
+        mLayout = new RelativeLayout(this);
+        mLayout.addView(mSurface);
+
+        // Get our current screen orientation and pass it down.
+        SDLActivity.nativeSetNaturalOrientation(SDLActivity.getNaturalOrientation());
+        mCurrentRotation = SDLActivity.getCurrentRotation();
+        SDLActivity.onNativeRotationChanged(mCurrentRotation);
+
+        mCurrentLocale = getContext().getResources().getConfiguration().getLocales().get(0);
+            
+        switch (getContext().getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) {
+        case Configuration.UI_MODE_NIGHT_NO:
+            SDLActivity.onNativeDarkModeChanged(false);
+            break;
+        case Configuration.UI_MODE_NIGHT_YES:
+            SDLActivity.onNativeDarkModeChanged(true);
+            break;
+        }
+
+        setContentView(mLayout);
+
+        setWindowStyle(false);
+
+        getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(this);
+
+        }
     }
     
     private final String APP_RESTART_PARAMETERS = "AppStartParameters";
@@ -316,5 +442,23 @@ public class Emulator extends SDLActivity
         return rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180;
     }
 
+@Override
+public int writeReport(byte[] report, boolean feature) {
+    // no need
+    return 0;
+}
+
+@Override
+public int readReport(byte[] report, boolean feature) {
+    // no need
+    return 0;
+}
+
+@Override
+public int getFeatureReport(byte[] report) {
+    // no need
+    return 0;
+}
+    
     public native void filedialogReturn(String result_path, int result_fd);
 }
