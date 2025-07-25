@@ -16,6 +16,9 @@ import android.system.Os;
 import android.view.Surface;
 import android.view.ViewGroup;
 
+import android.widget.RelativeLayout;
+import android.content.res.Configuration;
+
 import androidx.annotation.Keep;
 import androidx.core.content.pm.ShortcutInfoCompat;
 import androidx.core.content.pm.ShortcutManagerCompat;
@@ -441,23 +444,23 @@ public class Emulator extends SDLActivity
         return rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180;
     }
 
-@Override
-public int writeReport(byte[] report, boolean feature) {
-    // no need
-    return 0;
-}
+    @Keep
+    public int writeReport(byte[] report, boolean feature) {
+       // no need
+       return 0;
+    }
 
-@Override
-public int readReport(byte[] report, boolean feature) {
-    // no need
-    return 0;
-}
+    @Keep
+    public int readReport(byte[] report, boolean feature) {
+       // no need
+       return 0;
+    }
 
-@Override
-public int getFeatureReport(byte[] report) {
-    // no need
-    return 0;
-}
+    @Keep
+    public int getFeatureReport(byte[] report) {
+        // no need
+       return 0;
+    }
     
     public native void filedialogReturn(String result_path, int result_fd);
 }
