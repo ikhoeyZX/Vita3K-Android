@@ -16,9 +16,6 @@ import android.system.Os;
 import android.view.Surface;
 import android.view.ViewGroup;
 
-import android.widget.RelativeLayout;
-import android.content.res.Configuration;
-
 import androidx.annotation.Keep;
 import androidx.core.content.pm.ShortcutInfoCompat;
 import androidx.core.content.pm.ShortcutManagerCompat;
@@ -47,12 +44,6 @@ public class Emulator extends SDLActivity
         return mSurface.getmOverlay();
     }
 
-    @Override
-    protected void setupLayout(ViewGroup layout){
-        super.setupLayout(layout);
-        layout.addView(getmOverlay());
-    }
-    
     @Keep
     public void setCurrentGameId(String gameId){
         currentGameId = gameId;
@@ -62,7 +53,7 @@ public class Emulator extends SDLActivity
      * This method is called by SDL before loading the native shared libraries.
      * It can be overridden to provide names of shared libraries to be loaded.
      * The default implementation returns the defaults. It never returns null.
-     * An array returned by a new implementation must at least contain "SDL2".
+     * An array returned by a new implementation must at least contain "SDL3".
      * Also keep in mind that the order the libraries are loaded may matter.
      *
      * @return names of shared libraries to be loaded (e.g. "SDL2", "main").
@@ -70,12 +61,12 @@ public class Emulator extends SDLActivity
     @Override
     protected String[] getLibraries() {
         return new String[] {
-                // "SDL2",
-                // "SDL2_audio",
-                // "SDL2_image",
-                // "SDL2_mixer",
-                // "SDL2_net",
-                // "SDL2_ttf",
+                // "SDL3",
+                // "SDL3_audio",
+                // "SDL3_image",
+                // "SDL3_mixer",
+                // "SDL3_net",
+                // "SDL3_ttf",
                 "Vita3K"
         };
     }
@@ -85,6 +76,12 @@ public class Emulator extends SDLActivity
         // Create the input overlay in the same time
         mSurface = new EmuSurface(context);
         return mSurface;
+    }
+
+    @Override
+    protected void setupLayout(ViewGroup layout){
+        super.setupLayout(layout);
+        layout.addView(getmOverlay());
     }
     
     private final String APP_RESTART_PARAMETERS = "AppStartParameters";
@@ -318,6 +315,6 @@ public class Emulator extends SDLActivity
         int rotation = getWindowManager().getDefaultDisplay().getRotation();
         return rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180;
     }
-    
+
     public native void filedialogReturn(String result_path, int result_fd);
 }
