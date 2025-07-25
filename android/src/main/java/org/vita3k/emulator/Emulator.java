@@ -207,7 +207,6 @@ public class Emulator extends SDLActivity
 
         getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(this);
 
-        }
     }
     
     private final String APP_RESTART_PARAMETERS = "AppStartParameters";
