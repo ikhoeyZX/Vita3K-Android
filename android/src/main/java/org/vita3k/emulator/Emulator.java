@@ -34,11 +34,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 
-import org.libsdl.app.SDL;
-import org.libsdl.app.SDLClipboardHandler;
-import org.libsdl.app.HIDDeviceManager;
-import org.libsdl.app.SDLSurface;
-
 import org.libsdl.app.SDLActivity;
 import org.libsdl.app.SDLSurface;
 import org.vita3k.emulator.overlay.InputOverlay;
@@ -84,24 +79,6 @@ public class Emulator extends SDLActivity
         // Create the input overlay in the same time
         mSurface = new EmuSurface(context);
         return mSurface;
-    }
-
-    @Override
-    public int writeReport(byte[] report, boolean feature) {
-       // no need
-       return 0;
-    }
-
-    @Override
-    public int readReport(byte[] report, boolean feature) {
-       // no need
-       return 0;
-    }
-
-    @Override
-    public int getFeatureReport(byte[] report) {
-        // no need
-       return 0;
     }
     
     private final String APP_RESTART_PARAMETERS = "AppStartParameters";
