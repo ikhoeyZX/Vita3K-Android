@@ -34,6 +34,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 
+import org.libsdl.app.SDL;
+import org.libsdl.app.SDLClipboardHandler;
+import org.libsdl.app.HIDDeviceManager;
+import org.libsdl.app.SDLSurface;
+
 import org.libsdl.app.SDLActivity;
 import org.libsdl.app.SDLSurface;
 import org.vita3k.emulator.overlay.InputOverlay;
