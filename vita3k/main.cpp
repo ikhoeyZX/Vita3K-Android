@@ -55,6 +55,7 @@
 #endif
 
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 
 #include <SDL3/SDL_cpuinfo.h>
 #include <SDL3/SDL_hints.h>
@@ -152,6 +153,7 @@ static void run_execv(char *argv[], EmuEnvState &emuenv) {
 #endif
 
 int main(int argc, char *argv[]) {
+    SDL_SetMainReady();
 #ifdef TRACY_ENABLE
     ZoneScoped; // Tracy - Track main function scope
 #endif
