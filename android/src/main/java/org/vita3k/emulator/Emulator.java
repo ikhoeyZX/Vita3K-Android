@@ -49,6 +49,10 @@ public class Emulator extends SDLActivity
         currentGameId = gameId;
     }
 
+    @Override
+    protected String getMainFunction() {
+        return "main";
+    }
     /**
      * This method is called by SDL before loading the native shared libraries.
      * It can be overridden to provide names of shared libraries to be loaded.
