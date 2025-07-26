@@ -37,6 +37,7 @@ import org.vita3k.emulator.overlay.InputOverlay;
 
 public class Emulator extends SDLActivity
 {
+/*
     private String currentGameId = "";
     private EmuSurface mSurface;
 
@@ -53,6 +54,7 @@ public class Emulator extends SDLActivity
     protected String getMainFunction() {
         return "main";
     }
+*/
     /**
      * This method is called by SDL before loading the native shared libraries.
      * It can be overridden to provide names of shared libraries to be loaded.
@@ -74,7 +76,7 @@ public class Emulator extends SDLActivity
                 "Vita3K"
         };
     }
-
+/*
     @Override
     protected SDLSurface createSDLSurface(Context context) {
         // Create the input overlay in the same time
@@ -146,10 +148,13 @@ public class Emulator extends SDLActivity
     final int FOLDER_DIALOG_CODE = 546;
     final int STORAGE_MANAGER_DIALOG_CODE = 547;
 
+
     @Keep
     public void showFileDialog() {
         Intent intent = new Intent()
-                .setType("*/*")
+*/
+//                .setType("*/*")
+/*
                 .setAction(Intent.ACTION_GET_CONTENT)
                 .putExtra(Intent.EXTRA_LOCAL_ONLY, true);
 
@@ -321,4 +326,5 @@ public class Emulator extends SDLActivity
     }
 
     public native void filedialogReturn(String result_path, int result_fd);
+*/
 }
