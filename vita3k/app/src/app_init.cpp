@@ -438,12 +438,12 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     
     if(SDL_GetAndroidSDKVersion() >= 30 && !state.cfg.native_screen) {
         window_type |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
-        float dpi = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay()));
-        if(dpi == 0.0f){
+        float dpi = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+        if(dpi == 0.0f)
            LOG_ERROR("Failed to scaling dpi");
-        }else{
+        else
            state.dpi_scale = dpi;
-        }
+        
     }
 
     if(state.cfg.native_screen){
