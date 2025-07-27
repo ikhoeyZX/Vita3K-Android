@@ -300,13 +300,15 @@ int main(int argc, char *argv[]) {
         if (audio_mode != "auto")
             SDL_SetHint(SDL_HINT_AUDIO_DRIVER, audio_mode.c_str());
 
+        
         if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC)) {
             auto fail_text = fmt::format("SDL initialization failed.\n Reason: {}", SDL_GetError());
             LOG_ERROR("{}", fail_text);
             app::error_dialog(fail_text);
             return SDLInitFailed;
         }
-        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+        LOG_TRACE("Finished SDL_Init");
+    //    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     }
 
     LOG_INFO("{}", window_title);
