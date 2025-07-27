@@ -83,7 +83,9 @@ std::vector<uint8_t> read_asset_raw(const fs::path &path) {
     Sint64 size_read = SDL_GetIOSize(file);
     std::vector<uint8_t> raw_data(size_read);
 
-    if (SDL_ReadIO(file, raw_data.data(), size_read) != 1) {
+    if(size_read > 0)
+        SDL_ReadIO(file, raw_data.data(), size_read)
+    else
         LOG_ERROR("Could not read asset file {}", path.string());
         return {};
     }
