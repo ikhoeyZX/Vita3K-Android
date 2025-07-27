@@ -492,7 +492,6 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     }
 #endif // ifdef android
 
-    LOG_TRACE("create sdl3 window");
     state.window = WindowPtr(SDL_CreateWindow(window_title, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
     // state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
     if (!state.window) {
@@ -523,12 +522,12 @@ bool init(EmuEnvState &state, const Root &root_paths) {
         return false;
     }
 
-    LOG_TRACE("create window OK");
     // initialize the renderer first because we need to know if we need a page table
     if (!state.cfg.console) {
         if (renderer::init(state.window.get(), state.renderer, state.backend_renderer, state.cfg, root_paths, state.libadreno)) {
             update_viewport(state);
         } else {
+            LOG_TRACE("get hw render");
             switch (state.backend_renderer) {
             case renderer::Backend::OpenGL:
 #ifdef ANDROID
@@ -546,12 +545,15 @@ bool init(EmuEnvState &state, const Root &root_paths) {
                 error_dialog(fmt::format("Unknown backend renderer: {}.", state.cfg.backend_renderer));
                 break;
             }
+            LOG_TRACE("get hw render ok");
             return false;
         }
     }
 
 #ifdef ANDROID
+    LOG_TRACE("get android custom driver");
     state.renderer->current_custom_driver = state.cfg.current_config.custom_driver_name;
+    LOG_TRACE("get android custom driver OK");
 #endif
 
     if (!init(state.io, state.cache_path, state.log_path, state.pref_path, state.cfg.console)) {
@@ -559,8 +561,10 @@ bool init(EmuEnvState &state, const Root &root_paths) {
         return false;
     }
 
+    LOG_TRACE("init motion");
     state.motion.init();
-
+    LOG_TRACE("init motion OK");
+    
 #if USE_DISCORD
     if (discordrpc::init() && state.cfg.discord_rich_presence) {
         discordrpc::update_presence();
@@ -572,10 +576,12 @@ bool init(EmuEnvState &state, const Root &root_paths) {
         config::serialize_config(state.cfg, state.cfg.config_path);
     }
 #endif
+    LOG_TRACE("init finished");
     return true;
 }
 
 bool late_init(EmuEnvState &state) {
+    LOG_TRACE("begin late_init");
     // note: mem is not initialized yet but that's not an issue
     // the renderer is not using it yet, just storing it for later uses
     state.renderer->late_init(state.cfg, state.app_path, state.mem);
@@ -605,6 +611,7 @@ bool late_init(EmuEnvState &state) {
         return false;
     }
 
+    LOG_TRACE("end late_init");
     return true;
 }
 
