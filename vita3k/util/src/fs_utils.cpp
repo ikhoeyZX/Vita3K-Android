@@ -69,8 +69,15 @@ std::vector<uint8_t> read_asset_raw(const fs::path &path) {
     std::string file_path = path.string().substr(base_path_size);
     SDL_IOStream *file = SDL_IOFromFile(file_path.c_str(), "r");
     if (file == nullptr) {
-        LOG_ERROR("Could not open asset file {}", path.string());
-        return {};
+        LOG_ERROR("Could not open external asset file {}", path.string());
+        SDL_CloseIO(file);
+        base_path_size = strlen(SDL_GetAndroidInternalStoragePath()) + 1;
+        file_path = path.string().substr(base_path_size);
+        *file = SDL_IOFromFile(file_path.c_str(), "r");
+        if (file == nullptr) {
+           LOG_ERROR("Could not open internal asset file {}", path.string());
+           return {};
+        }
     }
 
     Sint64 size_read = SDL_GetIOSize(file);
