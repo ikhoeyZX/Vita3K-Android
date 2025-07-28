@@ -237,13 +237,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
     protected static SDLGenericMotionListener_API14 getMotionListener() {
         if (mMotionListener == null) {
-            if (Build.VERSION.SDK_INT >= 26 /* Android 8.0 (O) */) {
-                mMotionListener = new SDLGenericMotionListener_API26();
-            } else if (Build.VERSION.SDK_INT >= 24 /* Android 7.0 (N) */) {
-                mMotionListener = new SDLGenericMotionListener_API24();
-            } else {
-                mMotionListener = new SDLGenericMotionListener_API14();
-            }
+            mMotionListener = new SDLGenericMotionListener_API26();
         }
 
         return mMotionListener;
@@ -476,14 +470,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         mCurrentRotation = SDLActivity.getCurrentRotation();
         SDLActivity.onNativeRotationChanged(mCurrentRotation);
 
-        try {
-            if (Build.VERSION.SDK_INT < 24 /* Android 7.0 (N) */) {
-                mCurrentLocale = getContext().getResources().getConfiguration().locale;
-            } else {
-                mCurrentLocale = getContext().getResources().getConfiguration().getLocales().get(0);
-            }
-        } catch(Exception ignored) {
-        }
+        mCurrentLocale = getContext().getResources().getConfiguration().getLocales().get(0);
 
         switch (getContext().getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) {
         case Configuration.UI_MODE_NIGHT_NO:
@@ -920,7 +907,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                 }
                 break;
             case COMMAND_CHANGE_WINDOW_STYLE:
-                if (Build.VERSION.SDK_INT >= 19 /* Android 4.4 (KITKAT) */) {
                     if (context instanceof Activity) {
                         Window window = ((Activity) context).getWindow();
                         if (window != null) {
@@ -950,10 +936,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                                 SDLActivity.onNativeInsetsChanged(0, 0, 0, 0);
                             }
                         }
-                    } else {
-                        Log.e(TAG, "error handling message, getContext() returned no Activity");
                     }
-                }
                 break;
             case COMMAND_TEXTEDIT_HIDE:
                 if (mTextEdit != null) {
@@ -1002,7 +985,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         msg.obj = data;
         boolean result = commandHandler.sendMessage(msg);
 
-        if (Build.VERSION.SDK_INT >= 19 /* Android 4.4 (KITKAT) */) {
             if (command == COMMAND_CHANGE_WINDOW_STYLE) {
                 // Ensure we don't return until the resize has actually happened,
                 // or 500ms have passed.
@@ -1052,7 +1034,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                     }
                 }
             }
-        }
 
         return result;
     }
@@ -1246,9 +1227,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         // thus SDK version 27.  If we are in DeX mode and not API 27 or higher, as a result,
         // we should stick to relative mode.
         //
-        if (Build.VERSION.SDK_INT < 27 /* Android 8.1 (O_MR1) */ && isDeXMode()) {
-            return false;
-        }
+        // if (Build.VERSION.SDK_INT < 27 /* Android 8.1 (O_MR1) */ && isDeXMode()) {
+        //    return false;
+        // }
 
         return SDLActivity.getMotionListener().supportsRelativeMouse();
     }
@@ -1349,9 +1330,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      * This method is called by SDL using JNI.
      */
     public static boolean isDeXMode() {
-        if (Build.VERSION.SDK_INT < 24 /* Android 7.0 (N) */) {
-            return false;
-        }
         try {
             final Configuration config = getContext().getResources().getConfiguration();
             final Class<?> configClass = config.getClass();
@@ -1775,7 +1753,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     private final Runnable rehideSystemUi = new Runnable() {
         @Override
         public void run() {
-            if (Build.VERSION.SDK_INT >= 19 /* Android 4.4 (KITKAT) */) {
                 int flags = View.SYSTEM_UI_FLAG_FULLSCREEN |
                         View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                         View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
@@ -1784,7 +1761,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                         View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.INVISIBLE;
 
                 SDLActivity.this.getWindow().getDecorView().setSystemUiVisibility(flags);
-            }
         }
     };
 
@@ -1828,15 +1804,8 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         Bitmap bitmap = Bitmap.createBitmap(colors, width, height, Bitmap.Config.ARGB_8888);
         ++mLastCursorID;
 
-        if (Build.VERSION.SDK_INT >= 24 /* Android 7.0 (N) */) {
-            try {
-                mCursors.put(mLastCursorID, PointerIcon.create(bitmap, hotSpotX, hotSpotY));
-            } catch (Exception e) {
-                return 0;
-            }
-        } else {
-            return 0;
-        }
+        mCursors.put(mLastCursorID, PointerIcon.create(bitmap, hotSpotX, hotSpotY));
+            
         return mLastCursorID;
     }
 
@@ -1844,12 +1813,8 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      * This method is called by SDL using JNI.
      */
     public static void destroyCustomCursor(int cursorID) {
-        if (Build.VERSION.SDK_INT >= 24 /* Android 7.0 (N) */) {
-            try {
-                mCursors.remove(cursorID);
-            } catch (Exception e) {
-            }
-        }
+        mCursors.remove(cursorID);
+            
         return;
     }
 
@@ -1857,16 +1822,8 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      * This method is called by SDL using JNI.
      */
     public static boolean setCustomCursor(int cursorID) {
-
-        if (Build.VERSION.SDK_INT >= 24 /* Android 7.0 (N) */) {
-            try {
-                mSurface.setPointerIcon(mCursors.get(cursorID));
-            } catch (Exception e) {
-                return false;
-            }
-        } else {
-            return false;
-        }
+        mSurface.setPointerIcon(mCursors.get(cursorID));
+            
         return true;
     }
 
@@ -1937,12 +1894,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             cursor_type = 1014; //PointerIcon.TYPE_HORIZONTAL_DOUBLE_ARROW;
             break;
         }
-        if (Build.VERSION.SDK_INT >= 24 /* Android 7.0 (N) */) {
-            try {
-                mSurface.setPointerIcon(PointerIcon.getSystemIcon(SDL.getContext(), cursor_type));
-            } catch (Exception e) {
-                return false;
-            }
+        
+        mSurface.setPointerIcon(PointerIcon.getSystemIcon(SDL.getContext(), cursor_type));
+            
         }
         return true;
     }
@@ -1951,11 +1905,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      * This method is called by SDL using JNI.
      */
     public static void requestPermission(String permission, int requestCode) {
-        if (Build.VERSION.SDK_INT < 23 /* Android 6.0 (M) */) {
-            nativePermissionResult(requestCode, true);
-            return;
-        }
-
+        
         Activity activity = (Activity)getContext();
         if (activity.checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
             activity.requestPermissions(new String[]{permission}, requestCode);
@@ -1980,11 +1930,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             i.setData(Uri.parse(url));
 
             int flags = Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
-            if (Build.VERSION.SDK_INT >= 21 /* Android 5.0 (LOLLIPOP) */) {
-                flags |= Intent.FLAG_ACTIVITY_NEW_DOCUMENT;
-            } else {
-                flags |= Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET;
-            }
+            
+            flags |= Intent.FLAG_ACTIVITY_NEW_DOCUMENT;
+            
             i.addFlags(flags);
 
             mSingleton.startActivity(i);
@@ -2131,15 +2079,13 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      */
     public static String getPreferredLocales() {
         String result = "";
-        if (Build.VERSION.SDK_INT >= 24 /* Android 7 (N) */) {
+        
             LocaleList locales = LocaleList.getAdjustedDefault();
             for (int i = 0; i < locales.size(); i++) {
                 if (i != 0) result += ",";
                 result += formatLocale(locales.get(i));
             }
-        } else if (mCurrentLocale != null) {
-            result = formatLocale(mCurrentLocale);
-        }
+        
         return result;
     }
 
