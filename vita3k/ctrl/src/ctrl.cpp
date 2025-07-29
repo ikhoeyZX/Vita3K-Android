@@ -48,8 +48,8 @@ Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobj
     virtual_ctrl.naxes = 6;    
     virtual_ctrl.nbuttons = 18; 
     virtual_ctrl.nhats = 0;
-    virtual_ctrl.nsensors = 2;
-    virtual_ctrl.sensors = &virtual_sensor;
+  //  virtual_ctrl.nsensors = 2;
+  //  virtual_ctrl.sensors = &virtual_sensor;
 
     virtual_joystick_id = SDL_AttachVirtualJoystick(&virtual_ctrl);
     if (virtual_joystick_id == 0) {
@@ -145,7 +145,9 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 || std::string_view(controller_name).ends_with("sensor") 
                 || std::string_view(controller_name).starts_with("sensor"))) // maybe other sensor are detected as controller
                 continue;
-            
+
+            LOG_INFO("Gamepad index id : {}", gamepad_index);
+            LOG_INFO("controller name : {}", controller_name);
             if(!SDL_IsJoystickVirtual(gamepad_index)){
                 if (virtual_joystick_id == 0) {
 
@@ -157,6 +159,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 }
                 state.is_virtual_joystick = false;
             }else{
+                LOG_INFO("Virtual joystick detected!");
                 state.is_virtual_joystick = true;
             }
 #endif
