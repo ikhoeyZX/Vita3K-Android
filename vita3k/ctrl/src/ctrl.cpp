@@ -49,7 +49,7 @@ Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobj
     virtual_ctrl.nbuttons = 18; 
     virtual_ctrl.nhats = 0;
     virtual_ctrl.nsensors = 2;
-    virtual_ctrl.sensors = &virtual_sensor
+    virtual_ctrl.sensors = &virtual_sensor;
 
     virtual_joystick_id = SDL_AttachVirtualJoystick(&virtual_ctrl);
     if (virtual_joystick_id == 0) {
