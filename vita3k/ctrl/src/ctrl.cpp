@@ -34,7 +34,7 @@
 #include <SDL3/SDL_joystick.h>
 #include <jni.h>
 
-static int virtual_joystick_id = -1;
+static int virtual_joystick_id = 0;
 static SDL_Joystick *virtual_joystick = nullptr;
 
 extern "C" {
@@ -42,14 +42,17 @@ extern "C" {
 JNIEXPORT void JNICALL
 Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobject thiz) {
 
-    SDL_VirtualJoystickDesc virtual_ctrl = {0};
+    SDL_VirtualJoystickDesc virtual_ctrl;
+    SDL_VirtualJoystickSensorDesc virtual_sensor = { (SDL_SENSOR_ACCEL, SDL_SENSOR_GYRO), (0.0f, 0.0f) };
     virtual_ctrl.type = SDL_JOYSTICK_TYPE_GAMEPAD;
     virtual_ctrl.naxes = 6;    
     virtual_ctrl.nbuttons = 18; 
-    virtual_ctrl.nhats = 0;     
+    virtual_ctrl.nhats = 0;
+    virtual_ctrl.nsensors = 2;
+    virtual_ctrl.sensors = &virtual_sensor
 
     virtual_joystick_id = SDL_AttachVirtualJoystick(&virtual_ctrl);
-    if (virtual_joystick_id == -1) {
+    if (virtual_joystick_id == 0) {
        LOG_CRITICAL("Could not create overlay virtual controller");
        return;
     }
@@ -57,6 +60,9 @@ Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobj
     virtual_joystick = SDL_OpenJoystick(virtual_joystick_id);
     if (virtual_joystick == nullptr)
         LOG_CRITICAL("Could not create virtual joystick");
+
+    LOG_INFO("Virtual joystick created at id: {}", virtual_joystick_id);
+
 }
 
 JNIEXPORT void JNICALL
@@ -64,12 +70,14 @@ Java_org_vita3k_emulator_overlay_InputOverlay_detachController(JNIEnv *env, jobj
     SDL_CloseJoystick(virtual_joystick);
     SDL_DetachVirtualJoystick(virtual_joystick_id);
     virtual_joystick = nullptr;
-    virtual_joystick_id = -1;
+    virtual_joystick_id = 0;
+    LOG_INFO("Virtual joystick detached");
 }
 
 JNIEXPORT void JNICALL
 Java_org_vita3k_emulator_overlay_InputOverlay_setAxis(JNIEnv *env, jobject thiz, jint axis, jshort value) {
     SDL_SetJoystickVirtualAxis(virtual_joystick, axis, value);
+    LOG_INFO("Virtual joystick set axis");
 }
 
 JNIEXPORT void JNICALL
@@ -139,13 +147,13 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 continue;
             
             if(!SDL_IsJoystickVirtual(gamepad_index)){
-                if (virtual_joystick_id == -1) {
+                if (virtual_joystick_id == 0) {
 
                 }else{
                     SDL_CloseJoystick(virtual_joystick);
                     SDL_DetachVirtualJoystick(virtual_joystick_id);
                     virtual_joystick = nullptr;
-                    virtual_joystick_id = -1;
+                    virtual_joystick_id = 0;
                 }
                 state.is_virtual_joystick = false;
             }else{
