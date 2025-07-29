@@ -147,10 +147,12 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 continue;
 
             LOG_INFO("Gamepad index id : {}", gamepad_index);
-            LOG_INFO("controller name : {}", controller_name);
+            if(controller_name != nullptr)
+               LOG_INFO("controller name : {}", controller_name);
+            
             if(!SDL_IsJoystickVirtual(gamepad_index)){
                 if (virtual_joystick_id == 0) {
-
+                    LOG_INFO("virtual_joystick_id is 0 !");
                 }else{
                     SDL_CloseJoystick(virtual_joystick);
                     SDL_DetachVirtualJoystick(virtual_joystick_id);
