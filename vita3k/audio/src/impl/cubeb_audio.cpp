@@ -77,7 +77,7 @@ CubebAudioAdapter::~CubebAudioAdapter() {
 }
 
 bool CubebAudioAdapter::init() {
-    if (cubeb_init(&cubeb_ctx, "Vita3K audio", nullptr) != CUBEB_OK) {
+    if (cubeb_init(&cubeb_ctx, "Vita3K audio", "opensl") != CUBEB_OK) {
         LOG_ERROR("Could not initialize cubeb context");
         return false;
     }
