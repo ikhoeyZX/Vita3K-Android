@@ -90,6 +90,7 @@ struct AudioState {
     ResumeAudioThread resume_thread;
     std::string audio_backend;
     float global_volume = 1;
+    bool disable_audio = false;
 
     bool init(const ResumeAudioThread &resume_thread, const std::string &adapter_name);
     void set_backend(const std::string &adapter_name);
