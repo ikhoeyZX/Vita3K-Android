@@ -55,7 +55,7 @@ void AudioState::set_backend(const std::string &adapter_name) {
     }
 
     if(adapter_name == "Disabled")
-        emuenv.audio.disable_audio = true;
+        disable_audio = true;
     
     this->audio_backend = adapter_name;
 
