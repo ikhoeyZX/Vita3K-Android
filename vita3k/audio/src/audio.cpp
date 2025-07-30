@@ -53,6 +53,10 @@ void AudioState::set_backend(const std::string &adapter_name) {
         LOG_ERROR("Unknown audio adapter {}", adapter_name);
         return;
     }
+
+    if(adapter_name == "Disabled")
+        emuenv.audio.disable_audio = true;
+    
     this->audio_backend = adapter_name;
 
     // lock the mutex to make sure nothing happens until the initialisation is done
