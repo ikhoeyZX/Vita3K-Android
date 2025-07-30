@@ -68,7 +68,7 @@ bool SDLAudioAdapter::init() {
 }
 
 void SDLAudioAdapter::switch_state(const bool pause) {
-    if (pause || emuenv.audio.disable_audio)
+    if (pause || disable_audio)
         SDL_CHECK_VOID(SDL_PauseAudioDevice(device_id));
     else
         SDL_CHECK_VOID(SDL_ResumeAudioDevice(device_id));
@@ -76,17 +76,17 @@ void SDLAudioAdapter::switch_state(const bool pause) {
 
 AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sample) {
     SDL_AudioSpec src_spec;
-    if(emuenv.audio.disable_audio)
+    if(disable_audio)
         src_spec = {
            .format = SDL_AUDIO_S16LE,
            .channels = 1,
-           .freq = 22050;
+           .freq = 22050
         };
     }else{
         src_spec = {
            .format = SDL_AUDIO_S16LE,
            .channels = nb_sample,
-           .freq = freq;
+           .freq = freq
         };
     }
 
@@ -97,10 +97,10 @@ AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sam
     auto port = std::make_shared<SDLAudioOutPort>(stream, *this);
     SDL_CHECK(SDL_SetAudioStreamGetCallback(stream.get(), SDLAudioAdapter::thread_wakeup_callback, port.get()));
     
-    if(emuenv.audio.disable_audio){
+    if(disable_audio){
        port->channels = 1;
        port->len_microseconds = 45;
-       port->len_bytes = 256;
+       port->len_bytes = 64;
     }else{
        port->channels = nb_channels;
        port->len_microseconds = (nb_sample * 1'000'000ULL) / freq;
