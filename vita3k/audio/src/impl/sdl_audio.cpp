@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "audio/impl/sdl_audio.h"
-#include "audio/state.h"
 
 #include "kernel/thread/thread_state.h"
 
@@ -69,7 +68,7 @@ bool SDLAudioAdapter::init() {
 }
 
 void SDLAudioAdapter::switch_state(const bool pause) {
-    if (pause || disable_audio)
+    if (pause || audio_state.disable_audio)
         SDL_CHECK_VOID(SDL_PauseAudioDevice(device_id));
     else
         SDL_CHECK_VOID(SDL_ResumeAudioDevice(device_id));
@@ -77,7 +76,7 @@ void SDLAudioAdapter::switch_state(const bool pause) {
 
 AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sample) {
     SDL_AudioSpec src_spec;
-    if(disable_audio)
+    if(audio_state.disable_audio)
         src_spec = {
            .format = SDL_AUDIO_S16LE,
            .channels = 1,
@@ -98,7 +97,7 @@ AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sam
     auto port = std::make_shared<SDLAudioOutPort>(stream, *this);
     SDL_CHECK(SDL_SetAudioStreamGetCallback(stream.get(), SDLAudioAdapter::thread_wakeup_callback, port.get()));
     
-    if(disable_audio){
+    if(audio_state.disable_audio){
        port->channels = 1;
        port->len_microseconds = 45;
        port->len_bytes = 64;
