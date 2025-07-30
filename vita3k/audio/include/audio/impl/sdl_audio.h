@@ -26,6 +26,7 @@ private:
     SDL_AudioDeviceID device_id = 0;
     int device_buffer_samples = 0;
     SDL_AudioSpec dst_spec;
+    bool disable_audio_sdl = false;
     static void SDLCALL thread_wakeup_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount);
 
 public:
