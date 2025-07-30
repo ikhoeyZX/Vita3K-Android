@@ -45,24 +45,28 @@ Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobj
     SDL_VirtualJoystickDesc virtual_ctrl;
     SDL_VirtualJoystickSensorDesc virtual_sensor = { (SDL_SENSOR_ACCEL, SDL_SENSOR_GYRO), (0.0f, 0.0f) };
     virtual_ctrl.type = SDL_JOYSTICK_TYPE_GAMEPAD;
-    virtual_ctrl.naxes = 6;    
-    virtual_ctrl.nbuttons = 18; 
-    virtual_ctrl.nhats = 0;
+    virtual_ctrl.naxes = SDL_GAMEPAD_AXIS_COUNT;
+    virtual_ctrl.nbuttons = SDL_GAMEPAD_BUTTON_COUNT;
+    
+//    virtual_ctrl.type = SDL_JOYSTICK_TYPE_GAMEPAD;
+//    virtual_ctrl.naxes = 6;    
+//    virtual_ctrl.nbuttons = 16; 
+//    virtual_ctrl.nhats = 2;
   //  virtual_ctrl.nsensors = 2;
   //  virtual_ctrl.sensors = &virtual_sensor;
-
+    
     virtual_joystick_id = SDL_AttachVirtualJoystick(&virtual_ctrl);
     if (virtual_joystick_id == 0) {
        LOG_CRITICAL("Could not create overlay virtual controller");
        return;
-    }
+    }else{
 
     virtual_joystick = SDL_OpenJoystick(virtual_joystick_id);
-    if (virtual_joystick == nullptr)
+    if (!virtual_joystick)
         LOG_CRITICAL("Could not create virtual joystick");
-
-    LOG_INFO("Virtual joystick created at id: {}", virtual_joystick_id);
-
+    else
+        LOG_INFO("Virtual joystick created at id: {}", virtual_joystick_id);
+    }
 }
 
 JNIEXPORT void JNICALL
@@ -77,7 +81,6 @@ Java_org_vita3k_emulator_overlay_InputOverlay_detachController(JNIEnv *env, jobj
 JNIEXPORT void JNICALL
 Java_org_vita3k_emulator_overlay_InputOverlay_setAxis(JNIEnv *env, jobject thiz, jint axis, jshort value) {
     SDL_SetJoystickVirtualAxis(virtual_joystick, axis, value);
-    LOG_INFO("Virtual joystick set axis");
 }
 
 JNIEXPORT void JNICALL
@@ -130,6 +133,8 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
     // Add new controllers
     int num_gamepads = 0;
     const auto gamepads = SDL_GetGamepads(&num_gamepads);
+    LOG_INFO("Number gamepad detected: {}", num_gamepads);
+    
     for (int gamepad_index = 0; gamepad_index < num_gamepads; ++gamepad_index) {
         const auto gamepad_id = gamepads[gamepad_index];
         if (state.controllers_num >= SCE_CTRL_MAX_WIRELESS_NUM) {
