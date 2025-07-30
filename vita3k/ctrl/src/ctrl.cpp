@@ -151,14 +151,18 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                LOG_INFO("controller name : {}", controller_name);
             
             if(!SDL_IsJoystickVirtual(gamepad_index)){
-                if (virtual_joystick_id == 0) {
+                LOG_INFO("SDL_IsJoystickVirtual = false");
+                /* if (virtual_joystick_id == 0) {
                     LOG_INFO("virtual_joystick_id is 0 !");
                 }else{
+                    LOG_INFO("Skiped, not virtual joystock");
+                    
                     SDL_CloseJoystick(virtual_joystick);
                     SDL_DetachVirtualJoystick(virtual_joystick_id);
                     virtual_joystick = nullptr;
                     virtual_joystick_id = 0;
                 }
+                */
                 state.is_virtual_joystick = false;
             }else{
                 LOG_INFO("Virtual joystick detected!");
