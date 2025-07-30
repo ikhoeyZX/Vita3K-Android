@@ -45,7 +45,7 @@ void AudioState::set_backend(const std::string &adapter_name) {
     // first delete all ports then delete the backend
     out_ports.clear();
     adapter.reset();
-    if (adapter_name == "SDL") {
+    if (adapter_name == "SDL" || adapter_name == "Disabled") {
         adapter = std::make_unique<SDLAudioAdapter>(*this);
     } else if (adapter_name == "Cubeb") {
         adapter = std::make_unique<CubebAudioAdapter>(*this);
