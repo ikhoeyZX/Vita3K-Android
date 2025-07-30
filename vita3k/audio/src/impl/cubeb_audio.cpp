@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,6 +16,10 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "audio/impl/cubeb_audio.h"
+
+#ifdef TRACY_ENABLE
+#include <tracy/Tracy.hpp>
+#endif
 
 #include "kernel/thread/thread_state.h"
 
@@ -69,7 +73,9 @@ CubebAudioOutPort::~CubebAudioOutPort() {
 }
 
 CubebAudioAdapter::CubebAudioAdapter(AudioState &audio_state)
-    : AudioAdapter(audio_state) {}
+    : AudioAdapter(audio_state) {
+    this->single_stream = false;
+}
 
 CubebAudioAdapter::~CubebAudioAdapter() {
     if (cubeb_ctx)
@@ -98,7 +104,9 @@ AudioOutPortPtr CubebAudioAdapter::open_port(int nb_channels, int freq, int nb_s
     };
 
     uint32_t latency;
-    cubeb_get_min_latency(cubeb_ctx, &port->spec, &latency);
+    if (cubeb_get_min_latency(cubeb_ctx, &port->spec, &latency) != CUBEB_OK)
+        // default value (min latency is not supported on OpenSL)
+        latency = 256;
 
     if (cubeb_stream_init(cubeb_ctx, &port->out_stream, "Vita3K audio out", nullptr, nullptr, nullptr,
             &port->spec, latency, impl_cubeb_audio_callback, impl_cubeb_state_callback, port.get())
@@ -107,13 +115,13 @@ AudioOutPortPtr CubebAudioAdapter::open_port(int nb_channels, int freq, int nb_s
         return nullptr;
     }
 
-    port->len_bytes = nb_sample * nb_channels * sizeof(uint16_t);
+    port->len_bytes = static_cast<int>(nb_sample) * nb_channels * sizeof(uint16_t);
 
     // allocate enough buffers to be able to satisfy a callback (+1 to make sure one buffer can be ready)
     const int nb_buffers = (latency + nb_sample - 1) / nb_sample + 1;
     port->audio_buffers.resize(nb_buffers);
     for (AudioBuffer &audio_buffer : port->audio_buffers) {
-        // initialize all the buffers
+        // initialize all of the buffers
         audio_buffer.buffer.resize(port->len_bytes);
         audio_buffer.buffer_position = 0;
     }
@@ -153,7 +161,7 @@ void CubebAudioAdapter::set_volume(AudioOutPort &out_port, float volume) {
 }
 
 void CubebAudioAdapter::switch_state(const bool pause) {
-    for (auto &[_, out_port] : state.out_ports) {
+    for (auto [_, out_port] : state.out_ports) {
         CubebAudioOutPort &port = static_cast<CubebAudioOutPort &>(*out_port);
         if (pause)
             cubeb_stream_stop(port.out_stream);
