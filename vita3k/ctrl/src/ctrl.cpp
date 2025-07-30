@@ -43,15 +43,11 @@ JNIEXPORT void JNICALL
 Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobject thiz) {
 
     SDL_VirtualJoystickDesc virtual_ctrl;
-    SDL_VirtualJoystickSensorDesc virtual_sensor = { (SDL_SENSOR_ACCEL, SDL_SENSOR_GYRO), (0.0f, 0.0f) };
+ //   SDL_VirtualJoystickSensorDesc virtual_sensor = { (SDL_SENSOR_ACCEL, SDL_SENSOR_GYRO), (0.0f, 0.0f) };
     virtual_ctrl.type = SDL_JOYSTICK_TYPE_GAMEPAD;
-    virtual_ctrl.naxes = SDL_GAMEPAD_AXIS_COUNT;
-    virtual_ctrl.nbuttons = SDL_GAMEPAD_BUTTON_COUNT;
-    
-//    virtual_ctrl.type = SDL_JOYSTICK_TYPE_GAMEPAD;
-//    virtual_ctrl.naxes = 6;    
-//    virtual_ctrl.nbuttons = 16; 
-//    virtual_ctrl.nhats = 2;
+    virtual_ctrl.naxes = 6;    
+    virtual_ctrl.nbuttons = 16; 
+    virtual_ctrl.nhats = 0;
   //  virtual_ctrl.nsensors = 2;
   //  virtual_ctrl.sensors = &virtual_sensor;
     
