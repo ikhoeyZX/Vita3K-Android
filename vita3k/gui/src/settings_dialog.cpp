@@ -1052,7 +1052,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         if (!emuenv.io.app_path.empty())
             ImGui::BeginDisabled();
-        static const char *LIST_BACKEND_AUDIO[] = { "SDL", "Cubeb" };
+        static const char *LIST_BACKEND_AUDIO[] = { "SDL", "Cubeb", "Disabled"};
         if (ImGui::Combo(lang.audio["audio_backend"].c_str(), &audio_backend_idx, LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
             emuenv.cfg.audio_backend = LIST_BACKEND_AUDIO[audio_backend_idx];
         SetTooltipEx(lang.audio["select_audio_backend"].c_str());
