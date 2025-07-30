@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "audio/impl/sdl_audio.h"
+#include "audio/state.h"
 
 #include "kernel/thread/thread_state.h"
 
