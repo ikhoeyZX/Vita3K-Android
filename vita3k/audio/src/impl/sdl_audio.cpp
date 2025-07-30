@@ -78,7 +78,7 @@ void SDLAudioAdapter::switch_state(const bool pause) {
 
 AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sample) {
     SDL_AudioSpec src_spec;
-    if(disable_audio_sdl)
+    if(disable_audio_sdl){
         src_spec = {
            .format = SDL_AUDIO_S16LE,
            .channels = 1,
