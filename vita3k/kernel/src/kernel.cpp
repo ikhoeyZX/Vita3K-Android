@@ -172,8 +172,9 @@ Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id,
 void KernelState::exit_delete_all_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
     for (auto &[_, thread] : threads) {
-        thread->exit_delete();
-        SDL_DetachThread(thread);
+        // thread->exit_delete();
+        
+        SDL_DetachThread(thread->exit_delete());
     }
 }
 
