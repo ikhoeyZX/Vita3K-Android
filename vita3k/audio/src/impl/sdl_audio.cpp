@@ -54,7 +54,7 @@ void SDLCALL SDLAudioAdapter::thread_wakeup_callback(void *userdata, SDL_AudioSt
 
 SDLAudioAdapter::SDLAudioAdapter(AudioState &audio_state)
     : AudioAdapter(audio_state) {
-       disable_audio_sdl = audio_state.disable_audio;
+        disable_audio_sdl = audio_state.disable_audio;
     }
 
 SDLAudioAdapter::~SDLAudioAdapter() {
@@ -77,24 +77,20 @@ void SDLAudioAdapter::switch_state(const bool pause) {
 }
 
 AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sample) {
-    SDL_AudioSpec src_spec;
-    src_spec = {
+    SDL_AudioSpec src_spec = {
         .format = SDL_AUDIO_S16LE,
-        .channels = nb_sample,
+        .channels = nb_channels,
         .freq = freq
     };
-
     SDL_CHECK(SDL_GetAudioDeviceFormat(device_id, &dst_spec, &device_buffer_samples));
     const AudioStreamPtr stream(SDL_CreateAudioStream(&src_spec, &dst_spec), SDL_DestroyAudioStream);
     SDL_CHECK(stream);
     SDL_CHECK(SDL_BindAudioStream(device_id, stream.get()));
     auto port = std::make_shared<SDLAudioOutPort>(stream, *this);
     SDL_CHECK(SDL_SetAudioStreamGetCallback(stream.get(), SDLAudioAdapter::thread_wakeup_callback, port.get()));
-    
     port->channels = nb_channels;
     port->len_microseconds = (nb_sample * 1'000'000ULL) / freq;
     port->len_bytes = nb_sample * nb_channels * sizeof(int16_t);
-
     switch_state(false);
     return port;
 }
