@@ -48,7 +48,7 @@ Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobj
     
     virtual_ctrl.type = SDL_JOYSTICK_TYPE_GAMEPAD;
     virtual_ctrl.naxes = 6;    
-    virtual_ctrl.nbuttons = 18; 
+    virtual_ctrl.nbuttons = 20; // +2 for L3 and R3
     virtual_ctrl.nhats = 0;
   //  virtual_ctrl.nsensors = 2;
   //  virtual_ctrl.sensors = &virtual_sensor;
