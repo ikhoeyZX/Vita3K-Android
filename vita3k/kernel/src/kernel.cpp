@@ -173,6 +173,7 @@ void KernelState::exit_delete_all_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
     for (auto &[_, thread] : threads) {
         thread->exit_delete();
+        SDL_DetachThread(thread);
     }
 }
 
