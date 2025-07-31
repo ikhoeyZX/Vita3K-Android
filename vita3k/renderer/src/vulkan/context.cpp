@@ -494,15 +494,16 @@ void VKContext::check_for_macroblock_change(bool is_draw) {
     if (!render_target->has_macroblock_sync)
         return;
 
+    
     if (!ignore_macroblock && (scissor.extent.width > render_target->macroblock_width || scissor.extent.height > render_target->macroblock_height)) {
         // flower does not specify a scissor adapted to the current macroblock
         // so fallback to the slow path (one scene per draw, can't really do better)
         // TODO: with the feedback loop extension we can do better
         ignore_macroblock = true;
-        LOG_INFO("ignore_macroblock = {}", ignore_macroblock);
         // in this case we must load and store the depth stencil each time
         current_render_pass = state.pipeline_cache.retrieve_render_pass(current_color_format, true, true, !record.color_surface.data);
     }
+    
 
     // use the scissor to know in which macroblock we are
     uint16_t curr_macroblock_x = scissor.offset.x / render_target->macroblock_width;
