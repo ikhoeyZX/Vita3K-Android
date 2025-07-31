@@ -83,14 +83,17 @@ AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sam
         .freq = freq
     };
     SDL_CHECK(SDL_GetAudioDeviceFormat(device_id, &dst_spec, &device_buffer_samples));
+    device_buffer_samples = device_buffer_samples + 256;
     const AudioStreamPtr stream(SDL_CreateAudioStream(&src_spec, &dst_spec), SDL_DestroyAudioStream);
     SDL_CHECK(stream);
     SDL_CHECK(SDL_BindAudioStream(device_id, stream.get()));
     auto port = std::make_shared<SDLAudioOutPort>(stream, *this);
-    SDL_CHECK(SDL_SetAudioStreamGetCallback(stream.get(), SDLAudioAdapter::thread_wakeup_callback, port.get()));
-    port->channels = nb_channels;
-    port->len_microseconds = (nb_sample * 1'000'000ULL) / freq;
-    port->len_bytes = nb_sample * nb_channels * sizeof(int16_t);
+    if(!disable_audio_sdl){
+        SDL_CHECK(SDL_SetAudioStreamGetCallback(stream.get(), SDLAudioAdapter::thread_wakeup_callback, port.get()));
+        port->channels = nb_channels;
+        port->len_microseconds = (nb_sample * 1'000'000ULL) / freq;
+        port->len_bytes = nb_sample * nb_channels * sizeof(int16_t);
+    }
     switch_state(false);
     return port;
 }
