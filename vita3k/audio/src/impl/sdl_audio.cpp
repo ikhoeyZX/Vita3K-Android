@@ -64,7 +64,11 @@ SDLAudioAdapter::~SDLAudioAdapter() {
 }
 
 bool SDLAudioAdapter::init() {
-    device_id = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
+    if(disable_audio_sdl)
+        device_id = SDL_OpenAudioDevice(nullptr, nullptr);
+    else
+        device_id = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
+    
     SDL_CHECK_EXT(device_id > 0, false);
     return true;
 }
@@ -78,19 +82,11 @@ void SDLAudioAdapter::switch_state(const bool pause) {
 
 AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sample) {
     SDL_AudioSpec src_spec;
-    if(disable_audio_sdl){
-        src_spec = {
-           .format = SDL_AUDIO_S16LE,
-           .channels = 1,
-           .freq = 22050
-        };
-    }else{
-        src_spec = {
-           .format = SDL_AUDIO_S16LE,
-           .channels = nb_sample,
-           .freq = freq
-        };
-    }
+    src_spec = {
+        .format = SDL_AUDIO_S16LE,
+        .channels = nb_sample,
+        .freq = freq
+    };
 
     SDL_CHECK(SDL_GetAudioDeviceFormat(device_id, &dst_spec, &device_buffer_samples));
     const AudioStreamPtr stream(SDL_CreateAudioStream(&src_spec, &dst_spec), SDL_DestroyAudioStream);
@@ -99,15 +95,10 @@ AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sam
     auto port = std::make_shared<SDLAudioOutPort>(stream, *this);
     SDL_CHECK(SDL_SetAudioStreamGetCallback(stream.get(), SDLAudioAdapter::thread_wakeup_callback, port.get()));
     
-    if(disable_audio_sdl){
-       port->channels = 1;
-       port->len_microseconds = 45;
-       port->len_bytes = 64;
-    }else{
-       port->channels = nb_channels;
-       port->len_microseconds = (nb_sample * 1'000'000ULL) / freq;
-       port->len_bytes = nb_sample * nb_channels * sizeof(int16_t);
-    }
+    port->channels = nb_channels;
+    port->len_microseconds = (nb_sample * 1'000'000ULL) / freq;
+    port->len_bytes = nb_sample * nb_channels * sizeof(int16_t);
+
     switch_state(false);
     return port;
 }
