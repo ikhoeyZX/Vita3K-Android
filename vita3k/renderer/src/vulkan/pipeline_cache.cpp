@@ -681,7 +681,6 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
             }
         } else {
             // some Android GPUs do not support scaled attributes, do the conversion in the GPU instead
-            LOG_INFO("support_scaled_vertex_attribute = {}", support_scaled_vertex_attribute);
             if (!support_scaled_vertex_attribute)
                 info.is_integer = true;
 
