@@ -64,11 +64,7 @@ SDLAudioAdapter::~SDLAudioAdapter() {
 }
 
 bool SDLAudioAdapter::init() {
-    if(disable_audio_sdl)
-        device_id = SDL_OpenAudioDevice(nullptr, nullptr);
-    else
-        device_id = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
-    
+    device_id = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
     SDL_CHECK_EXT(device_id > 0, false);
     return true;
 }
