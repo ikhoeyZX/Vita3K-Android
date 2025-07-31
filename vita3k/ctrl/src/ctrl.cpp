@@ -44,13 +44,15 @@ Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobj
 
     SDL_VirtualJoystickDesc virtual_ctrl;
  //   SDL_VirtualJoystickSensorDesc virtual_sensor = { (SDL_SENSOR_ACCEL, SDL_SENSOR_GYRO), (0.0f, 0.0f) };
+    SDL_INIT_INTERFACE(&virtual_ctrl);
+    
     virtual_ctrl.type = SDL_JOYSTICK_TYPE_GAMEPAD;
     virtual_ctrl.naxes = 6;    
-    virtual_ctrl.nbuttons = 16; 
+    virtual_ctrl.nbuttons = 18; 
     virtual_ctrl.nhats = 0;
   //  virtual_ctrl.nsensors = 2;
   //  virtual_ctrl.sensors = &virtual_sensor;
-    
+
     virtual_joystick_id = SDL_AttachVirtualJoystick(&virtual_ctrl);
     if (virtual_joystick_id == 0) {
        LOG_CRITICAL("Could not create overlay virtual controller");
@@ -67,6 +69,7 @@ Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobj
 
 JNIEXPORT void JNICALL
 Java_org_vita3k_emulator_overlay_InputOverlay_detachController(JNIEnv *env, jobject thiz) {
+    LOG_INFO("removing Virtual joystick");
     SDL_CloseJoystick(virtual_joystick);
     SDL_DetachVirtualJoystick(virtual_joystick_id);
     virtual_joystick = nullptr;
