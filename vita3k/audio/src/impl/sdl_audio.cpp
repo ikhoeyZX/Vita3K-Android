@@ -35,10 +35,11 @@
 #define SDL_CHECK_VOID(f_call) SDL_CHECK_EXT(f_call, )
 #define SDL_CHECK_NEG(f_call) SDL_CHECK_EXT((f_call) >= 0, {})
 
-void SDLCALL SDLAudioAdapter::thread_wakeup_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
+void SDLCALL SDLAudioAdapter::thread_wakeup_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount, bool disable_audio_sdl) {
     if(disable_audio_sdl){
         userdata = nullptr;
         stream = nullptr;
+        LOG_INFO_ONCE("Audio disabled");
     }else{
         assert(userdata != nullptr);
         assert(stream != nullptr);
@@ -93,8 +94,9 @@ AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sam
     SDL_CHECK(stream);
     SDL_CHECK(SDL_BindAudioStream(device_id, stream.get()));
     auto port = std::make_shared<SDLAudioOutPort>(stream, *this);
+    SDL_CHECK(SDL_SetAudioStreamGetCallback(stream.get(), SDLAudioAdapter::thread_wakeup_callback, port.get(), disable_audio_sdl));
+        
     if(!disable_audio_sdl){
-        SDL_CHECK(SDL_SetAudioStreamGetCallback(stream.get(), SDLAudioAdapter::thread_wakeup_callback, port.get()));
         port->channels = nb_channels;
         port->len_microseconds = (nb_sample * 1'000'000ULL) / freq;
         port->len_bytes = nb_sample * nb_channels * sizeof(int16_t);
