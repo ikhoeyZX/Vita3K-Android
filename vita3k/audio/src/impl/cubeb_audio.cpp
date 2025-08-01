@@ -19,7 +19,7 @@
 
 #include "kernel/thread/thread_state.h"
 
-#include "util/log.h"
+#include <util/log.h>
 
 static long impl_cubeb_audio_callback(cubeb_stream *stream, void *user_data, const void *input, void *output, long nframes) {
     assert(user_data != nullptr);
@@ -78,7 +78,7 @@ CubebAudioAdapter::~CubebAudioAdapter() {
 
 bool CubebAudioAdapter::init() {
     // need find way to support switch audio output
-    if (cubeb_init(&cubeb_ctx, "Vita3K audio", "AAudio") != CUBEB_OK) {
+    if (cubeb_init(&cubeb_ctx, "Vita3K audio", "opensl") != CUBEB_OK) {
         LOG_ERROR("Could not initialize cubeb context");
         return false;
     }
