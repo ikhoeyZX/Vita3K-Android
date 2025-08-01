@@ -21,7 +21,7 @@
 
 #include <SDL3/SDL_audio.h>
 
-#include "util/log.h"
+#include <util/log.h>
 
 #define SDL_CHECK_EXT(condition, ret)                         \
     do {                                                      \
@@ -36,11 +36,16 @@
 #define SDL_CHECK_NEG(f_call) SDL_CHECK_EXT((f_call) >= 0, {})
 
 void SDLCALL SDLAudioAdapter::thread_wakeup_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
-    assert(userdata != nullptr);
-    assert(stream != nullptr);
+    if(disable_audio_sdl){
+        userdata = nullptr;
+        stream = nullptr;
+    }else{
+        assert(userdata != nullptr);
+        assert(stream != nullptr);
+    }
     SDLAudioOutPort *port = static_cast<SDLAudioOutPort *>(userdata);
     // Is there a thread waiting for playback to finish?
-    if (port->thread >= 0) {
+    if (port->thread >= 0 && !disable_audio_sdl) {
         const int samples_available = port->adapter.get_rest_sample(*port);
         assert(samples_available >= 0);
         // Running out of data?
@@ -98,8 +103,11 @@ AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sam
     return port;
 }
 void SDLAudioAdapter::audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) {
-    if(disable_audio_sdl)
+    if(disable_audio_sdl){
+        LOG_INFO_ONCE("Audio disabled");
         return;
+    }
+    
     //  Put audio to the port's stream and see how much is left to play.
     SDLAudioOutPort &port = static_cast<SDLAudioOutPort &>(out_port);
     SDL_CHECK_VOID(SDL_PutAudioStreamData(port.stream.get(), buffer, out_port.len_bytes));
@@ -115,7 +123,10 @@ void SDLAudioAdapter::audio_output(ThreadState &thread, AudioOutPort &out_port, 
 }
 
 void SDLAudioAdapter::set_volume(AudioOutPort &out_port, float volume) {
-       SDL_CHECK_VOID(SDL_SetAudioStreamGain(static_cast<SDLAudioOutPort &>(out_port).stream.get(), volume));
+    if(disable_audio_sdl)
+       volume = 0.0f;
+    
+    SDL_CHECK_VOID(SDL_SetAudioStreamGain(static_cast<SDLAudioOutPort &>(out_port).stream.get(), volume));
 }
 
 int SDLAudioAdapter::get_rest_sample(AudioOutPort &out_port) {
