@@ -129,7 +129,8 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
 
     // Add new controllers
     int num_gamepads = 0;
-    const auto gamepads = SDL_GetGamepads(&num_gamepads);
+    // const auto gamepads = SDL_GetGamepads(&num_gamepads);
+    const auto gamepads = SDL_NumJoysticks(&num_gamepads);
     LOG_INFO("Number gamepad detected: {}", num_gamepads);
     
     for (int gamepad_index = 0; gamepad_index < num_gamepads; ++gamepad_index) {
@@ -140,7 +141,9 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
         const SDL_GUID guid = SDL_GetJoystickGUIDForID(gamepad_index);
 #ifdef ANDROID
             // for whatever reasons, fingerprint sensors are detected as controllers, filter them out
-            const char *controller_name = SDL_GetGamepadNameForID(gamepad_index);
+            // const char *controller_name = SDL_GetGamepadNameForID(gamepad_index);
+            const char *controller_name = SDL_JoystickNameForIndex(gamepad_index);
+            
             if (controller_name != nullptr && 
                 (std::string_view(controller_name).starts_with("uinput-")
                 || std::string_view(controller_name).starts_with("gf_")
