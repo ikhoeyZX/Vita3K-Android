@@ -697,7 +697,7 @@ GLuint GLSurfaceCache::retrieve_framebuffer_handle(const State &state, const Mem
         LOG_ERROR("Framebuffer is not completed. Proceed anyway...");
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClearDepth(1.0);
+    glClearDepthf(1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
