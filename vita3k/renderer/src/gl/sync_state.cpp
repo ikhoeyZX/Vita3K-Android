@@ -113,8 +113,20 @@ static GLenum translate_stencil_func(SceGxmStencilFunc stencil_func) {
 void sync_mask(const GLState &state, GLContext &context, const MemState &mem) {
     GLubyte initial_byte = context.record.depth_stencil_surface.mask ? 0xFF : 0;
 
+#ifdef ANDROID
+    auto width = context.render_target->width;
+    auto height = context.render_target->height;
+
+    std::vector<GLubyte> emptyData(width * height * 4, initial_byte);
+    GLint texId;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &texId);
+    glBindTexture(GL_TEXTURE_2D, context.render_target->masktexture[0]);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &emptyData[0]);
+    glBindTexture(GL_TEXTURE_2D, texId);
+#else
     GLubyte clear_bytes[4] = { initial_byte, initial_byte, initial_byte, initial_byte };
     glClearTexImage(context.render_target->masktexture[0], 0, GL_RGBA, GL_UNSIGNED_BYTE, clear_bytes);
+#endif
 }
 
 void sync_viewport_flat(const GLState &state, GLContext &context) {
@@ -381,11 +393,23 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
                         }
                     } else {
                         const GLint default_rgba[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+#ifdef ANDROID
+                        for(uint8_t i = 0; i < 4; i++){
+                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, default_rgba[i]);
+                        }
+#else
                         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, default_rgba);
+#endif
                     }
                 } else {
                     LOG_TRACE("No surface swizzle found, use default texture swizzle");
+#ifdef ANDROID
+                    for(uint8_t i = 0; i < 4; i++){
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, swizzle[i]);
+                    }
+#else
                     glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+#endif
                 }
             }
         }
