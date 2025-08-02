@@ -282,12 +282,13 @@ int main(int argc, char *argv[]) {
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS, "0");
 
-/*
         // other controller
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI, "1");
+
+/*
+        SDL_SetHint(SDL_HINT_JOYSTICK_ROG_CHAKRAM, "0");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SHIELD, "1");
         SDL_SetHint(SDL_HINT_TV_REMOTE_AS_JOYSTICK, "0");    	
-    	SDL_SetHint(SDL_HINT_JOYSTICK_ROG_CHAKRAM, "1");
-    	SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI, "1");
     	SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_STEAM, "1");
 
         // need bluetooth permission in android manifest
