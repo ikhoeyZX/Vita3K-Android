@@ -24,7 +24,7 @@ namespace renderer::gl {
 bool ScreenRenderer::init(const fs::path &static_assets) {
     glGenTextures(1, &m_screen_texture);
 
-    const auto builtin_shaders_path = static_assets / "shaders-builtin/opengl";
+    fs::path builtin_shaders_path = static_assets / "shaders-builtin/opengl";
 
     const auto render_main_path_vert = builtin_shaders_path / "render_main.vert";
     const auto render_main_path_frag = builtin_shaders_path / "render_main.frag";
