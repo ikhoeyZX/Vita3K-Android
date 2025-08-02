@@ -104,8 +104,10 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_element_array_buffer);
     GLint last_vertex_array;
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
+#ifndef ANDROID
     GLint last_polygon_mode[2];
     glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
+#endif
     GLint last_viewport[4];
     glGetIntegerv(GL_VIEWPORT, last_viewport);
     GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
@@ -205,7 +207,9 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     }
 
     glBindTexture(GL_TEXTURE_2D, texture);
+#ifndef ANDROID
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     // Restore modified GL state
@@ -233,7 +237,9 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
         glEnable(GL_SCISSOR_TEST);
     else
         glDisable(GL_SCISSOR_TEST);
+#ifndef ANDROID
     glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
+#endif
     glViewport(last_viewport[0], last_viewport[1], last_viewport[2], last_viewport[3]);
     glColorMask(last_color_mask[0], last_color_mask[1], last_color_mask[2], last_color_mask[3]);
 }
