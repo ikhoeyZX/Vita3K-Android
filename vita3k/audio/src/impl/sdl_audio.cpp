@@ -35,18 +35,13 @@
 #define SDL_CHECK_VOID(f_call) SDL_CHECK_EXT(f_call, )
 #define SDL_CHECK_NEG(f_call) SDL_CHECK_EXT((f_call) >= 0, {})
 
-void SDLCALL SDLAudioAdapter::thread_wakeup_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount, bool disable_audio_sdl) {
-    if(disable_audio_sdl){
-        userdata = nullptr;
-        stream = nullptr;
-        LOG_INFO_ONCE("Audio disabled");
-    }else{
-        assert(userdata != nullptr);
-        assert(stream != nullptr);
-    }
+void SDLCALL SDLAudioAdapter::thread_wakeup_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
+    assert(userdata != nullptr);
+    assert(stream != nullptr);
+    
     SDLAudioOutPort *port = static_cast<SDLAudioOutPort *>(userdata);
     // Is there a thread waiting for playback to finish?
-    if (port->thread >= 0 && !disable_audio_sdl) {
+    if (port->thread >= 0) {
         const int samples_available = port->adapter.get_rest_sample(*port);
         assert(samples_available >= 0);
         // Running out of data?
@@ -94,7 +89,10 @@ AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sam
     SDL_CHECK(stream);
     SDL_CHECK(SDL_BindAudioStream(device_id, stream.get()));
     auto port = std::make_shared<SDLAudioOutPort>(stream, *this);
-    SDL_CHECK(SDL_SetAudioStreamGetCallback(stream.get(), SDLAudioAdapter::thread_wakeup_callback, port.get(), disable_audio_sdl));
+    if(disable_audio_sdl)
+        SDL_CHECK(SDL_SetAudioStreamGetCallback(nullptr, nullptr, port.get()));
+    else
+        SDL_CHECK(SDL_SetAudioStreamGetCallback(stream.get(), SDLAudioAdapter::thread_wakeup_callback, port.get()));
         
     if(!disable_audio_sdl){
         port->channels = nb_channels;
