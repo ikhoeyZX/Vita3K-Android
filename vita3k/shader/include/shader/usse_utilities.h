@@ -107,7 +107,7 @@ void make_for_loop(spv::Builder &b, spv::Id iterator, spv::Id initial_value_ite,
     body();
 
     // Increase i
-    spv::Id add_to_me = b.createBinOp(spv::OpIAdd, b.makeIntegerType(32, true), b.createLoad(iterator, spv::NoPrecision), b.makeIntConstant(1));
+    spv::Id add_to_me = b.createBinOp(spv::Op::OpIAdd, b.makeIntegerType(32, true), b.createLoad(iterator, spv::NoPrecision), b.makeIntConstant(1));
     b.createStore(add_to_me, iterator);
 
     b.createBranch(true, &blocks.continue_target);
