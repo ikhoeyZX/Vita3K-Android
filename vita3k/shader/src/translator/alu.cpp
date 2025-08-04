@@ -149,8 +149,8 @@ bool USSETranslatorVisitor::vmad(
         return false;
     }
 
-    auto mul_result = m_b.createBinOp(spv::OpFMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
-    auto add_result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
+    auto mul_result = m_b.createBinOp(spv::Op::OpFMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
+    auto add_result = m_b.createBinOp(spv::Op::OpFAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
 
     store(inst.opr.dest, add_result, write_mask, dest_repeat_offset);
     END_REPEAT()
@@ -276,8 +276,8 @@ bool USSETranslatorVisitor::vmad2(
         return false;
     }
 
-    auto mul_result = m_b.createBinOp(spv::OpFMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
-    auto add_result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
+    auto mul_result = m_b.createBinOp(spv::Op::OpFMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
+    auto add_result = m_b.createBinOp(spv::Op::OpFAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
 
     store(inst.opr.dest, add_result, dest_mask, 0);
 
@@ -378,7 +378,7 @@ bool USSETranslatorVisitor::vdp(
         return false;
     }
 
-    spv::Id result = m_b.createBinOp(spv::OpDot, type_f32, lhs, rhs);
+    spv::Id result = m_b.createBinOp(spv::Op::OpDot, type_f32, lhs, rhs);
     result = postprocess_dot_result_for_store(m_b, result, write_mask);
     store(inst.opr.dest, result, write_mask, 0);
 
@@ -405,7 +405,7 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_ma
 
     switch (inst.opcode) {
     case Opcode::AND: {
-        result = m_b.createBinOp(spv::OpBitwiseAnd, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(spv::Op::OpBitwiseAnd, source_type, vsrc1, vsrc2);
         break;
     }
 
@@ -413,50 +413,50 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_ma
         if (m_b.getOpCode(vsrc2) == spv::Op::OpConstant && m_b.getConstantScalar(vsrc2) == 0) {
             result = vsrc1;
         } else {
-            result = m_b.createBinOp(spv::OpBitwiseOr, source_type, vsrc1, vsrc2);
+            result = m_b.createBinOp(spv::Op::OpBitwiseOr, source_type, vsrc1, vsrc2);
         }
         break;
     }
 
     case Opcode::XOR: {
-        result = m_b.createBinOp(spv::OpBitwiseXor, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(spv::Op::OpBitwiseXor, source_type, vsrc1, vsrc2);
         break;
     }
 
     case Opcode::SHL: {
-        result = m_b.createBinOp(spv::OpShiftLeftLogical, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(spv::Op::OpShiftLeftLogical, source_type, vsrc1, vsrc2);
         break;
     }
 
     case Opcode::SHR: {
-        result = m_b.createBinOp(spv::OpShiftRightLogical, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(spv::Op::OpShiftRightLogical, source_type, vsrc1, vsrc2);
         break;
     }
 
     case Opcode::ASR: {
-        result = m_b.createBinOp(spv::OpShiftRightArithmetic, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(spv::Op::OpShiftRightArithmetic, source_type, vsrc1, vsrc2);
         break;
     }
 
     case Opcode::VDSX:
     case Opcode::VF16DSX:
-        result = m_b.createOp(spv::OpDPdx, source_type, ids);
+        result = m_b.createOp(spv::Op::OpDPdx, source_type, ids);
         break;
 
     case Opcode::VDSY:
     case Opcode::VF16DSY:
-        result = m_b.createOp(spv::OpDPdy, source_type, ids);
+        result = m_b.createOp(spv::Op::OpDPdy, source_type, ids);
         break;
 
     case Opcode::VADD:
     case Opcode::VF16ADD: {
-        result = m_b.createBinOp(spv::OpFAdd, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(spv::Op::OpFAdd, source_type, vsrc1, vsrc2);
         break;
     }
 
     case Opcode::VMUL:
     case Opcode::VF16MUL: {
-        result = m_b.createBinOp(spv::OpFMul, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(spv::Op::OpFMul, source_type, vsrc1, vsrc2);
         break;
     }
 
@@ -490,7 +490,7 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_ma
 
     case Opcode::VDP:
     case Opcode::VF16DP: {
-        const spv::Op op = (m_b.getNumComponents(vsrc1) > 1) ? spv::OpDot : spv::OpFMul;
+        const spv::Op op = (m_b.getNumComponents(vsrc1) > 1) ? spv::Op::OpDot : spv::Op::OpFMul;
         result = m_b.createBinOp(op, m_b.makeFloatType(32), vsrc1, vsrc2);
         result = postprocess_dot_result_for_store(m_b, result, possible_dest_mask);
         break;
@@ -501,7 +501,7 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_ma
     case Opcode::ISUB16:
     case Opcode::ISUBU32:
     case Opcode::ISUB32:
-        result = m_b.createBinOp(spv::OpISub, m_b.makeIntType(32), vsrc1, vsrc2);
+        result = m_b.createBinOp(spv::Op::OpISub, m_b.makeIntType(32), vsrc1, vsrc2);
         break;
 
     default: {
