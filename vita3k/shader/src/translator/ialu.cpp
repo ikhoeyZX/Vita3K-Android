@@ -421,8 +421,8 @@ bool USSETranslatorVisitor::i16mad(
 
     spv::Id source0_type = m_b.getTypeId(source0);
 
-    auto mul_result = m_b.createBinOp(spv::OpIMul, source0_type, source0, source1);
-    auto add_result = m_b.createBinOp(spv::OpIAdd, source0_type, mul_result, source2);
+    auto mul_result = m_b.createBinOp(spv::Op::OpIMul, source0_type, source0, source1);
+    auto add_result = m_b.createBinOp(spv::Op::OpIAdd, source0_type, mul_result, source2);
 
     if (add_result != spv::NoResult) {
         store(inst.opr.dest, add_result, 0b1, dest_repeat_offset);
@@ -506,8 +506,8 @@ bool USSETranslatorVisitor::i32mad(
     spv::Id vsrc1 = load(inst.opr.src1, src1_mask, src1_repeat_offset);
     spv::Id vsrc2 = load(inst.opr.src2, src2_mask, src2_repeat_offset);
 
-    auto mul_result = m_b.createBinOp(spv::OpIMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
-    auto add_result = m_b.createBinOp(spv::OpIAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
+    auto mul_result = m_b.createBinOp(spv::Op::OpIMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
+    auto add_result = m_b.createBinOp(spv::Op::OpIAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
 
     store(inst.opr.dest, add_result, 0b1, dest_repeat_offset);
 
