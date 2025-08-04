@@ -107,12 +107,12 @@ bool USSETranslatorVisitor::vbw(
             const uint32_t right_shift = type == DataType::UINT16 ? (16 - src2_rot) : (32 - src2_rot);
 
             // src2 = (src2 << src2_rot) | (src2 >> (bit_size - src2_rot))
-            spv::Id left = m_b.createBinOp(spv::OpShiftLeftLogical, type_ui32, src2, m_b.makeUintConstant(src2_rot));
-            spv::Id right = m_b.createBinOp(spv::OpShiftRightLogical, type_ui32, src2, m_b.makeUintConstant(right_shift));
-            src2 = m_b.createBinOp(spv::OpBitwiseOr, type_ui32, left, right);
+            spv::Id left = m_b.createBinOp(spv::Op::OpShiftLeftLogical, type_ui32, src2, m_b.makeUintConstant(src2_rot));
+            spv::Id right = m_b.createBinOp(spv::Op::OpShiftRightLogical, type_ui32, src2, m_b.makeUintConstant(right_shift));
+            src2 = m_b.createBinOp(spv::Op::OpBitwiseOr, type_ui32, left, right);
 
             if (type == DataType::UINT16)
-                src2 = m_b.createBinOp(spv::OpBitwiseAnd, type_ui32, src2, m_b.makeUintConstant(0xFFFF));
+                src2 = m_b.createBinOp(spv::Op::OpBitwiseAnd, type_ui32, src2, m_b.makeUintConstant(0xFFFF));
         }
 
         if (src2 == spv::NoResult) {
@@ -124,7 +124,7 @@ bool USSETranslatorVisitor::vbw(
             src2 = m_b.createUnaryOp(spv::Op::OpNot, type_ui32, src2);
 
             if (type == DataType::UINT16)
-                src2 = m_b.createBinOp(spv::OpBitwiseAnd, type_ui32, src2, m_b.makeUintConstant(0xFFFF));
+                src2 = m_b.createBinOp(spv::Op::OpBitwiseAnd, type_ui32, src2, m_b.makeUintConstant(0xFFFF));
         }
     }
 
@@ -312,11 +312,11 @@ bool USSETranslatorVisitor::i8mad(
             break;
         }
 
-        final_add = m_b.createOp(spv::OpVectorShuffle, m_b.getTypeId(src0_add), shuffle_ops);
+        final_add = m_b.createOp(spv::Op::OpVectorShuffle, m_b.getTypeId(src0_add), shuffle_ops);
     }
 
-    spv::Id result = m_b.createBinOp(spv::OpIMul, m_b.getTypeId(src1_mul), src1_mul, src2_mul);
-    result = m_b.createBinOp(src0_neg ? spv::OpISub : spv::OpIAdd, m_b.getTypeId(src1_mul), result, src0_add);
+    spv::Id result = m_b.createBinOp(spv::Op::OpIMul, m_b.getTypeId(src1_mul), src1_mul, src2_mul);
+    result = m_b.createBinOp(src0_neg ? spv::Op::OpISub : spv::Op::OpIAdd, m_b.getTypeId(src1_mul), result, src0_add);
 
     store(inst.opr.dest, result, 0b1111, dest_repeat_offset);
 
@@ -566,8 +566,8 @@ bool USSETranslatorVisitor::i32mad2(
     spv::Id vsrc1 = load(inst.opr.src1, 0b1, 0);
     spv::Id vsrc2 = load(inst.opr.src2, 0b1, 0);
 
-    auto mul_result = m_b.createBinOp(spv::OpIMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
-    auto add_result = m_b.createBinOp(spv::OpIAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
+    auto mul_result = m_b.createBinOp(spv::Op::OpIMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
+    auto add_result = m_b.createBinOp(spv::Op::OpIAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
 
     // sn is mysterious argument.
     // These are confirmed by hw testing:
