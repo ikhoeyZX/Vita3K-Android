@@ -482,7 +482,7 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_ma
             // We need to floor source 2
             spv::Id source2_floored = m_b.createBuiltinCall(source_type, std_builtins, GLSLstd450Floor, { vsrc2 });
             // Then subtract source 1 with the floored source 2. TADA!
-            result = m_b.createBinOp(spv::OpFSub, source_type, vsrc1, source2_floored);
+            result = m_b.createBinOp(spv::Op::OpFSub, source_type, vsrc1, source2_floored);
         }
 
         break;
@@ -748,7 +748,7 @@ bool USSETranslatorVisitor::vcomp(
     switch (op) {
     case Opcode::VRCP: {
         // Get the inverse
-        result = m_b.createBinOp(spv::OpFDiv, m_b.getTypeId(result), m_b.makeFloatConstant(1.0f), result);
+        result = m_b.createBinOp(spv::Op::OpFDiv, m_b.getTypeId(result), m_b.makeFloatConstant(1.0f), result);
         break;
     }
 
@@ -770,8 +770,8 @@ bool USSETranslatorVisitor::vcomp(
         // define exp(Nan) as 1.0, this is needed for Freedom Wars to render properly
         const spv::Id exp_val = m_b.createBuiltinCall(m_b.getTypeId(result), std_builtins, GLSLstd450Exp, { result });
         const spv::Id ones = utils::make_uniform_vector_from_type(m_b, m_b.getTypeId(result), 1.0f);
-        const spv::Id is_nan = m_b.createUnaryOp(spv::OpIsNan, m_b.makeBoolType(), result);
-        result = m_b.createTriOp(spv::OpSelect, m_b.getTypeId(result), is_nan, ones, exp_val);
+        const spv::Id is_nan = m_b.createUnaryOp(spv::Op::OpIsNan, m_b.makeBoolType(), result);
+        result = m_b.createTriOp(spv::Op::OpSelect, m_b.getTypeId(result), is_nan, ones, exp_val);
         break;
     }
 
@@ -946,11 +946,11 @@ bool USSETranslatorVisitor::sop2(
     auto apply_opcode = [&](Opcode op, spv::Id type, spv::Id lhs, spv::Id rhs) {
         switch (op) {
         case Opcode::FADD: {
-            return m_b.createBinOp(spv::OpFAdd, type, lhs, rhs);
+            return m_b.createBinOp(spv::Op::OpFAdd, type, lhs, rhs);
         }
 
         case Opcode::FSUB: {
-            return m_b.createBinOp(spv::OpFSub, type, lhs, rhs);
+            return m_b.createBinOp(spv::Op::OpFSub, type, lhs, rhs);
         }
 
         case Opcode::FMIN:
@@ -981,12 +981,12 @@ bool USSETranslatorVisitor::sop2(
                 if (!uniform_1_color)
                     uniform_1_color = utils::make_uniform_vector_from_type(m_b, type, 1);
 
-                target = m_b.createBinOp(spv::OpFSub, type, uniform_1_color, target);
+                target = m_b.createBinOp(spv::Op::OpFSub, type, uniform_1_color, target);
             } else {
                 if (!uniform_1_alpha)
                     uniform_1_alpha = m_b.makeFloatConstant(1.0f);
 
-                target = m_b.createBinOp(spv::OpFSub, type, uniform_1_alpha, target);
+                target = m_b.createBinOp(spv::Op::OpFSub, type, uniform_1_alpha, target);
             }
         }
     };
@@ -1028,11 +1028,11 @@ bool USSETranslatorVisitor::sop2(
     apply_complement_modifiers(factored_a_rhs, amod2, src_alpha_type, false);
 
     // Factor them with source
-    factored_rgb_lhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_lhs, src1_color);
-    factored_rgb_rhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_rhs, src2_color);
+    factored_rgb_lhs = m_b.createBinOp(spv::Op::OpFMul, src_color_type, factored_rgb_lhs, src1_color);
+    factored_rgb_rhs = m_b.createBinOp(spv::Op::OpFMul, src_color_type, factored_rgb_rhs, src2_color);
 
-    factored_a_lhs = m_b.createBinOp(spv::OpFMul, src_alpha_type, factored_a_lhs, src1_alpha);
-    factored_a_rhs = m_b.createBinOp(spv::OpFMul, src_alpha_type, factored_a_rhs, src2_alpha);
+    factored_a_lhs = m_b.createBinOp(spv::Op::OpFMul, src_alpha_type, factored_a_lhs, src1_alpha);
+    factored_a_rhs = m_b.createBinOp(spv::Op::OpFMul, src_alpha_type, factored_a_rhs, src2_alpha);
 
     auto color_res = apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs);
     auto alpha_res = apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs);
@@ -1086,11 +1086,11 @@ bool shader::usse::USSETranslatorVisitor::sop2m(Imm2 pred,
     };
 
     static auto selector_src1_alpha = [](spv::Builder &b, const spv::Id type, const spv::Id src1, const spv::Id src2) {
-        return b.createOp(spv::OpVectorShuffle, type, { { true, src1 }, { true, src1 }, { false, 3 }, { false, 3 }, { false, 3 }, { false, 3 } });
+        return b.createOp(spv::Op::OpVectorShuffle, type, { { true, src1 }, { true, src1 }, { false, 3 }, { false, 3 }, { false, 3 }, { false, 3 } });
     };
 
     static auto selector_src2_alpha = [](spv::Builder &b, spv::Id type, const spv::Id src1, const spv::Id src2) {
-        return b.createOp(spv::OpVectorShuffle, type, { { true, src2 }, { true, src2 }, { false, 3 }, { false, 3 }, { false, 3 }, { false, 3 } });
+        return b.createOp(spv::Op::OpVectorShuffle, type, { { true, src2 }, { true, src2 }, { false, 3 }, { false, 3 }, { false, 3 }, { false, 3 } });
     };
 
     // This opcode always operates on C10.
@@ -1151,11 +1151,11 @@ bool shader::usse::USSETranslatorVisitor::sop2m(Imm2 pred,
     auto apply_opcode = [&](Opcode op, spv::Id type, spv::Id lhs, spv::Id rhs) {
         switch (op) {
         case Opcode::FADD: {
-            return m_b.createBinOp(spv::OpFAdd, type, lhs, rhs);
+            return m_b.createBinOp(spv::Op::OpFAdd, type, lhs, rhs);
         }
 
         case Opcode::FSUB: {
-            return m_b.createBinOp(spv::OpFSub, type, lhs, rhs);
+            return m_b.createBinOp(spv::Op::OpFSub, type, lhs, rhs);
         }
 
         case Opcode::FMIN:
