@@ -1869,8 +1869,8 @@ bool USSETranslatorVisitor::vdual(
             result = m_b.createBuiltinCall(m_b.getTypeId(source), std_builtins, GLSLstd450Exp, { source });
             const int num_comp = m_b.getNumComponents(source);
             const spv::Id ones = utils::make_uniform_vector_from_type(m_b, m_b.getTypeId(result), 1.0f);
-            const spv::Id is_nan = m_b.createUnaryOp(spv::OpIsNan, utils::make_vector_or_scalar_type(m_b, m_b.makeBoolType(), num_comp), result);
-            result = m_b.createTriOp(spv::OpSelect, m_b.getTypeId(result), is_nan, ones, result);
+            const spv::Id is_nan = m_b.createUnaryOp(spv::Op::OpIsNan, utils::make_vector_or_scalar_type(m_b, m_b.makeBoolType(), num_comp), result);
+            result = m_b.createTriOp(spv::Op::OpSelect, m_b.getTypeId(result), is_nan, ones, result);
             break;
         }
         case Opcode::FLOG: {
@@ -1890,8 +1890,8 @@ bool USSETranslatorVisitor::vdual(
             const spv::Id second = load(ops[1], write_mask_source);
             const spv::Id third = load(ops[2], write_mask_source);
             const spv::Id type = m_b.getTypeId(first);
-            result = m_b.createBinOp(spv::OpFMul, type, first, second);
-            result = m_b.createBinOp(spv::OpFAdd, type, result, third);
+            result = m_b.createBinOp(spv::Op::OpFMul, type, first, second);
+            result = m_b.createBinOp(spv::Op::OpFAdd, type, result, third);
             break;
         }
         case Opcode::FSUBFLR: {
@@ -1906,7 +1906,7 @@ bool USSETranslatorVisitor::vdual(
                 const spv::Id second = load(ops[1], write_mask_source);
                 spv::Id second_floored = m_b.createBuiltinCall(type, std_builtins, GLSLstd450Floor, { second });
                 // Then subtract source 1 with the floored source 2.
-                result = m_b.createBinOp(spv::OpFSub, type, first, second_floored);
+                result = m_b.createBinOp(spv::Op::OpFSub, type, first, second_floored);
             }
             break;
         }
