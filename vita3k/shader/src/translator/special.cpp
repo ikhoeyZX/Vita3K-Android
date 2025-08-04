@@ -91,7 +91,8 @@ bool USSETranslatorVisitor::depthf(
 
     if (frag_depth_id == 0) {
         frag_depth_id = m_b.createVariable(spv::NoPrecision, spv::StorageClass::Output, type_f32, "gl_FragDepth");
-        m_b.addDecoration(frag_depth_id, spv::Decoration::BuiltIn, spv::BuiltIn::FragDepth);
+      //  m_b.addDecoration(frag_depth_id, spv::Decoration::BuiltIn, spv::BuiltIn::FragDepth);
+        m_b.addDecoration(frag_depth_id, spv::Decoration::BuiltIn, 22);
     }
 
     spv::Id depth = load(inst.opr.src0, 0b1);
