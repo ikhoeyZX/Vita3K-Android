@@ -764,7 +764,7 @@ bool USSETranslatorVisitor::vldst(
         }
 
         for (int i = 0; i < total_bytes_fo_fetch / 4; ++i) {
-            spv::Id offset = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(4 * i));
+            spv::Id offset = m_b.createBinOp(spv::Op::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(4 * i));
             spv::Id src = utils::fetch_memory(m_b, m_spirv_params, m_util_funcs, offset);
             store(to_store, src, 0b1);
             to_store.num += 1;
