@@ -738,7 +738,7 @@ bool USSETranslatorVisitor::vldst(
         }
 
         if (m_spirv_params.thread_buffer_base != 0)
-            source_1 = m_b.createBinOp(spv::OpIAdd, i32_type, source_1, m_spirv_params.thread_buffer_base);
+            source_1 = m_b.createBinOp(spv::Op::OpIAdd, i32_type, source_1, m_spirv_params.thread_buffer_base);
 
         // get the index in the float array
         spv::Id index = m_b.createBinOp(spv::Op::OpShiftRightLogical, i32_type, source_1, m_b.makeUintConstant(2));
@@ -755,7 +755,7 @@ bool USSETranslatorVisitor::vldst(
 
     spv::Id base = m_b.createBinOp(spv::Op::OpIAdd, i32_type, source_0, source_1);
 
-    if (m_features.enable_memory_mapping)
+    if (m_features.enable_memory_mapping){
         utils::buffer_address_access(m_b, m_spirv_params, m_util_funcs, m_features, to_store, to_store_offset, base, get_data_type_size(type_to_ldst), current_number_to_fetch, -1, is_store);
     } else {
         if (is_store) {
