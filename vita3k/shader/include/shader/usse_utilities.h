@@ -100,7 +100,7 @@ void make_for_loop(spv::Builder &b, spv::Id iterator, spv::Id initial_value_ite,
 
     spv::Id compare_result = b.createBinOp(spv::Op::OpSLessThan, b.makeBoolType(), b.createLoad(iterator, spv::NoPrecision), iterator_limit);
     
-    b.createLoopMerge(&blocks.merge, &blocks.continue_target, spv::LoopControlMask::None, {});
+    b.createLoopMerge(&blocks.merge, &blocks.continue_target, spv::LoopControlMask::MaskNone, {});
     b.createConditionalBranch(compare_result, &blocks.body, &blocks.merge);
 
     b.setBuildPoint(&blocks.body);
