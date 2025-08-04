@@ -132,15 +132,15 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
         switch (lod_mode) {
         case 1:
             op = spv::Op::OpImageSampleImplicitLod;
-            params.push_back(spv::ImageOperands::BiasMask);
+            params.push_back(spv::ImageOperandsMask:Bias);
             params.push_back(extra1);
             break;
         case 2:
-            params.push_back(spv::ImageOperands::LodMask);
+            params.push_back(spv::ImageOperandsMask::Lod);
             params.push_back(extra1);
             break;
         case 3:
-            params.push_back(spv::ImageOperands::GradMask);
+            params.push_back(spv::ImageOperandsMask::Grad);
             params.push_back(extra1);
             params.push_back(extra2);
             break;
