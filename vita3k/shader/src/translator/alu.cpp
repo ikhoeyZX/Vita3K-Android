@@ -1184,7 +1184,7 @@ bool shader::usse::USSETranslatorVisitor::sop2m(Imm2 pred,
             if (!uniform_1)
                 uniform_1 = utils::make_uniform_vector_from_type(m_b, type, 1);
 
-            target = m_b.createBinOp(spv::OpFSub, type, uniform_1, target);
+            target = m_b.createBinOp(spv::Op::OpFSub, type, uniform_1, target);
         }
     };
 
@@ -1205,8 +1205,8 @@ bool shader::usse::USSETranslatorVisitor::sop2m(Imm2 pred,
     apply_complement_modifiers(operation_2, mod2, src_type);
 
     // Factor them with source
-    operation_1 = m_b.createBinOp(spv::OpFMul, src_type, operation_1, src1);
-    operation_2 = m_b.createBinOp(spv::OpFMul, src_type, operation_2, src2);
+    operation_1 = m_b.createBinOp(spv::Op::OpFMul, src_type, operation_1, src1);
+    operation_2 = m_b.createBinOp(spv::Op::OpFMul, src_type, operation_2, src2);
 
     spv::Id result = apply_opcode(color_op, src_type, operation_1, operation_2);
     spv::Id alpha_type = m_b.makeFloatType(32);
@@ -1217,10 +1217,10 @@ bool shader::usse::USSETranslatorVisitor::sop2m(Imm2 pred,
     if (wmask & 0b1000) {
         // Alpha is written, so calculate and also store
         const spv::Id alpha_index = m_b.makeIntConstant(3);
-        spv::Id a1 = m_b.createBinOp(spv::OpVectorExtractDynamic, alpha_type, operation_1, alpha_index);
-        spv::Id a2 = m_b.createBinOp(spv::OpVectorExtractDynamic, alpha_type, operation_2, alpha_index);
+        spv::Id a1 = m_b.createBinOp(spv::Op::OpVectorExtractDynamic, alpha_type, operation_1, alpha_index);
+        spv::Id a2 = m_b.createBinOp(spv::Op::OpVectorExtractDynamic, alpha_type, operation_2, alpha_index);
 
-        result = m_b.createTriOp(spv::OpVectorInsertDynamic, src_type, result, apply_opcode(alpha_op, alpha_type, a1, a2), alpha_index);
+        result = m_b.createTriOp(spv::Op::OpVectorInsertDynamic, src_type, result, apply_opcode(alpha_op, alpha_type, a1, a2), alpha_index);
     }
 
     result = utils::convert_to_int(m_b, m_util_funcs, result, DataType::UINT8, true);
@@ -1400,11 +1400,11 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
     auto apply_opcode = [&](Opcode op, spv::Id type, spv::Id lhs, spv::Id rhs) {
         switch (op) {
         case Opcode::FADD: {
-            return m_b.createBinOp(spv::OpFAdd, type, lhs, rhs);
+            return m_b.createBinOp(spv::Op::OpFAdd, type, lhs, rhs);
         }
 
         case Opcode::FSUB: {
-            return m_b.createBinOp(spv::OpFSub, type, lhs, rhs);
+            return m_b.createBinOp(spv::Op::OpFSub, type, lhs, rhs);
         }
 
         default: {
@@ -1425,12 +1425,12 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
                 if (!uniform_1_color)
                     uniform_1_color = utils::make_uniform_vector_from_type(m_b, type, 1);
 
-                target = m_b.createBinOp(spv::OpFSub, type, uniform_1_color, target);
+                target = m_b.createBinOp(spv::Op::OpFSub, type, uniform_1_color, target);
             } else {
                 if (!uniform_1_alpha)
                     uniform_1_alpha = m_b.makeFloatConstant(1.0f);
 
-                target = m_b.createBinOp(spv::OpFSub, type, uniform_1_alpha, target);
+                target = m_b.createBinOp(spv::Op::OpFSub, type, uniform_1_alpha, target);
             }
         }
     };
@@ -1468,11 +1468,11 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
     apply_complement_modifiers(factored_a_rhs, cmod2, src_alpha_type, false);
 
     // Factor them with source
-    factored_rgb_lhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_lhs, src1_color);
-    factored_rgb_rhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_rhs, src2_color);
+    factored_rgb_lhs = m_b.createBinOp(spv::Op::OpFMul, src_color_type, factored_rgb_lhs, src1_color);
+    factored_rgb_rhs = m_b.createBinOp(spv::Op::OpFMul, src_color_type, factored_rgb_rhs, src2_color);
 
-    factored_a_lhs = m_b.createBinOp(spv::OpFMul, src_alpha_type, factored_a_lhs, src1_alpha);
-    factored_a_rhs = m_b.createBinOp(spv::OpFMul, src_alpha_type, factored_a_rhs, src2_alpha);
+    factored_a_lhs = m_b.createBinOp(spv::Op::OpFMul, src_alpha_type, factored_a_lhs, src1_alpha);
+    factored_a_rhs = m_b.createBinOp(spv::Op::OpFMul, src_alpha_type, factored_a_rhs, src2_alpha);
 
     auto color_res = apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs);
     auto alpha_res = apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs);
@@ -1823,7 +1823,7 @@ bool USSETranslatorVisitor::vdual(
         case Opcode::VADD: {
             const spv::Id first = load(ops[0], write_mask_source);
             const spv::Id second = load(ops[1], write_mask_source);
-            result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(first), first, second);
+            result = m_b.createBinOp(spv::Op::OpFAdd, m_b.getTypeId(first), first, second);
             break;
         }
         case Opcode::FRCP: {
@@ -1841,7 +1841,7 @@ bool USSETranslatorVisitor::vdual(
                 one_v = m_b.makeCompositeConstant(type_f32_v[num_comp], ones);
             }
 
-            result = m_b.createBinOp(spv::OpFDiv, m_b.getTypeId(source), one_v, source);
+            result = m_b.createBinOp(spv::Op::OpFDiv, m_b.getTypeId(source), one_v, source);
             break;
         }
         case Opcode::FRSQ: {
@@ -1853,13 +1853,13 @@ bool USSETranslatorVisitor::vdual(
         case Opcode::VMUL: {
             const spv::Id first = load(ops[0], write_mask_source);
             const spv::Id second = load(ops[1], write_mask_source);
-            result = m_b.createBinOp(spv::OpFMul, m_b.getTypeId(first), first, second);
+            result = m_b.createBinOp(spv::Op::OpFMul, m_b.getTypeId(first), first, second);
             break;
         }
         case Opcode::VDP: {
             const spv::Id first = load(ops[0], write_mask_source);
             const spv::Id second = load(ops[1], write_mask_source);
-            const spv::Op op = (m_b.getNumComponents(first) > 1) ? spv::OpDot : spv::OpFMul;
+            const spv::Op op = (m_b.getNumComponents(first) > 1) ? spv::Op::OpDot : spv::Op::OpFMul;
             result = m_b.createBinOp(op, type_f32, first, second);
             break;
         }
