@@ -526,7 +526,7 @@ bool USSETranslatorVisitor::vtstmsk(
     }
     }
 
-    pred_result = m_b.createOp(spv::OpSelect, output_type, { pred_result, ones, zeros });
+    pred_result = m_b.createOp(spv::Op::OpSelect, output_type, { pred_result, ones, zeros });
 
     store(inst.opr.dest, pred_result);
 
