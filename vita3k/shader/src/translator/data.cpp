@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -92,7 +92,7 @@ bool USSETranslatorVisitor::vmov(
 
     // TODO: adjust dest mask if needed
     CompareMethod compare_method = CompareMethod::NE_ZERO;
-    spv::Op compare_op = spv::OpAny;
+    spv::Op compare_op = spv::Op::OpAny;
 
     const DataType test_type = is_u8_conditional ? DataType::UINT8 : move_data_type;
     const bool is_test_signed = is_signed_integer_data_type(test_type);
@@ -151,7 +151,7 @@ bool USSETranslatorVisitor::vmov(
 
     // Recompile
 
-    m_b.setLine(m_recompiler.cur_pc);
+    m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
 
     if ((move_data_type == DataType::F16) || (move_data_type == DataType::F32)) {
         set_repeat_multiplier(2, 2, 2, 2);
@@ -208,7 +208,7 @@ bool USSETranslatorVisitor::vmov(
 
         bool source_2_first = false;
 
-        if (compare_op != spv::OpAny) {
+        if (compare_op != spv::Op::OpAny) {
             // Merely do what the instruction does
             // First compare source0 with vector 0
             spv::Id cond_result = m_b.createOp(compare_op, utils::make_vector_or_scalar_type(m_b, m_b.makeBoolType(), m_b.getNumComponents(source_to_compare_with_0)),
@@ -217,7 +217,7 @@ bool USSETranslatorVisitor::vmov(
             // For each component, if the compare result is true, move the equivalent component from source1 to dest,
             // else the same thing with source2
             // This behavior matches with OpSelect, so use it. Since IMix doesn't exist (really)
-            result = m_b.createOp(spv::OpSelect, result_type, { cond_result, source_1, source_2 });
+            result = m_b.createOp(spv::Op::OpSelect, result_type, { cond_result, source_1, source_2 });
         } else {
             // We optimize the float case. We can make the GPU use native float instructions without touching bool or integers
             // Taking advantage of the mix function: if we use absolute 0 and 1 as the lerp, we got the equivalent of:
@@ -463,7 +463,7 @@ bool USSETranslatorVisitor::vpck(
     }
 
     // Recompile
-    m_b.setLine(m_recompiler.cur_pc);
+    m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
 
     // Doing this extra dest type check for future change in case I'm wrong (pent0)
     if (is_integer_data_type(inst.opr.dest.type)) {
@@ -712,16 +712,16 @@ bool USSETranslatorVisitor::vldst(
     spv::Id i32_type = m_b.makeIntType(32);
 
     if (inst.opr.src1.bank != shader::usse::RegisterBank::IMMEDIATE) {
-        source_1 = m_b.createBinOp(spv::OpISub, m_b.getTypeId(source_1), source_1, reg_index_base_cst);
+        source_1 = m_b.createBinOp(spv::Op::OpISub, m_b.getTypeId(source_1), source_1, reg_index_base_cst);
     }
 
     if (!moe_expand) {
-        source_1 = m_b.createBinOp(spv::OpIAdd, i32_type, source_1, m_b.makeIntConstant(4));
+        source_1 = m_b.createBinOp(spv::Op::OpIAdd, i32_type, source_1, m_b.makeIntConstant(4));
     }
 
     if (!is_store) {
         spv::Id source_2 = load(inst.opr.src2, 0b1, src2_offset);
-        source_1 = m_b.createBinOp(spv::OpIAdd, i32_type, source_1, source_2);
+        source_1 = m_b.createBinOp(spv::Op::OpIAdd, i32_type, source_1, source_2);
     }
 
     if (is_thread_buffer_access) {
@@ -738,11 +738,11 @@ bool USSETranslatorVisitor::vldst(
         }
 
         if (m_spirv_params.thread_buffer_base != 0)
-            source_1 = m_b.createBinOp(spv::OpIAdd, i32_type, source_1, m_spirv_params.thread_buffer_base);
+            source_1 = m_b.createBinOp(spv::Op::OpIAdd, i32_type, source_1, m_spirv_params.thread_buffer_base);
 
         // get the index in the float array
-        spv::Id index = m_b.createBinOp(spv::OpShiftRightLogical, i32_type, source_1, m_b.makeUintConstant(2));
-        spv::Id float_ptr = utils::create_access_chain(m_b, spv::StorageClassPrivate, m_spirv_params.thread_buffer, { index });
+        spv::Id index = m_b.createBinOp(spv::Op::OpShiftRightLogical, i32_type, source_1, m_b.makeUintConstant(2));
+        spv::Id float_ptr = utils::create_access_chain(m_b, spv::StorageClass::Private, m_spirv_params.thread_buffer, { index });
         if (is_store) {
             spv::Id value = load(to_store, 0b1);
             m_b.createStore(value, float_ptr);
@@ -753,9 +753,9 @@ bool USSETranslatorVisitor::vldst(
         continue;
     }
 
-    spv::Id base = m_b.createBinOp(spv::OpIAdd, i32_type, source_0, source_1);
+    spv::Id base = m_b.createBinOp(spv::Op::OpIAdd, i32_type, source_0, source_1);
 
-    if (m_features.enable_memory_mapping) {
+    if (m_features.enable_memory_mapping){
         utils::buffer_address_access(m_b, m_spirv_params, m_util_funcs, m_features, to_store, to_store_offset, base, get_data_type_size(type_to_ldst), current_number_to_fetch, -1, is_store);
     } else {
         if (is_store) {
@@ -764,7 +764,7 @@ bool USSETranslatorVisitor::vldst(
         }
 
         for (int i = 0; i < total_bytes_fo_fetch / 4; ++i) {
-            spv::Id offset = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(4 * i));
+            spv::Id offset = m_b.createBinOp(spv::Op::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(4 * i));
             spv::Id src = utils::fetch_memory(m_b, m_spirv_params, m_util_funcs, offset);
             store(to_store, src, 0b1);
             to_store.num += 1;

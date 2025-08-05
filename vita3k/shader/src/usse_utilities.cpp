@@ -78,8 +78,8 @@ spv::Id finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 
     spv::Id first_base_threshold = 0;
     if (!offset_is_const) {
         // threshold is 4 - offset % 4
-        spv::Id off_mod_4 = b.createBinOp(spv::OpBitwiseAnd, i32, offset, b.makeIntConstant(3));
-        first_base_threshold = b.createBinOp(spv::OpISub, i32, b.makeIntConstant(4), off_mod_4);
+        spv::Id off_mod_4 = b.createBinOp(spv::Op::OpBitwiseAnd, i32, offset, b.makeIntConstant(3));
+        first_base_threshold = b.createBinOp(spv::Op::OpISub, i32, b.makeIntConstant(4), off_mod_4);
     }
 
     // Try to plant a composite construct
@@ -97,7 +97,7 @@ spv::Id finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 
                 }
 
                 if (!b.isScalar(access_base)) {
-                    ops.push_back(b.createOp(spv::OpVectorExtractDynamic, target_type, { access_base, b.makeIntConstant(access_offset) }));
+                    ops.push_back(b.createOp(spv::Op::OpVectorExtractDynamic, target_type, { access_base, b.makeIntConstant(access_offset) }));
                 } else {
                     ops.push_back(access_base);
                 }
@@ -108,14 +108,14 @@ spv::Id finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 
                 }
                 // do exactly as above, but in spirv
                 spv::Id delta = b.makeIntConstant((int)swizz[i] - (int)SwizzleChannel::C_X);
-                spv::Id access_offset = b.createBinOp(spv::OpIAdd, i32, offset, delta);
-                access_offset = b.createBinOp(spv::OpBitwiseAnd, i32, access_offset, b.makeIntConstant(3));
+                spv::Id access_offset = b.createBinOp(spv::Op::OpIAdd, i32, offset, delta);
+                access_offset = b.createBinOp(spv::Op::OpBitwiseAnd, i32, access_offset, b.makeIntConstant(3));
 
-                spv::Id first_base = b.createOp(spv::OpVectorExtractDynamic, target_type, { first, access_offset });
-                spv::Id second_base = b.createOp(spv::OpVectorExtractDynamic, target_type, { second, access_offset });
+                spv::Id first_base = b.createOp(spv::Op::OpVectorExtractDynamic, target_type, { first, access_offset });
+                spv::Id second_base = b.createOp(spv::Op::OpVectorExtractDynamic, target_type, { second, access_offset });
                 // select one if (int)swizz[i] - (int)SwizzleChannel::C_X < 4 - offset % 4
-                spv::Id cond = b.createBinOp(spv::OpSLessThan, b.makeBoolType(), delta, first_base_threshold);
-                ops.push_back(b.createOp(spv::OpSelect, target_type, { cond, first_base, second_base }));
+                spv::Id cond = b.createBinOp(spv::Op::OpSLessThan, b.makeBoolType(), delta, first_base_threshold);
+                ops.push_back(b.createOp(spv::Op::OpSelect, target_type, { cond, first_base, second_base }));
             }
         }
     }
@@ -177,27 +177,28 @@ static spv::Function *make_fx10_unpack_func(spv::Builder &b, const SpirvUtilFunc
     spv::Id type_f32_v3 = b.makeVectorType(type_f32, 3);
 
     spv::Function *fx10_unpack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32_v3, "unpack3xFX10", { type_f32 }, { "to_unpack" },
+        spv::NoPrecision, type_f32_v3, "unpack3xFX10", spv::LinkageType::Max, { type_f32 },
         decorations, &fx10_unpack_func_block);
+    b.setupFunctionDebugInfo(fx10_unpack_func, "unpack3xFX10", { type_f32 }, { "to_unpack" });
 
     spv::Id extracted = fx10_unpack_func->getParamId(0);
 
     // Cast to int first
-    extracted = b.createUnaryOp(spv::OpBitcast, type_i32, extracted);
+    extracted = b.createUnaryOp(spv::Op::OpBitcast, type_i32, extracted);
     spv::Id vec = b.createCompositeConstruct(ivec3, { extracted, extracted, extracted });
 
     // vec = vec >> uvec3(0,10,20);
     // note: note entirely sure, I really hope the layout is the same as in a 32-bit little-endian integer
     const spv::Id shift_amount = b.makeCompositeConstant(uvec3, { b.makeUintConstant(0), b.makeUintConstant(10), b.makeUintConstant(20) });
-    vec = b.createBinOp(spv::OpShiftRightLogical, ivec3, vec, shift_amount);
+    vec = b.createBinOp(spv::Op::OpShiftRightLogical, ivec3, vec, shift_amount);
 
     // sign-extend the 10-bit integer:
     // vec <<= 22 (logical)
     // vec >>= 22 (arithmetic)
     spv::Id extend_amount = b.makeUintConstant(22);
     extend_amount = b.makeCompositeConstant(uvec3, { extend_amount, extend_amount, extend_amount });
-    vec = b.createBinOp(spv::OpShiftLeftLogical, ivec3, vec, extend_amount);
-    vec = b.createBinOp(spv::OpShiftRightArithmetic, ivec3, vec, extend_amount);
+    vec = b.createBinOp(spv::Op::OpShiftLeftLogical, ivec3, vec, extend_amount);
+    vec = b.createBinOp(spv::Op::OpShiftRightArithmetic, ivec3, vec, extend_amount);
 
     // normalize it
     vec = convert_to_float(b, utils, vec, DataType::C10, true);
@@ -258,19 +259,20 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
     }
 
     spv::Function *unpack_func = b.makeFunctionEntry(
-        spv::NoPrecision, output_type, func_name.c_str(), { type_f32 }, { "to_unpack" },
+        spv::NoPrecision, output_type, func_name.c_str(), spv::LinkageType::Max, { type_f32 },
         decorations, &unpack_func_block);
+    b.setupFunctionDebugInfo(unpack_func, func_name.c_str(), { type_f32 }, { "to_unpack" });
     spv::Id extracted = unpack_func->getParamId(0);
 
     const spv::Id result_type = is_signed ? type_i32 : type_ui32;
-    extracted = b.createUnaryOp(spv::OpBitcast, result_type, extracted);
+    extracted = b.createUnaryOp(spv::Op::OpBitcast, result_type, extracted);
 
     const auto comp_bits = 32 / comp_count;
     spv::Id comp_bits_val = b.makeUintConstant(comp_bits);
 
     std::vector<spv::Id> comps;
     for (int i = 0; i < comp_count; ++i) {
-        const spv::Op op = is_signed ? spv::OpBitFieldSExtract : spv::OpBitFieldUExtract;
+        const spv::Op op = is_signed ? spv::Op::OpBitFieldSExtract : spv::Op::OpBitFieldUExtract;
         spv::Id comp = b.createTriOp(op, result_type, extracted, b.makeUintConstant(comp_bits * i), comp_bits_val);
 
         comps.push_back(comp);
@@ -334,8 +336,9 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
     }
 
     spv::Function *pack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32, func_name.c_str(), { input_type }, { "to_pack" },
+        spv::NoPrecision, type_f32, func_name.c_str(), spv::LinkageType::Max, { input_type },
         decorations, &pack_func_block);
+    b.setupFunctionDebugInfo(pack_func, func_name.c_str(), { input_type }, { "to_pack" });
 
     spv::Id extracted = pack_func->getParamId(0);
     const int comp_bits = 32 / comp_count;
@@ -344,11 +347,11 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
 
     auto output = is_signed ? b.makeIntConstant(0) : b.makeUintConstant(0);
     for (int i = 0; i < comp_count; ++i) {
-        spv::Id comp = b.createBinOp(spv::OpVectorExtractDynamic, comp_type, extracted, b.makeIntConstant(i));
-        output = b.createOp(spv::OpBitFieldInsert, comp_type, { output, comp, b.makeIntConstant(comp_bits * i), b.makeIntConstant(comp_bits) });
+        spv::Id comp = b.createBinOp(spv::Op::OpVectorExtractDynamic, comp_type, extracted, b.makeIntConstant(i));
+        output = b.createOp(spv::Op::OpBitFieldInsert, comp_type, { output, comp, b.makeIntConstant(comp_bits * i), b.makeIntConstant(comp_bits) });
     }
 
-    output = b.createUnaryOp(spv::OpBitcast, type_f32, output);
+    output = b.createUnaryOp(spv::Op::OpBitcast, type_f32, output);
 
     b.makeReturn(false, output);
     b.setBuildPoint(last_build_point);
@@ -367,12 +370,13 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const SpirvUtilFunct
     spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
 
     spv::Function *f16_unpack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32_v2, "unpack2xF16", { type_f32 }, { "to_unpack" },
+        spv::NoPrecision, type_f32_v2, "unpack2xF16", spv::LinkageType::Max, { type_f32 },
         decorations, &f16_unpack_func_block);
+    b.setupFunctionDebugInfo(f16_unpack_func, "unpack2xF16", { type_f32 }, { "to_unpack" });
 
     spv::Id extracted = f16_unpack_func->getParamId(0);
 
-    extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
+    extracted = b.createUnaryOp(spv::Op::OpBitcast, type_ui32, extracted);
     extracted = b.createBuiltinCall(type_f32_v2, utils.std_builtins, GLSLstd450UnpackHalf2x16, { extracted });
 
     b.makeReturn(false, extracted);
@@ -392,14 +396,15 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const SpirvUtilFunctio
     spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
 
     spv::Function *f16_pack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32, "pack2xF16", { type_f32_v2 }, { "to_pack" },
+        spv::NoPrecision, type_f32, "pack2xF16", spv::LinkageType::Max, { type_f32_v2 },
         decorations, &f16_pack_func_block);
+    b.setupFunctionDebugInfo(f16_pack_func, "pack2xF16", { type_f32_v2 }, { "to_pack" });
 
     spv::Id extracted = f16_pack_func->getParamId(0);
 
     // use packHalf2x16
     extracted = b.createBuiltinCall(type_ui32, utils.std_builtins, GLSLstd450PackHalf2x16, { extracted });
-    extracted = b.createUnaryOp(spv::OpBitcast, type_f32, extracted);
+    extracted = b.createUnaryOp(spv::Op::OpBitcast, type_f32, extracted);
 
     b.makeReturn(false, extracted);
     b.setBuildPoint(last_build_point);
@@ -423,8 +428,9 @@ static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, spv::Id 
 
     const std::string func_name = fmt::format("fetchMemoryForBuffer{}Base{}", buffer_index, info.base);
 
-    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), { type_i32 }, { "addr" },
+    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), spv::LinkageType::Max, { type_i32 },
         {}, &func_block);
+    b.setupFunctionDebugInfo(fetch_func, func_name.c_str(), { type_i32 }, { "addr" });
 
     spv::Id sixteen_cst = b.makeIntConstant(16);
     spv::Id eight_cst = b.makeIntConstant(8);
@@ -433,37 +439,37 @@ static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, spv::Id 
     spv::Id zero_cst = b.makeIntConstant(0);
 
     spv::Id addr = fetch_func->getParamId(0);
-    spv::Id base_vector = b.createBinOp(spv::OpSDiv, type_i32, addr, sixteen_cst);
-    spv::Id base_left = b.createBinOp(spv::OpSRem, type_i32, addr, sixteen_cst);
-    spv::Id base_offset = b.createBinOp(spv::OpSDiv, type_i32, base_left, four_cst);
-    spv::Id rem = b.createBinOp(spv::OpSRem, type_i32, base_left, four_cst);
-    spv::Id rem_inv = b.createBinOp(spv::OpISub, type_i32, four_cst, rem);
+    spv::Id base_vector = b.createBinOp(spv::Op::OpSDiv, type_i32, addr, sixteen_cst);
+    spv::Id base_left = b.createBinOp(spv::Op::OpSRem, type_i32, addr, sixteen_cst);
+    spv::Id base_offset = b.createBinOp(spv::Op::OpSDiv, type_i32, base_left, four_cst);
+    spv::Id rem = b.createBinOp(spv::Op::OpSRem, type_i32, base_left, four_cst);
+    spv::Id rem_inv = b.createBinOp(spv::Op::OpISub, type_i32, four_cst, rem);
 
     // If int was shifted by more than 32 bits in nvidia glsl, the pipeline crashes.
     // rem_inv_overflow is the flag used to make sure >> 32 is not executed.
-    spv::Id rem_inv_overflow = b.createBinOp(spv::OpIEqual, b.makeBoolType(), rem_inv, four_cst);
-    rem_inv = b.createTriOp(spv::OpSelect, type_i32, rem_inv_overflow, zero_cst, rem_inv);
+    spv::Id rem_inv_overflow = b.createBinOp(spv::Op::OpIEqual, b.makeBoolType(), rem_inv, four_cst);
+    rem_inv = b.createTriOp(spv::Op::OpSelect, type_i32, rem_inv_overflow, zero_cst, rem_inv);
 
-    spv::Id rem_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem, eight_cst);
-    spv::Id rem_inv_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem_inv, eight_cst);
+    spv::Id rem_in_bits = b.createBinOp(spv::Op::OpIMul, type_i32, rem, eight_cst);
+    spv::Id rem_inv_in_bits = b.createBinOp(spv::Op::OpIMul, type_i32, rem_inv, eight_cst);
 
-    spv::Id src = b.createLoad(utils::create_access_chain(b, spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), base_vector, base_offset }), spv::NoPrecision);
+    spv::Id src = b.createLoad(utils::create_access_chain(b, spv::StorageClass::StorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), base_vector, base_offset }), spv::NoPrecision);
 
-    spv::Id friend_offset = b.createBinOp(spv::OpIAdd, type_i32, base_offset, one_cst);
-    spv::Id friend_vector = b.createBinOp(spv::OpIAdd, type_i32, base_vector, b.createBinOp(spv::OpSDiv, type_i32, friend_offset, b.makeIntConstant(4)));
+    spv::Id friend_offset = b.createBinOp(spv::Op::OpIAdd, type_i32, base_offset, one_cst);
+    spv::Id friend_vector = b.createBinOp(spv::Op::OpIAdd, type_i32, base_vector, b.createBinOp(spv::Op::OpSDiv, type_i32, friend_offset, b.makeIntConstant(4)));
 
-    friend_offset = b.createBinOp(spv::OpSRem, type_i32, friend_offset, four_cst);
+    friend_offset = b.createBinOp(spv::Op::OpSRem, type_i32, friend_offset, four_cst);
 
-    spv::Id src_friend = b.createLoad(utils::create_access_chain(b, spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), friend_vector, friend_offset }), spv::NoPrecision);
-    spv::Id src_casted = b.createUnaryOp(spv::OpBitcast, type_ui32, src);
-    spv::Id src_friend_casted = b.createUnaryOp(spv::OpBitcast, type_ui32, src_friend);
+    spv::Id src_friend = b.createLoad(utils::create_access_chain(b, spv::StorageClass::StorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), friend_vector, friend_offset }), spv::NoPrecision);
+    spv::Id src_casted = b.createUnaryOp(spv::Op::OpBitcast, type_ui32, src);
+    spv::Id src_friend_casted = b.createUnaryOp(spv::Op::OpBitcast, type_ui32, src_friend);
 
-    spv::Id high_part = b.createBinOp(spv::OpShiftLeftLogical, type_ui32, src_casted, rem_in_bits);
-    spv::Id low_part = b.createBinOp(spv::OpShiftRightLogical, type_ui32, src_friend_casted, rem_inv_in_bits);
-    low_part = b.createTriOp(spv::OpSelect, type_ui32, rem_inv_overflow, b.makeUintConstant(0), low_part);
+    spv::Id high_part = b.createBinOp(spv::Op::OpShiftLeftLogical, type_ui32, src_casted, rem_in_bits);
+    spv::Id low_part = b.createBinOp(spv::Op::OpShiftRightLogical, type_ui32, src_friend_casted, rem_inv_in_bits);
+    low_part = b.createTriOp(spv::Op::OpSelect, type_ui32, rem_inv_overflow, b.makeUintConstant(0), low_part);
 
-    spv::Id output = b.createBinOp(spv::OpBitwiseOr, type_ui32, high_part, low_part);
-    spv::Id output_casted = b.createUnaryOp(spv::OpBitcast, type_f32, output);
+    spv::Id output = b.createBinOp(spv::Op::OpBitwiseOr, type_ui32, high_part, low_part);
+    spv::Id output_casted = b.createUnaryOp(spv::Op::OpBitcast, type_f32, output);
 
     b.makeReturn(false, output_casted);
     b.setBuildPoint(last_build_point);
@@ -479,8 +485,10 @@ static spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderP
     spv::Block *func_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
-    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "fetchMemory", { type_i32 }, { "addr" },
+    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "fetchMemory", spv::LinkageType::Max, { type_i32 },
         {}, &func_block);
+    b.setupFunctionDebugInfo(fetch_func, "fetchMemory", { type_i32 }, { "addr" });
+
     spv::Id addr = fetch_func->getParamId(0);
 
     std::stack<std::unique_ptr<spv::Builder::If>> fetch_stacks;
@@ -493,14 +501,14 @@ static spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderP
         const spv::Id range_begin = b.makeIntConstant(buffer_info.base);
         const spv::Id range_end = b.makeIntConstant(buffer_info.base + buffer_info.size);
 
-        spv::Id need1 = b.createBinOp(spv::OpSGreaterThanEqual, type_bool, addr, range_begin);
-        spv::Id need2 = b.createBinOp(spv::OpSLessThan, type_bool, addr, range_end);
+        spv::Id need1 = b.createBinOp(spv::Op::OpSGreaterThanEqual, type_bool, addr, range_begin);
+        spv::Id need2 = b.createBinOp(spv::Op::OpSLessThan, type_bool, addr, range_end);
 
-        spv::Id need_final = b.createBinOp(spv::OpLogicalAnd, type_bool, need1, need2);
+        spv::Id need_final = b.createBinOp(spv::Op::OpLogicalAnd, type_bool, need1, need2);
 
-        fetch_stacks.push(std::make_unique<spv::Builder::If>(need_final, spv::SelectionControlMaskNone, b));
+        fetch_stacks.push(std::make_unique<spv::Builder::If>(need_final, spv::SelectionControlMask::MaskNone, b));
 
-        spv::Id subtracted_base = b.createBinOp(spv::OpISub, type_i32, addr, range_begin);
+        spv::Id subtracted_base = b.createBinOp(spv::Op::OpISub, type_i32, addr, range_begin);
         spv::Function *access_func = make_fetch_memory_func_for_array(b, params.buffer_container, buffer_info, index);
 
         b.makeReturn(false, b.createFunctionCall(access_func, { subtracted_base }));
@@ -537,18 +545,18 @@ static spv::Id make_or_get_buffer_ptr(spv::Builder &b, shader::usse::utils::Spir
     const spv::Id vec = shader::usse::utils::make_vector_or_scalar_type(b, f32, nb_components);
     const spv::Id runtime_array = b.makeRuntimeArray(vec);
     // always a stride of 16, even if the array size is less
-    b.addDecoration(runtime_array, spv::DecorationArrayStride, stride);
+    b.addDecoration(runtime_array, spv::Decoration::ArrayStride, stride);
     const spv::Id buffer_data = b.makeStructType({ runtime_array }, fmt::format("buffer_ptr{}_s{}", nb_components, stride).c_str());
-    b.addDecoration(buffer_data, spv::DecorationBlock);
+    b.addDecoration(buffer_data, spv::Decoration::Block);
     b.addMemberName(buffer_data, 0, "data");
     // non-writable for the time being
     if (is_write)
-        b.addMemberDecoration(buffer_data, 0, spv::DecorationNonReadable);
+        b.addMemberDecoration(buffer_data, 0, spv::Decoration::NonReadable);
     else
-        b.addMemberDecoration(buffer_data, 0, spv::DecorationNonWritable);
-    b.addMemberDecoration(buffer_data, 0, spv::DecorationOffset, 0);
+        b.addMemberDecoration(buffer_data, 0, spv::Decoration::NonWritable);
+    b.addMemberDecoration(buffer_data, 0, spv::Decoration::Offset, 0);
 
-    utils.buffer_address_vec[buffer_utils_idx][is_write] = b.makePointer(spv::StorageClassPhysicalStorageBuffer, buffer_data);
+    utils.buffer_address_vec[buffer_utils_idx][is_write] = b.makePointer(spv::StorageClass::PhysicalStorageBuffer, buffer_data);
     return utils.buffer_address_vec[buffer_utils_idx][is_write];
 }
 
@@ -559,14 +567,14 @@ void buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params,
     spv::Id buffer_idx_val;
     if (buffer_idx == -1) {
         // buffer index is in the upper 4 bits of addr
-        buffer_idx_val = b.createBinOp(spv::OpShiftRightLogical, i32, addr, b.makeIntConstant(28));
+        buffer_idx_val = b.createBinOp(spv::Op::OpShiftRightLogical, i32, addr, b.makeIntConstant(28));
         // remove the buffer index bits from the address
-        addr = b.createBinOp(spv::OpBitwiseAnd, i32, addr, b.makeIntConstant((1 << 28) - 1));
+        addr = b.createBinOp(spv::Op::OpBitwiseAnd, i32, addr, b.makeIntConstant((1 << 28) - 1));
     } else {
         buffer_idx_val = b.makeIntConstant(buffer_idx);
     }
 
-    spv::Id buffer_address = utils::create_access_chain(b, spv::StorageClassUniform, params.render_info_id, { b.makeIntConstant(params.buffer_addresses_id), buffer_idx_val });
+    spv::Id buffer_address = utils::create_access_chain(b, spv::StorageClass::Uniform, params.render_info_id, { b.makeIntConstant(params.buffer_addresses_id), buffer_idx_val });
     buffer_address = b.createLoad(buffer_address, spv::NoPrecision);
     // add the offset from the base address
     buffer_address = add_uvec2_uint(b, buffer_address, addr);
@@ -576,15 +584,15 @@ void buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params,
         if (nb_components >= 4) {
             // first copy them 4 by 4 (using the fact that we can do 4-byte aligned reads)
             const spv::Id buffer_container = make_or_get_buffer_ptr(b, utils, 4, 16, is_buffer_store);
-            const spv::Id buffer_address_vec4 = b.createUnaryOp(spv::OpBitcast, buffer_container, buffer_address);
+            const spv::Id buffer_address_vec4 = b.createUnaryOp(spv::Op::OpBitcast, buffer_container, buffer_address);
             while (nb_components >= 4) {
-                spv::Id accessed = utils::create_access_chain(b, spv::StorageClassPhysicalStorageBuffer, buffer_address_vec4, { zero, b.makeIntConstant(buffer_idx_vec4) });
+                spv::Id accessed = utils::create_access_chain(b, spv::StorageClass::PhysicalStorageBuffer, buffer_address_vec4, { zero, b.makeIntConstant(buffer_idx_vec4) });
 
                 if (is_buffer_store) {
                     spv::Id data = load(b, params, utils, features, dest, 0b1111, dest_offset);
-                    b.createStore(data, accessed, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
+                    b.createStore(data, accessed, spv::MemoryAccessMask::Aligned, spv::Scope::Max, 4);
                 } else {
-                    accessed = b.createLoad(accessed, spv::NoPrecision, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
+                    accessed = b.createLoad(accessed, spv::NoPrecision, spv::MemoryAccessMask::Aligned, spv::Scope::Max, 4);
                     store(b, params, utils, features, dest, accessed, 0b1111, dest_offset);
                 }
 
@@ -598,15 +606,15 @@ void buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params,
         if (nb_components > 0) {
             // do one last load for the at most 3 last components
             const spv::Id buffer_container = make_or_get_buffer_ptr(b, utils, nb_components, 16, is_buffer_store);
-            const spv::Id buffer_address_vec = b.createUnaryOp(spv::OpBitcast, buffer_container, buffer_address);
+            const spv::Id buffer_address_vec = b.createUnaryOp(spv::Op::OpBitcast, buffer_container, buffer_address);
 
-            spv::Id accessed = utils::create_access_chain(b, spv::StorageClassPhysicalStorageBuffer, buffer_address_vec, { zero, b.makeIntConstant(buffer_idx_vec4) });
+            spv::Id accessed = utils::create_access_chain(b, spv::StorageClass::PhysicalStorageBuffer, buffer_address_vec, { zero, b.makeIntConstant(buffer_idx_vec4) });
 
             if (is_buffer_store) {
                 spv::Id data = load(b, params, utils, features, dest, (1 << nb_components) - 1, dest_offset);
-                b.createStore(data, accessed, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
+                b.createStore(data, accessed, spv::MemoryAccessMask::Aligned, spv::Scope::Max, 4);
             } else {
-                accessed = b.createLoad(accessed, spv::NoPrecision, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
+                accessed = b.createLoad(accessed, spv::NoPrecision, spv::MemoryAccessMask::Aligned, spv::Scope::Max, 4);
                 store(b, params, utils, features, dest, accessed, (1 << nb_components) - 1, dest_offset);
             }
         }
@@ -626,19 +634,19 @@ void buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params,
             spv::Id component_addr = add_uvec2_uint(b, buffer_address, b.makeUintConstant(component_idx * component_size));
             // we must make it 4-byte aligned
             spv::Id addr_low_bits = b.createCompositeExtract(component_addr, i32, 0);
-            spv::Id alignment = b.createBinOp(spv::OpBitwiseAnd, i32, addr_low_bits, b.makeIntConstant(0b11));
-            addr_low_bits = b.createBinOp(spv::OpBitwiseAnd, i32, addr_low_bits, b.makeIntConstant(~0b11));
+            spv::Id alignment = b.createBinOp(spv::Op::OpBitwiseAnd, i32, addr_low_bits, b.makeIntConstant(0b11));
+            addr_low_bits = b.createBinOp(spv::Op::OpBitwiseAnd, i32, addr_low_bits, b.makeIntConstant(~0b11));
             component_addr = b.createCompositeInsert(addr_low_bits, component_addr, b.getTypeId(component_addr), 0);
 
             // now we can finally load it
-            component_addr = b.createUnaryOp(spv::OpBitcast, buffer_container, component_addr);
-            spv::Id loaded = utils::create_access_chain(b, spv::StorageClassPhysicalStorageBuffer, component_addr, { zero, zero });
-            loaded = b.createLoad(loaded, spv::NoPrecision, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
+            component_addr = b.createUnaryOp(spv::Op::OpBitcast, buffer_container, component_addr);
+            spv::Id loaded = utils::create_access_chain(b, spv::StorageClass::PhysicalStorageBuffer, component_addr, { zero, zero });
+            loaded = b.createLoad(loaded, spv::NoPrecision, spv::MemoryAccessMask::Aligned, spv::Scope::Max, 4);
 
             // now keep only the interesting 8/16 bits
-            loaded = b.createUnaryOp(spv::OpBitcast, i32, loaded);
-            spv::Id shift = b.createBinOp(spv::OpShiftLeftLogical, i32, alignment, b.makeIntConstant(3)); // 1 byte = 8 bits
-            loaded = b.createOp(spv::OpBitFieldSExtract, i32, { loaded, shift, b.makeIntConstant(component_size * 8) });
+            loaded = b.createUnaryOp(spv::Op::OpBitcast, i32, loaded);
+            spv::Id shift = b.createBinOp(spv::Op::OpShiftLeftLogical, i32, alignment, b.makeIntConstant(3)); // 1 byte = 8 bits
+            loaded = b.createOp(spv::Op::OpBitFieldSExtract, i32, { loaded, shift, b.makeIntConstant(component_size * 8) });
 
             loaded_components.push_back(loaded);
 
@@ -751,17 +759,17 @@ static spv::Id apply_modifiers(spv::Builder &b, const SpirvUtilFunctions &utils,
     if (flags & shader::usse::RegisterFlags::Negative) {
         // Negate the value
         spv::Id c0 = spv::NoResult;
-        spv::Op sub_op = spv::OpAny;
+        spv::Op sub_op = spv::Op::OpAny;
 
         if (is_int) {
             c0 = b.makeIntConstant(0);
-            sub_op = spv::OpISub;
+            sub_op = spv::Op::OpISub;
         } else if (is_uint) {
             c0 = b.makeUintConstant(0);
-            sub_op = spv::OpISub;
+            sub_op = spv::Op::OpISub;
         } else {
             c0 = b.makeFloatConstant(0.0f);
-            sub_op = spv::OpFSub;
+            sub_op = spv::Op::OpFSub;
         }
 
         std::vector<spv::Id> ops(num_comp, c0);
@@ -924,7 +932,7 @@ spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunc
         if (op.bank == RegisterBank::INDEX) {
             op.num -= 1;
         }
-        spv::Id result = b.createLoad(b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)))), { bank_base, b.makeIntConstant(op.num) }), spv::NoPrecision);
+        spv::Id result = b.createLoad(b.createOp(spv::Op::OpAccessChain, b.makePointer(spv::StorageClass::Private, b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)))), { bank_base, b.makeIntConstant(op.num) }), spv::NoPrecision);
 
         if (!is_float_data_type(op.type) && size_comp < sizeof(int32_t)) {
             spv::Id mask;
@@ -947,7 +955,7 @@ spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunc
                 type = b.makeIntType(32);
                 break;
             }
-            result = b.createBinOp(spv::OpBitwiseAnd, type, result, mask);
+            result = b.createBinOp(spv::Op::OpBitwiseAnd, type, result, mask);
         }
 
         return result;
@@ -1022,13 +1030,13 @@ spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunc
         spv::Id type_i32 = b.makeIntType(32);
 
         // Calculate the "at" offset.
-        spv::Id idx_reg_val = b.createLoad(b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, type_i32), { params.indexes, b.makeIntConstant(idx_off) }), spv::NoPrecision);
+        spv::Id idx_reg_val = b.createLoad(b.createOp(spv::Op::OpAccessChain, b.makePointer(spv::StorageClass::Private, type_i32), { params.indexes, b.makeIntConstant(idx_off) }), spv::NoPrecision);
 
-        spv::Id real_idx = b.createBinOp(spv::OpIAdd, type_i32, b.createBinOp(spv::OpIMul, type_i32, idx_reg_val, b.makeIntConstant(2)), b.makeIntConstant(add_off));
+        spv::Id real_idx = b.createBinOp(spv::Op::OpIAdd, type_i32, b.createBinOp(spv::Op::OpIMul, type_i32, idx_reg_val, b.makeIntConstant(2)), b.makeIntConstant(add_off));
         finalize_offset = real_idx;
 
-        idx_in_arr_1 = b.createBinOp(spv::OpSDiv, type_i32, real_idx, b.makeIntConstant(4));
-        idx_in_arr_2 = b.createBinOp(spv::OpSDiv, type_i32, b.createBinOp(spv::OpIAdd, type_i32, real_idx, b.makeIntConstant(3)),
+        idx_in_arr_1 = b.createBinOp(spv::Op::OpSDiv, type_i32, real_idx, b.makeIntConstant(4));
+        idx_in_arr_2 = b.createBinOp(spv::Op::OpSDiv, type_i32, b.createBinOp(spv::Op::OpIAdd, type_i32, real_idx, b.makeIntConstant(3)),
             b.makeIntConstant(4));
     }
 
@@ -1096,7 +1104,7 @@ spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunc
     spv::Id connected_friend = spv::NoResult;
     spv::Id bank_base = *get_reg_bank(params, op.bank);
     spv::Id comp_type = b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)));
-    comp_type = b.makePointer(spv::StorageClassPrivate, comp_type);
+    comp_type = b.makePointer(spv::StorageClass::Private, comp_type);
 
     // May access two float in the arrays to get U8 or F16 components
     // Need to divide it with number of source components that each float can hold
@@ -1118,8 +1126,8 @@ spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunc
     second_pass_operands.push_back(idx_in_arr_2);
 
     // Do an access chain
-    first_pass = b.createOp(spv::OpAccessChain, comp_type, first_pass_operands);
-    connected_friend = b.createOp(spv::OpAccessChain, comp_type, second_pass_operands);
+    first_pass = b.createOp(spv::Op::OpAccessChain, comp_type, first_pass_operands);
+    connected_friend = b.createOp(spv::Op::OpAccessChain, comp_type, second_pass_operands);
 
     first_pass = finalize(b, b.createLoad(first_pass, spv::NoPrecision), b.createLoad(connected_friend, spv::NoPrecision), extract_swizz,
         finalize_offset, extract_mask);
@@ -1132,9 +1140,9 @@ spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunc
         // Second pass: Do unpack
         first_pass = unpack(b, utils, features, first_pass, op.type, op.swizzle, dest_mask, 0);
     } else if (op.type == DataType::INT32) {
-        first_pass = b.createUnaryOp(spv::OpBitcast, make_vector_or_scalar_type(b, b.makeIntType(32), static_cast<int>(dest_comp_count)), first_pass);
+        first_pass = b.createUnaryOp(spv::Op::OpBitcast, make_vector_or_scalar_type(b, b.makeIntType(32), static_cast<int>(dest_comp_count)), first_pass);
     } else if (op.type == DataType::UINT32) {
-        first_pass = b.createUnaryOp(spv::OpBitcast, make_vector_or_scalar_type(b, b.makeUintType(32), static_cast<int>(dest_comp_count)), first_pass);
+        first_pass = b.createUnaryOp(spv::Op::OpBitcast, make_vector_or_scalar_type(b, b.makeUintType(32), static_cast<int>(dest_comp_count)), first_pass);
     }
 
     if (first_pass == spv::NoResult) {
@@ -1167,7 +1175,7 @@ spv::Id unpack(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &f
             extract_ops.push_back(b.makeIntConstant(static_cast<int>(i)));
 
             if (target_comp_count > 1) {
-                extracted = b.createOp(spv::OpVectorExtractDynamic, type_f32, extract_ops);
+                extracted = b.createOp(spv::Op::OpVectorExtractDynamic, type_f32, extract_ops);
             }
         }
 
@@ -1194,7 +1202,7 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
 
             if (!b.isIntType(source)) {
                 std::vector<spv::Id> ops{ source };
-                source = b.createOp(spv::OpBitcast, b.makeIntType(32), ops);
+                source = b.createOp(spv::Op::OpBitcast, b.makeIntType(32), ops);
             }
 
             // if dest is a 8 or 16 bits integer
@@ -1203,11 +1211,11 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
                 spv::Id mask = (get_data_type_size(dest.type) == 1)
                     ? b.makeIntConstant(0xFF)
                     : b.makeIntConstant(0xFFFF);
-                source = b.createBinOp(spv::OpBitwiseAnd, b.makeIntType(32), source, mask);
+                source = b.createBinOp(spv::Op::OpBitwiseAnd, b.makeIntType(32), source, mask);
             }
         }
 
-        spv::Id var = b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)))), { bank_base, b.makeIntConstant(dest.num) });
+        spv::Id var = b.createOp(spv::Op::OpAccessChain, b.makePointer(spv::StorageClass::Private, b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)))), { bank_base, b.makeIntConstant(dest.num) });
 
         b.createStore(source, var);
         return;
@@ -1244,7 +1252,7 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
         std::vector<spv::Id> ops{ source };
         spv::Id bitcast_type = utils::make_vector_or_scalar_type(b, type_f32, total_comp_source);
 
-        source = b.createOp(spv::OpBitcast, bitcast_type, ops);
+        source = b.createOp(spv::Op::OpBitcast, bitcast_type, ops);
         dest.type = DataType::F32;
     }
 
@@ -1260,7 +1268,7 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
 
     // Element inside an array inside a pointer.
     spv::Id bank_base_elem_type = b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)));
-    spv::Id comp_type = b.makePointer(spv::StorageClassPrivate, bank_base_elem_type);
+    spv::Id comp_type = b.makePointer(spv::StorageClass::Private, bank_base_elem_type);
     int insert_offset = dest.num + off;
     spv::Id elem = spv::NoResult;
 
@@ -1293,20 +1301,20 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
                     if (b.isScalar(source) || total_comp_source == 1) {
                         ops.push_back(source);
                     } else {
-                        ops.push_back(b.createOp(spv::OpVectorExtractDynamic, vec_comp_type, { source, b.makeIntConstant(std::min(source_value_taken_count++, (int)total_comp_source - 1)) }));
+                        ops.push_back(b.createOp(spv::Op::OpVectorExtractDynamic, vec_comp_type, { source, b.makeIntConstant(std::min(source_value_taken_count++, (int)total_comp_source - 1)) }));
                     }
                 } else {
                     if (elem == spv::NoResult) {
                         // Replace it
                         const int actual_offset_start_to_store = insert_offset + (i + nearest_swizz_on) / num_comp_in_float;
-                        elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(actual_offset_start_to_store >> 2) });
-                        elem = b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { b.createLoad(elem, spv::NoPrecision), b.makeIntConstant(actual_offset_start_to_store % 4) });
+                        elem = b.createOp(spv::Op::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(actual_offset_start_to_store >> 2) });
+                        elem = b.createOp(spv::Op::OpVectorExtractDynamic, b.makeFloatType(32), { b.createLoad(elem, spv::NoPrecision), b.makeIntConstant(actual_offset_start_to_store % 4) });
 
                         // Extract to f16
                         elem = unpack_one(b, utils, features, elem, dest.type);
                     }
 
-                    ops.push_back(b.createOp(spv::OpVectorExtractDynamic, vec_comp_type, { elem, b.makeIntConstant(j) }));
+                    ops.push_back(b.createOp(spv::Op::OpVectorExtractDynamic, vec_comp_type, { elem, b.makeIntConstant(j) }));
                 }
             }
 
@@ -1338,8 +1346,8 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
     // Now we do store!
     if (total_comp_source == 1) {
         insert_offset += (int)(nearest_swizz_on / (4 / size_comp));
-        elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(insert_offset >> 2) });
-        spv::Id inserted = b.createOp(spv::OpVectorInsertDynamic, bank_base_elem_type, { b.createLoad(elem, spv::NoPrecision), source, b.makeIntConstant(insert_offset % 4) });
+        elem = b.createOp(spv::Op::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(insert_offset >> 2) });
+        spv::Id inserted = b.createOp(spv::Op::OpVectorInsertDynamic, bank_base_elem_type, { b.createLoad(elem, spv::NoPrecision), source, b.makeIntConstant(insert_offset % 4) });
 
         b.createStore(inserted, elem);
         return;
@@ -1347,7 +1355,7 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
 
     if (total_comp_source == 4 && dest_mask == 0b1111 && insert_offset % 4 == 0) {
         // Store directly
-        elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(insert_offset >> 2) });
+        elem = b.createOp(spv::Op::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(insert_offset >> 2) });
         b.createStore(source, elem);
         return;
     }
@@ -1358,7 +1366,7 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
     const int total_elem_to_copy_first_vec = std::min<int>(4 - (insert_offset % 4), total_comp_source);
     std::uint32_t dest_comp_stored_so_far = 0;
 
-    elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((insert_offset) >> 2) });
+    elem = b.createOp(spv::Op::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((insert_offset) >> 2) });
 
     ops.emplace_back(true, b.createLoad(elem, spv::NoPrecision));
     ops.emplace_back(true, source);
@@ -1375,7 +1383,7 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
         }
     }
 
-    spv::Id shuffled = b.createOp(spv::OpVectorShuffle, b.makeVectorType(type_f32, 4), ops);
+    spv::Id shuffled = b.createOp(spv::Op::OpVectorShuffle, b.makeVectorType(type_f32, 4), ops);
     b.createStore(shuffled, elem);
 
     // Check if there's leftover to be stored to next vec4 element.
@@ -1383,7 +1391,7 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
         ops.clear();
         const int total_elem_left = ((insert_offset % 4) + total_comp_source) - 4;
 
-        elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((insert_offset + 3) >> 2) });
+        elem = b.createOp(spv::Op::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((insert_offset + 3) >> 2) });
 
         // Do an access chain
         ops.emplace_back(true, b.createLoad(elem, spv::NoPrecision));
@@ -1402,7 +1410,7 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
             ops.emplace_back(false, i);
         }
 
-        spv::Id shuffled = b.createOp(spv::OpVectorShuffle, bank_base_elem_type, ops);
+        spv::Id shuffled = b.createOp(spv::Op::OpVectorShuffle, bank_base_elem_type, ops);
         b.createStore(shuffled, elem);
     }
 }
@@ -1461,16 +1469,16 @@ spv::Id convert_to_float(spv::Builder &b, const SpirvUtilFunctions &utils, spv::
     const auto is_sint = b.isIntType(spv_type);
 
     if (is_sint) {
-        opr = b.createUnaryOp(spv::OpConvertSToF, target_type, opr);
+        opr = b.createUnaryOp(spv::Op::OpConvertSToF, target_type, opr);
     } else {
-        opr = b.createUnaryOp(spv::OpConvertUToF, target_type, opr);
+        opr = b.createUnaryOp(spv::Op::OpConvertUToF, target_type, opr);
     }
 
     if (normal) {
         const float normalizer = b.makeFloatConstant(get_int_normalize_range_constants(type));
         const spv::Id normalizer_vec = create_constant_vector_or_scalar(b, normalizer, comp_count);
 
-        opr = b.createBinOp(spv::OpFDiv, target_type, opr, normalizer_vec);
+        opr = b.createBinOp(spv::Op::OpFDiv, target_type, opr, normalizer_vec);
         if (is_sint) {
             // opr = max(-1.0f, opr) (or -2.0f for fx10)
             float lower_bound = type == DataType::C10 ? -2.f : -1.f;
@@ -1500,14 +1508,14 @@ spv::Id convert_to_int(spv::Builder &b, const SpirvUtilFunctions &utils, spv::Id
 
         // opr = round(clamp(opr * norm), -1, 1)
         opr = b.createBuiltinCall(opr_type, utils.std_builtins, GLSLstd450FClamp, { opr, range_begin_vec, range_end_vec });
-        opr = b.createBinOp(spv::OpFMul, opr_type, opr, normalizer_vec);
+        opr = b.createBinOp(spv::Op::OpFMul, opr_type, opr, normalizer_vec);
         opr = b.createBuiltinCall(opr_type, utils.std_builtins, GLSLstd450Round, { opr });
     }
 
     if (!is_uint) {
-        opr = b.createUnaryOp(spv::OpConvertFToS, target_type, opr);
+        opr = b.createUnaryOp(spv::Op::OpConvertFToS, target_type, opr);
     } else {
-        opr = b.createUnaryOp(spv::OpConvertFToU, target_type, opr);
+        opr = b.createUnaryOp(spv::Op::OpConvertFToU, target_type, opr);
     }
 
     return opr;
@@ -1523,7 +1531,7 @@ spv::Id add_uvec2_uint(spv::Builder &b, spv::Id vec, spv::Id to_add) {
 
     if (!b.isUintType(b.getTypeId(to_add)))
         // convert i32 to u32
-        to_add = b.createUnaryOp(spv::OpBitcast, u32, to_add);
+        to_add = b.createUnaryOp(spv::Op::OpBitcast, u32, to_add);
 
     // add to_add to the lower part of vec then add the carry to the upper part of vec
     // something like this
@@ -1531,10 +1539,10 @@ spv::Id add_uvec2_uint(spv::Builder &b, spv::Id vec, spv::Id to_add) {
     // vec.x = uaddCarry(vec.x, to_add, carry);
     // vec.y += carry;
     spv::Id lower = b.createCompositeExtract(vec, u32, 0);
-    spv::Id lower_add = b.createBinOp(spv::OpIAddCarry, add_result_type, lower, to_add);
+    spv::Id lower_add = b.createBinOp(spv::Op::OpIAddCarry, add_result_type, lower, to_add);
     spv::Id carry = b.createCompositeExtract(lower_add, u32, 1);
     spv::Id upper = b.createCompositeExtract(vec, u32, 1);
-    upper = b.createBinOp(spv::OpIAdd, u32, upper, carry);
+    upper = b.createBinOp(spv::Op::OpIAdd, u32, upper, carry);
     lower = b.createCompositeExtract(lower_add, u32, 0);
     return b.createCompositeConstruct(uvec2, { lower, upper });
 }
