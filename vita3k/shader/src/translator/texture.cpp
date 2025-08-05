@@ -132,15 +132,15 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
         switch (lod_mode) {
         case 1:
             op = spv::Op::OpImageSampleImplicitLod;
-            params.push_back(spv::ImageOperandsMask::Bias);
+            params.push_back(static_cast<spv::Id>(spv::ImageOperandsMask::Bias));
             params.push_back(extra1);
             break;
         case 2:
-            params.push_back(spv::ImageOperandsMask::Lod);
+            params.push_back(static_cast<spv::Id>(spv::ImageOperandsMask::Lod));
             params.push_back(extra1);
             break;
         case 3:
-            params.push_back(spv::ImageOperandsMask::Grad);
+            params.push_back(static_cast<spv::Id>(spv::ImageOperandsMask::Grad));
             params.push_back(extra1);
             params.push_back(extra2);
             break;
@@ -401,7 +401,7 @@ bool USSETranslatorVisitor::smp(
             }
 
             std::vector<spv::Block *> segment_blocks;
-            m_b.makeSwitch(texture_index, spv::SelectionControl::MaskNone, samplers.size(), sampler_indices, index_to_segment, -1, segment_blocks);
+            m_b.makeSwitch(texture_index, spv::SelectionControlMask::None, samplers.size(), sampler_indices, index_to_segment, -1, segment_blocks);
             for (size_t s = 0; s < samplers.size(); s++) {
                 const SamplerInfo *smp = samplers[s];
 
