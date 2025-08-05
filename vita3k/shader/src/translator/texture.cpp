@@ -401,7 +401,7 @@ bool USSETranslatorVisitor::smp(
             }
 
             std::vector<spv::Block *> segment_blocks;
-            m_b.makeSwitch(texture_index, spv::SelectionControlMask::None, samplers.size(), sampler_indices, index_to_segment, -1, segment_blocks);
+            m_b.makeSwitch(texture_index, spv::SelectionControlMask::MaskNone, samplers.size(), sampler_indices, index_to_segment, -1, segment_blocks);
             for (size_t s = 0; s < samplers.size(); s++) {
                 const SamplerInfo *smp = samplers[s];
 
