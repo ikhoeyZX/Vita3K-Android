@@ -907,7 +907,7 @@ spv::Id USSERecompiler::get_condition_value(const std::uint8_t pred, const bool 
     spv::Id pred_v = visitor.load(pred_opr, 0b0001);
     if (do_neg) {
         std::vector<spv::Id> ops{ pred_v };
-        pred_v = b.createOp(spv::OpLogicalNot, b.makeBoolType(), ops);
+        pred_v = b.createOp(spv::Op::OpLogicalNot, b.makeBoolType(), ops);
     }
 
     return pred_v;
@@ -927,7 +927,7 @@ void USSERecompiler::compile_code_node(const usse::USSECodeNode &code) {
         constexpr uint64_t sop3_opcode = 0b10001;
         if (code.size > 1 || (inst[code.offset] >> 59) != sop3_opcode) {
             spv::Id pred_v = get_condition_value(code.condition);
-            cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
+            cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMask::MaskNone, b);
         }
     }
 
@@ -956,7 +956,7 @@ void USSERecompiler::compile_break_node(const usse::USSEBreakNode &node) {
 
     if (node.get_condition() != 0) {
         spv::Id pred_v = get_condition_value(node.get_condition());
-        cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
+        cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMask::MaskNone, b);
     }
 
     b.createLoopExit();
@@ -970,7 +970,7 @@ void USSERecompiler::compile_continue_node(const usse::USSEContinueNode &node) {
 
     if (node.get_condition() != 0) {
         spv::Id pred_v = get_condition_value(node.get_condition());
-        cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
+        cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMask::MaskNone, b);
     }
 
     b.createLoopContinue();
@@ -980,7 +980,7 @@ void USSERecompiler::compile_continue_node(const usse::USSEContinueNode &node) {
 }
 
 void USSERecompiler::compile_conditional_node(const usse::USSEConditionalNode &cond) {
-    spv::Builder::If if_builder(get_condition_value(cond.negif_condition(), true), spv::SelectionControlMaskNone, b);
+    spv::Builder::If if_builder(get_condition_value(cond.negif_condition(), true), spv::SelectionControlMask::MaskNone, b);
     compile_block(*cond.if_block());
 
     if (cond.else_block()) {
