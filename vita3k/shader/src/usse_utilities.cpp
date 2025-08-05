@@ -177,7 +177,7 @@ static spv::Function *make_fx10_unpack_func(spv::Builder &b, const SpirvUtilFunc
     spv::Id type_f32_v3 = b.makeVectorType(type_f32, 3);
 
     spv::Function *fx10_unpack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32_v3, "unpack3xFX10", spv::LinkageTypeMax, { type_f32 },
+        spv::NoPrecision, type_f32_v3, "unpack3xFX10", spv::LinkageType::Max, { type_f32 },
         decorations, &fx10_unpack_func_block);
     b.setupFunctionDebugInfo(fx10_unpack_func, "unpack3xFX10", { type_f32 }, { "to_unpack" });
 
@@ -453,7 +453,7 @@ static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, spv::Id 
     spv::Id rem_in_bits = b.createBinOp(spv::Op::OpIMul, type_i32, rem, eight_cst);
     spv::Id rem_inv_in_bits = b.createBinOp(spv::Op::OpIMul, type_i32, rem_inv, eight_cst);
 
-    spv::Id src = b.createLoad(utils::create_access_chain(b, spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), base_vector, base_offset }), spv::NoPrecision);
+    spv::Id src = b.createLoad(utils::create_access_chain(b, spv::StorageClass::StorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), base_vector, base_offset }), spv::NoPrecision);
 
     spv::Id friend_offset = b.createBinOp(spv::Op::OpIAdd, type_i32, base_offset, one_cst);
     spv::Id friend_vector = b.createBinOp(spv::Op::OpIAdd, type_i32, base_vector, b.createBinOp(spv::Op::OpSDiv, type_i32, friend_offset, b.makeIntConstant(4)));
@@ -545,7 +545,7 @@ static spv::Id make_or_get_buffer_ptr(spv::Builder &b, shader::usse::utils::Spir
     const spv::Id vec = shader::usse::utils::make_vector_or_scalar_type(b, f32, nb_components);
     const spv::Id runtime_array = b.makeRuntimeArray(vec);
     // always a stride of 16, even if the array size is less
-    b.addDecoration(runtime_array, spv::DecorationArrayStride, stride);
+    b.addDecoration(runtime_array, spv::Decoration::ArrayStride, stride);
     const spv::Id buffer_data = b.makeStructType({ runtime_array }, fmt::format("buffer_ptr{}_s{}", nb_components, stride).c_str());
     b.addDecoration(buffer_data, spv::Decoration::Block);
     b.addMemberName(buffer_data, 0, "data");
@@ -584,15 +584,15 @@ void buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params,
         if (nb_components >= 4) {
             // first copy them 4 by 4 (using the fact that we can do 4-byte aligned reads)
             const spv::Id buffer_container = make_or_get_buffer_ptr(b, utils, 4, 16, is_buffer_store);
-            const spv::Id buffer_address_vec4 = b.createUnaryOp(spv::OpBitcast, buffer_container, buffer_address);
+            const spv::Id buffer_address_vec4 = b.createUnaryOp(spv::Op::OpBitcast, buffer_container, buffer_address);
             while (nb_components >= 4) {
-                spv::Id accessed = utils::create_access_chain(b, spv::StorageClassPhysicalStorageBuffer, buffer_address_vec4, { zero, b.makeIntConstant(buffer_idx_vec4) });
+                spv::Id accessed = utils::create_access_chain(b, spv::StorageClass::PhysicalStorageBuffer, buffer_address_vec4, { zero, b.makeIntConstant(buffer_idx_vec4) });
 
                 if (is_buffer_store) {
                     spv::Id data = load(b, params, utils, features, dest, 0b1111, dest_offset);
-                    b.createStore(data, accessed, spv::MemoryAccess::AlignedMask, spv::Scope::Max, 4);
+                    b.createStore(data, accessed, spv::MemoryAccessMask::Aligned, spv::Scope::Max, 4);
                 } else {
-                    accessed = b.createLoad(accessed, spv::NoPrecision, spv::MemoryAccess::AlignedMask, spv::Scope::Max, 4);
+                    accessed = b.createLoad(accessed, spv::NoPrecision, spv::MemoryAccessMask::Aligned, spv::Scope::Max, 4);
                     store(b, params, utils, features, dest, accessed, 0b1111, dest_offset);
                 }
 
@@ -612,9 +612,9 @@ void buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params,
 
             if (is_buffer_store) {
                 spv::Id data = load(b, params, utils, features, dest, (1 << nb_components) - 1, dest_offset);
-                b.createStore(data, accessed, spv::MemoryAccess::AlignedMask, spv::Scope::Max, 4);
+                b.createStore(data, accessed, spv::MemoryAccessMask::Aligned, spv::Scope::Max, 4);
             } else {
-                accessed = b.createLoad(accessed, spv::NoPrecision, spv::MemoryAccess::AlignedMask, spv::Scope::Max, 4);
+                accessed = b.createLoad(accessed, spv::NoPrecision, spv::MemoryAccessMask::Aligned, spv::Scope::Max, 4);
                 store(b, params, utils, features, dest, accessed, (1 << nb_components) - 1, dest_offset);
             }
         }
