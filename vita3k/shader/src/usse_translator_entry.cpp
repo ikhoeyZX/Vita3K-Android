@@ -998,7 +998,7 @@ void USSERecompiler::compile_loop_node(const usse::USSELoopNode &loop) {
     b.setBuildPoint(&loops.head);
 
     // In the head we only want to branch to body. We always do while do anyway
-    b.createLoopMerge(&loops.merge, &loops.continue_target, 0, {});
+    b.createLoopMerge(&loops.merge, &loops.continue_target, spv::LoopControlMask::MaskNone, {});
     b.createBranch(true, &loops.body);
 
     // Emit body content
@@ -1112,11 +1112,11 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
     b.createFunctionCall(end_hook_func, {});
 
     if (features.should_use_shader_interlock() && program.is_fragment() && program.is_frag_color_used())
-        b.createNoResultOp(spv::OpEndInvocationInterlockEXT);
+        b.createNoResultOp(spv::Op::OpEndInvocationInterlockEXT);
 
     if (recomp.visitor.frag_depth_id != 0) {
         interfaces.push_back(recomp.visitor.frag_depth_id);
-        b.addExecutionMode(spv_func_main, spv::ExecutionModeDepthReplacing);
+        b.addExecutionMode(spv_func_main, spv::ExecutionMode::DepthReplacing);
     }
 }
 
