@@ -16,8 +16,6 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#define SPIRV_CROSS_NAMESPACE_OVERRIDE
-
 #include <shader/spirv_recompiler.h>
 #include <shader/uniform_block.h>
 #include <shader/usse_disasm.h>
