@@ -112,7 +112,7 @@ struct TranslationState {
     bool is_fragment = false;
     bool is_target_glsl = false;
     bool is_vulkan = false;
-    spv::ImageFormat image_storage_format = spv::ImageFormat::ImageFormatUnknown;
+    spv::ImageFormat image_storage_format = spv::ImageFormat::Unknown;
     const Hints *hints = nullptr;
 };
 
@@ -400,7 +400,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     spv::Id v4 = b.makeVectorType(f32, 4);
 
     spv::Id current_coord = b.createVariable(spv::NoPrecision, spv::StorageClass::Input, v4, "gl_FragCoord");
-    b.addDecoration(current_coord, spv::Decoration::BuiltIn, spv::BuiltIn::FragCoord);
+   // b.addDecoration(current_coord, spv::Decoration::BuiltIn, spv::BuiltIn::FragCoord);
+    b.addDecoration(current_coord, spv::Decoration::BuiltIn, 15);
 
     translation_state.interfaces.push_back(current_coord);
     translation_state.frag_coord_id = current_coord;
@@ -666,7 +667,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 b.makeVectorType(b.makeFloatType(32), /*tex_coord_comp_count*/ query_info.coord_index == 10 ? 2 : 4), coord_name.c_str());
 
             if (query_info.coord_index == 10)
-                b.addDecoration(coords[query_info.coord_index].first, spv::Decoration::BuiltIn, spv::BuiltIn::PointCoord);
+                // b.addDecoration(coords[query_info.coord_index].first, spv::Decoration::BuiltIn, spv::BuiltIn::PointCoord);
+                b.addDecoration(coords[query_info.coord_index].first, spv::Decoration::BuiltIn, 16);
             else
                 b.addDecoration(coords[query_info.coord_index].first, spv::Decoration::Location, TEXCOORD_BASE_LOCATION + query_info.coord_index);
 
@@ -762,7 +764,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 }
                 translation_state.color_attachment_raw_id = color_attachment_raw;
 
-                spv::Id load_normal_cond = b.createBinOp(spv::OpFOrdLessThan, b.makeBoolType(), utils::create_access_chain(b, spv::StorageClassPrivate, translation_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_use_raw_image) }), b.makeFloatConstant(0.5f));
+                spv::Id load_normal_cond = b.createBinOp(spv::Op::OpFOrdLessThan, b.makeBoolType(), utils::create_access_chain(b, spv::StorageClass::Private, translation_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_use_raw_image) }), b.makeFloatConstant(0.5f));
                 spv::Builder::If cond_builder(load_normal_cond, spv::SelectionControlMaskNone, b);
 
                 source = b.createOp(spv::Op::OpImageRead, v4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
