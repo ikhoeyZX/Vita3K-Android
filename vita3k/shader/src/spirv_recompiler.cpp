@@ -994,13 +994,13 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
 
         render_buf_type = b.makeStructType(uniform_composition, "GxmRenderVertBufferBlock");
-        b.addDecoration(render_buf_type, spv::DecorationBlock);
+        b.addDecoration(render_buf_type, spv::Decoration::Block);
         if (translation_state.is_target_glsl)
-            b.addDecoration(render_buf_type, spv::DecorationGLSLShared);
+            b.addDecoration(render_buf_type, spv::Decoration::GLSLShared);
 
 #define ADD_VERT_UNIFORM_MEMBER(name)                                                                                                             \
     curr_field_id++;                                                                                                                              \
-    b.addMemberDecoration(render_buf_type, VERT_UNIFORM_##name, spv::DecorationOffset, static_cast<int>(offsetof(RenderVertUniformBlock, name))); \
+    b.addMemberDecoration(render_buf_type, VERT_UNIFORM_##name, spv::Decoration::Offset, static_cast<int>(offsetof(RenderVertUniformBlock, name))); \
     b.addMemberName(render_buf_type, VERT_UNIFORM_##name, #name)
 
         ADD_VERT_UNIFORM_MEMBER(viewport_flip);
@@ -1013,7 +1013,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 #undef ADD_VERT_UNIFORM_MEMBER
 #define ADD_EXT_UNIFORM_MEMBER(name)                                                                                                                                                \
     spv_params.name##_id = curr_field_id;                                                                                                                                           \
-    b.addMemberDecoration(render_buf_type, curr_field_id, spv::DecorationOffset, RenderVertUniformBlockExtended::get_##name##_offset(uniform_buffer_count, uniform_texture_count)); \
+    b.addMemberDecoration(render_buf_type, curr_field_id, spv::Decoration::Offset, RenderVertUniformBlockExtended::get_##name##_offset(uniform_buffer_count, uniform_texture_count)); \
     b.addMemberName(render_buf_type, curr_field_id++, #name)
 
         if (uniform_buffer_count > 0) {
@@ -1026,11 +1026,11 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
 #undef ADD_EXT_UNIFORM_MEMBER
 
-        translation_state.render_info_id = b.createVariable(spv::NoPrecision, spv::StorageClassUniform, render_buf_type, "renderVertInfo");
+        translation_state.render_info_id = b.createVariable(spv::NoPrecision, spv::StorageClass::Uniform, render_buf_type, "renderVertInfo");
 
-        b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, translation_state.is_vulkan ? 0 : 2);
+        b.addDecoration(translation_state.render_info_id, spv::Decoration::Binding, translation_state.is_vulkan ? 0 : 2);
         if (translation_state.is_vulkan)
-            b.addDecoration(translation_state.render_info_id, spv::DecorationDescriptorSet, 0);
+            b.addDecoration(translation_state.render_info_id, spv::Decoration::DescriptorSet, 0);
     }
 
     if (program_type == SceGxmProgramType::Fragment) {
@@ -1044,13 +1044,13 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
         render_buf_type = b.makeStructType(uniform_composition, "GxmRenderFragBufferBlock");
 
-        b.addDecoration(render_buf_type, spv::DecorationBlock);
+        b.addDecoration(render_buf_type, spv::Decoration::Block);
         if (translation_state.is_target_glsl)
-            b.addDecoration(render_buf_type, spv::DecorationGLSLShared);
+            b.addDecoration(render_buf_type, spv::Decoration::GLSLShared);
 
 #define ADD_FRAG_UNIFORM_MEMBER(name)                                                                                                             \
     curr_field_id++;                                                                                                                              \
-    b.addMemberDecoration(render_buf_type, FRAG_UNIFORM_##name, spv::DecorationOffset, static_cast<int>(offsetof(RenderFragUniformBlock, name))); \
+    b.addMemberDecoration(render_buf_type, FRAG_UNIFORM_##name, spv::Decoration::Offset, static_cast<int>(offsetof(RenderFragUniformBlock, name))); \
     b.addMemberName(render_buf_type, FRAG_UNIFORM_##name, #name)
 
         ADD_FRAG_UNIFORM_MEMBER(back_disabled);
@@ -1062,7 +1062,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 #undef ADD_FRAG_UNIFORM_MEMBER
 #define ADD_EXT_UNIFORM_MEMBER(name)                                                                                                                                                \
     spv_params.name##_id = curr_field_id;                                                                                                                                           \
-    b.addMemberDecoration(render_buf_type, curr_field_id, spv::DecorationOffset, RenderFragUniformBlockExtended::get_##name##_offset(uniform_buffer_count, uniform_texture_count)); \
+    b.addMemberDecoration(render_buf_type, curr_field_id, spv::Decoration::Offset, RenderFragUniformBlockExtended::get_##name##_offset(uniform_buffer_count, uniform_texture_count)); \
     b.addMemberName(render_buf_type, curr_field_id++, #name)
 
         if (uniform_buffer_count > 0) {
@@ -1075,17 +1075,17 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
 #undef ADD_EXT_UNIFORM_MEMBER
 
-        translation_state.render_info_id = b.createVariable(spv::NoPrecision, spv::StorageClassUniform, render_buf_type, "renderFragInfo");
+        translation_state.render_info_id = b.createVariable(spv::NoPrecision, spv::StorageClass::Uniform, render_buf_type, "renderFragInfo");
 
-        b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, translation_state.is_vulkan ? 1 : 3);
+        b.addDecoration(translation_state.render_info_id, spv::Decoration::Binding, translation_state.is_vulkan ? 1 : 3);
         if (translation_state.is_vulkan)
-            b.addDecoration(translation_state.render_info_id, spv::DecorationDescriptorSet, 0);
+            b.addDecoration(translation_state.render_info_id, spv::Decoration::DescriptorSet, 0);
 
         if (program.is_frag_color_used() && features.should_use_shader_interlock() && translation_state.is_vulkan) {
             // specialization constant for shader interlock:
             // layout (constant_id = GAMMA_CORRECTION_SPECIALIZATION_ID) const bool is_srgb = false;
             spv_params.is_srgb_constant = b.makeBoolConstant(false, true);
-            b.addDecoration(spv_params.is_srgb_constant, spv::DecorationSpecId, (int)GAMMA_CORRECTION_SPECIALIZATION_ID);
+            b.addDecoration(spv_params.is_srgb_constant, spv::Decoration::SpecId, (int)GAMMA_CORRECTION_SPECIALIZATION_ID);
             b.addName(spv_params.is_srgb_constant, "is_srgb");
         }
     }
@@ -1105,7 +1105,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 usse::utils::buffer_address_access(b, spv_params, utils, features, dest, 0, b.makeIntConstant(0), sizeof(uint32_t), copy_size, host_idx);
             } else {
                 const uint32_t reg_block_size_in_f32v = std::min<uint32_t>(buffer.reg_block_size + 3, REG_SA_COUNT) / 4;
-                const auto spv_buffer = utils::create_access_chain(b, spv::StorageClassStorageBuffer, spv_params.buffer_container,
+                const auto spv_buffer = utils::create_access_chain(b, spv::StorageClass::StorageBuffer, spv_params.buffer_container,
                     { b.makeIntConstant(spv_params.buffers.at(host_idx).index_in_container) });
                 copy_uniform_block_to_register(b, spv_params.uniforms, spv_buffer, ite_copy, buffer.reg_start_offset, reg_block_size_in_f32v);
             }
@@ -1137,7 +1137,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             } else {
                 type = utils::make_vector_or_scalar_type(b, u32, num_comp);
             }
-            var = b.createVariable(spv::NoPrecision, spv::StorageClassInput, type, name.c_str());
+            var = b.createVariable(spv::NoPrecision, spv::StorageClass::Input, type, name.c_str());
 
             VarToReg var_to_reg = {};
             var_to_reg.var = var;
@@ -1148,7 +1148,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             translation_state.var_to_regs.push_back(var_to_reg);
         } else {
             const spv::Id param_type = get_param_type(b, input);
-            var = b.createVariable(spv::NoPrecision, spv::StorageClassInput, param_type, name.c_str());
+            var = b.createVariable(spv::NoPrecision, spv::StorageClass::Input, param_type, name.c_str());
 
             VarToReg var_to_reg = {};
             var_to_reg.var = var;
@@ -1162,22 +1162,22 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         switch (semantic) {
         case SCE_GXM_PARAMETER_SEMANTIC_INDEX:
             if (translation_state.is_vulkan)
-                b.addDecoration(var, spv::DecorationBuiltIn, spv::BuiltInVertexIndex);
+                b.addDecoration(var, spv::Decoration::BuiltIn, spv::BuiltIn::VertexIndex);
             else
-                b.addDecoration(var, spv::DecorationBuiltIn, spv::BuiltInVertexId);
+                b.addDecoration(var, spv::Decoration::BuiltIn, spv::BuiltIn::VertexId);
             break;
 
         case SCE_GXM_PARAMETER_SEMANTIC_INSTANCE:
             if (translation_state.is_vulkan)
                 // InstanceIndex = InstanceId - BaseInstance, but BaseInstance is always 0 for gxm
-                b.addDecoration(var, spv::DecorationBuiltIn, spv::BuiltInInstanceIndex);
+                b.addDecoration(var, spv::Decoration::BuiltIn, spv::BuiltIn::InstanceIndex);
             else
-                b.addDecoration(var, spv::DecorationBuiltIn, spv::BuiltInInstanceId);
+                b.addDecoration(var, spv::Decoration::BuiltIn, spv::BuiltIn::InstanceId);
             break;
 
         default:
             if (location != -1) {
-                b.addDecoration(var, spv::DecorationLocation, location);
+                b.addDecoration(var, spv::Decoration::Location, location);
             }
         }
 
@@ -1185,7 +1185,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     };
 
     for (const auto &sampler : program_input.samplers) {
-        const auto sampler_spv_var = create_param_sampler(b, (program.is_vertex() ? "vertTex_" : "fragTex_") + sampler.name, (sampler.is_cube ? spv::DimCube : spv::Dim2D));
+        const auto sampler_spv_var = create_param_sampler(b, (program.is_vertex() ? "vertTex_" : "fragTex_") + sampler.name, (sampler.is_cube ? spv::Dim::Cube : spv::Dim::Dim2D));
         const SceGxmTextureFormat texture_format = translation_state.is_fragment ? translation_state.hints->fragment_textures[sampler.index] : translation_state.hints->vertex_textures[sampler.index];
         samplers[sampler.index] = {
             sampler_spv_var,
@@ -1196,11 +1196,11 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         };
 
         if (translation_state.is_vulkan) {
-            b.addDecoration(sampler_spv_var, spv::DecorationBinding, sampler.index);
-            b.addDecoration(sampler_spv_var, spv::DecorationDescriptorSet, program.is_vertex() ? 2 : 3);
+            b.addDecoration(sampler_spv_var, spv::Decoration::Binding, sampler.index);
+            b.addDecoration(sampler_spv_var, spv::Decoration::DescriptorSet, program.is_vertex() ? 2 : 3);
         } else {
             // Prefer smaller slot index for fragments since they are gonna be used frequently.
-            b.addDecoration(sampler_spv_var, spv::DecorationBinding, sampler.index + (program.is_vertex() ? SCE_GXM_MAX_TEXTURE_UNITS : 0));
+            b.addDecoration(sampler_spv_var, spv::Decoration::Binding, sampler.index + (program.is_vertex() ? SCE_GXM_MAX_TEXTURE_UNITS : 0));
         }
     }
 
@@ -1238,7 +1238,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         const uint32_t size_in_f32 = program.thread_buffer_count / (4 * 4 * sizeof(float));
         spv::Id thread_buffer = b.makeArrayType(f32, b.makeUintConstant(size_in_f32), sizeof(float));
 
-        spv_params.thread_buffer = b.createVariable(spv::NoPrecision, spv::StorageClassPrivate, thread_buffer, "thread_buffer");
+        spv_params.thread_buffer = b.createVariable(spv::NoPrecision, spv::StorageClass::Private, thread_buffer, "thread_buffer");
     }
 
     int32_t in_fcount_allocated = 0;
