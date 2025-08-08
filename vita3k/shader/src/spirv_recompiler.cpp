@@ -1943,10 +1943,10 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
     options.es = true;
     options.vertex.fixup_clipspace = false;
  
-    if(adreno)
+//    if(adreno)
         options.enable_row_major_load_workaround = true; 
-    else
-        options.enable_row_major_load_workaround = false; // spirv.hpp say when true it reduce performance in some android devices
+//    else
+//        options.enable_row_major_load_workaround = false; // spirv.hpp say when true it reduce performance in some android devices
     
 #else
     options.version = 430;
