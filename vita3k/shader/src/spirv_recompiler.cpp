@@ -218,15 +218,15 @@ static spv::Id get_param_type(spv::Builder &b, const Input &input) {
 static spv::StorageClass reg_type_to_spv_storage_class(usse::RegisterBank reg_type) {
     switch (reg_type) {
     case usse::RegisterBank::TEMP:
-        return spv::StorageClassPrivate;
+        return spv::StorageClass::StorageClassPrivate;
     case usse::RegisterBank::PRIMATTR:
-        return spv::StorageClassInput;
+        return spv::StorageClass::StorageClassInput;
     case usse::RegisterBank::OUTPUT:
-        return spv::StorageClassOutput;
+        return spv::StorageClass::StorageClassOutput;
     case usse::RegisterBank::SECATTR:
-        return spv::StorageClassUniformConstant;
+        return spv::StorageClass::StorageClassUniformConstant;
     case usse::RegisterBank::FPINTERNAL:
-        return spv::StorageClassPrivate;
+        return spv::StorageClass::StorageClassPrivate;
 
     case usse::RegisterBank::SPECIAL: break;
     case usse::RegisterBank::GLOBAL: break;
@@ -239,7 +239,7 @@ static spv::StorageClass reg_type_to_spv_storage_class(usse::RegisterBank reg_ty
     case usse::RegisterBank::MAXIMUM:
     case usse::RegisterBank::INVALID:
     default:
-        return spv::StorageClassMax;
+        return spv::StorageClass::StorageClassMax;
     }
 
     LOG_WARN("Unsupported reg_type {}", static_cast<uint32_t>(reg_type));
