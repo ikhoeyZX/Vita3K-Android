@@ -1474,7 +1474,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     } else {
         spv::Id out = b.createVariable(spv::NoPrecision, spv::StorageClass::Output, b.makeVectorType(b.makeFloatType(32), 4), "out_color");
         translate_state.interfaces.push_back(out);
-        b.addDecoration(out, spv::DecorationLocation, 0);
+        b.addDecoration(out, spv::Decoration::Location, 0);
         b.createStore(color, out);
 
         if (features.preserve_f16_nan_as_u16) {
@@ -1603,7 +1603,8 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
             spv::Id o_val = utils::load(b, parameters, utils, features, o_op, load_mask, 0);
 
             if (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION) {
-                b.addDecoration(out_var, spv::Decoration::BuiltIn, spv::BuiltIn::Position);
+                // b.addDecoration(out_var, spv::Decoration::BuiltIn, spv::BuiltIn::Position);
+                b.addDecoration(out_var, spv::Decoration::BuiltIn, 0);
 
                 // Transform screen space coordinate to ndc when viewport is disabled.
                 const spv::Id f32 = b.makeFloatType(32);
@@ -1629,7 +1630,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 
                 const spv::Id viewport_flag = utils::create_access_chain(b, spv::StorageClass::Uniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_viewport_flag) });
                 const spv::Id pred = b.createOp(spv::Op::OpFOrdLessThan, b.makeBoolType(), { b.createLoad(viewport_flag, spv::NoPrecision), half });
-                spv::Builder::If cond_builder(pred, spv::SelectionControlMaskNone, b);
+                spv::Builder::If cond_builder(pred, spv::SelectionControlMask::MaskNone, b);
 
                 spv::Id screen_width = utils::create_access_chain(b, spv::StorageClass::Uniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_screen_width) });
                 screen_width = b.createLoad(screen_width, spv::NoPrecision);
@@ -1701,7 +1702,8 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 
                 cond_builder.makeEndIf();
             } else if (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE) {
-                b.addDecoration(out_var, spv::Decoration::BuiltIn, spv::BuiltIn::PointSize);
+                // b.addDecoration(out_var, spv::Decoration::BuiltIn, spv::BuiltIn::PointSize);
+                b.addDecoration(out_var, spv::Decoration::BuiltIn, 1);
                 b.createStore(o_val, out_var);
             } else {
                 b.createStore(o_val, out_var);
@@ -1734,7 +1736,8 @@ static spv::Function *make_frag_initialize_function(spv::Builder &b, Translation
     spv::Id front_facing = b.createVariable(spv::NoPrecision, spv::StorageClass::Input, booltype, "gl_FrontFacing");
     spv::Id front_disabled = utils::create_access_chain(b, spv::StorageClass::Uniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_front_disabled) });
     spv::Id back_disabled = utils::create_access_chain(b, spv::StorageClass::Uniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_back_disabled) });
-    b.addDecoration(front_facing, spv::Decoration::BuiltIn, spv::BuiltIn::FrontFacing);
+    // b.addDecoration(front_facing, spv::Decoration::BuiltIn, spv::BuiltIn::FrontFacing);
+    b.addDecoration(front_facing, spv::Decoration::BuiltIn, 17);
     translate_state.interfaces.push_back(front_facing);
 
     front_facing = b.createLoad(front_facing, spv::NoPrecision);
