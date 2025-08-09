@@ -1784,8 +1784,9 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
 
     spv::SpvBuildLogger spv_logger;
     spv::Builder b(spv_version, 0x1337 << 12, &spv_logger);
-    b.setSourceFile(shader_hash);
-    b.setEmitOpLines();
+    // b.setSourceFile(shader_hash);
+    b.setSourceText(shader_hash);
+    
     b.addSourceExtension("gxp");
     if (features.enable_memory_mapping)
         b.setMemoryModel(spv::AddressingModel::PhysicalStorageBuffer64, spv::MemoryModel::GLSL450);
@@ -1883,7 +1884,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
         // Initialize vertex output to 0
         if (program.is_vertex()) {
             spv::Id i32_type = b.makeIntType(32);
-            spv::Id ite = b.createVariable(spv::NoPrecision, spv::StorageClassFunction, i32_type, "i");
+            spv::Id ite = b.createVariable(spv::NoPrecision, spv::StorageClass::Function, i32_type, "i");
             spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
             spv::Id rezero = b.makeFloatConstant(0.0f);
             spv::Id rezero_v = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
