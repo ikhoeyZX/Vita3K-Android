@@ -65,8 +65,6 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
           bash -c "yes || Yes || true" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
-
-          python3 external/glslang/update_glslang_sources.py
           mkdir android/assets/data
           cp -r data/image android/assets/data/image
           cp -r lang android/assets
