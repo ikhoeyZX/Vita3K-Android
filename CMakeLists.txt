@@ -28,6 +28,7 @@ if(ANDROID)
     PROPERTY
     NO_SYSTEM_FROM_IMPORTED ON
     )
+	set(ALLOW_EXTERNAL_SPIRV_TOOLS ON)
 
 	string(APPEND CMAKE_CXX_FLAGS " -Wl,-Bsymbolic -Wno-unused-command-line-argument")
 	string(APPEND CMAKE_C_FLAGS " -Wl,-Bsymbolic -Wno-unused-command-line-argument")
