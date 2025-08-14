@@ -31,8 +31,11 @@
 #include <util/log.h>
 #include <util/overloaded.h>
 
+extern "C" {
 #include <SPIRV/SpvBuilder.h>
 #include <SPIRV/disassemble.h>
+}
+
 #include <spirv_glsl.hpp>
 
 #include <algorithm>
