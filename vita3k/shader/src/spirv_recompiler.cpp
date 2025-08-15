@@ -31,14 +31,9 @@
 #include <util/log.h>
 #include <util/overloaded.h>
 
-extern "SPIRV-CROSS" {
-#include <SPIRV/SpvBuilder.h>
-#include <SPIRV/disassemble.h>
-}
-
-extern "glslang"{
-#include <spirv_glsl.hpp>
-}
+#include "SPIRV/SpvBuilder.h"
+#include "SPIRV/disassemble.h"
+#include "spirv_glsl.hpp"
 
 #include <algorithm>
 #include <fstream>
