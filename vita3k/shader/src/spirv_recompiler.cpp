@@ -31,12 +31,14 @@
 #include <util/log.h>
 #include <util/overloaded.h>
 
-extern "C" {
+extern "SPIRV-CROSS" {
 #include <SPIRV/SpvBuilder.h>
 #include <SPIRV/disassemble.h>
 }
 
+extern "glslang"{
 #include <spirv_glsl.hpp>
+}
 
 #include <algorithm>
 #include <fstream>
