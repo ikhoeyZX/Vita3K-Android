@@ -14,9 +14,6 @@
 [submodule "external/dlmalloc"]
 	path = external/dlmalloc
 	url = https://github.com/Vita3K/dlmalloc
-[submodule "external/glslang"]
-	path = external/glslang
-	url = https://github.com/KhronosGroup/glslang
 [submodule "external/googletest"]
 	path = external/googletest
 	url = https://github.com/google/googletest
@@ -99,3 +96,7 @@
 [submodule "external/sdl"]
 	path = external/sdl
 	url = https://github.com/libsdl-org/SDL.git
+[submodule "external/glslang"]
+	path = external/glslang
+	url = https://github.com/ikhoeyZX/glslang.git
+	branch = spvs
