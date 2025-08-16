@@ -52,6 +52,7 @@ set(FMT_INSTALL ON)
 add_subdirectory(fmt)
 set(fmt_DIR fmt)
 
+add_definitions(-DSPDLOG_USE_STD_FORMAT)
 set(SPDLOG_WCHAR_FILENAMES ON CACHE BOOL "")
 set(SPDLOG_NO_THREAD_ID ON CACHE BOOL "")
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "")
