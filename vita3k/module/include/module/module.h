@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -46,3 +46,8 @@
     DECL_VAR_EXPORT(name);                                       \
     extern const ImportVarFactory import_##name = export_##name; \
     DECL_VAR_EXPORT(name)
+
+#define LIBRARY_INIT(name)                                                              \
+    static void export_library_init_##name(EmuEnvState &emuenv);                        \
+    extern const LibraryInitFn import_library_init_##name = export_library_init_##name; \
+    static void export_library_init_##name(EmuEnvState &emuenv)

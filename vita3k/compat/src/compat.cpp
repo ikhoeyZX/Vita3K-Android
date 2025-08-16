@@ -22,11 +22,10 @@
 
 #include <emuenv/state.h>
 #include <gui/state.h>
-#include <util/fs.h>
 
 #include <util/net_utils.h>
-#include <miniz.h>
 
+#include <miniz.h>
 #include <pugixml.hpp>
 
 enum LabelIdState {
@@ -107,7 +106,7 @@ bool load_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
 
     // Check if compatibility database is up to date in first load
     if (db_updated_at.empty()) {
-        db_updated_at = compatibility.attribute("db_updated_at").as_string();
+        db_updated_at = compatibility.attribute("iso_db_updated_at").as_string();
         if (update_app_compat_db(gui, emuenv))
             return true;
     }
@@ -154,7 +153,7 @@ bool load_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
         if (gui.compat.app_compat_db.contains(title_id))
             LOG_WARN_IF(emuenv.cfg.log_compat_warn, "App with Title ID {} already exists in compatibility database. Please check and close GitHub issue {}.", title_id, gui.compat.app_compat_db[title_id].issue_id);
 
-        gui.compat.app_compat_db[title_id] = { issue_id, state, updated_at };
+        gui.compat.app_compat_db[title_id] = { issue_id, state, static_cast<time_t>(updated_at) };
     }
 
     // Update compatibility status of all user apps
@@ -174,7 +173,7 @@ bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     auto &lang = gui.lang.compat_db;
 
     // Get current date of last compat database updated at
-    const auto updated_at = net_utils::get_web_regex_result(latest_link, std::regex(R"(Updated at: (\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}))"));
+    const auto updated_at = net_utils::get_web_regex_result(latest_link, std::regex(R"(Last updated: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z))"));
     if (updated_at.empty()) {
         gui.info_message.title = lang["error"];
         gui.info_message.level = spdlog::level::err;

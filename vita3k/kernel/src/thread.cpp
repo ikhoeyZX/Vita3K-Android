@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -92,13 +92,19 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     const Ptr<uint8_t> base_tls_ptr = tls.get_ptr<uint8_t>();
     memset(base_tls_ptr.get(mem), 0, tls_size);
 
+    int *tls_array = tls.get_ptr<int>().get(mem);
+    tls_array[TLS_PROCESS_ID] = 1; // stubbed. unused
+    tls_array[TLS_THREAD_ID] = id;
+    tls_array[TLS_SP_TOP] = stack.get();
+    tls_array[TLS_SP_BOTTOM] = stack.get() + stack_size;
+    tls_array[TLS_CURRENT_PRIORITY] = priority;
+    tls_array[TLS_CPU_AFFINITY_MASK] = affinity_mask;
+    const Ptr<uint8_t> user_tls_ptr = base_tls_ptr + KERNEL_TLS_SIZE;
+    write_tpidruro(*cpu, user_tls_ptr.address());
     if (kernel.tls_address) {
-        const Ptr<uint8_t> user_tls_ptr = base_tls_ptr + KERNEL_TLS_SIZE;
-        write_tpidruro(*cpu, user_tls_ptr.address());
         assert(kernel.tls_psize <= kernel.tls_msize);
-        memcpy(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
-    } else {
-        write_tpidruro(*cpu, 0);
+        // memcpy(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
+        memmove(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
     }
 
     CPUContext ctx;
@@ -137,6 +143,7 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     // Copy data to stack
     if (argp && arglen > 0) {
         const Address data_addr = stack_alloc(*cpu, align(arglen, 8));
+        // memcpy(Ptr<uint8_t>(data_addr).get(mem), argp.get(mem), arglen);
         memcpy(Ptr<uint8_t>(data_addr).get(mem), argp.get(mem), arglen);
         write_reg(*cpu, 1, data_addr);
     } else {
@@ -148,6 +155,7 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
         status = ThreadStatus::suspend;
         kernel.debugger.wait_for_debugger = false;
     } else {
+        status = ThreadStatus::run;
         to_do = ThreadToDo::run;
     }
     something_to_do.notify_one();
@@ -307,7 +315,8 @@ void ThreadState::push_arguments(const std::vector<uint32_t> &args) {
         // TODO align to 16 bytes
         const size_t remain_size = args.size() - 4;
         sp -= 4 * remain_size;
-        memcpy(Ptr<uint32_t>(sp).get(mem), &args[4], remain_size * 4);
+        // memcpy(Ptr<uint32_t>(sp).get(mem), &args[4], remain_size * 4);
+        memmove(Ptr<uint32_t>(sp).get(mem), &args[4], remain_size * 4);
     }
     write_sp(*cpu, sp);
 }

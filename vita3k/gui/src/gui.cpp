@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -244,28 +244,30 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         gui.large_font = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(latin_fw_font_path).c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
     } else {
         LOG_WARN("Could not find firmware font file at \"{}\", install firmware fonts package to fix this.", latin_fw_font_path);
+        
+        /*
         font_config.SizePixels = 22.f * atlas_font_scale;
-
+        
         // Set up default font path
-        fs::path default_font_path = emuenv.static_assets_path / "data/fonts";
-        const std::vector<uint8_t> font_mplus = fs_utils::read_asset_raw(default_font_path / "mplus-1mn-bold.ttf");
+        fs::path default_font_path = "/system/fonts";
+        const std::vector<uint8_t> font_mplus = fs_utils::read_asset_raw(default_font_path / "DroidSans.ttf");
 
         // Check existence of default font file
         if (!font_mplus.empty()) {
             // when calling AddFontFromMemoryTTF, we tranfer ownership to imgui and it is up to it to free the data
             void* font_data = malloc(font_mplus.size());
-            memcpy(font_data, font_mplus.data(), font_mplus.size());
+            memmove(font_data, font_mplus.data(), font_mplus.size());
             gui.vita_font = io.Fonts->AddFontFromMemoryTTF(font_data, font_mplus.size(), font_config.SizePixels, &font_config, latin_range);
 
             font_config.MergeMode = true;
             font_data = malloc(font_mplus.size());
-            memcpy(font_data, font_mplus.data(), font_mplus.size());
+            memmove(font_data, font_mplus.data(), font_mplus.size());
             io.Fonts->AddFontFromMemoryTTF(font_data, font_mplus.size(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
             
 
             const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
             if (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S) {
-		const std::vector<uint8_t> font_source = fs_utils::read_asset_raw(fs::path(default_font_path / "NotoSerifCJK-Regular.ttc")); // Built-in Android font
+                const std::vector<uint8_t> font_source = fs_utils::read_asset_raw(default_font_path / "NotoSerifCJK-Regular.ttc");
 
                 if (!font_source.empty()) {
                     font_data = malloc(font_source.size());
@@ -283,6 +285,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
             LOG_INFO("Using default Vita3K font.");
         } else
             LOG_WARN("Could not find default Vita3K font at \"{}\", using default ImGui font.", default_font_path);
+        */
     }
 
     ImGui::GetIO().FontGlobalScale = emuenv.dpi_scale / atlas_font_scale;
@@ -344,7 +347,7 @@ static IconData load_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::str
 void init_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     IconData data = load_app_icon(gui, emuenv, app_path);
     if (data.data) {
-        gui.app_selector.user_apps_icon[app_path].init(gui.imgui_state.get(), data.data.get(), data.width, data.height);
+        gui.app_selector.user_apps_icon[app_path] = ImGui_Texture(gui.imgui_state.get(), data.data.get(), data.width, data.height);
     }
 }
 
@@ -356,7 +359,7 @@ void IconAsyncLoader::commit(GuiState &gui) {
 
     for (const auto &pair : icon_data) {
         if (pair.second.data) {
-            gui.app_selector.user_apps_icon[pair.first].init(gui.imgui_state.get(), pair.second.data.get(), pair.second.width, pair.second.height);
+            gui.app_selector.user_apps_icon[pair.first] = ImGui_Texture(gui.imgui_state.get(), pair.second.data.get(), pair.second.width, pair.second.height);
         }
     }
 
@@ -427,7 +430,7 @@ void init_app_background(GuiState &gui, EmuEnvState &emuenv, const std::string &
         LOG_ERROR("Invalid background for application {} [{}].", title, app_path);
         return;
     }
-    gui.apps_background[app_path].init(gui.imgui_state.get(), data, width, height);
+    gui.apps_background[app_path] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
 }
 
@@ -917,6 +920,32 @@ void SetTooltipEx(const char *tooltip) {
         ImGui::PopTextWrapPos();
         ImGui::EndTooltip();
     }
+}
+
+void TextColoredCentered(const ImVec4 &col, const char *text) {
+    ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(text).x) * 0.5f);
+    ImGui::TextColored(col, "%s", text);
+}
+
+void TextCentered(const char *text) {
+    ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(text).x) * 0.5f);
+    ImGui::Text("%s", text);
+}
+
+void TextColoredCentered(const ImVec4 &col, const char *text, float wrap_width) {
+    const auto window_width = ImGui::GetWindowWidth();
+    ImGui::PushTextWrapPos(window_width - wrap_width);
+    ImGui::SetCursorPosX((window_width - ImGui::CalcTextSize(text, nullptr, false, window_width - 2.f * wrap_width).x) * 0.5f);
+    ImGui::TextColored(col, "%s", text);
+    ImGui::PopTextWrapPos();
+}
+
+void TextCentered(const char *text, float wrap_width) {
+    const auto window_width = ImGui::GetWindowWidth();
+    ImGui::PushTextWrapPos(window_width - wrap_width);
+    ImGui::SetCursorPosX((window_width - ImGui::CalcTextSize(text, nullptr, false, window_width - 2.f * wrap_width).x) * 0.5f);
+    ImGui::Text("%s", text);
+    ImGui::PopTextWrapPos();
 }
 
 } // namespace gui

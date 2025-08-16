@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -255,7 +255,7 @@ EXPORT(int, _sceLdTlsUnregisterModuleInfo) {
 EXPORT(Ptr<int>, _sceLibcErrnoLoc) {
     TRACY_FUNC(_sceLibcErrnoLoc);
     // tls key from disasmed source
-    auto res = emuenv.kernel.get_thread_tls_addr(emuenv.mem, thread_id, 0x88);
+    auto res = emuenv.kernel.get_thread_tls_addr(emuenv.mem, thread_id, TLS_LIBC_ERRNO);
     return res.cast<int>();
 }
 
@@ -500,9 +500,6 @@ EXPORT(int, fscanf_s) {
     return UNIMPLEMENTED();
 }
 
-#ifdef fseek
-#undef fseek
-#endif
 EXPORT(int, fseek) {
     TRACY_FUNC(fseek);
     return UNIMPLEMENTED();
@@ -513,9 +510,6 @@ EXPORT(int, fsetpos) {
     return UNIMPLEMENTED();
 }
 
-#ifdef ftell
-#undef ftell
-#endif
 EXPORT(int, ftell) {
     TRACY_FUNC(ftell);
     return UNIMPLEMENTED();
@@ -863,9 +857,13 @@ EXPORT(void, memcpy, void *destination, const void *source, uint32_t num) {
     memcpy(destination, source, num);
 }
 
-EXPORT(int, memcpy_s) {
-    TRACY_FUNC(memcpy_s);
-    return UNIMPLEMENTED();
+EXPORT(void, memcpy_s, void *destination, const void *source, uint32_t num) {
+    TRACY_FUNC(memcpy_s, destination, source, num);
+    if (destination == nullptr || source == nullptr) {
+        LOG_ERROR("memcpy_s NULLPTR handler not supported yet");
+    }else if (num > 0) {
+        memcpy(destination, source, num);
+    }
 }
 
 EXPORT(void, memmove, void *destination, const void *source, uint32_t num) {
@@ -873,9 +871,13 @@ EXPORT(void, memmove, void *destination, const void *source, uint32_t num) {
     memmove(destination, source, num);
 }
 
-EXPORT(int, memmove_s) {
-    TRACY_FUNC(memmove_s);
-    return UNIMPLEMENTED();
+EXPORT(void, memmove_s, void *destination, const void *source, uint32_t num) {
+    TRACY_FUNC(memmove_s, destination, source, num);
+    if (destination == nullptr || source == nullptr) {
+        LOG_ERROR("memmove_s NULLPTR handler not supported yet");
+    }else if (num > 0) {
+        memmove(destination, source, num);
+    }
 }
 
 EXPORT(void, memset, Ptr<void> str, int c, uint32_t n) {
@@ -1030,8 +1032,9 @@ EXPORT(int, quick_exit) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, rand) {
+EXPORT(int, rand, int value) {
     TRACY_FUNC(rand);
+    value = rand();
     return UNIMPLEMENTED();
 }
 
@@ -1168,10 +1171,13 @@ EXPORT(int, sscanf_s) {
     return UNIMPLEMENTED();
 }
 
+#pragma push_macro("strcasecmp")
+#undef strcasecmp
 EXPORT(int, strcasecmp) {
     TRACY_FUNC(strcasecmp);
     return UNIMPLEMENTED();
 }
+#pragma pop_macro("strcasecmp")
 
 EXPORT(Ptr<char>, strcat, Ptr<char> destination, Ptr<char> source) {
     TRACY_FUNC(strcat, destination, source);
@@ -1245,10 +1251,13 @@ EXPORT(int, strlen, char *str) {
     return static_cast<int>(strlen(str));
 }
 
+#pragma push_macro("strncasecmp")
+#undef strncasecmp
 EXPORT(int, strncasecmp) {
     TRACY_FUNC(strncasecmp);
     return UNIMPLEMENTED();
 }
+#pragma pop_macro("strncasecmp")
 
 EXPORT(int, strncat) {
     TRACY_FUNC(strncat);
@@ -1276,9 +1285,14 @@ EXPORT(int, strncpy_s) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, strnlen_s) {
-    TRACY_FUNC(strnlen_s);
-    return UNIMPLEMENTED();
+EXPORT(int, strnlen_s, char *str, SceSize strz) {
+    TRACY_FUNC(strnlen_s, str, strz);
+    if(str == nullptr || str == NULL)
+        return 0;
+    else if (sizeof(str) > strz)
+        return static_cast<int>(sizeof(strz) - strlen(str));
+    else
+    return static_cast<int>(strlen(str));
 }
 
 EXPORT(int, strpbrk) {

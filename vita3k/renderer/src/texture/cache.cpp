@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -330,7 +330,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
 
     if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV422) {
-        LOG_ERROR_ONCE("Unimplemented YUV format {}, please report it to the developers.", log_hex(fmt::underlying(base_format)));
+        LOG_ERROR_ONCE("Unimplemented YUV format 0x{:0X}, please report it to the developers.", fmt::underlying(base_format));
         return;
     }
 
@@ -654,6 +654,10 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
             LOG_WARN_ONCE("Texture cache is full. Starting to replace textures");
             texture_lookup.erase(std::bit_cast<TextureGxmDataRepr>(info->texture));
         }
+        if (info->texture_size > 0) {
+            LOG_ERROR("Texture cache still full. need fix this!");
+        }
+            
         texture_lookup[texture_repr] = info;
 
         configure = true;

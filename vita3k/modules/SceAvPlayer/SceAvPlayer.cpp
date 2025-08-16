@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -228,7 +228,7 @@ static Ptr<uint8_t> get_buffer(const PlayerPtr &player, MediaType media_type,
     return buffer;
 }
 
-void run_event_callback(EmuEnvState &emuenv, const ThreadStatePtr &thread, const PlayerPtr &player_info, uint32_t event_id, uint32_t source_id, Ptr<void> event_data) {
+static void run_event_callback(EmuEnvState &emuenv, const ThreadStatePtr &thread, const PlayerPtr &player_info, uint32_t event_id, uint32_t source_id, Ptr<void> event_data) {
     if (player_info->event_manager.event_callback) {
         thread->run_callback(player_info->event_manager.event_callback.address(), { player_info->event_manager.user_data, event_id, source_id, event_data.address() });
     }
@@ -242,7 +242,7 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
         return RET_ERROR(SCE_AVPLAYER_ERROR_INVALID_ARGUMENT);
     }
 
-    const auto thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const auto thread = emuenv.kernel.get_thread(thread_id);
 
     auto file_path = expand_path(emuenv.io, path.get(emuenv.mem), emuenv.pref_path);
     if (!fs::exists(file_path) && player_info->file_manager.open_file && player_info->file_manager.close_file && player_info->file_manager.read_file && player_info->file_manager.file_size) {
@@ -250,6 +250,7 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
 
         // Create temp media file
         const auto temp_file_path = emuenv.cache_path / "temp_vita_media.mp4";
+        LOG_TRACE("temp media created at : {}", temp_file_path);
         fs::ofstream temp_file(temp_file_path, std::ios::out | std::ios::binary);
 
         const Address buf = alloc(emuenv.mem, KiB(512), "AvPlayer buffer");
@@ -305,6 +306,7 @@ EXPORT(int, sceAvPlayerDisableStream) {
 }
 
 EXPORT(int32_t, sceAvPlayerStreamCount, SceUID player_handle) {
+    LOG_TRACE("player_handle : {}", player_handle);
     STUBBED("ALWAYS RETURN 2 (VIDEO AND AUDIO)");
     return 2;
 }
@@ -380,6 +382,7 @@ EXPORT(uint32_t, sceAvPlayerGetStreamInfo, SceUID player_handle, SceUInt32 strea
         stream_info->stream_details.audio.size = player_info->player.last_channels * player_info->player.last_sample_count * sizeof(int16_t);
         strcpy(stream_info->stream_details.audio.language, "ENG");
     } else {
+        LOG_TRACE("sceAvPlayerGetStreamInfo number: {}", stream_no);
         return SCE_AVPLAYER_ERROR_INVALID_ARGUMENT;
     }
     return 0;
@@ -414,7 +417,7 @@ EXPORT(bool, sceAvPlayerGetVideoData, SceUID player_handle, SceAvPlayerFrameInfo
             buffer = get_buffer(player_info, MediaType::VIDEO, emuenv.mem, H264DecoderState::buffer_size(size), true);
 
             std::vector<uint8_t> data = player_info->player.receive_video();
-            std::memcpy(buffer.get(emuenv.mem), data.data(), data.size());
+            std::memmove(buffer.get(emuenv.mem), data.data(), data.size());
         }
     } else {
         buffer = get_buffer(player_info, MediaType::VIDEO, emuenv.mem, H264DecoderState::buffer_size(size), false);
@@ -464,8 +467,12 @@ EXPORT(bool, sceAvPlayerIsActive, SceUID player_handle) {
     return !player_info->player.video_playing.empty();
 }
 
-EXPORT(int, sceAvPlayerJumpToTime) {
-    return UNIMPLEMENTED();
+EXPORT(uint64_t, sceAvPlayerJumpToTime, SceUID player_handle, uint32_t times) {
+    LOG_TRACE("sceAvPlayerJumpToTime IS CALLED");
+    const auto state = emuenv.kernel.obj_store.get<AvPlayerState>();
+    const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
+
+    return player_info->player.last_timestamp = times;
 }
 
 EXPORT(int, sceAvPlayerPause, SceUID player_handle) {
@@ -517,7 +524,7 @@ EXPORT(int, sceAvPlayerStart, SceUID player_handle) {
 
 EXPORT(int, sceAvPlayerStop, SceUID player_handle) {
     const auto state = emuenv.kernel.obj_store.get<AvPlayerState>();
-    const PlayerPtr &player_info = lock_and_find(player_handle, state->players, emuenv.kernel.mutex);
+    const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
     player_info->player.free_video();
     const auto thread = emuenv.kernel.get_thread(thread_id);
     run_event_callback(emuenv, thread, player_info, SCE_AVPLAYER_STATE_STOP, 0, Ptr<void>(0));

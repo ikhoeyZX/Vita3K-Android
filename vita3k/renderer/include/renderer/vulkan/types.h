@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -325,9 +325,9 @@ struct VKContext : public renderer::Context {
 
     explicit VKContext(VKState &state, MemState &mem);
     // TODO: properly destroy the context
-    ~VKContext() override = default;
+    ~VKContext() override;
 
-    void start_recording(bool first_in_scene = false);
+    void start_recording();
     void start_render_pass(bool create_descriptor_set = true);
     void stop_render_pass();
     void stop_recording(const SceGxmNotification &notif1, const SceGxmNotification &notif2, bool submit = true);

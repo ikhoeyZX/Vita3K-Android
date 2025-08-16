@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include <module/load_module.h>
 #include <modules/module_parent.h>
 #include <util/tracy.h>
+#include <util/vector_utils.h>
 
 TRACY_MODULE_NAME(SceSysmodule);
 
@@ -197,6 +198,8 @@ EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
         return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
 
     LOG_INFO("Loading module ID: {}", to_debug_str(emuenv.mem, module_id));
+    if (is_module_loaded(emuenv.kernel, module_id))
+        return SCE_SYSMODULE_LOADED;
     if (is_module_enabled(emuenv, module_id)) {
         if (load_sys_module(emuenv, module_id))
             return SCE_SYSMODULE_LOADED;

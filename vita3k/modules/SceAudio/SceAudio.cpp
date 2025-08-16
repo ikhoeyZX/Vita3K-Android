@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -194,14 +194,14 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
     if (!thread) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
     emuenv.audio.audio_output(*thread, *prt, buf);
 
-    return 0;
+    return prt->len;
 }
 
 EXPORT(int, sceAudioOutGetRestSample, int port) {
@@ -210,11 +210,17 @@ EXPORT(int, sceAudioOutGetRestSample, int port) {
     if (!prt) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
-
-    const int bytes_available = SDL_AudioStreamAvailable(prt->stream.get());
-
-    // we have the number of bytes left, we can convert it back to the number of samples left
-    return bytes_available / (2 * sizeof(int16_t));
+    int samples_available = emuenv.audio.get_rest_sample(*prt);
+    if (prt->type == SCE_AUDIO_OUT_PORT_TYPE_MAIN) {
+        samples_available = std::clamp(samples_available, 0, prt->len);
+    } else {
+        // for other port types only the granularity value set for the len argument or 0 can be returned.
+        if (samples_available < prt->len / 2)
+            samples_available = 0;
+        else
+            samples_available = prt->len;
+    }
+    return samples_available;
 }
 
 EXPORT(int, sceAudioOutOpenExtPort) {

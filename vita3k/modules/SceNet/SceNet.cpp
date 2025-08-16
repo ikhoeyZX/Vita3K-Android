@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -254,7 +254,7 @@ EXPORT(int, sceNetEpollWaitCB) {
 EXPORT(Ptr<int>, sceNetErrnoLoc) {
     TRACY_FUNC(sceNetErrnoLoc);
     // TLS id was taken from disasm source
-    auto addr = emuenv.kernel.get_thread_tls_addr(emuenv.mem, thread_id, 0x40);
+    auto addr = emuenv.kernel.get_thread_tls_addr(emuenv.mem, thread_id, TLS_NET_ERRNO);
     return addr.cast<int>();
 }
 
@@ -290,7 +290,7 @@ EXPORT(int, sceNetGetMacAddress, SceNetEtherAddr *addr, int flags) {
     if (addr == nullptr) {
         return RET_ERROR(SCE_NET_EINVAL);
     }
-#ifdef WIN32
+#ifdef _WIN32
     IP_ADAPTER_INFO AdapterInfo[16];
     DWORD dwBufLen = sizeof(AdapterInfo);
     if (GetAdaptersInfo(AdapterInfo, &dwBufLen) != ERROR_SUCCESS) {
@@ -344,17 +344,17 @@ EXPORT(int, sceNetGetsockopt, int sid, int level, int optname, void *optval, uns
     return sock->get_socket_options(level, optname, optval, optlen);
 }
 
-EXPORT(unsigned int, sceNetHtonl, unsigned int n) {
+EXPORT(SceUInt32, sceNetHtonl, SceUInt32 n) {
     TRACY_FUNC(sceNetHtonl, n);
     return htonl(n);
 }
 
-EXPORT(int, sceNetHtonll, SceUInt64 n) {
+EXPORT(SceUInt64, sceNetHtonll, SceUInt64 n) {
     TRACY_FUNC(sceNetHtonll, n);
     return HTONLL(n);
 }
 
-EXPORT(unsigned short int, sceNetHtons, unsigned short int n) {
+EXPORT(SceUInt16, sceNetHtons, SceUInt16 n) {
     TRACY_FUNC(sceNetHtons, n);
     return htons(n);
 }
@@ -362,7 +362,7 @@ EXPORT(unsigned short int, sceNetHtons, unsigned short int n) {
 EXPORT(Ptr<const char>, sceNetInetNtop, int af, const void *src, Ptr<char> dst, unsigned int size) {
     TRACY_FUNC(sceNetInetNtop, af, src, dst, size);
     char *dst_ptr = dst.get(emuenv.mem);
-#ifdef WIN32
+#ifdef _WIN32
     const char *res = InetNtop(af, src, dst_ptr, size);
 #else
     const char *res = inet_ntop(af, src, dst_ptr, size);
@@ -376,7 +376,7 @@ EXPORT(Ptr<const char>, sceNetInetNtop, int af, const void *src, Ptr<char> dst, 
 
 EXPORT(int, sceNetInetPton, int af, const char *src, void *dst) {
     TRACY_FUNC(sceNetInetPton, af, src, dst);
-#ifdef WIN32
+#ifdef _WIN32
     int res = InetPton(af, src, dst);
 #else
     int res = inet_pton(af, src, dst);
@@ -395,7 +395,7 @@ EXPORT(int, sceNetInit, SceNetInitParam *param) {
     if (!param || !param->memory.address() || param->size < 0x4000 || param->flags != 0)
         return RET_ERROR(SCE_NET_ERROR_EINVAL);
 
-#ifdef WIN32
+#ifdef _WIN32
     WORD versionWanted = MAKEWORD(2, 2);
     WSADATA wsaData;
     WSAStartup(versionWanted, &wsaData);
@@ -415,17 +415,17 @@ EXPORT(int, sceNetListen, int sid, int backlog) {
     return sock->listen(backlog);
 }
 
-EXPORT(unsigned int, sceNetNtohl, unsigned int n) {
+EXPORT(SceUInt32, sceNetNtohl, SceUInt32 n) {
     TRACY_FUNC(sceNetNtohl, n);
     return ntohl(n);
 }
 
-EXPORT(int, sceNetNtohll, SceUInt64 n) {
+EXPORT(SceUInt64, sceNetNtohll, SceUInt64 n) {
     TRACY_FUNC(sceNetNtohll, n);
     return NTOHLL(n);
 }
 
-EXPORT(unsigned short int, sceNetNtohs, unsigned short int n) {
+EXPORT(SceUInt16, sceNetNtohs, SceUInt16 n) {
     TRACY_FUNC(sceNetNtohs, n);
     return ntohs(n);
 }
@@ -588,7 +588,7 @@ EXPORT(int, sceNetTerm) {
     if (!emuenv.net.inited) {
         return RET_ERROR(SCE_NET_ERROR_ENOTINIT);
     }
-#ifdef WIN32
+#ifdef _WIN32
     WSACleanup();
 #endif
     emuenv.net.inited = false;

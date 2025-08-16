@@ -23,7 +23,7 @@
 #include <gui/functions.h>
 #include <io/state.h>
 #include <kernel/state.h>
-#include <packages/functions.h>
+#include <packages/license.h>
 #include <renderer/state.h>
 
 #include <io/VitaIoDevice.h>
@@ -60,7 +60,6 @@ static std::map<std::string, std::map<std::string, std::map<std::string, ImVec2>
 static std::map<std::string, std::map<std::string, std::string>> target;
 static std::map<std::string, std::map<std::string, uint64_t>> current_item, last_time;
 static std::map<std::string, std::string> type;
-static std::map<std::string, int32_t> sku_flag;
 
 struct Items {
     ImVec2 gate_pos;
@@ -156,16 +155,16 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
     const auto is_ps_app = app_path.starts_with("PCS") || (app_path == "NPXS10007");
     const VitaIoDevice app_device = is_sys_app ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
     const auto APP_INDEX = get_app_index(gui, app_path);
+    const auto TITLE_ID = APP_INDEX->title_id;
 
-    if (is_ps_app && !sku_flag.contains(app_path))
-        sku_flag[app_path] = get_license_sku_flag(emuenv, APP_INDEX->content_id);
+    get_license(emuenv, APP_INDEX->title_id, APP_INDEX->content_id);
 
     if (!gui.live_area_contents.contains(app_path)) {
         auto default_contents = false;
         const auto fw_path{ emuenv.pref_path / "vs0" };
         const auto default_fw_contents{ fw_path / "data/internal/livearea/default/sce_sys/livearea/contents/template.xml" };
         const auto APP_PATH{ emuenv.pref_path / app_device._to_string() / "app" / app_path };
-        const auto live_area_path{ fs::path("sce_sys") / ((sku_flag[app_path] == 3) && fs::exists(APP_PATH / "sce_sys/retail/livearea") ? "retail/livearea" : "livearea") };
+        const auto live_area_path{ fs::path("sce_sys") / ((emuenv.license.rif[TITLE_ID].sku_flag == 3) && fs::exists(APP_PATH / "sce_sys/retail/livearea") ? "retail/livearea" : "livearea") };
         auto template_xml{ APP_PATH / live_area_path / "contents/template.xml" };
 
         pugi::xml_document doc;
@@ -269,7 +268,7 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
                     continue;
                 }
 
-                gui.live_area_contents[app_path][contents.first].init(gui.imgui_state.get(), data, width, height);
+                gui.live_area_contents[app_path][contents.first] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
                 stbi_image_free(data);
             }
 
@@ -1084,9 +1083,9 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
 
     ImVec2 BUTTON_SIZE;
     if(emuenv.cfg.screenmode_pos == 3){
-	BUTTON_SIZE = ImVec2(80.f * SCALE.x, 120.f * SCALE.y);
+        BUTTON_SIZE = ImVec2(120.f * SCALE.x, 70.f * SCALE.y);
     }else{
-	BUTTON_SIZE = ImVec2(75.f * SCALE.x, 50.f * SCALE.y);
+        BUTTON_SIZE = ImVec2(120.f * SCALE.x, 50.f * SCALE.y);
     }
 
     if (gui.live_area_contents[app_path].contains("gate")) {
@@ -1171,23 +1170,32 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
 
     if (!gui.vita_area.content_manager && !gui.vita_area.manual) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f * SCALE.x);
-      if(emuenv.cfg.screenmode_pos == 3){
+      if(emuenv.cfg.screenmode_pos == 3)
         ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (60.0f * SCALE.x) - BUTTON_SIZE.x, center.y));
-      }else{
-	ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (60.0f * SCALE.x) - BUTTON_SIZE.x, 55.0f * SCALE.y));
+      else
+        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (60.0f * SCALE.x) - BUTTON_SIZE.x, 55.0f * SCALE.y));
+
+      if (ImGui::Button("Exit", BUTTON_SIZE))
+          close_live_area_app(gui, emuenv, app_path);
+
+      if(emuenv.cfg.screenmode_pos == 3)
+        ImGui::SetCursorPos(ImVec2(180.f * SCALE.x, center.y));
+      else
+        ImGui::SetCursorPos(ImVec2(180.f * SCALE.x, 55.0f * SCALE.y));
+
+      if (!emuenv.io.title_id.empty()) {
+          if (ImGui::Button("Screenshot", BUTTON_SIZE)){
+            gui.is_screenshot = true;
+            pre_run_app(gui, emuenv, app_path);
+          }
       }
-        if (ImGui::Button("Esc", BUTTON_SIZE)){
-	   if(emuenv.cfg.screenmode_pos == 3){
-	      gui.vita_area.app_information = false;
-	   }
-            close_live_area_app(gui, emuenv, app_path);
-	}
-      if(emuenv.cfg.screenmode_pos == 3){
+
+      if(emuenv.cfg.screenmode_pos == 3)
         ImGui::SetCursorPos(ImVec2(60.f * SCALE.x, center.y));
-      }else{
+      else
         ImGui::SetCursorPos(ImVec2(60.f * SCALE.x, 55.0f * SCALE.y));
-      }
-        if (ImGui::Button("Help", BUTTON_SIZE))
+
+      if (ImGui::Button("Help", BUTTON_SIZE))
             ImGui::OpenPopup("Live Area Help");
         ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x / 2.f, WINDOW_SIZE.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         if (ImGui::BeginPopupModal("Live Area Help", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {

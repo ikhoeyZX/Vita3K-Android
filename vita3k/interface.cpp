@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 #include <app/functions.h>
 #include "module/load_module.h"
+#include <motion/event_handler.h>
 
 #include <config/state.h>
 #include <ctrl/functions.h>
@@ -32,7 +33,7 @@
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/state.h>
-#include <packages/functions.h>
+#include <packages/license.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
 #include <renderer/state.h>
@@ -48,7 +49,9 @@
 
 #include <regex>
 
-#include <SDL.h>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_video.h>
+
 #include <fmt/chrono.h>
 #include <stb_image_write.h>
 
@@ -56,6 +59,9 @@
 
 #include <glad/glad.h>
 
+#ifdef ANDROID
+#include <SDL3/SDL_system.h>
+#endif
 
 #if USE_DISCORD
 #include <app/discord.h>
@@ -215,7 +221,7 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &z
         }
     }
 
-    if (fs::exists(output_path / "sce_sys/package/")) {
+    if (fs::exists(output_path / "sce_sys/package/") && emuenv.app_info.app_title_id.starts_with("PCS")) {
         update_progress();
         if (is_nonpdrm(emuenv, output_path))
             decrypt_progress = 100.f;
@@ -253,12 +259,14 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
 
         std::string m_filename = std::string(file_stat.m_filename);
         if (m_filename.find("sce_module/steroid.suprx") != std::string::npos) {
-            LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
+ //           LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
+            LOG_CRITICAL("A Vitamin dump was detected, continue anyway");
 #ifdef ANDROID
-            SDL_AndroidShowToast("Vitamin dumps are not supported!", 1, -1, 0, 0);
+//            SDL_ShowAndroidToast("Vitamin dumps are not supported!", 1, -1, 0, 0);
+              SDL_ShowAndroidToast("Vitamin dumps are unsafe!\n do at your own risk", 1, -1, 0, 0);
 #endif
-            content_path.clear();
-            break;
+//            content_path.clear();
+//            break;
         }
 
         const auto is_content = (m_filename.find(sfo_path) != std::string::npos) || (m_filename.find(theme_path) != std::string::npos);
@@ -431,11 +439,9 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     LOG_INFO("Resolution multiplier: {}", emuenv.cfg.resolution_multiplier);
     if (emuenv.ctrl.controllers_num) {
         LOG_INFO("{} Controllers Connected", emuenv.ctrl.controllers_num);
-        int ctrl_idx = 0;
-        for (auto i = 0; i < 4; i++)
-            if (emuenv.ctrl.controllers_name[i])
-                LOG_INFO("Controller {}: {}", ctrl_idx++, emuenv.ctrl.controllers_name[i]);
-
+        for (auto controller_it = emuenv.ctrl.controllers.begin(); controller_it != emuenv.ctrl.controllers.end(); ++controller_it) {
+            LOG_INFO("Controller {}: {}", controller_it->second.port, controller_it->second.name);
+        }
         if (emuenv.ctrl.has_motion_support)
             LOG_INFO("Controller has motion support");
     }
@@ -457,11 +463,12 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     init_device_paths(emuenv.io);
     init_savedata_app_path(emuenv.io, emuenv.pref_path);
 
-    // todo: VAR_NID(__sce_libcparam, 0xDF084DFA) is loaded wrong
-    for (const auto &var : get_var_exports()) {
-        auto addr = var.factory(emuenv);
-        emuenv.kernel.export_nids.emplace(var.nid, addr);
-    }
+    // Load param.sfo
+    vfs::FileBuffer param_sfo;
+    if (vfs::read_app_file(param_sfo, emuenv.pref_path, emuenv.io.app_path, "sce_sys/param.sfo"))
+        sfo::load(emuenv.sfo_handle, param_sfo);
+    
+    init_exported_vars(emuenv);
 
     // Load main executable
     emuenv.self_path = !emuenv.cfg.self_path.empty() ? emuenv.cfg.self_path : EBOOT_PATH;
@@ -518,21 +525,11 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     return Success;
 }
 
-static void handle_window_event(EmuEnvState &state, const SDL_WindowEvent &event) {
-    switch (static_cast<SDL_WindowEventID>(event.event)) {
-    case SDL_WINDOWEVENT_SIZE_CHANGED:
-        app::update_viewport(state);
-        break;
-    default:
-        break;
-    }
-}
-
 static void switch_full_screen(EmuEnvState &emuenv) {
     emuenv.display.fullscreen = !emuenv.display.fullscreen;
 
-    SDL_SetWindowFullscreen(emuenv.window.get(), emuenv.display.fullscreen.load() ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-
+    SDL_SetWindowFullscreen(emuenv.window.get(), emuenv.display.fullscreen.load());
+    
     // Refresh Viewport Size
     app::update_viewport(emuenv);
 }
@@ -581,19 +578,18 @@ static void take_screenshot(EmuEnvState &emuenv) {
         const auto tmp = fmt::format("Successfully saved screenshot to {:s}", save_file);
         LOG_INFO("{}", tmp);
 #ifdef ANDROID
-        SDL_AndroidShowToast(tmp.data(), 1, -1, 0, 0);
+        SDL_ShowAndroidToast("Screenshot saved at pref-path/shared/screenshots", 1, -1, 0, 0);
 #endif
     }else{
         const auto tmp = "Failed to save screenshot";
         LOG_INFO("{}", tmp);
 #ifdef ANDROID
-        SDL_AndroidShowToast(tmp, 1, -1, 0, 0);
+        SDL_ShowAndroidToast(tmp, 1, -1, 0, 0);
 #endif
     }
 }
 
 bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
-    refresh_controllers(emuenv.ctrl, emuenv);
     const auto allow_switch_state = !emuenv.io.title_id.empty() && !gui.vita_area.app_close && !gui.vita_area.home_screen && !gui.vita_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog && gui::get_sys_apps_state(gui);
 
     const auto ui_navigation = [&emuenv, &gui, allow_switch_state](const uint32_t sce_ctrl_btn) {
@@ -603,7 +599,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             };
             const auto confirm = [&gui, &emuenv]() {
                 const auto app_path = gui.vita_area.live_area_screen ? gui.live_area_current_open_apps_list[gui.live_area_app_current_open] : emuenv.app_path;
-                gui::close_and_run_new_app(gui, emuenv, app_path);
+                gui::close_and_run_new_app(emuenv, app_path);
             };
             switch (sce_ctrl_btn) {
             case SCE_CTRL_CIRCLE:
@@ -675,11 +671,17 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         }
     };
 
+    // Check if any settings or controls dialog is open and drop inputs on this case
+    emuenv.drop_inputs = gui.configuration_menu.settings_dialog || gui.configuration_menu.custom_settings_dialog || gui.controls_menu.controllers_dialog || gui.controls_menu.controls_dialog;
+
+    // A set to store the last pressed buttons to prevent duplicate inputs from the controller.
+    std::set<uint32_t> last_buttons;
+
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         ImGui_ImplSdl_ProcessEvent(gui.imgui_state.get(), &event);
         switch (event.type) {
-        case SDL_QUIT:
+        case SDL_EVENT_QUIT:
             if (!emuenv.io.app_path.empty())
                 gui::update_time_app_used(gui, emuenv, emuenv.io.app_path);
             emuenv.kernel.exit_delete_all_threads();
@@ -690,7 +692,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             }
             return false;
 
-        case SDL_KEYDOWN: {
+        case SDL_EVENT_KEY_DOWN: {
             const auto get_sce_ctrl_btn_from_scancode = [&emuenv](const SDL_Scancode scancode) {
                 if (scancode == emuenv.cfg.keyboard_button_up)
                     return SCE_CTRL_UP;
@@ -717,73 +719,85 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             };
 
             // Get Sce Ctrl button from key
-            auto sce_ctrl_btn = get_sce_ctrl_btn_from_scancode(event.key.keysym.scancode);
+            auto sce_ctrl_btn = get_sce_ctrl_btn_from_scancode(event.key.scancode);
 
-            if (gui.is_capturing_keys && event.key.keysym.scancode) {
+            if (gui.is_capturing_keys && event.key.scancode) {
                 gui.is_key_capture_dropped = false;
-                if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+                if (event.key.scancode == SDL_SCANCODE_ESCAPE) {
                     LOG_ERROR("Key is reserved!");
                     gui.captured_key = gui.old_captured_key;
                     gui.is_key_capture_dropped = true;
                 } else {
-                    gui.captured_key = static_cast<int>(event.key.keysym.scancode);
+                    gui.captured_key = static_cast<int>(event.key.scancode);
                 }
                 gui.is_capturing_keys = false;
             }
 
-            if (ImGui::GetIO().WantTextInput || gui.is_key_locked)
+            if (ImGui::GetIO().WantTextInput || gui.is_key_locked || emuenv.drop_inputs)
                 continue;
 
 #ifdef ANDROID
-            if(event.key.keysym.sym == SDLK_AC_BACK)
+            if(event.key.key == SDLK_AC_BACK)
                 sce_ctrl_btn = SCE_CTRL_PSBUTTON;
+            if(gui.is_screenshot || event.key.scancode == emuenv.cfg.keyboard_take_screenshot){
+                take_screenshot(emuenv);
+                gui.is_screenshot = false;
+            }
 #else
             // toggle gui state
-            if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_touch && !gui.is_key_capture_dropped)
-                toggle_touchscreen();
-            if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_fullscreen && !gui.is_key_capture_dropped)
-                switch_full_screen(emuenv);
-            if (allow_switch_state && (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_gui))
+            if (allow_switch_state && (event.key.scancode == emuenv.cfg.keyboard_gui_toggle_gui))
                 emuenv.display.imgui_render = !emuenv.display.imgui_render;
-            if (event.key.keysym.scancode == emuenv.cfg.keyboard_toggle_texture_replacement && !gui.is_key_capture_dropped)
+            if (event.key.scancode == emuenv.cfg.keyboard_gui_toggle_touch && !gui.is_key_capture_dropped)
+                toggle_touchscreen();
+            if (event.key.scancode == emuenv.cfg.keyboard_gui_fullscreen && !gui.is_key_capture_dropped)
+                switch_full_screen(emuenv);
+            if (event.key.scancode == emuenv.cfg.keyboard_toggle_texture_replacement && !gui.is_key_capture_dropped)
                 toggle_texture_replacement(emuenv);
-            if (event.key.keysym.scancode == emuenv.cfg.keyboard_take_screenshot && !gui.is_key_capture_dropped)
+            if (event.key.scancode == emuenv.cfg.keyboard_take_screenshot && !gui.is_key_capture_dropped)
                 take_screenshot(emuenv);
 #endif
 
             bool was_in_livearea = gui.vita_area.live_area_screen;
 
-            if (sce_ctrl_btn != 0)
+            if (sce_ctrl_btn != 0) {
+                if (last_buttons.contains(sce_ctrl_btn)) {
+                    continue;
+                }
+                last_buttons.insert(sce_ctrl_btn);
                 ui_navigation(sce_ctrl_btn);
-
+            }
 #ifdef ANDROID
             if(!was_in_livearea && gui.vita_area.live_area_screen){
                 emuenv.display.imgui_render = true;
                 gui::set_controller_overlay_state(0);
             }
 #endif
-
+        
             break;
         }
-        case SDL_KEYUP:
+        case SDL_EVENT_KEY_UP:
             gui.is_key_locked = false;
             break;
 
-        case SDL_MOUSEMOTION:
-        case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEWHEEL:
+        case SDL_EVENT_MOUSE_MOTION:
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        case SDL_EVENT_MOUSE_WHEEL:
             gui.is_nav_button = false;
             break;
 
-        case SDL_CONTROLLERBUTTONDOWN:
-            if (!emuenv.kernel.is_threads_paused() && (event.cbutton.button == SDL_CONTROLLER_BUTTON_TOUCHPAD))
+        case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+            if (!emuenv.kernel.is_threads_paused() && (event.gbutton.button == SDL_GAMEPAD_BUTTON_TOUCHPAD))
                 toggle_touchscreen();
 
-            if (ImGui::GetIO().WantTextInput)
+            if (ImGui::GetIO().WantTextInput || emuenv.drop_inputs)
                 continue;
 
             for (const auto &binding : get_controller_bindings_ext(emuenv)) {
-                if (event.cbutton.button == binding.controller) {
+                if (event.gbutton.button == binding.controller) {
+                    if (last_buttons.contains(binding.button)) {
+                        continue;
+                    }
+                    last_buttons.insert(binding.button);
                     ui_navigation(binding.button);
 
                     break;
@@ -791,39 +805,37 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             }
             break;
 
-        case SDL_CONTROLLERTOUCHPADDOWN:
-        case SDL_CONTROLLERTOUCHPADMOTION:
-        case SDL_CONTROLLERTOUCHPADUP:
-            handle_touchpad_event(event.ctouchpad);
+        case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
+        case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
+        case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
+            handle_touchpad_event(event.gtouchpad);
+            break;
+        case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
+            handle_motion_event(emuenv, event.gsensor);
+            break;
+        case SDL_EVENT_GAMEPAD_ADDED:
+        case SDL_EVENT_GAMEPAD_REMOVED:
+            refresh_controllers(emuenv.ctrl, emuenv);
             break;
 
-        case SDL_WINDOWEVENT:
-            handle_window_event(emuenv, event.window);
+        case SDL_EVENT_WINDOW_RESIZED:
+        case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
+            app::update_viewport(emuenv);
             break;
 
-        case SDL_FINGERDOWN:
-        case SDL_FINGERMOTION:
-        case SDL_FINGERUP:
+        case SDL_EVENT_FINGER_DOWN:
+        case SDL_EVENT_FINGER_MOTION:
+        case SDL_EVENT_FINGER_UP:
             handle_touch_event(event.tfinger);
             break;
-        case SDL_DROPFILE: {
-            const auto drop_file = fs_utils::utf8_to_path(event.drop.file);
-            const auto extension = string_utils::tolower(drop_file.extension().string());
-            if ((extension == ".vpk") || (extension == ".zip"))
-                install_archive(emuenv, &gui, drop_file);
-            else if ((extension == ".rif") || (drop_file.filename() == "work.bin"))
-                copy_license(emuenv, drop_file);
-            else if (fs::is_directory(drop_file))
-                install_contents(emuenv, &gui, drop_file);
-            else if (drop_file.filename() == "theme.xml")
-                install_content(emuenv, &gui, drop_file.parent_path());
-            else
-                LOG_ERROR("File dropped: [{}] is not supported.", drop_file.filename());
-            SDL_free(event.drop.file);
-            break;
+        case SDL_EVENT_DROP_FILE: {
+            const auto tmp = "File dropped: is not supported in Android.";
+            LOG_ERROR(tmp);
+            SDL_ShowAndroidToast(tmp, 1, -1, 0, 0);
         }
         }
     }
+    
 
     return true;
 }

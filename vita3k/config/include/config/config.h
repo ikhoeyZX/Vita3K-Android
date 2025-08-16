@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -106,7 +106,7 @@ enum ScreenshotFormat {
     code(int, "delay-background", 4, delay_background)                                                  \
     code(int, "delay-start", 10, delay_start)                                                           \
     code(float, "background-alpha", .300f, background_alpha)                                            \
-    code(int, "log-level", static_cast<int>(spdlog::level::off), log_level)                             \
+    code(int, "log-level", static_cast<int>(spdlog::level::trace), log_level)                           \
     code(std::string, "cpu-backend", "Dynarmic", cpu_backend)                                           \
     code(bool, "cpu-opt", true, cpu_opt)                                                                \
     code(bool, "cpu-unsafe", false, cpu_unsafe)                                                         \
@@ -124,6 +124,7 @@ enum ScreenshotFormat {
     code(float, "overlay-scale", 1.0f, overlay_scale)                                                   \
     code(float, "overlay-scale-joystick", 1.0f, overlay_scale_joystick)                                 \
     code(int, "overlay-opacity", 100, overlay_opacity)                                                  \
+    code(bool, "calibrate-gyro", false, calibrate_gyro)                                                 \
     code(int, "keyboard-button-select", 229, keyboard_button_select)                                    \
     code(int, "keyboard-button-start", 40, keyboard_button_start)                                       \
     code(int, "keyboard-button-up", 82, keyboard_button_up)                                             \
@@ -160,15 +161,18 @@ enum ScreenshotFormat {
     code(bool, "display-info-message", true, display_info_message)                                      \
     code(bool, "show-welcome", true, show_welcome)                                                      \
     code(bool, "check-for-updates", false, check_for_updates)                                           \
+    code(bool, "dencrypt-installs", true, dencrypt_installs)                                            \
     code(bool, "asia-font-support", false, asia_font_support)                                           \
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(bool, "fps-hack", false, fps_hack)                                                             \
+    code(bool, "use-astc", true, use_astc)                                                              \
     code(bool, "acceleration-and-gyroscope", true, tiltsens)                                            \
     code(int, "acceleration-pos", 0, tiltpos)                                                           \
     code(bool, "invert-gyro", false, invert_gyro)                                                       \
     code(int, "screenmode-pos", 0, screenmode_pos)                                                      \
     code(uint64_t, "current-ime-lang", 4, current_ime_lang)                                             \
+    code(bool, "native-screen", false, native_screen)                                                   \
     code(int, "psn-signed-in", false, psn_signed_in)                                                    \
     code(bool, "http-enable", true, http_enable)                                                        \
     code(int, "http-timeout-attempts", 50, http_timeout_attempts)                                       \
@@ -184,6 +188,7 @@ enum ScreenshotFormat {
 #define CONFIG_VECTOR(code)                                                                             \
     code(std::vector<short>, "controller-binds", std::vector<short>{}, controller_binds)                \
     code(std::vector<int>, "controller-led-color", std::vector<int>{}, controller_led_color)            \
+    code(std::vector<float>, "controller-gyro-calibration", std::vector<float>{}, controller_gyro_calibration)            \
     code(std::vector<std::string>, "lle-modules", std::vector<std::string>{}, lle_modules)              \
     code(std::vector<uint64_t>, "ime-langs", std::vector<uint64_t>{4}, ime_langs)                       \
     code(std::vector<std::string>, "tracy-advanced-profiling-modules", std::vector<std::string>{}, tracy_advanced_profiling_modules)

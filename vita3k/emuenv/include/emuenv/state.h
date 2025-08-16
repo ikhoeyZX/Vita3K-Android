@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -54,6 +54,7 @@ struct NpState;
 struct DisplayState;
 struct DialogState;
 struct Ime;
+struct License;
 struct RegMgrState;
 struct SfoFile;
 struct GDBState;
@@ -62,11 +63,11 @@ struct HTTPState;
 #ifdef ANDROID
 struct libadreno_var {
     bool is_adreno = false;
-    std::string adreno_temp_dir;
-    std::string adreno_lib_dir;
-    std::string adreno_driver_path;
-    std::string adreno_main_so_name;
-    std::string adreno_inject_dir;
+    std::string adreno_temp_dir = "";
+    std::string adreno_lib_dir = "";
+    std::string adreno_driver_path = "";
+    std::string adreno_main_so_name = "";
+    std::string adreno_inject_dir = "";
 };
 #endif
 
@@ -109,6 +110,7 @@ private:
     std::unique_ptr<DisplayState> _display;
     std::unique_ptr<DialogState> _common_dialog;
     std::unique_ptr<Ime> _ime;
+    std::unique_ptr<License> _license;
     std::unique_ptr<RegMgrState> _regmgr;
     std::unique_ptr<SfoFile> _sfo_handle;
     std::unique_ptr<GDBState> _gdb;
@@ -121,7 +123,6 @@ public:
     // App info contained in its `param.sfo` file
     sfo::SfoAppInfo &app_info;
     std::string app_path{};
-    int32_t app_sku_flag{};
     std::string license_content_id{};
     std::string license_title_id{};
     std::string current_app_title{};
@@ -133,6 +134,7 @@ public:
     fs::path pref_path{};
     fs::path static_assets_path{};
     fs::path shared_path{};
+    fs::path patch_path{};
     bool load_exec{};
     std::string load_app_path{};
     std::string load_exec_argv{};
@@ -154,9 +156,11 @@ public:
     WindowPtr window = WindowPtr(nullptr, nullptr);
     renderer::Backend backend_renderer{};
     RendererPtr renderer{};
-    IVector2 drawable_size = { 0, 0 };
     FVector2 viewport_pos = { 0, 0 };
     FVector2 viewport_size = { 0, 0 };
+    IVector2 drawable_size = { 0, 0 };
+    IVector2 window_size = { 0, 0 }; // Logical size of the window
+    bool drop_inputs{};
     MemState &mem;
     CtrlState &ctrl;
     TouchState &touch;
@@ -173,6 +177,7 @@ public:
     DisplayState &display;
     DialogState &common_dialog;
     Ime &ime;
+    License &license;
     RegMgrState &regmgr;
     SfoFile &sfo_handle;
     NIDSet missing_nids;
@@ -184,6 +189,7 @@ public:
 #ifdef ANDROID
     libadreno_var &libadreno; 
 #endif
+
     EmuEnvState();
     // declaring a destructor is necessary to forward declare unique_ptrs
     ~EmuEnvState();

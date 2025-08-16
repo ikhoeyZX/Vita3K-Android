@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 #include "io/functions.h"
 #include "io/io.h"
 
+#include <boost/filesystem/operations.hpp>
 #include <modules/module_parent.h>
 
 #include <cpu/functions.h>
@@ -29,7 +30,9 @@
 #include <kernel/state.h>
 #include <module/load_module.h>
 #include <nids/functions.h>
-#include <util/arm.h>
+#include <packages/license.h>
+#include <packages/sce_types.h>
+#include <patch/patch.h>
 #include <util/find.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
@@ -51,50 +54,63 @@ static constexpr bool LOG_UNK_NIDS_ALWAYS = false;
 
 struct EmuEnvState;
 
-static ImportFn resolve_import(uint32_t nid) {
+static const ImportFn *resolve_import(uint32_t nid) {
     switch (nid) {
 #define VAR_NID(name, nid)
 #define NID(name, nid) \
     case nid:          \
-        return import_##name;
+        return &import_##name;
 #include <nids/nids.inc>
 #undef NID
 #undef VAR_NID
+    default:
+        return nullptr;
     }
-
-    return ImportFn();
 }
 
-const std::array<VarExport, var_exports_size> &get_var_exports() {
-    static std::array<VarExport, var_exports_size> var_exports = { {
+struct VarExport {
+    uint32_t nid;
+    ImportVarFactory factory;
+};
+
+void init_exported_vars(EmuEnvState &emuenv) {
+    const auto var_exports = std::to_array<VarExport>({
 #define NID(name, nid)
 #define VAR_NID(name, nid) \
     {                      \
         nid,               \
-        import_##name,     \
-        #name              \
+        import_##name      \
     },
 #include <nids/nids.inc>
 #undef VAR_NID
 #undef NID
-    } };
-    return var_exports;
+    });
+
+    for (const auto &var : var_exports) {
+        auto addr = var.factory(emuenv);
+        emuenv.kernel.export_nids.emplace(var.nid, addr);
+    }
 }
 
-/**
- * \brief Resolves a function imported from a loaded module.
- * \param kernel Kernel state struct
- * \param nid NID to resolve
- * \return Resolved address, 0 if not found
- */
-Address resolve_export(KernelState &kernel, uint32_t nid) {
-    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-    const ExportNids::iterator export_address = kernel.export_nids.find(nid);
-    if (export_address == kernel.export_nids.end()) {
-        return 0;
-    }
+Ptr<void> create_vtable(const std::vector<uint32_t> &nids, MemState &mem) {
+    // we need 4 bytes for the function pointer and 12 bytes for the syscall
+    const uint32_t vtable_size = nids.size() * 4 * sizeof(uint32_t);
+    Ptr<void> vtable = Ptr<void>(alloc(mem, vtable_size, "vtable"));
+    uint32_t *function_pointer = vtable.cast<uint32_t>().get(mem);
+    uint32_t *function_svc = function_pointer + nids.size();
+    uint32_t function_location = vtable.address() + nids.size() * sizeof(uint32_t);
+    for (uint32_t nid : nids) {
+        *function_pointer = function_location;
+        // encode svc call
+        function_svc[0] = 0xef000000; // svc #0 - Call our interrupt hook.
+        function_svc[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
+        function_svc[2] = nid; // Our interrupt hook will read this.
 
-    return export_address->second;
+        function_pointer++;
+        function_svc += 3;
+        function_location += 3 * sizeof(uint32_t);
+    }
+    return vtable;
 }
 
 static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id, const std::unordered_set<uint32_t> &nid_blacklist, Address lr) {
@@ -105,66 +121,29 @@ static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id
 }
 
 void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread_id) {
-    Address export_pc = resolve_export(emuenv.kernel, nid);
-
-    if (!export_pc) {
-        // HLE - call our C++ function
-        if (emuenv.kernel.debugger.watch_import_calls) {
-            const std::unordered_set<uint32_t> hle_nid_blacklist = {
-                0xB295EB61, // sceKernelGetTLSAddr
-                0x46E7BE7B, // sceKernelLockLwMutex
-                0x91FA6614, // sceKernelUnlockLwMutex
-            };
-            auto lr = read_lr(cpu);
-            log_import_call('H', nid, thread_id, hle_nid_blacklist, lr);
-        }
-        const ImportFn fn = resolve_import(nid);
-        if (fn) {
-            fn(emuenv, cpu, thread_id);
-        } else {
-            const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
-            // make the function return 0
-            write_reg(*thread->cpu, 0, 0);
-
-            if (!emuenv.missing_nids.contains(nid) || LOG_UNK_NIDS_ALWAYS) {
-                LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);
-
-                if (!LOG_UNK_NIDS_ALWAYS)
-                    emuenv.missing_nids.insert(nid);
-            }
-        }
+    // HLE - call our C++ function
+    if (emuenv.kernel.debugger.watch_import_calls) {
+        const std::unordered_set<uint32_t> hle_nid_blacklist = {
+            0xB295EB61, // sceKernelGetTLSAddr
+            0x46E7BE7B, // sceKernelLockLwMutex
+            0x91FA6614, // sceKernelUnlockLwMutex
+        };
+        auto lr = read_lr(cpu);
+        log_import_call('H', nid, thread_id, hle_nid_blacklist, lr);
+    }
+    const ImportFn *fn = resolve_import(nid);
+    if (fn) {
+        (*fn)(emuenv, cpu, thread_id);
     } else {
-        // Note: the following code is absolutely not thread safe, invalidating the memory
-        // on other processes won't change anything about it
-        // If two threads recompile the nid call instruction at the same time, the second one
-        // will possibly read a random nid
-        // A way to mitigate that would be save the nid in the recompiled code instead of reading
-        // it when a svc is found
+        const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+        // make the function return 0
+        write_reg(*thread->cpu, 0, 0);
 
-        auto pc = read_pc(cpu);
-
-        assert((pc & 1) == 0);
-
-        pc -= 4; // Move back to SVC (SuperVisor Call) instruction
-
-        uint32_t *const stub = Ptr<uint32_t>(pc).get(emuenv.mem);
-
-        stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)export_pc, 12);
-        stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(export_pc >> 16), 12);
-        stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
-
-        // LLE - directly run ARM code imported from some loaded module
-        // TODO: resurrect this
-        /*if (is_returning(cpu)) {
-            LOG_TRACE("[LLE] TID: {:<3} FUNC: {} returned {}", thread_id, import_name(nid), log_hex(read_reg(cpu, 0)));
-            return;
-        }*/
-
-        const std::unordered_set<uint32_t> lle_nid_blacklist = {};
-        log_import_call('L', nid, thread_id, lle_nid_blacklist, pc);
-        write_pc(cpu, export_pc);
-        // invalidate this small region (without it, this code will be called again)
-        invalidate_jit_cache(cpu, pc, 3 * sizeof(uint32_t));
+        if (!emuenv.missing_nids.contains(nid) || LOG_UNK_NIDS_ALWAYS) {
+            LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);
+            if (!LOG_UNK_NIDS_ALWAYS)
+                emuenv.missing_nids.insert(nid);
+        }
     }
 }
 
@@ -186,7 +165,31 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
     vfs::FileBuffer module_buffer;
     bool res;
     VitaIoDevice device = device::get_device(module_path);
-    auto translated_module_path = translate_path(module_path.c_str(), device, emuenv.io.device_paths);
+    auto device_for_icase = device;
+    fs::path translated_module_path = translate_path(module_path.c_str(), device, emuenv.io.device_paths);
+    auto system_path = device::construct_emulated_path(device, translated_module_path, emuenv.pref_path, emuenv.io.redirect_stdio);
+
+    if (emuenv.io.case_isens_find_enabled && !fs::exists(system_path)) {
+        // Attempt a case-insensitive file search.
+        const auto original_translated_module_path = translated_module_path;
+        const auto cached_path = find_in_cache(emuenv.io, string_utils::tolower(translated_module_path.string()));
+        if (!cached_path.empty()) {
+            translated_module_path = cached_path;
+            LOG_TRACE("Found cached filepath at {}", translated_module_path);
+        } else {
+            const bool path_found = find_case_isens_path(emuenv.io, device_for_icase, translated_module_path, system_path);
+            translated_module_path = find_in_cache(emuenv.io, string_utils::tolower(system_path.string()));
+            if (!translated_module_path.empty() && path_found) {
+                LOG_TRACE("Found file on case-sensitive filesystem at {}", translated_module_path);
+                translated_module_path = translated_module_path.string().substr(emuenv.pref_path.string().length());
+                translated_module_path = translated_module_path.string().substr(translated_module_path.string().find('/') + 1);
+            } else {
+                LOG_ERROR("Missing file at {} (target path: {})", original_translated_module_path.string(), module_path);
+                return SCE_ERROR_ERRNO_ENOENT;
+            }
+        }
+    }
+
     if (device == VitaIoDevice::app0)
         res = vfs::read_app_file(module_buffer, emuenv.pref_path, emuenv.io.app_path, translated_module_path);
     else
@@ -195,7 +198,19 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         LOG_ERROR("Failed to read module file {}", module_path);
         return SCE_ERROR_ERRNO_ENOENT;
     }
-    SceUID module_id = load_self(emuenv.kernel, emuenv.mem, module_buffer.data(), module_path, emuenv.log_path);
+
+    // Decrypt module file if necessary
+    module_buffer = decrypt_fself(std::move(module_buffer), emuenv.license.rif[emuenv.io.title_id].key);
+    if (module_buffer.empty()) {
+        LOG_ERROR("Failed to decrypt module file {}", module_path);
+        return SCE_ERROR_ERRNO_ENOENT;
+    }
+
+    // Only load patches for eboot.bin modules
+    const std::vector<Patch> patches = module_path.find("eboot.bin") != std::string::npos ? get_patches(emuenv.patch_path, emuenv.io.title_id) : std::vector<Patch>();
+
+    SceUID module_id = load_self(emuenv.kernel, emuenv.mem, module_buffer.data(), module_path, emuenv.log_path, patches);
+
     if (module_id >= 0) {
         const auto module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
         LOG_INFO("Module {} (at \"{}\") loaded", module->info.module_name, module_path);

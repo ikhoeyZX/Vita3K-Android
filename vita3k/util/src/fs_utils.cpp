@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2023 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,8 @@
 #include <util/string_utils.h>
 
 #ifdef ANDROID
-#include <SDL.h>
+#include  <SDL3/SDL_system.h>
+#include  <SDL3/SDL_iostream.h>
 #endif
 
 namespace fs_utils {
@@ -64,23 +65,32 @@ void dump_data(const fs::path &path, const void *data, const std::streamsize siz
 
 std::vector<uint8_t> read_asset_raw(const fs::path &path) {
 #ifdef ANDROID
-    static const uint32_t base_path_size = strlen(SDL_AndroidGetExternalStoragePath()) + 1;
+    static uint32_t base_path_size = strlen(SDL_GetAndroidExternalStoragePath()) + 1;
     std::string file_path = path.string().substr(base_path_size);
-    SDL_RWops *file = SDL_RWFromFile(file_path.c_str(), "r");
+    SDL_IOStream *file = SDL_IOFromFile(file_path.c_str(), "r");
     if (file == nullptr) {
-        LOG_ERROR("Could not open asset file {}", path.string());
-        return {};
+        LOG_ERROR("Could not open external asset file {}", path.string());
+        SDL_CloseIO(file);
+        base_path_size = strlen(SDL_GetAndroidInternalStoragePath()) + 1;
+        file_path = path.string().substr(base_path_size);
+        file = SDL_IOFromFile(file_path.c_str(), "r");
+        if (file == nullptr) {
+           LOG_ERROR("Could not open internal asset file {}", path.string());
+           return {};
+        }
     }
 
-    Sint64 size_read = SDL_RWsize(file);
+    Sint64 size_read = SDL_GetIOSize(file);
     std::vector<uint8_t> raw_data(size_read);
 
-    if (SDL_RWread(file, raw_data.data(), size_read, 1) != 1) {
+    if(size_read > 0)
+        SDL_ReadIO(file, raw_data.data(), size_read);
+    else {
         LOG_ERROR("Could not read asset file {}", path.string());
         return {};
     }
-
-    SDL_RWclose(file);
+    
+    SDL_CloseIO(file);
 
     return raw_data;
 #else

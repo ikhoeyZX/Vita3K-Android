@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 
 #ifdef ANDROID
 // for message popup
-#include <SDL_system.h>
+#include <SDL3/SDL_system.h>
 #endif
 
 static constexpr bool log_texture_import = false;
@@ -210,7 +210,7 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
             apply_swizzle_4<uint16_t, 5, 5, 5, 1>(pixels, data_unswizzled.data(), nb_pixels, alpha_is_1, swap_rb);
             break;
         default:
-            LOG_ERROR("Unhandled swizzle for texture format {}, please report it to the developers.", log_hex(fmt::underlying(base_format)));
+            LOG_ERROR("Unhandled swizzle for texture format 0x{:0X}, please report it to the developers.", fmt::underlying(base_format));
             return;
         }
 
@@ -337,7 +337,7 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
             break;
         }
         default:
-            LOG_ERROR("Unhandled format for png exportation {}, please report it to the developers.", log_hex(fmt::underlying(base_format)));
+            LOG_ERROR("Unhandled format for png exportation 0x{:0X}, please report it to the developers.", fmt::underlying(base_format));
             return;
         }
 
@@ -519,7 +519,7 @@ bool TextureCache::import_configure_texture() {
             LOG_ERROR_ONCE("BCn textures are not supported by this device");
 #ifdef ANDROID
             // this issue is most likely to happen on android
-            SDL_AndroidShowToast("BCn textures are not supported by this device!", 1, -1, 0, 0);
+            SDL_ShowAndroidToast("BCn textures are not supported by this device!", 1, -1, 0, 0);
 #endif
             return false;
         }
@@ -757,7 +757,7 @@ static SceGxmTextureBaseFormat dxgi_to_gxm(const ddspp::DXGIFormat format) {
     case B5G6R5_UNORM:
         return SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5;
     case B5G5R5A1_UNORM:
-        return SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5;
+        return SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5;
     case B4G4R4A4_UNORM:
         return SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4;
 
@@ -870,7 +870,7 @@ static ddspp::DXGIFormat dxgi_apply_srgb(const ddspp::DXGIFormat format) {
     case BC1_UNORM:
         return BC1_UNORM_SRGB;
     case BC2_UNORM:
-        return BC1_UNORM_SRGB;
+        return BC2_UNORM_SRGB;
     case BC3_UNORM:
         return BC3_UNORM_SRGB;
     case BC7_UNORM:

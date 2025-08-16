@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,24 +15,26 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <motion/event_handler.h>
 #include <motion/functions.h>
 #include <motion/state.h>
 
 #include <ctrl/state.h>
 #include <util/log.h>
 
-#include <SDL.h>
-#include <SDL_gamecontroller.h>
+#include <SDL3/SDL_gamepad.h>
+#include <SDL3/SDL_sensor.h>
+#include <numbers>
 
 #ifdef ANDROID
-
+#include <SDL3/SDL_system.h>
 #include <jni.h>
 
 static bool is_device_landscape = false;
 
 static void init_device_orientation(){
-    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
-    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
+    jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
     jclass clazz(env->GetObjectClass(activity));
 
     jmethodID method_id = env->GetMethodID(clazz, "isDefaultOrientationLandscape", "()Z");
@@ -49,27 +51,37 @@ constexpr bool is_device_landscape = true;
 #endif
 
 static void init_device_sensors(MotionState& state){
-    const int16_t num_sensors = SDL_NumSensors();
-    for(int16_t idx = 0; idx < num_sensors; idx++){
-        SDL_Sensor* sensor = SDL_SensorOpen(idx);
-        bool sensor_used = true;
-        switch (SDL_SensorGetType(sensor))
-        {
-        case SDL_SENSOR_ACCEL:
-            state.device_accel = sensor;
-            break;
+    int i, num_sensors;
+    SDL_SensorID *sensors = SDL_GetSensors(&num_sensors);
+    if (sensors) {
+        for (i = 0; i < num_sensors; ++i) {
+            LOG_INFO("Sensor name: {}. {}", i, SDL_GetSensorNameForID(sensors[i]));
+            
+            bool sensor_used = true;
 
-        case SDL_SENSOR_GYRO:
-            state.device_gyro = sensor;
-            break;
+            SDL_Sensor* sensor = SDL_OpenSensor(sensors[i]);
+            SDL_SensorType type = SDL_GetSensorType(sensor);
+
+            switch (type){
+                case SDL_SENSOR_ACCEL:
+                    state.device_accel = sensor;
+                    break;
+                
+                case SDL_SENSOR_GYRO:
+                    state.device_gyro = sensor;
+                    break;
         
-        default:
-            sensor_used = false;
-            break;
+                default:
+                    sensor_used = false;
+                    break;
+            }
+        
+            if(!sensor_used){
+               SDL_CloseSensor(sensor);
+            }
         }
-        if(!sensor_used)
-            SDL_SensorClose(sensor);
     }
+    
     state.has_device_motion_support = (state.device_accel && state.device_gyro);
 
 #ifdef ANDROID
@@ -85,11 +97,11 @@ void MotionState::init(){
 
     // close them as having them opened uses battery
     if(device_accel){
-        SDL_SensorClose(device_accel);
+        SDL_CloseSensor(device_accel);
         device_accel = nullptr;
     }
     if(device_gyro){
-        SDL_SensorClose(device_gyro);
+        SDL_CloseSensor(device_gyro);
         device_gyro = nullptr;
     }
 }
@@ -104,7 +116,7 @@ SceFVector3 get_acceleration(const MotionState &state) {
 }
 
 SceFVector3 get_gyroscope(const MotionState &state) {
-    Util::Vec3f gyroscope = state.motion_data.GetGyroscope() * static_cast<float>(2.f * M_PI);
+    Util::Vec3f gyroscope = state.motion_data.GetGyroscope() * 2.f * std::numbers::pi_v<float>;
     return {
         gyroscope.x,
         gyroscope.y,
@@ -115,7 +127,7 @@ SceFVector3 get_gyroscope(const MotionState &state) {
 Util::Quaternion<SceFloat> get_orientation(const MotionState &state) {
     auto quat = state.motion_data.GetOrientation();
     return {
-        { quat.xyz[1], quat.xyz[0], -quat.w },
+        { -quat.xyz[1], -quat.w, quat.xyz[0] },
         -quat.xyz[2],
     };
 }
@@ -128,113 +140,77 @@ void set_gyro_bias_correction(MotionState &state, SceBool setValue) {
     state.motion_data.EnableGyroBias(setValue);
 }
 
+SceBool get_tilt_correction(MotionState &state) {
+    return state.motion_data.IsTiltCorrectionEnabled();
+}
+
+void set_tilt_correction(MotionState &state, SceBool setValue) {
+    state.motion_data.EnableTiltCorrection(setValue);
+}
+
+SceBool get_deadband(MotionState &state) {
+    return state.motion_data.IsDeadbandEnabled();
+}
+
+void set_deadband(MotionState &state, SceBool setValue) {
+    state.motion_data.EnableDeadband(setValue);
+}
+
+SceFloat get_angle_threshold(const MotionState &state) {
+    return state.motion_data.GetAngleThreshold();
+}
+
+void set_angle_threshold(MotionState &state, SceFloat setValue) {
+    state.motion_data.SetAngleThreshold(setValue);
+}
+
+SceFVector3 get_basic_orientation(const MotionState &state) {
+    return state.motion_data.GetBasicOrientation();
+}
+
+void handle_motion_event(EmuEnvState &emuenv, const SDL_GamepadSensorEvent &sensor) {
+    if (!emuenv.motion.is_sampling)
+        return;
+
+    if (!emuenv.ctrl.has_motion_support)
+        return;
+
+    if (sensor.sensor == SDL_SENSOR_ACCEL) {
+        Util::Vec3f accel{
+            sensor.data[0],
+            sensor.data[1],
+            sensor.data[2],
+        };
+        accel /= -SDL_STANDARD_GRAVITY;
+        std::swap(accel.y, accel.z);
+        accel.y *= -1;
+        emuenv.motion.motion_data.SetAcceleration(accel);
+        emuenv.motion.motion_data.UpdateOrientation(sensor.sensor_timestamp - emuenv.motion.last_accel_timestamp);
+        emuenv.motion.motion_data.UpdateBasicOrientation();
+        emuenv.motion.last_accel_timestamp = sensor.sensor_timestamp;
+        emuenv.motion.last_counter++;
+    } else if (sensor.sensor == SDL_SENSOR_GYRO) {
+        Util::Vec3f gyro{
+            sensor.data[0],
+            sensor.data[1],
+            sensor.data[2],
+        };
+        gyro /= 2.f * std::numbers::pi_v<float>;
+        std::swap(gyro.y, gyro.z);
+        gyro.y *= -1;
+        emuenv.motion.motion_data.SetGyroscope(gyro);
+        emuenv.motion.motion_data.UpdateRotation(sensor.sensor_timestamp - emuenv.motion.last_gyro_timestamp);
+        emuenv.motion.last_gyro_timestamp = sensor.sensor_timestamp;
+        emuenv.motion.last_counter++;
+    }
+}
+
 void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
-    if (!state.is_sampling){
-        // the check is done here so that everything sensor related is done on the same thread
-        if(state.device_accel){
-            SDL_SensorClose(state.device_accel);
-            state.device_accel = nullptr;
-        }
-        if(state.device_gyro){
-            SDL_SensorClose(state.device_gyro);
-            state.device_gyro = nullptr;
-        }
-        return;
-    }
-
-    if (!ctrl_state.has_motion_support && !state.has_device_motion_support)
+    if (!state.is_sampling)
         return;
 
-    // make sure to use the data from only one accelerometer and gyroscope
-    bool found_gyro = false;
-    bool found_accel = false;
-    Util::Vec3f gyro;
-    uint64_t gyro_timestamp = 0;
-    Util::Vec3f accel;
-    uint64_t accel_timestamp = 0;
-
-    {
-        // SDL_GameControllerGetSensorDataWithTimestamp is only supported on 2.26+
-        // we need to check it because we are linking dynamically with SDL
-        // TODO: put this in an init function
-        SDL_version sdl_version;
-        SDL_GetVersion(&sdl_version);
-        const bool can_use_timestamp_fn = sdl_version.minor >= 26;
-
-        std::lock_guard<std::mutex> guard(ctrl_state.mutex);
-        for (const auto &controller : ctrl_state.controllers) {
-            if (!found_gyro && controller.second.has_gyro) {
-                if (can_use_timestamp_fn && SDL_GameControllerGetSensorDataWithTimestamp(controller.second.controller.get(), SDL_SENSOR_GYRO, &gyro_timestamp, reinterpret_cast<float *>(&gyro), 3) == 0)
-                    found_gyro = true;
-                else if (!can_use_timestamp_fn && SDL_GameControllerGetSensorData(controller.second.controller.get(), SDL_SENSOR_GYRO, reinterpret_cast<float *>(&gyro), 3) == 0)
-                    found_gyro = true;
-            }
-
-            if (!found_accel && controller.second.has_accel) {
-                if (can_use_timestamp_fn && SDL_GameControllerGetSensorDataWithTimestamp(controller.second.controller.get(), SDL_SENSOR_ACCEL, &accel_timestamp, reinterpret_cast<float *>(&accel), 3) == 0)
-                    found_accel = true;
-                else if (!can_use_timestamp_fn && SDL_GameControllerGetSensorData(controller.second.controller.get(), SDL_SENSOR_ACCEL, reinterpret_cast<float *>(&accel), 3) == 0)
-                    found_accel = true;
-            }
-        }
-    }
-
-    const bool no_controller_sensor = (!found_gyro || !found_accel);
-    const bool device_sensor_uninitialized = (state.device_accel == nullptr && state.device_gyro == nullptr);
-    if(no_controller_sensor && state.has_device_motion_support && device_sensor_uninitialized){
-        init_device_sensors(state);
-    }
-
-    bool gyro_from_device = false;
-    if(!found_gyro && state.device_gyro){
-        if (SDL_SensorGetDataWithTimestamp(state.device_gyro, &gyro_timestamp, reinterpret_cast<float *>(&gyro), 3) == 0) {
-            found_gyro = true;
-            gyro_from_device = true;
-        }
-    }
-
-    bool accel_from_device = false;
-    if(!found_accel && state.device_accel){
-        if (SDL_SensorGetDataWithTimestamp(state.device_accel, &accel_timestamp, reinterpret_cast<float *>(&accel), 3) == 0) {
-            found_accel = true;
-            accel_from_device = true;
-        }
-    }
-
-    if (!found_accel && !found_gyro)
+    if (!ctrl_state.has_motion_support)
         return;
 
-    // if timestamp is not available, use the current time instead
-    if (gyro_timestamp == 0 || accel_timestamp == 0) {
-        std::chrono::time_point<std::chrono::steady_clock> ts = std::chrono::steady_clock::now();
-        uint64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
-
-        if (gyro_timestamp == 0)
-            gyro_timestamp = timestamp;
-        if (accel_timestamp == 0)
-            accel_timestamp = timestamp;
-    }
-
-    gyro /= static_cast<float>(2.0 * M_PI);
-    accel /= -SDL_STANDARD_GRAVITY;
-
-    if(gyro_from_device && !is_device_landscape){
-        std::tie(gyro.x, gyro.y, gyro.z) = std::make_tuple(-gyro.y, gyro.x, gyro.z);
-        std::tie(accel.x, accel.y, accel.z) = std::make_tuple(-accel.y, accel.x, accel.z);
-    } else if (!gyro_from_device) {
-        std::tie(gyro.x, gyro.y, gyro.z) = std::make_tuple(gyro.x, -gyro.z, gyro.y);
-        std::tie(accel.x, accel.y, accel.z) = std::make_tuple(accel.x, -accel.z, accel.y);
-    }
-
-    std::lock_guard<std::mutex> guard(state.mutex);
-
-    state.motion_data.SetGyroscope(gyro);
-    state.motion_data.SetAcceleration(accel);
-
-    state.motion_data.UpdateRotation(gyro_timestamp - state.last_gyro_timestamp);
-    state.motion_data.UpdateOrientation(accel_timestamp - state.last_accel_timestamp);
-
-    state.last_gyro_timestamp = gyro_timestamp;
-    state.last_accel_timestamp = accel_timestamp;
     state.last_counter++;
 }

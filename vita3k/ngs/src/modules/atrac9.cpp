@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -92,12 +92,13 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
         state->current_loop_count++;
         state->current_byte_position_in_buffer = 0;
 
-        if (bufparam.loop_count != -1 && state->current_loop_count > bufparam.loop_count) {
+        if ((bufparam.loop_count != -1) && (state->current_loop_count > bufparam.loop_count)) {
             state->current_buffer = bufparam.next_buffer_index;
             state->current_loop_count = 0;
 
-            if (state->current_buffer == -1
-                || !params->buffer_params[state->current_buffer].buffer) {
+            if ((state->current_buffer == -1)
+                || !params->buffer_params[state->current_buffer].buffer
+                || (params->buffer_params[state->current_buffer].bytes_count == 0)) {
                 data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_END_OF_DATA, 0, 0);
 
                 // we are done
@@ -185,7 +186,7 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
         const uint32_t samples_left_after = (frame_bytes_gotten / superframe_size - 1) * samples_per_superframe;
         if (bufparam.samples_discard_end_off > samples_left_after) {
             // last chunk
-            decoded_size -= bufparam.samples_discard_end_off;
+            decoded_size -= std::min(decoded_size, bufparam.samples_discard_end_off - samples_left_after);
         }
     }
 

@@ -14,7 +14,7 @@
 		<emulation name="模拟">
 			<last_apps_used>最近使用的应用程序</last_apps_used>
 		</emulation>
-		<debug>
+		<debug name="调试">
 			<threads>线程</threads>
 			<semaphores>信号量</semaphores>
 			<mutexes>互斥锁</mutexes>
@@ -39,7 +39,7 @@
 	<about name="关于">
 		<vita3k>Vita3K：PS Vita/PS TV模拟器，是全球首个实用的PS Vita/PS TV模拟器。</vita3k>
 		<about_vita3k>Vita3K是使用C++编写的实验性开源PlayStation Vita/PlayStation TV模拟器，适用于Windows、Linux、macOS以及Android操作系统。</about_vita3k>
-		<special_credit>特别鸣谢：Vita3K图标设计由：</special_credit>
+		<special_credit>特别鸣谢：Vita3K图标设计者：</special_credit>
 		<github_website>如果您有兴趣参与贡献，请浏览我们的：</github_website>
 		<vita3k_website>更多信息请访问我们的网站：</vita3k_website>
 		<ko-fi_website>如果您想支持我们，您可以捐赠或者订阅我们的：</ko-fi_website>
@@ -426,16 +426,17 @@
 		<install_firmware>安装固件。</install_firmware>
 		<install_highly_recommended>强烈建议同时安装这两个固件文件。</install_highly_recommended>
 		<installed>已安装：</installed>
+		<download_preinst_firmware>下载预装固件</download_preinst_firmware>
 		<download_firmware>下载固件</download_firmware>
 		<download_font_package>下载字体包</download_font_package>
 		<install_firmware_file>安装固件文件</install_firmware_file>
 		<select_interface_settings>请选择界面设定。</select_interface_settings>
-		<show_info_bar>信息栏可見</show_info_bar>
+		<show_info_bar>信息栏可见</show_info_bar>
 		<info_bar_description>勾选此项在应用程序选择页面内显示信息栏。
 信息栏是时间、电量以及信息中心。</info_bar_description>
 		<show_live_area_screen>Live Area应用程序屏幕</show_live_area_screen>
 		<live_area_screen_description>勾选此项在点击应用程序时默认打开Live Area页面。
-如果禁用，请右键应用程序将其打开。</live_area_screen_description>
+如果禁用，请右键点击应用程序将其打开。</live_area_screen_description>
 		<apps_list_grid>网格模式</apps_list_grid>
 		<apps_list_grid_description>勾选此项将应用程序列表设置为像PS Vita一样的网格模式。</apps_list_grid_description>
 		<icon_size>应用程序图标大小</icon_size>
@@ -602,6 +603,12 @@
 			<no_modules>没有模块存在。
 请下载并安装最新的PS Vita固件。</no_modules>
 			<refresh_list>刷新列表</refresh_list>
+			<automatic>自动模式</automatic>
+			<automatic_description>选择自动模式会使用预设的模块列表。</automatic_description>
+			<auto_manual>自动兼手动模式</auto_manual>
+			<auto_manual_description>选择此模式会加载预设模块和从下方列表中选择的模块。</auto_manual_description>
+			<manual>手动模式</manual>
+			<manual_description>选择手动模式会加载从下方列表中选择的模块。</manual_description>
 		</core>
 		<cpu>
 			<unicorn>Unicorn（已弃用）</unicorn>
@@ -693,15 +700,15 @@
 			<select_log_level>选择您喜欢的日志级别。</select_log_level>
 			<archive_log>档案日志</archive_log>
 			<archive_log_description>勾选此项启用档案日志。</archive_log_description>
-			<discord_rich_presence>启用Discord Rich Presence以显示您在Discord上运行的应用程序。</discord_rich_presence>
+			<discord_rich_presence>启用Discord Rich Presence以展示您在Discord上正在运行的应用程序。</discord_rich_presence>
 			<texture_cache>纹理缓存</texture_cache>
 			<texture_cache_description>取消勾选此项禁用纹理缓存。</texture_cache_description>
 			<show_compile_shaders>显示编译着色器</show_compile_shaders>
 			<compile_shaders_description>取消勾选此项禁用编译着色器对话框的显示。</compile_shaders_description>
 			<show_touchpad_cursor>显示触摸板光标</show_touchpad_cursor>
-			<touchpad_cursor_description>取消勾选此项禁用显示在屏幕上触摸板光标。</touchpad_cursor_description>
-			<log_compat_warn>日志兼容性警告</log_compat_warn>
-			<log_compat_warn_description>勾选此项启用GitHub问题的日志兼容性警告。</log_compat_warn_description>
+			<touchpad_cursor_description>取消勾选此项禁用屏幕上的触摸板光标的显示。</touchpad_cursor_description>
+			<log_compat_warn>记录兼容性警告</log_compat_warn>
+			<log_compat_warn_description>勾选此项启用对GitHub议题的兼容性警告的记录。</log_compat_warn_description>
 			<check_for_updates>检查更新</check_for_updates>
 			<check_for_updates_description>启动时自动检查更新。</check_for_updates_description>
 			<performance_overlay>性能图层</performance_overlay>
@@ -720,9 +727,9 @@
 			<bottom_right>右下</bottom_right>
 			<position>位置</position>
 			<select_position>选择您喜欢的性能图层位置。</select_position>
-			<case_insensitive>检查在区分大小写的文件系统上启用不区分大小写的路径查找。
+			<case_insensitive>勾选以在区分大小写的文件系统上启用不区分大小写的路径查找。
 重启时复位</case_insensitive>
-			<case_insensitive_description>允许模拟器尝试在非Windows平台上搜索无论大小写的文件。</case_insensitive_description>
+			<case_insensitive_description>允许模拟器尝试在非Windows平台上不区分大小写地搜索文件。</case_insensitive_description>
 			<emu_storage_folder>模拟系统存储文件夹</emu_storage_folder>
 			<current_emu_path>当前模拟器路径：</current_emu_path>
 			<change_emu_path>更改模拟器路径</change_emu_path>
@@ -733,6 +740,8 @@
 您需要手动将旧文件夹移动到新位置。</reset_emu_path_description>
 			<custom_config_settings>自定义配置设置</custom_config_settings>
 			<clear_custom_config>清除自定义配置</clear_custom_config>
+			<screenshot_image_type>截屏图片类型</screenshot_image_type>
+			<screenshot_format>截屏保存格式</screenshot_format>
 		</emulator>
 		<gui name="图形用户界面">
 			<show_gui>图形用户界面可见</show_gui>
@@ -781,12 +790,12 @@
 			<psn_signed_in>已登入PSN</psn_signed_in>
 			<psn_signed_in_description>如果勾选此项，游戏将认为用户已连接至PSN（但为离线）。</psn_signed_in_description>
 			<enable_http>启用HTTP</enable_http>
-			<enable_http_description>勾选此项启用游戏在网络上使用HTTP协议。</enable_http_description>
+			<enable_http_description>勾选此项为游戏启用在互联网上使用HTTP协议。</enable_http_description>
 			<timeout_attempts>HTTP超时尝试</timeout_attempts>
 			<timeout_attempts_description>当服务器没有响应时要执行多次尝试。
 如果您有非常不稳定或是非常慢的网络可能会很有用。</timeout_attempts_description>
 			<timeout_sleep>HTTP超时休眠</timeout_sleep>
-			<timeout_sleep_description>当服务器没有响应时尝试休眠时间。
+			<timeout_sleep_description>当服务器没有响应时尝试进入休眠时间。
 如果您有非常不稳定或是非常慢的网络可能会很有用。</timeout_sleep_description>
 			<read_end_attempts>HTTP读取终止尝试</read_end_attempts>
 			<read_end_attempts_description>当没有更多数据可读取时，尝试多次可以提升性能，
@@ -801,7 +810,7 @@
 			<log_exports>导出记录</log_exports>
 			<log_exports_description>记录模块导出符号。</log_exports_description>
 			<log_active_shaders>着色器记录</log_active_shaders>
-			<log_active_shaders_description>记录着色器在每次绘制调用中使用。</log_active_shaders_description>
+			<log_active_shaders_description>记录在每次绘制调用中使用的着色器。</log_active_shaders_description>
 			<log_uniforms>统一记录</log_uniforms>
 			<log_uniforms_description>记录着色器统一名称和值。</log_uniforms_description>
 			<color_surface_debug>保存颜色表面</color_surface_debug>
@@ -848,6 +857,8 @@
 		<grade>Grade（等级）</grade>
 		<progress>达成率</progress>
 		<updated>升级日期</updated>
+		<advance>高级</advance>
+		<show_hidden>展示隐藏奖杯</show_hidden>
 	</trophy_collection>
 
 	<user_management>
@@ -874,7 +885,8 @@
 	<vita3k_update name="Vita3K更新">
  		<new_version_available>检测到新版本的Vita3K。</new_version_available>
 		<back>返回</back>
- 		<cancel_update>要取消升级吗？</cancel_update>
+ 		<cancel_update_resume>要取消升级吗？
+若取消升级，下次升级时将从中断处开始下载。</cancel_update_resume>
 		<downloading>下载中…
 下载完毕后，Vita3K将会自动重新启动，并安装新的升级。</downloading>
 		<not_complete_update>无法完成升级。</not_complete_update>

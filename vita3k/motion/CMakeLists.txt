@@ -6,8 +6,8 @@ add_library(
 )
 
 target_include_directories(motion PUBLIC include)
-target_link_libraries(motion PUBLIC emuenv sdl2 util)
+target_link_libraries(motion PUBLIC emuenv SDL3::SDL3 util)
 target_link_libraries(motion PRIVATE ctrl)
 if(ANDROID)
-    target_link_libraries(host_dialog PRIVATE sdl2)
+    target_link_libraries(host_dialog PRIVATE SDL3::SDL3)
 endif()

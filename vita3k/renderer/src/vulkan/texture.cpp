@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -254,7 +254,7 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     samplers.resize(max_sampler_used);
 
     // check for linear filtering on depth support
-    const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(vk::Format::eD32SfloatS8Uint);
+    const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(vk::Format::eD24UnormS8Uint);
     support_depth_linear_filtering = static_cast<bool>(depth_linear.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
 
     // check for dxt support
@@ -266,6 +266,11 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     const vk::FormatProperties astc_support = state.physical_device.getFormatProperties(vk::Format::eAstc4x4SrgbBlock);
     support_astc = static_cast<bool>(astc_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
 
+    LOG_TRACE("max_sampler_used : {}", max_sampler_used);
+    LOG_TRACE("support_depth_linear_filtering : {}",support_depth_linear_filtering);
+    LOG_TRACE("support_dxt : {}", support_dxt);
+    LOG_TRACE("support_astc : {}", support_astc);
+    
     return true;
 }
 
@@ -291,7 +296,7 @@ static vk::Format linear_to_srgb(const vk::Format format) {
     case vk::Format::eBc7UnormBlock:
         return vk::Format::eBc7SrgbBlock;
     default: {
-        LOG_ERROR("Trying to use gamma correction with non-compatible format {}", vk::to_string(format));
+        LOG_ERROR("BCN : Trying to use gamma correction with non-compatible format {}", vk::to_string(format));
         return format;
     }
     }
@@ -385,12 +390,14 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     const uint16_t mip_count = renderer::texture::get_upload_mip(gxm_texture.true_mip_count(), width, height);
 
     vk::Format vk_format = texture::translate_format(base_format);
+    // we need gamma correction first then decompress if not supported
+    if (gxm_texture.gamma_mode) 
+        vk_format = linear_to_srgb(vk_format);
+        
     if (gxm::is_bcn_format(base_format) && !support_dxt)
         // texture will be decompressed
         vk_format = bcn_to_rgba8(vk_format);
-    if (gxm_texture.gamma_mode)
-        vk_format = linear_to_srgb(vk_format);
-
+    
     current_texture->mip_count = mip_count;
     current_texture->is_cube = is_cube;
     uint32_t memory_needed = get_image_memory_upper_bound(gxm_texture, vk_format, base_format);
@@ -579,6 +586,8 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
         mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
     }
 
+    const float minLod = static_cast<float>(texture.lod_min0 | (texture.lod_min1 << 2));
+    
     // create sampler
     vk::SamplerCreateInfo sampler_info{
         .magFilter = texture::translate_filter(mag_filter),
@@ -590,8 +599,8 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
         .mipLodBias = (static_cast<float>(texture.lod_bias) - 31.f) / 8.f,
         .maxAnisotropy = static_cast<float>(anisotropic_filtering),
         .compareEnable = VK_FALSE,
-        .minLod = static_cast<float>(texture.lod_min0 | (texture.lod_min1 << 2)), // original was (texture.lod_min1 << 2)
-        .maxLod = VK_LOD_CLAMP_NONE,
+        .minLod = minLod, // original was (texture.lod_min1 << 2)
+        .maxLod = (minLod + 1.0f), // original was VK_LOD_CLAMP_NONE,
         .unnormalizedCoordinates = VK_FALSE,
     };
 
@@ -627,11 +636,12 @@ void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
         state.frame().destroy_queue.add_image(image);
 
     vk::Format vk_format = texture::translate_format(base_format);
-    if (is_srgb && !support_dxt)
-        vk_format = bcn_to_rgba8(vk_format); // for mali users
-    else if (is_srgb)
+    if (is_srgb)
         vk_format = linear_to_srgb(vk_format);
 
+    if (!support_dxt)
+        vk_format = bcn_to_rgba8(vk_format); // for mali users
+    
     // manually initialize the image
     image.width = width;
     image.height = height;

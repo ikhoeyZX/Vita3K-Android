@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,7 +36,6 @@
 #include <kernel/state.h>
 #include <mem/state.h>
 
-#include <SDL.h>
 #include <io/state.h>
 #include <mem/mempool.h>
 #include <renderer/functions.h>
@@ -902,8 +901,7 @@ static void display_entry_thread(EmuEnvState &emuenv) {
         LOG_CRITICAL("display_thread not found. thid:{}", emuenv.gxm.display_queue_thread);
         return;
     }
-    Ptr<SceGxmSyncObject> previous_sync = Ptr<SceGxmSyncObject>();
-
+    
     while (true) {
         auto display_callback = display_queue.top();
         if (!display_callback)
@@ -912,8 +910,11 @@ static void display_entry_thread(EmuEnvState &emuenv) {
         SceGxmSyncObject *old_sync = display_callback->old_sync.get(emuenv.mem);
         SceGxmSyncObject *new_sync = display_callback->new_sync.get(emuenv.mem);
 
-        renderer::wishlist(new_sync, display_callback->new_sync_timestamp);
-
+                // sceGxmDisplayQueueAddEntry waits for both buffers to complete
+        renderer::wishlist(old_sync, display_callback->old_sync_timestamp);
+        if (old_sync != new_sync)
+            renderer::wishlist(new_sync, display_callback->new_sync_timestamp);
+	    
         // now we can remove the thread from the display queue
         display_queue.pop();
 
@@ -924,17 +925,13 @@ static void display_entry_thread(EmuEnvState &emuenv) {
         // Now run callback
         display_thread->run_guest_function(callback_address, display_callback->data);
 
+        // Notifies the renderer of the completion of the callback for the display_entry.
+        // The last_display of the entry, when pushed into the queue, is guaranteed to be timestamp_ahead + 1 at the time of the call.
+        renderer::subject_done(old_sync, display_callback->old_sync_timestamp + 1);
+        if (old_sync != new_sync)
+            renderer::subject_done(new_sync, display_callback->new_sync_timestamp + 1);
+
         free(emuenv.mem, display_callback->data);
-
-        // The only thing old buffer should be waiting for is to stop being displayed
-        renderer::subject_done(old_sync, std::min(old_sync->timestamp_current + 1, old_sync->timestamp_ahead.load()));
-        if (previous_sync && display_callback->old_sync != previous_sync) {
-            // in this case, also set the previous sync object to avoid deadlocks
-            SceGxmSyncObject *other_old_sync = previous_sync.get(emuenv.mem);
-            renderer::subject_done(other_old_sync, std::min(other_old_sync->timestamp_current + 1, other_old_sync->timestamp_ahead.load()));
-        }
-
-        previous_sync = display_callback->new_sync;
     }
 }
 
@@ -1245,7 +1242,7 @@ static constexpr std::uint32_t DEFAULT_RING_SIZE = 4096;
 
 static VertexCacheHash hash_data(const void *data, size_t size) {
     auto hash = XXH3_64bits(data, size);
-    return VertexCacheHash(hash);
+    return static_cast<VertexCacheHash>(hash);
 }
 
 static bool operator<(const SceGxmRegisteredProgram &a, const SceGxmRegisteredProgram &b) {
@@ -1751,6 +1748,9 @@ EXPORT(int, sceGxmColorSurfaceSetGammaMode, SceGxmColorSurface *surface, SceGxmC
     case SCE_GXM_COLOR_SURFACE_GAMMA_NONE:
         texture_gamma = SCE_GXM_TEXTURE_GAMMA_NONE;
         break;
+    case SCE_GXM_COLOR_SURFACE_GAMMA_R:
+        texture_gamma = SCE_GXM_TEXTURE_GAMMA_R;
+	break;
     case SCE_GXM_COLOR_SURFACE_GAMMA_GR:
         texture_gamma = SCE_GXM_TEXTURE_GAMMA_GR;
         break;
@@ -2036,7 +2036,10 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
 
     if (!renderTarget)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-
+	
+    if (!renderTarget.valid(mem))
+        return RET_ERROR(SCE_GXM_ERROR_DRIVER);
+	
     renderer::destroy_render_target(*emuenv.renderer, renderTarget.get(mem)->renderer);
 
     free(mem, renderTarget);
@@ -2055,7 +2058,7 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
 
     DisplayFrameInfo *frame = predict_next_image(emuenv, newBuffer.address());
 
-    // Block future rendering by setting value2 of sync object
+    // Block future rendering by setting value of sync object
     SceGxmSyncObject *oldBufferSync = oldBuffer.get(emuenv.mem);
     SceGxmSyncObject *newBufferSync = newBuffer.get(emuenv.mem);
 
@@ -2063,36 +2066,16 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
         .data = address,
         .old_sync = oldBuffer,
         .new_sync = newBuffer,
-        .new_sync_timestamp = newBufferSync->timestamp_ahead++,
+        .old_sync_timestamp = oldBufferSync->timestamp_ahead,
+        .new_sync_timestamp = newBufferSync->timestamp_ahead,
         .frame_predicted = frame != nullptr
     };
 
-    if (newBuffer == emuenv.gxm.last_fbo_sync_object) {
-        // don't know why, some games like NFS send twice in a row the same buffer to the front...
-        // act like it is not displaying anymore
-        renderer::subject_done(newBufferSync, newBufferSync->last_display);
-    }
-
-    if (oldBufferSync->last_operation_global > emuenv.gxm.last_display_global
-        && oldBufferSync->last_operation_global < newBufferSync->last_operation_global) {
-        // if we do nothing we will softlock
-        // so just act as if the old buffer is already done being displayed
-        renderer::subject_done(oldBufferSync, oldBufferSync->last_display);
-    }
-
-    newBufferSync->last_display = newBufferSync->timestamp_ahead.load();
-    emuenv.gxm.last_fbo_sync_object = newBuffer;
+    oldBufferSync->last_display = ++oldBufferSync->timestamp_ahead;
+    if (oldBufferSync != newBufferSync)
+        newBufferSync->last_display = ++newBufferSync->timestamp_ahead;
+	
     emuenv.gxm.last_display_global = emuenv.gxm.global_timestamp.fetch_add(1, std::memory_order_relaxed);
-
-    // needed the first time the sync object is used as the old front buffer
-    if (oldBufferSync->last_display == 0) {
-        // resogun draws to the front buffer using the fact that the sync object prevents
-        // it from doing so until it is swapped, the first time it happens must be handled
-        // as a special case
-        renderer::wishlist(oldBufferSync, oldBufferSync->timestamp_ahead);
-
-        oldBufferSync->last_display = ++oldBufferSync->timestamp_ahead;
-    }
 
     // function may be blocking here (expected behavior)
     emuenv.gxm.display_queue.push(display_callback);
@@ -2626,20 +2609,33 @@ EXPORT(uint32_t, sceGxmGetPrecomputedDrawSize, const SceGxmVertexProgram *vertex
     return static_cast<uint32_t>((max_stream_index + 1) * sizeof(StreamData));
 }
 
-EXPORT(uint32_t, sceGxmGetPrecomputedFragmentStateSize, const SceGxmFragmentProgram *fragmentProgram) {
+// Fallback value returned when computed size is zero.
+static constexpr SceUInt32 SCE_GXM_PRECOMPUTED_OVERHEAD = 8u;
+
+// Precomputed state size is the sum of the sizes of all uniform buffers and textures.
+static SceUInt32 get_precomputed_state_size(const uint16_t buffer_count, const uint16_t texture_count) {
+    const SceUInt32 state_size = static_cast<SceUInt32>((buffer_count * sizeof(UniformBuffer)) + (texture_count * sizeof(SceGxmTexture)));
+
+    // Some games expect sceGxmGetPrecomputed*StateSize to return non-zero,
+    // even when buffer and texture counts are both zero.
+    // This fallback avoids crashes or undefined behavior.
+    return state_size > 0 ? state_size : SCE_GXM_PRECOMPUTED_OVERHEAD;
+}
+
+EXPORT(SceUInt32, sceGxmGetPrecomputedFragmentStateSize, const SceGxmFragmentProgram *fragmentProgram) {
     TRACY_FUNC(sceGxmGetPrecomputedFragmentStateSize, fragmentProgram);
     assert(fragmentProgram);
 
     auto &renderer_data = fragmentProgram->renderer_data;
-    return renderer_data->texture_count * sizeof(TextureData) + renderer_data->buffer_count * sizeof(UniformBuffer);
+    return get_precomputed_state_size(renderer_data->buffer_count, renderer_data->texture_count);
 }
 
-EXPORT(uint32_t, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram *vertexProgram) {
+EXPORT(SceUInt32, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram *vertexProgram) {
     TRACY_FUNC(sceGxmGetPrecomputedVertexStateSize, vertexProgram);
     assert(vertexProgram);
 
     auto &renderer_data = vertexProgram->renderer_data;
-    return renderer_data->texture_count * sizeof(TextureData) + renderer_data->buffer_count * sizeof(UniformBuffer);
+    return get_precomputed_state_size(renderer_data->buffer_count, renderer_data->texture_count);
 }
 
 EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize) {
@@ -2647,8 +2643,8 @@ EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params
     if (!params || !hostMemSize)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    *hostMemSize = static_cast<uint32_t>(KiB(64));
-    return STUBBED("64KiB emuenv mem");
+    *hostMemSize = static_cast<uint32_t>(KiB(96));
+    return STUBBED("96KiB emuenv mem");
 }
 
 EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
@@ -2712,16 +2708,24 @@ EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, uint32_t size, uint32_t
 EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
     TRACY_FUNC(sceGxmMapMemory, base, size, attribs);
     if (!base) {
+	LOG_ERROR_ONCE("sceGxmMapMemory -> Invalid pointer!");
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
+	
+    if ((base.address() % KiB(4) != 0) || (size % KiB(4) != 0))
+        LOG_WARN("Mapping unaligned GPU memory");
+
+    // Make sure the base address and size are 4KiB-aligned
+    Address aligned_base = align_down(base.address(), KiB(4));
+    size = align(base.address() + size, KiB(4)) - aligned_base;
 
     // Check if it has already been mapped
     // Some games intentionally overlapping mapped region. Nothing we can do. Allow it, bear your own consequences.
     GxmState &gxm = emuenv.gxm;
 
-    auto ite = gxm.memory_mapped_regions.lower_bound(base.address());
-    if (ite == gxm.memory_mapped_regions.end() || ite->first != base.address()) {
-        if (ite != gxm.memory_mapped_regions.end() && base.address() + size > ite->first) {
+    auto ite = gxm.memory_mapped_regions.lower_bound(aligned_base);
+    if ((ite == gxm.memory_mapped_regions.end()) || (ite->first != aligned_base)) {
+        if ((ite != gxm.memory_mapped_regions.end()) && ((aligned_base + size) > ite->first)) {
             LOG_ERROR("Overlapping mapped memory detected");
 
             if (emuenv.renderer->features.enable_memory_mapping) {
@@ -2729,11 +2733,11 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
                 return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
             }
         }
-        gxm.memory_mapped_regions.emplace(base.address(), MemoryMapInfo{ base.address(), size, attribs });
-
+        gxm.memory_mapped_regions.emplace(aligned_base, MemoryMapInfo{ aligned_base, size, attribs });
+	    
         // little big planet maps regions of size 0
         if (emuenv.renderer->features.enable_memory_mapping && size > 0)
-            renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryMap, true, base, size);
+            renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryMap, true, aligned_base, size);
 
         return 0;
     }
@@ -2746,6 +2750,7 @@ EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, uint32_t size, uint32_t *
   
     STUBBED("always return success");
     if (!base || !offset) {
+	LOG_ERROR_ONCE("sceGxmMapVertexUsseMemory -> INVALID POINTER");
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
@@ -4102,9 +4107,11 @@ EXPORT(int, sceGxmSetUserMarker) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmSetValidationEnable) {
+EXPORT(bool, sceGxmSetValidationEnable) {
     TRACY_FUNC(sceGxmSetValidationEnable);
-    return UNIMPLEMENTED();
+    STUBBED("Always false");
+    return false;
+   // return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmSetVertexDefaultUniformBuffer, SceGxmContext *context, Ptr<const void> bufferData) {
@@ -5462,10 +5469,17 @@ EXPORT(int, sceGxmUnmapFragmentUsseMemory, void *base) {
 EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
     TRACY_FUNC(sceGxmUnmapMemory, base);
     if (!base) {
+	LOG_ERROR_ONCE("sceGxmUnmapMemory -> Invalid pointer");
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    auto ite = emuenv.gxm.memory_mapped_regions.find(base.address());
+    if (base.address() % KiB(4) != 0)
+        LOG_WARN("Unmapping unaligned GPU memory");
+
+    // Make sure the base address are 4KiB-aligned
+    Address aligned_base = align_down(base.address(), KiB(4));
+
+    auto ite = emuenv.gxm.memory_mapped_regions.find(aligned_base);
     if (ite == emuenv.gxm.memory_mapped_regions.end()) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -5480,7 +5494,7 @@ EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
     }
 
     if (emuenv.renderer->features.enable_memory_mapping && ite->second.size > 0)
-        renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryUnmap, true, base);
+        renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryUnmap, true, aligned_base);
 
     emuenv.gxm.memory_mapped_regions.erase(ite);
     return 0;

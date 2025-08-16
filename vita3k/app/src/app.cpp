@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,17 +24,19 @@
 #include <io/state.h>
 #include <util/log.h>
 
-#include <SDL.h>
+#include <SDL3/SDL_messagebox.h>
+#include <SDL3/SDL_timer.h>
 
 #ifdef ANDROID
 #include <host/dialog/filesystem.h>
 #include <miniz.h>
+#include <SDL3/SDL_system.h>
 #endif
 
 namespace app {
 
 void error_dialog(const std::string &message, SDL_Window *window) {
-    if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message.c_str(), window) < 0) {
+    if (!SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message.c_str(), window)) {
         LOG_ERROR("SDL Error: {}", message);
     }
 }
@@ -91,7 +93,7 @@ void add_custom_driver(EmuEnvState &emuenv) {
     // remove the .zip extension
     std::string driver = file_path.filename().stem().string();
 
-    fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver;
+    fs::path driver_path = fs::path(SDL_GetAndroidInternalStoragePath()) / "driver" / driver;
 
     if (fs::exists(driver_path)) {
         LOG_ERROR("Driver {} already exists", driver);
@@ -154,7 +156,7 @@ void add_custom_driver(EmuEnvState &emuenv) {
 }
 
 void remove_custom_driver(EmuEnvState &emuenv, const std::string &driver) {
-    fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver;
+    fs::path driver_path = fs::path(SDL_GetAndroidInternalStoragePath()) / "driver" / driver;
 
     if (!fs::exists(driver_path)) {
         LOG_ERROR("Path {} does not exist", driver_path.c_str());

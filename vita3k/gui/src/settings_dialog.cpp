@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,7 +41,8 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#include <SDL.h>
+#include <SDL3/SDL_video.h>
+#include <SDL3/SDL_audio.h>
 
 #include <algorithm>
 #include <pugixml.hpp>
@@ -434,7 +435,7 @@ std::string get_cpu_backend(GuiState &gui, EmuEnvState &emuenv, const std::strin
 void set_vsync_state(const bool &state) { // has static
     if (state) {
         // Try adaptive vsync first, falling back to regular vsync.
-        if (SDL_GL_SetSwapInterval(-1) < 0) {
+        if (!SDL_GL_SetSwapInterval(-1)) {
             SDL_GL_SetSwapInterval(1);
         }
     } else
@@ -523,6 +524,11 @@ void set_config(EmuEnvState &emuenv, const std::string &app_path, bool custom) {
     emuenv.renderer->res_multiplier = emuenv.cfg.current_config.resolution_multiplier;
     emuenv.renderer->set_anisotropic_filtering(emuenv.cfg.current_config.anisotropic_filtering);
     emuenv.renderer->set_stretch_display(emuenv.cfg.stretch_the_display_area);
+    if(emuenv.cfg.screenmode_pos == 3)
+       emuenv.renderer->set_portrait_mode(true);
+    else
+       emuenv.renderer->set_portrait_mode(false);
+    
     emuenv.renderer->get_texture_cache()->set_replacement_state(emuenv.cfg.current_config.import_textures, emuenv.cfg.current_config.export_textures, emuenv.cfg.current_config.export_as_png);
     emuenv.renderer->set_async_compilation(emuenv.cfg.current_config.async_pipeline_compilation);
     emuenv.display.fps_hack = emuenv.cfg.current_config.fps_hack;
@@ -970,15 +976,15 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (emuenv.cfg.gpu_idx == 0) {
                 ImGui::Spacing();
                 std::vector<const char *> vk_surface_format_strings = {
-                       "Immediate",
+             //         "Immediate",
                        "Mailbox",
-                       "Fifo relaxed",
+             //          "Fifo relaxed",
                        "Fifo"
                 };
                 std::vector<std::string_view> vk_surface_format_methods_indexes = {
-                       "Immediate",
+              //         "Immediate",
                        "mailbox",
-                       "fifo-relaxed",
+              //         "fifo-relaxed",
                        "fifo"
                 };
     
@@ -987,21 +993,27 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     config.vk_mapping = vk_surface_format_methods_indexes[current_surface_format];
                 }
                 if (ImGui::IsItemHovered()) {
-                    ImGui::SetTooltip("%s", lang.gpu["surface_format_method_description"].c_str());
+                    SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
+                    ImGui::Spacing();
                 }
-                ImGui::Spacing();
             }
-            
             if (is_ingame)
                 ImGui::EndDisabled();
         }
 
         if (emuenv.renderer->support_custom_drivers()) {
             ImGui::Spacing();
-            ImGui::Checkbox("Enable Turbo Mode", &emuenv.cfg.turbo_mode);
+            ImGui::Checkbox(lang.gpu["turbo"].c_str(), &emuenv.cfg.turbo_mode);
 
             if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("Provides a way to force the GPU to run at the maximum possible clocks (thermal constraints will still be applied)");
+                SetTooltipEx(lang.emulator["turbo_description"].c_str());
+            }
+
+            ImGui::SameLine();
+            ImGui::Checkbox(lang.gpu["use_astc"].c_str(), &emuenv.cfg.use_astc);
+
+            if (ImGui::IsItemHovered()) {
+                SetTooltipEx(lang.emulator["use_astc_description"].c_str());
             }
         }
 
@@ -1040,7 +1052,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         if (!emuenv.io.app_path.empty())
             ImGui::BeginDisabled();
-        static const char *LIST_BACKEND_AUDIO[] = { "SDL", "Cubeb" };
+        static const char *LIST_BACKEND_AUDIO[] = { "SDL", "Cubeb", "Disabled"};
         if (ImGui::Combo(lang.audio["audio_backend"].c_str(), &audio_backend_idx, LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
             emuenv.cfg.audio_backend = LIST_BACKEND_AUDIO[audio_backend_idx];
         SetTooltipEx(lang.audio["select_audio_backend"].c_str());
@@ -1134,7 +1146,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang.emulator["check_for_updates"].c_str(), &emuenv.cfg.check_for_updates);
         SetTooltipEx(lang.emulator["check_for_updates_description"].c_str());
 #endif
-        ImGui::Separator();
+        // Dencrypt all executable and libs when install
+        ImGui::Checkbox(lang.emulator["dencrypt_installs"].c_str(), &emuenv.cfg.dencrypt_installs);
+        SetTooltipEx(lang.emulator["dencrypt_installs_description"].c_str());
+
         const auto performance_overlay_size = ImGui::CalcTextSize(lang.emulator["performance_overlay"].c_str()).x;
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (performance_overlay_size / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.emulator["performance_overlay"].c_str());
@@ -1195,7 +1210,6 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::RadioButton("0 degrees", &emuenv.cfg.tiltpos, 0);
             ImGui::RadioButton("90 degrees", &emuenv.cfg.tiltpos, 1);
             ImGui::RadioButton("-90 degrees", &emuenv.cfg.tiltpos, -1);
-            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         }
 
         ImGui::Spacing();
@@ -1209,7 +1223,6 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::RadioButton(lang.emulator["screenmode_right"].c_str(), &emuenv.cfg.screenmode_pos, 2);
         ImGui::RadioButton(lang.emulator["screenmode_up"].c_str(), &emuenv.cfg.screenmode_pos, 3);
         SetTooltipEx(lang.emulator["screenmode_up_description"].c_str());
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         
         ImGui::Spacing();
         ImGui::Separator();
@@ -1287,6 +1300,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 SetTooltipEx(lang.gui["select_icon_size"].c_str());
             }
         }
+        ImGui::Spacing();
+        ImGui::Checkbox(lang.gui["native_screen"].c_str(), &emuenv.cfg.native_screen);
+        SetTooltipEx(lang.gui["native_screen_description"].c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();

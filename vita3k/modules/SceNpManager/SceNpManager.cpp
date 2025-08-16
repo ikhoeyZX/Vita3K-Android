@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -115,8 +115,8 @@ EXPORT(int, sceNpManagerGetChatRestrictionFlag, SceInt *isRestricted) {
 EXPORT(int, sceNpManagerGetContentRatingFlag, SceInt *isRestricted, SceInt *age) {
     TRACY_FUNC(sceNpManagerGetContentRatingFlag, isRestricted, age);
     *isRestricted = 0; // User is never restricted
-    *age = 21; // Assume user is 21 years old
-    return STUBBED("isRestricted = 0; age = 21; return 0;");
+    *age = 25; // Assume user is 25 years old
+    return STUBBED("isRestricted = 0; age = 25; return 0;");
 }
 
 EXPORT(int, sceNpManagerGetNpId, np::SceNpId *id) {
@@ -126,8 +126,13 @@ EXPORT(int, sceNpManagerGetNpId, np::SceNpId *id) {
         return SCE_NP_MANAGER_ERROR_ID_NOT_AVAIL;
     }
     // Fill the unused stuffs to 0 (prevent some weird things happen)
-    memset(id, 0, sizeof(*id));
+    memset(id, 0, sizeof(np::SceNpId));
     strcpy(id->handle.data, emuenv.io.user_name.c_str());
+    id->isIdValid = true;
+    id->opt.platformType[0] = 'p';
+    id->opt.platformType[1] = 's';
+    id->opt.platformType[2] = 'p';
+    id->opt.platformType[3] = '2';
     return 0;
 }
 

@@ -69,8 +69,6 @@
 
 #include <util/log.h>
 
-#include <SDL_vulkan.h>
-
 #include <fstream>
 
 // Visual Studio warnings

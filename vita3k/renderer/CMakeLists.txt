@@ -47,10 +47,14 @@ add_library(
 
 target_include_directories(renderer PUBLIC include)
 target_link_libraries(renderer PUBLIC display mem stb shader glutil threads config util vkutil)
-target_link_libraries(renderer PRIVATE ddspp sdl2 stb ffmpeg xxHash::xxhash concurrentqueue)
+target_link_libraries(renderer PRIVATE ddspp SDL3::SDL3 stb ffmpeg xxHash::xxhash concurrentqueue)
 
 if(ANDROID)
-	target_link_libraries(renderer PRIVATE android adrenotools)
+   if (ARCHITECTURE STREQUAL "arm")
+	target_link_libraries(renderer PRIVATE android)
+   else()
+        target_link_libraries(renderer PRIVATE android adrenotools)
+   endif()
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")

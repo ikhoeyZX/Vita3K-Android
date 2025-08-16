@@ -15,10 +15,14 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <module/module.h>
+#include "SceError.h"
 
-EXPORT(int, _sceErrorGetExternalString) {
-    return UNIMPLEMENTED();
+TRACY_MODULE_NAME(SceError);
+
+EXPORT(SceInt32, _sceErrorGetExternalString, char *result, int err) {
+    TRACY_FUNC(_sceErrorGetExternalString, result, err);
+    sprintf(result, "0x%08X", err);
+    return 0;
 }
 
 EXPORT(int, _sceErrorHistoryClearError) {

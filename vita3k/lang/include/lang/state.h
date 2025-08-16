@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@ struct DialogLangState {
         { "an_error_occurred", "An error occurred.\nError code: {}" },
         { "cancel", "Cancel" },
         { "close", "Close" },
+        { "save", "Save" },
         { "delete", "Delete" },
         { "file_corrupted", "The file is corrupt." },
         { "microphone_disabled", "Enable the microphone." },
@@ -268,6 +269,12 @@ struct LangState {
         { "red", "Red" },
         { "green", "Green" },
         { "blue", "Blue" },
+        { "gyro_sens", "Gyro Sensor Calibration" },
+        { "use_custom_gyro_cal", "Change gyroscope offset" },
+        { "use_custom_gyro_cal_description", "Check this box to change offset your gyroscope controller (if drifted)" },
+        { "gyro-x", "X position" },
+        { "gyro-y", "Y position" },
+        { "gyro-z", "Z position" },
         { "reset_controller_binding", "Reset Controller Binding" }
     };
     std::map<std::string, std::string> controls = {
@@ -576,6 +583,10 @@ struct LangState {
             { "spirv_shader", "Use Spir-V Shader (deprecated)" },
             { "spirv_shader_description", "Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled,\nand not all GPUs are compatible with this." },
             { "clean_shaders", "Clean Shaders Cache and Log" },
+            { "turbo", "Enable Turbo Mode" },
+            { "turbo_description", "Provides a way to force the GPU to run at the maximum possible clocks (thermal constraints will still be applied)" },
+            { "use_astc", "Use ASTC texture" },
+            { "use_astc_description", "Use ASTC texture compression instead DXT (BCn), render output maybe similiar to Mali GPU" },
             { "fps_hack", "FPS Hack" },
             { "fps_hack_description", "Game hack which allows some games running at 30 FPS to run at 60 FPS on the emulator.\nNote that this is a hack and will only work on some games.\nOn other games, it may have no effect or make them run twice as fast." }
         };
@@ -663,6 +674,8 @@ struct LangState {
             { "screenmode_right", "Lock to landscape right" },
             { "screenmode_up", "Lock to portrait" },
             { "screenmode_up_description", "WIP, GUI still buggy" },
+            { "dencrypt_installs", "Dencrypt executable when install"},
+            { "dencrypt_installs_description", "Dencrypt all files included eboot and libs for compability with older builds (otherwise all installed content will no longer work in older builds)" },
             { "custom_config_settings", "Custom Config Settings" },
             { "clear_custom_config", "Clear Custom Config" }
         };
@@ -682,6 +695,8 @@ struct LangState {
             { "live_area_screen_description", "Check the box to open the Live Area by default when clicking on an application\nIf disabled, right click on an application to open it." },
             { "stretch_the_display_area", "Stretch The Display Area" },
             { "stretch_the_display_area_description", "Check the box to enlarge the display area to fit the screen size." },
+            { "native_screen", "Use fullscreen mode instead dpi scalling" },
+            { "native_screen_description", "Check the box to set sdl match screen size (no dpi scale)." },
             { "apps_list_grid", "Grid Mode" },
             { "apps_list_grid_description", "Check the box to set the app list to grid mode." },
             { "skip_lockscreen", "Skip lockscreen area" },
@@ -794,7 +809,7 @@ struct LangState {
         { "title", "Vita3K Update" },
         { "new_version_available", "A new version of Vita3K is available." },
         { "back", "Back" },
-        { "cancel_update", "Do you want to cancel the update?" },
+        { "cancel_update_resume", "Do you want to cancel the update?" },
         { "downloading", "Downloading...\nAfter the download is complete, Vita3K will restart automatically and then install the new update." },
         { "not_complete_update", "Could not complete the update." },
         { "minutes_left", "{} Minutes Left" },

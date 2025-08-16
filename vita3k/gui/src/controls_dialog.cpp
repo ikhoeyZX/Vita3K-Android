@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 #include <config/state.h>
 
 #ifdef ANDROID
-#include <SDL.h>
+#include <SDL3/SDL_system.h>
 #include <jni.h>
 #endif
 
@@ -55,10 +55,10 @@ int get_overlay_display_mask(const Config& cfg){
 #ifdef ANDROID
 void set_controller_overlay_state(int overlay_mask, bool edit, bool reset, bool portrait) {
     // retrieve the JNI environment.
-    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
 
     // retrieve the Java instance of the SDLActivity
-    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+    jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
 
     // find the Java class of the activity. It should be SDLActivity or a subclass of it.
     jclass clazz(env->GetObjectClass(activity));
@@ -76,10 +76,10 @@ void set_controller_overlay_state(int overlay_mask, bool edit, bool reset, bool 
 
 void set_controller_overlay_scale(float scale, float joystick) {
     // retrieve the JNI environment.
-    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
 
     // retrieve the Java instance of the SDLActivity
-    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+    jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
 
     // find the Java class of the activity. It should be SDLActivity or a subclass of it.
     jclass clazz(env->GetObjectClass(activity));
@@ -97,10 +97,10 @@ void set_controller_overlay_scale(float scale, float joystick) {
 
 void set_controller_overlay_opacity(int opacity) {
     // retrieve the JNI environment.
-    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
 
     // retrieve the Java instance of the SDLActivity
-    jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
+    jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
 
     // find the Java class of the activity. It should be SDLActivity or a subclass of it.
     jclass clazz(env->GetObjectClass(activity));

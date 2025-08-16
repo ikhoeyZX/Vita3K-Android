@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,9 +19,15 @@
 
 #include "../state.h"
 
+#include <SDL3/SDL_audio.h>
+
 class SDLAudioAdapter : public AudioAdapter {
+private:
     SDL_AudioDeviceID device_id = 0;
-    SDL_AudioSpec spec{};
+    int device_buffer_samples = 0;
+    SDL_AudioSpec dst_spec;
+    bool disable_audio_sdl = false;
+    static void SDLCALL thread_wakeup_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount);
 
 public:
     SDLAudioAdapter(AudioState &audio_state);
@@ -29,4 +35,21 @@ public:
 
     bool init() override;
     void switch_state(const bool pause) override;
+    AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample) override;
+    void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) override;
+    void set_volume(AudioOutPort &out_port, float volume) override;
+    int get_rest_sample(AudioOutPort &out_port) override;
+};
+
+typedef std::shared_ptr<SDL_AudioStream> AudioStreamPtr;
+
+struct SDLAudioOutPort : public AudioOutPort {
+    //   thread currently waiting for the audio to be processed
+    SceUID thread = -1;
+    int channels = 2;
+    AudioStreamPtr stream;
+    SDLAudioAdapter &adapter;
+    SDLAudioOutPort(AudioStreamPtr stream, AudioAdapter &adapter)
+        : stream(std::move(stream))
+        , adapter(dynamic_cast<SDLAudioAdapter &>(adapter)) {}
 };

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,14 +17,15 @@
 
 #include "renderer/vulkan/screen_renderer.h"
 
-#include <SDL_vulkan.h>
+#include <SDL3/SDL_vulkan.h>
+// #include <SDL3/SDL_error.h>
+// #include <SDL3/SDL_video.h>
 
 #include "renderer/vulkan/state.h"
 #include "util/log.h"
 #include "vkutil/vkutil.h"
 
 #ifdef __ANDROID__
-#include <SDL.h>
 #include <jni.h>
 
 static bool has_surface = false;
@@ -50,7 +51,7 @@ bool ScreenRenderer::create(SDL_Window *window) {
     }
 
     VkSurfaceKHR surface = VK_NULL_HANDLE;
-    bool surface_error = SDL_Vulkan_CreateSurface(window, state.instance, &surface);
+    bool surface_error = SDL_Vulkan_CreateSurface(window, state.instance, nullptr, &surface);
     if (!surface_error) {
         const char *error = SDL_GetError();
         LOG_ERROR("Failed to create vulkan surface. SDL Error: {}.", error);
@@ -108,16 +109,17 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
 
     switch(vk_idx){
         case 1:
-            present_mode = vk::PresentModeKHR::eMailbox;
+            present_mode = vk::PresentModeKHR::eFifo;
             break;
-        case 2:
+/*        case 2:
             present_mode = vk::PresentModeKHR::eFifoRelaxed;
             break;
         case 3:
-            present_mode = vk::PresentModeKHR::eFifo;
-            break;
-        default:
             present_mode = vk::PresentModeKHR::eImmediate;
+            break;
+*/
+        default:
+            present_mode = vk::PresentModeKHR::eMailbox;
             break;
     }
 
@@ -144,7 +146,7 @@ void ScreenRenderer::create_swapchain() {
         extent = surface_capabilities.currentExtent;
     } else {
         int width, height;
-        SDL_Vulkan_GetDrawableSize(window, &width, &height);
+        SDL_GetWindowSizeInPixels(window, &width, &height);
         extent.width = std::clamp<uint32_t>(width, surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width);
         extent.height = std::clamp<uint32_t>(height, surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height);
     }
@@ -300,7 +302,7 @@ bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
             state.device.waitIdle();
             destroy_swapchain();
             int width, height;
-            SDL_Vulkan_GetDrawableSize(window, &width, &height);
+            SDL_GetWindowSizeInPixels(window, &width, &height);
             // don't render anything when the window is minimized
             if (width == 0 || height == 0)
                 return false;
@@ -425,7 +427,7 @@ void ScreenRenderer::swap_window() {
     auto result = state.general_queue.presentKHR(&present_info);
     if (result == vk::Result::eSuboptimalKHR) {
         int width, height;
-        SDL_Vulkan_GetDrawableSize(window, &width, &height);
+        SDL_GetWindowSizeInPixels(window, &width, &height);
 
         if (width != extent.width || height != extent.height) {
             state.device.waitIdle();
@@ -442,7 +444,7 @@ void ScreenRenderer::swap_window() {
         destroy_swapchain();
 
         int width, height;
-        SDL_Vulkan_GetDrawableSize(window, &width, &height);
+        SDL_GetWindowSizeInPixels(window, &width, &height);
 
         if (width > 0 && height > 0) {
             create_swapchain();
@@ -569,7 +571,7 @@ void ScreenRenderer::create_surface_image() {
 
     vk::BufferCreateInfo buffer_info{
         // make sure it is big enough
-        .size = 1024 * 720 * sizeof(uint32_t),
+        .size = 1024 * 1024 * sizeof(uint32_t),
         .usage = vk::BufferUsageFlagBits::eTransferSrc,
         .sharingMode = vk::SharingMode::eExclusive
     };

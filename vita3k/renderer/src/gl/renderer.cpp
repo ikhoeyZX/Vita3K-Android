@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,8 +34,7 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
-#include <SDL.h>
-#include <SDL_video.h>
+#include <SDL3/SDL_video.h>
 
 #include <array>
 #include <mutex>
@@ -180,7 +179,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 
-    gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
+    gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), [](SDL_GLContext context) { SDL_GL_DestroyContext(context); });
     choosen_minor_version = 6;
 #else
     // Recursively create GL version until one accepts
@@ -197,7 +196,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
 
     for (uint8_t minor_version : accept_gl_minor_versions) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor_version);
-        gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
+        gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), [](SDL_GLContext context) { SDL_GL_DestroyContext(context); });
         if (gl_state.context) {
             break;
         }
@@ -223,9 +222,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     LOG_INFO("GPU = {}", gpu_name);
     LOG_INFO("GL_VERSION = {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
-    LOG_INFO("GL_MAX_UNIFORM_BLOCK_SIZE = {} bytes", GL_MAX_UNIFORM_BLOCK_SIZE);
-    LOG_INFO("GL_MAX_SHADER_STORAGE_BLOCK_SIZE = {} bytes", GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
-
+    
 #ifndef NDEBUG
     glDebugMessageCallback(reinterpret_cast<GLDEBUGPROC>(debug_output_callback), nullptr);
 #endif
@@ -251,7 +248,14 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
             check_extensions.erase(find_result);
         }
     }
-
+    
+    if(!gpu_name.find("dreno")){
+       gl_state.features.direct_fragcolor = false;
+       gl_state.features.use_mask_bit = true;
+    }else{
+       gl_state.features.use_mask_bit = false;
+    }
+    
     if (gl_state.features.direct_fragcolor) {
         LOG_INFO("Your GPU supports direct access to last fragment color. Your performance with programmable blending games will be optimized.");
     } else if (gl_state.features.support_shader_interlock) {
@@ -264,12 +268,13 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
     }
 
+    /*
 #ifdef ANDROID
     gl_state.features.use_mask_bit = false;
 #else
     gl_state.features.use_mask_bit = true;
 #endif
-
+*/
     return gl_state.init();
 }
 

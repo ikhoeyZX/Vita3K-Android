@@ -17,7 +17,7 @@ target_include_directories(host_dialog PUBLIC include)
 
 target_link_libraries(host_dialog PUBLIC util)
 if(ANDROID)
-    target_link_libraries(host_dialog PRIVATE sdl2 android)
+    target_link_libraries(host_dialog PRIVATE SDL3::SDL3 android)
 else()
     target_link_libraries(host_dialog PRIVATE NFDe::NFDe)
 endif()

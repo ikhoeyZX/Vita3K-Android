@@ -2,8 +2,8 @@ apply plugin: 'com.android.application'
 
 android {
 	namespace "org.vita3k.emulator"
-	compileSdk 34
-	ndkVersion "27.0.12077973"
+	compileSdk 35
+	ndkVersion "29.0.13846066"
 	buildFeatures {
 		buildConfig true
 	}
@@ -11,7 +11,7 @@ android {
 	defaultConfig {
 		applicationId "org.vita3k.emulator.ikhoeyZX"
 		minSdk 28
-		targetSdk 34
+		targetSdk 35
 		versionCode 12
 		versionName "0.2.0-12.5-ikhoeyZX"
 
@@ -44,6 +44,7 @@ android {
 			externalNativeBuild {
 				cmake {
 					arguments "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+					arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
 				}
 			}
 			minifyEnabled false
@@ -58,6 +59,7 @@ android {
 			externalNativeBuild {
 				cmake {
 					arguments "-DCMAKE_BUILD_TYPE=Release"
+					arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
 				}
 			}
 			minifyEnabled true
@@ -79,7 +81,7 @@ android {
 	externalNativeBuild {
 		cmake {
 			path '../CMakeLists.txt'
-			version '3.28.1+'
+			version '3.31.6+'
 		} 
 	}
 
@@ -99,10 +101,10 @@ android {
 
 dependencies {
 	implementation 'androidx.appcompat:appcompat:1.7.0'
-	implementation "androidx.core:core:1.13.1"
+	implementation "androidx.core:core:1.16.0-alpha02"
 	implementation 'androidx.core:core-google-shortcuts:1.2.0-alpha01'
-	implementation 'com.google.android.material:material:1.13.0-alpha04'
-	implementation 'androidx.constraintlayout:constraintlayout:2.2.0-alpha13'
+	implementation 'com.google.android.material:material:1.13.0-alpha11'
+	implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
 	implementation 'com.getkeepsafe.relinker:relinker:1.4.5'
 	implementation 'com.jakewharton:process-phoenix:3.0.0'
 	implementation 'androidx.documentfile:documentfile:1.1.0-alpha01'
