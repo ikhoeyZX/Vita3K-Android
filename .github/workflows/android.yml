@@ -34,13 +34,17 @@ jobs:
             ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-
             ${{ runner.os }}-gradle-
 
-      - name: Set up build environment
+      - name: Set up build environment (arm64)
         run: |
           sudo apt-get install -y ninja-build
           vcpkg update
           vcpkg upgrade --no-dry-run
-          vcpkg install boost-system:arm-neon-android boost-filesystem:arm-neon-android boost-program-options:arm-neon-android boost-icl:arm-neon-android boost-variant:arm-neon-android openssl:arm-neon-android zlib:arm-neon-android ffmpeg:arm-neon-android boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android spirv-tools:arm64-android glslang:arm64-android spirv-cross:arm64-android
-          
+          vcpkg install boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
+
+  #    - name: Set up build environment (armv7a)
+  #      run: |
+  #        vcpkg install boost-system:arm-neon-android boost-filesystem:arm-neon-android boost-program-options:arm-neon-android boost-icl:arm-neon-android boost-variant:arm-neon-android openssl:arm-neon-android zlib:arm-neon-android ffmpeg:arm-neon-android
+
       - name: Compute git short sha
         shell: bash
         run: echo "git_short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
@@ -65,7 +69,6 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
           bash -c "yes || Yes || true" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
-          echo python external/glslang/update_glslang_sources.py
           mkdir android/assets/data
           cp -r data/image android/assets/data/image
           cp -r lang android/assets
