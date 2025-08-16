@@ -14,9 +14,6 @@
 [submodule "external/dlmalloc"]
 	path = external/dlmalloc
 	url = https://github.com/Vita3K/dlmalloc
-[submodule "external/glslang"]
-	path = external/glslang
-	url = https://github.com/KhronosGroup/glslang
 [submodule "external/googletest"]
 	path = external/googletest
 	url = https://github.com/google/googletest
@@ -38,9 +35,6 @@
 [submodule "external/spdlog"]
 	path = external/spdlog
 	url = https://github.com/gabime/spdlog
-[submodule "external/SPIRV-Cross"]
-	path = external/SPIRV-Cross
-	url = https://github.com/ikhoeyZX/SPIRV-Cross.git
 [submodule "external/stb"]
 	path = external/stb
 	url = https://github.com/nothings/stb
@@ -99,3 +93,10 @@
 [submodule "external/sdl"]
 	path = external/sdl
 	url = https://github.com/libsdl-org/SDL.git
+[submodule "external/glslang"]
+	path = external/glslang
+	url = https://github.com/ikhoeyZX/glslang.git
+	branch = spvs
+[submodule "external/SPIRV-Cross"]
+	path = external/SPIRV-Cross
+	url = https://github.com/ikhoeyZX/SPIRV-Cross.git
