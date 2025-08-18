@@ -44,10 +44,6 @@
 [submodule "external/vita-toolchain"]
 	path = external/vita-toolchain
 	url = https://github.com/vitasdk/vita-toolchain.git
-[submodule "external/VulkanMemoryAllocator-Hpp"]
-	path = external/VulkanMemoryAllocator-Hpp
-	url = https://github.com/ikhoeyZX/VulkanMemoryAllocator-Hpp.git
-        branch = master
 [submodule "external/Vulkan-Headers"]
 	path = external/Vulkan-Headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
@@ -100,3 +96,6 @@
 	path = external/spdlog
 	url = https://github.com/ikhoeyZX/spdlog.git
 	branch = last
+[submodule "external/VulkanMemoryAllocator-Hpp"]
+	path = external/VulkanMemoryAllocator-Hpp
+	url = https://github.com/ikhoeyZX/VulkanMemoryAllocator-Hpp.git
