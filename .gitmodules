@@ -96,3 +96,7 @@
 [submodule "external/sdl"]
 	path = external/sdl
 	url = https://github.com/libsdl-org/SDL.git
+[submodule "external/spdlog"]
+	path = external/spdlog
+	url = https://github.com/ikhoeyZX/spdlog.git
+	branch = last
