@@ -215,6 +215,8 @@ if(USE_DISCORD_RICH_PRESENCE)
 	target_include_directories(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp")
 endif()
 
+add_subdirectory(SPIRV_Tools)
+
 option(BUILD_EXTERNAL "Build external dependencies in /External" ON)
 option(SKIP_GLSLANG_INSTALL "Skip installation" ON)
 option(ENABLE_SPVREMAPPER "Enables building of SPVRemapper" ON)
@@ -224,7 +226,6 @@ option(ENABLE_CTEST "Enables testing" OFF)
 option(ENABLE_OPT "Enables external SPIRV-Tools" ON)
 option(ENABLE_SPIRV "Enables SPIRV output support" ON)
 add_subdirectory(glslang)
-add_subdirectory(SPIRV_Tools)
 
 option(SPIRV_CROSS_CLI "Build the CLI binary. Requires SPIRV_CROSS_STATIC." OFF)
 option(SPIRV_CROSS_ENABLE_TESTS "Enable SPIRV-Cross tests." OFF)
