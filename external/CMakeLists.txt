@@ -224,6 +224,7 @@ option(ENABLE_CTEST "Enables testing" OFF)
 option(ENABLE_OPT "Enables external SPIRV-Tools" ON)
 option(ENABLE_SPIRV "Enables SPIRV output support" ON)
 add_subdirectory(glslang)
+add_subdirectory(SPIRV_Tools)
 
 option(SPIRV_CROSS_CLI "Build the CLI binary. Requires SPIRV_CROSS_STATIC." OFF)
 option(SPIRV_CROSS_ENABLE_TESTS "Enable SPIRV-Cross tests." OFF)
