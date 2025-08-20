@@ -215,7 +215,7 @@ if(USE_DISCORD_RICH_PRESENCE)
 	target_include_directories(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp")
 endif()
 
-add_subdirectory(SPIRV_Tools)
+add_subdirectory(SPIRV-Tools)
 
 option(BUILD_EXTERNAL "Build external dependencies in /External" ON)
 option(SKIP_GLSLANG_INSTALL "Skip installation" ON)
