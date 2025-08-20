@@ -39,7 +39,7 @@ jobs:
           sudo apt-get install -y ninja-build
           vcpkg update
           vcpkg upgrade --no-dry-run
-          vcpkg install boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
+          vcpkg install boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android spirv-tools:arm64-android
 
   #    - name: Set up build environment (armv7a)
   #      run: |
