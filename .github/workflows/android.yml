@@ -68,8 +68,9 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
+          sudo apt-get install libusb-1.0-0-dev
           bash -c "yes || Yes || true" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
-          git clone https://github.com/KhronosGroup/SPIRV-Headers.git external/SPIRV-Headers
+          git submodule update --init external/SPIRV-Tools/external/spirv-headers
           mkdir android/assets/data
           cp -r data/image android/assets/data/image
           cp -r lang android/assets
