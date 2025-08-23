@@ -234,6 +234,7 @@ option(SPIRV_CROSS_ENABLE_C_API "Enable C API wrapper support in static library.
 option(SPIRV_CROSS_ENABLE_UTIL "Enable util module support." OFF)
 option(SPIRV_CROSS_SKIP_INSTALL "Skips installation targets." ON)
 option(SPIRV_CROSS_NAMESPACE_OVERRIDE "Override spirv.hpp to fix conflict." OFF)
+target_include_directories(SPIRV-Cross PRIVATE "${CMAKE_SOURCE_DIR}/external/SPIRV-Cross")
 add_subdirectory(SPIRV-Cross)
 
 option(BUILD_EXTERNAL "Build external dependencies in /External" ON)
