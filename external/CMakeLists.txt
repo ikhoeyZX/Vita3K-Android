@@ -234,8 +234,8 @@ option(SPIRV_CROSS_ENABLE_C_API "Enable C API wrapper support in static library.
 option(SPIRV_CROSS_ENABLE_UTIL "Enable util module support." OFF)
 option(SPIRV_CROSS_SKIP_INSTALL "Skips installation targets." ON)
 option(SPIRV_CROSS_NAMESPACE_OVERRIDE "Override spirv.hpp to fix conflict." OFF)
+add_definitions("-std=c++11")
 add_subdirectory(SPIRV-Cross)
-target_include_directories(SPIRV-Cross PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Cross")
 
 option(BUILD_EXTERNAL "Build external dependencies in /External" ON)
 option(ENABLE_SPVREMAPPER "Enables building of SPVRemapper" OFF)
@@ -244,7 +244,7 @@ option(ENABLE_HLSL "Enables HLSL input support" OFF)
 option(GLSLANG_TESTS "Enable glslang testing" OFF)
 option(ENABLE_OPT "Enables spirv-opt capability if present" OFF)
 add_subdirectory(glslang)
-target_include_directories(glslang PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/glslang")
+
 
 add_library(dlmalloc STATIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc/dlmalloc.cc")
 target_include_directories(dlmalloc PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc")
