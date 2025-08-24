@@ -235,8 +235,11 @@ option(SPIRV_CROSS_ENABLE_UTIL "Enable util module support." OFF)
 option(SPIRV_CROSS_SKIP_INSTALL "Skips installation targets." ON)
 option(SPIRV_CROSS_NAMESPACE_OVERRIDE "Override spirv.hpp to fix conflict." OFF)
 add_subdirectory(SPIRV-Cross)
-target_compile_definitions(SPIRV-Cross PRIVATE "-std=c++11")
-
+set(spirv-compiler-options ${spirv-compiler-options}  -std=c++11 -Wall -Wextra -Werror -Wshadow)
+set(spirv-compiler-defines ${spirv-compiler-defines} __STDC_LIMIT_MACROS)
+target_compile_options(SPIRV-Cross PRIVATE ${spirv-compiler-options})
+target_compile_definitions(SPIRV-Cross PRIVATE ${spirv-compiler-defines})
+  
 option(BUILD_EXTERNAL "Build external dependencies in /External" ON)
 option(ENABLE_SPVREMAPPER "Enables building of SPVRemapper" OFF)
 option(ENABLE_GLSLANG_BINARIES "Builds glslang and spirv-remap" OFF)
