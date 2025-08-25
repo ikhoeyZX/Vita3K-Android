@@ -234,12 +234,8 @@ option(SPIRV_CROSS_ENABLE_C_API "Enable C API wrapper support in static library.
 option(SPIRV_CROSS_ENABLE_UTIL "Enable util module support." OFF)
 option(SPIRV_CROSS_SKIP_INSTALL "Skips installation targets." ON)
 option(SPIRV_CROSS_NAMESPACE_OVERRIDE "Override spirv.hpp to fix conflict." OFF)
-set(LAST ${CMAKE_CXX_STANDARD})
-set(CMAKE_CXX_STANDARD 11)
-message("SPIRV-CROSS SET CMAKE VERSION TO : ${LAST}")
 add_subdirectory(SPIRV-Cross)
-set(CMAKE_CXX_STANDARD ${LAST})
-message("EXITING SPIRV-CROSS, RESET CMAKE VERSION TO : ${CMAKE_CXX_STANDARD}")
+target_compile_definitions(SPIRV-Cross PUBLIC CMAKE_CXX_STANDARD=11)
 
 option(BUILD_EXTERNAL "Build external dependencies in /External" ON)
 option(ENABLE_SPVREMAPPER "Enables building of SPVRemapper" OFF)
