@@ -242,7 +242,7 @@ option(SPIRV_CROSS_NAMESPACE_OVERRIDE "Override spirv.hpp to fix conflict." "spv
 #	target_link_libraries(SPIRV-Cross INTERFACE SPIRV-Cross)
 # else()
 	add_subdirectory(SPIRV-Cross EXCLUDE_FROM_ALL)
-    add_compile_options(-std=c++11)
+#    add_compile_options(-std=c++11)
 # endif()
 
 option(BUILD_EXTERNAL "Build external dependencies in /External" ON)
@@ -252,7 +252,6 @@ option(ENABLE_HLSL "Enables HLSL input support" OFF)
 option(GLSLANG_TESTS "Enable glslang testing" OFF)
 option(ENABLE_OPT "Enables spirv-opt capability if present" OFF)
 add_subdirectory(glslang)
-add_compile_options(-std=c++20)
 
 add_library(dlmalloc STATIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc/dlmalloc.cc")
 target_include_directories(dlmalloc PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc")
