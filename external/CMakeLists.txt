@@ -242,6 +242,7 @@ option(SPIRV_CROSS_NAMESPACE_OVERRIDE "Override spirv.hpp to fix conflict." "spv
 #	target_link_libraries(SPIRV-Cross INTERFACE SPIRV-Cross)
 # else()
 	add_subdirectory(SPIRV-Cross EXCLUDE_FROM_ALL)
+    add_compile_options(-std=c++17)
 # endif()
 
 option(BUILD_EXTERNAL "Build external dependencies in /External" ON)
