@@ -234,7 +234,15 @@ option(SPIRV_CROSS_ENABLE_C_API "Enable C API wrapper support in static library.
 option(SPIRV_CROSS_ENABLE_UTIL "Enable util module support." OFF)
 option(SPIRV_CROSS_SKIP_INSTALL "Skips installation targets." ON)
 option(SPIRV_CROSS_NAMESPACE_OVERRIDE "Override spirv.hpp to fix conflict." "spvs")
-add_subdirectory(SPIRV-Cross)
+
+add_library(SPIRV-Cross INTERFACE)
+if(ANDROID)
+	target_include_directories(SPIRV-Cross INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-CROSS_Precompiled/include")
+	target_link_libraries(SPIRV-Cross INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-CROSS_Precompiled/lib/${ANDROID_ABI}/libspirv-cross.a")
+	target_link_libraries(SPIRV-Cross INTERFACE SPIRV-Cross)
+else()
+	add_subdirectory(SPIRV-Cross)
+endif()
 
 option(BUILD_EXTERNAL "Build external dependencies in /External" ON)
 option(ENABLE_SPVREMAPPER "Enables building of SPVRemapper" OFF)
