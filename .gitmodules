@@ -100,6 +100,3 @@
 [submodule "external/SPIRV-Cross"]
 	path = external/SPIRV-Cross
 	url = https://github.com/ikhoeyZX/SPIRV-Cross.git
-[submodule "external/SPIRV-CROSS_Precompiled"]
-	path = external/SPIRV-CROSS_Precompiled
-	url = https://github.com/ikhoeyZX/SPIRV-CROSS_Precompiled.git
