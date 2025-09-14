@@ -29,7 +29,7 @@
 #include <util/fs.h>
 #include <util/log.h>
 
-#include <SDL3/SDL_cpuinfo.h>
+#include <SDL3.h>
 
 // don't use the dispatch version, because we always hash a small amount
 // with a known size
@@ -67,7 +67,7 @@ PipelineCache::PipelineCache(VKState &state)
     , pipeline_compile_queue_token(pipeline_compile_queue) {
 }
 
-void PipelineCache::init() {
+void PipelineCache::init(bool support_rasterized_order_access) {
     vk::PipelineCacheCreateInfo pipeline_info{};
     pipeline_cache = state.device.createPipelineCache(pipeline_info);
 
@@ -104,7 +104,7 @@ void PipelineCache::init() {
         };
 
         vk::DescriptorSetLayoutCreateInfo descriptor_info{
-            .bindingCount = state.features.support_memory_mapping ? 2U : 4U,
+            .bindingCount = state.features.enable_memory_mapping ? 2U : 4U,
             .pBindings = layout_bindings.data()
         };
         uniforms_layout = state.device.createDescriptorSetLayout(descriptor_info);
@@ -210,7 +210,7 @@ void PipelineCache::init() {
         state.features.support_rgb_attributes = unsupported_rgb_vertex_attribute_formats.empty();
     }
 
-    const int nb_logical_threads = SDL_GetNumLogicalCPUCores();
+    const int nb_logical_threads = SDL_GetCPUCount();
     // took this from RPCS3 (slightly modified)
     if (nb_logical_threads > 12)
         nb_worker_threads = 6;
@@ -458,8 +458,8 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
     return shader_stage_info;
 }
 
-vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force_load, bool force_store, bool no_color) {
-    auto &render_passes_map = no_color ? shader_interlock_pass : render_passes[force_load][force_store];
+vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force_load, bool force_store, bool is_color_transient, bool no_color) {
+    auto &render_passes_map = no_color ? shader_interlock_pass : render_passes[is_color_transient][force_load][force_store];
 
     auto it = render_passes_map.find(format);
 
@@ -481,6 +481,9 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
     };
     subpass.setPDepthStencilAttachment(&ds_ref);
     if (!no_color) {
+        if (support_coherent_framebuffer_fetch)
+            subpass.flags = vk::SubpassDescriptionFlagBits::eRasterizationOrderAttachmentColorAccessEXT;
+        
         subpass.setColorAttachments(color_ref);
         subpass.setInputAttachments(color_ref);
     }
@@ -497,7 +500,7 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
     vk::AttachmentLoadOp load_op = force_load ? vk::AttachmentLoadOp::eLoad : vk::AttachmentLoadOp::eClear;
     vk::AttachmentStoreOp store_op = force_store ? vk::AttachmentStoreOp::eStore : vk::AttachmentStoreOp::eDontCare;
     vk::AttachmentDescription ds_attachment{
-        .format = vk::Format::eD32SfloatS8Uint,
+        .format = vk::Format::eD24UnormS8Uint,
         .samples = vk::SampleCountFlagBits::e1,
         .loadOp = load_op,
         .storeOp = store_op,
@@ -649,6 +652,10 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
                 format = translate_attribute_format(attribute_format, component_count, true, false);
             }
         } else {
+            // some Android GPUs do not support scaled attributes, do the conversion in the GPU instead
+            if (!support_scaled_vertex_attribute)
+                info.is_integer = true;
+            
             // some AMD GPUs do not support rgb vertex attributes, so just put it as rgba
             // the 4th component will contain garbage but this is not an issue because the input
             // in the shader will be vec3 (or ivec3) and the 4th component will be discarded
@@ -777,6 +784,9 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
     };
 
     vk::PipelineColorBlendStateCreateInfo color_blending{};
+    if (support_coherent_framebuffer_fetch && gxm_fragment_shader->is_frag_color_used())
+        color_blending.flags = vk::PipelineColorBlendStateCreateFlagBits::eRasterizationOrderAttachmentAccessEXT;
+    
     const bool frag_has_no_output = static_cast<bool>(gxm_fragment_shader->program_flags & SCE_GXM_PROGRAM_FLAG_OUTPUT_UNDEFINED);
     if (is_fragment_disabled || frag_has_no_output || use_shader_interlock) {
         // The write mask must be empty as the lack of a fragment shader results in undefined values
@@ -801,11 +811,21 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
         vk::DynamicState::eStencilCompareMask,
         vk::DynamicState::eStencilReference,
         vk::DynamicState::eStencilWriteMask,
-        vk::DynamicState::eDepthBias
+        vk::DynamicState::eDepthBias,
+    
+        vk::DynamicState::eBlendConstants,
+        vk::DynamicState::eDepthBounds,
+        vk::DynamicState::ePrimitiveTopology,
+        vk::DynamicState::eViewportWithCount,
+        vk::DynamicState::eScissorWithCount,
+        vk::DynamicState::eStencilOp
     };
     vk::PipelineDynamicStateCreateInfo dynamic_info{};
     dynamic_info.setDynamicStates(dynamic_states);
 
+    if (!state.physical_device_features.wideLines)
+        dynamic_info.dynamicStateCount--;
+    
     // we still need to specify the viewport and scissor count even though they are dynamic
     vk::PipelineViewportStateCreateInfo viewport{
         .viewportCount = 1,
