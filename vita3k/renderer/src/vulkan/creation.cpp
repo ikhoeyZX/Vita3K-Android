@@ -31,12 +31,12 @@ namespace renderer::vulkan {
 VKContext::VKContext(VKState &state, MemState &mem)
     : state(state)
     , mem(mem)
-    , vertex_stream_ring_buffer(vk::BufferUsageFlagBits::eVertexBuffer, MiB(128))
-    , index_stream_ring_buffer(vk::BufferUsageFlagBits::eIndexBuffer, MiB(64))
-    , vertex_uniform_stream_ring_buffer(vk::BufferUsageFlagBits::eStorageBuffer, MiB(256))
-    , fragment_uniform_stream_ring_buffer(vk::BufferUsageFlagBits::eStorageBuffer, MiB(256))
-    , vertex_info_uniform_buffer(vk::BufferUsageFlagBits::eUniformBuffer, MiB(32))
-    , fragment_info_uniform_buffer(vk::BufferUsageFlagBits::eUniformBuffer, MiB(64)) {
+    , vertex_stream_ring_buffer(vk::BufferUsageFlagBits::eVertexBuffer, MiB(/*128*/ 32))
+    , index_stream_ring_buffer(vk::BufferUsageFlagBits::eIndexBuffer, MiB(32))
+    , vertex_uniform_stream_ring_buffer(vk::BufferUsageFlagBits::eStorageBuffer, MiB(/*256*/ 32))
+    , fragment_uniform_stream_ring_buffer(vk::BufferUsageFlagBits::eStorageBuffer, MiB(/*256*/ 32))
+    , vertex_info_uniform_buffer(vk::BufferUsageFlagBits::eUniformBuffer, MiB(8))
+    , fragment_info_uniform_buffer(vk::BufferUsageFlagBits::eUniformBuffer, MiB(16)) {
     memset(&prev_vert_ublock, 0, sizeof(shader::RenderVertUniformBlock));
     memset(&prev_frag_ublock, 0, sizeof(shader::RenderFragUniformBlock));
 
