@@ -1,3 +1,4 @@
+
 // Vita3K emulator project
 // Copyright (C) 2025 Vita3K team
 //
@@ -149,7 +150,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
 
         // first vertex
         std::array<vk::DescriptorSetLayoutBinding, 16> layout_bindings;
-        for (uint32_t i = 0; i < 16; i++) {
+        for (uint8_t i = 0; i < 16; i++) {
             layout_bindings[i] = {
                 .binding = i,
                 .descriptorType = vk::DescriptorType::eCombinedImageSampler,
@@ -157,7 +158,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
                 .stageFlags = vk::ShaderStageFlagBits::eVertex
             };
         }
-        for (uint32_t i = 1; i <= 16; i++) {
+        for (uint8_t i = 1; i <= 16; i++) {
             vk::DescriptorSetLayoutCreateInfo descriptor_info{
                 .bindingCount = i,
                 .pBindings = layout_bindings.data()
@@ -166,10 +167,10 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         }
 
         // then fragment
-        for (uint32_t i = 0; i < 16; i++) {
+        for (uint8_t i = 0; i < 16; i++) {
             layout_bindings[i].stageFlags = vk::ShaderStageFlagBits::eFragment;
         }
-        for (uint32_t i = 1; i <= 16; i++) {
+        for (uint8_t i = 1; i <= 16; i++) {
             vk::DescriptorSetLayoutCreateInfo descriptor_info{
                 .bindingCount = i,
                 .pBindings = layout_bindings.data()
@@ -179,8 +180,8 @@ void PipelineCache::init(bool support_rasterized_order_access) {
     }
 
     // compute all possible pipeline layouts
-    for (uint32_t vert_texture_count = 0; vert_texture_count <= 16; vert_texture_count++) {
-        for (uint32_t frag_texture_count = 0; frag_texture_count <= 16; frag_texture_count++) {
+    for (uint8_t vert_texture_count = 0; vert_texture_count <= 16; vert_texture_count++) {
+        for (uint8_t frag_texture_count = 0; frag_texture_count <= 16; frag_texture_count++) {
             vk::PipelineLayoutCreateInfo layout_info{};
             vk::DescriptorSetLayout set_layouts[] = { uniforms_layout, attachments_layout, vertex_textures_layout[vert_texture_count], fragment_textures_layout[frag_texture_count] };
             layout_info.setSetLayouts(set_layouts);
@@ -189,7 +190,6 @@ void PipelineCache::init(bool support_rasterized_order_access) {
     }
 
 // #ifndef ANDROID
-    if(!state.is_adreno_stock || !state.is_adreno_turnip){ // does add this support cause black screen in adreno?
     {
         // look for rgb vertex attribute support
         // we need to look at each format because it is not the same for all usual 3-component formats (checked on AMD Radeon HD 7800)
@@ -226,7 +226,6 @@ void PipelineCache::init(bool support_rasterized_order_access) {
 
         LOG_INFO("support_scaled_attribute_formats = {}", state.features.support_scaled_attribute_formats);
         LOG_INFO("support_rgb_attributes = {}", state.features.support_rgb_attributes); 
-    }
     }
 // #endif
     
@@ -644,17 +643,24 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
         if (info.regformat) {
             // use the data from the shader itself
             component_count = info.component_count;
-
             switch (info.gxm_type) {
             case SCE_GXM_PARAMETER_TYPE_U8:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_U8;
+                break;
             case SCE_GXM_PARAMETER_TYPE_S8:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_S8;
+                break;
             case SCE_GXM_PARAMETER_TYPE_C10:
                 attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_U8;
                 break;
             case SCE_GXM_PARAMETER_TYPE_U16:
-            case SCE_GXM_PARAMETER_TYPE_S16:
-            case SCE_GXM_PARAMETER_TYPE_F16:
                 attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_U16;
+                break;
+            case SCE_GXM_PARAMETER_TYPE_S16:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_S16;
+                break;
+            case SCE_GXM_PARAMETER_TYPE_F16:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_F16;
                 break;
             default:
                 // U32 format
@@ -681,7 +687,6 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
             }
         } else {
             // some Android GPUs do not support scaled attributes, do the conversion in the GPU instead
-            LOG_INFO("support_scaled_vertex_attribute = {}", support_scaled_vertex_attribute);
             if (!support_scaled_vertex_attribute)
                 info.is_integer = true;
 
@@ -841,15 +846,13 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
         vk::DynamicState::eStencilWriteMask,
         vk::DynamicState::eDepthBias,
         vk::DynamicState::eLineWidth,
-
-    /*
+    
         vk::DynamicState::eBlendConstants,
         vk::DynamicState::eDepthBounds,
         vk::DynamicState::ePrimitiveTopology,
         vk::DynamicState::eViewportWithCount,
         vk::DynamicState::eScissorWithCount,
         vk::DynamicState::eStencilOp,
-    */
     };
     vk::PipelineDynamicStateCreateInfo dynamic_info{};
     dynamic_info.setDynamicStates(dynamic_states);
