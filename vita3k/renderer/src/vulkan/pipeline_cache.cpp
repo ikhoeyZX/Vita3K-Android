@@ -29,7 +29,7 @@
 #include <util/fs.h>
 #include <util/log.h>
 
-#include <SDL3.h>
+#include <SDL.h>
 
 // don't use the dispatch version, because we always hash a small amount
 // with a known size
