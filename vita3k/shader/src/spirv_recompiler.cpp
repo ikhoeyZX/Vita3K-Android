@@ -1930,13 +1930,13 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
     spirv_cross::CompilerGLSL::Options options;
 
 #ifdef ANDROID
-    options.fragment.default_float_precision = options.Mediump;
-    options.fragment.default_int_precision = options.Mediump;
+//    options.fragment.default_float_precision = options.Mediump;
+//    options.fragment.default_int_precision = options.Mediump;
     
     options.version = 320;
     options.es = true;
-    options.enable_row_major_load_workaround = false; // spirv.hpp say when true it reduce performance in some android devices
-    options.vertex.fixup_clipspace = false;
+//    options.enable_row_major_load_workaround = false; // spirv.hpp say when true it reduce performance in some android devices
+//    options.vertex.fixup_clipspace = false;
  #else
     options.version = 430;
     options.es = false;
