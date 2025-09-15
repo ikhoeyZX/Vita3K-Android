@@ -570,7 +570,7 @@ void ScreenRenderer::create_surface_image() {
 
     vk::BufferCreateInfo buffer_info{
         // make sure it is big enough
-        .size = 1024 * 1024 * sizeof(uint32_t),
+        .size = 1200 * 680 * sizeof(uint32_t),
         .usage = vk::BufferUsageFlagBits::eTransferSrc,
         .sharingMode = vk::SharingMode::eExclusive
     };
