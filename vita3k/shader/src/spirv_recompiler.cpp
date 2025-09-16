@@ -143,16 +143,21 @@ static spv::Id get_type_basic(spv::Builder &b, const Input &input) {
     switch (input.type) {
         // clang-format off
     case DataType::F16:
+         return b.makeFloatType(16);
     case DataType::F32:
          return b.makeFloatType(32);
 
     case DataType::UINT8:
+        return b.makeUintType(8);
     case DataType::UINT16:
+        return b.makeUintType(16);
     case DataType::UINT32:
         return b.makeUintType(32);
 
     case DataType::INT8:
+        return b.makeIntType(8);
     case DataType::INT16:
+        return b.makeIntType(16);
     case DataType::INT32:
         return b.makeIntType(32);
 
@@ -165,7 +170,8 @@ static spv::Id get_type_basic(spv::Builder &b, const Input &input) {
 }
 
 static spv::Id get_type_fallback(spv::Builder &b) {
-    return b.makeFloatType(32);
+    return b.makeIntType(32);
+    // return b.makeFloatType(32);
 }
 
 static spv::Id get_type_scalar(spv::Builder &b, const Input &input) {
@@ -259,6 +265,9 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
 
     auto get_dest_mask = [&]() {
         switch (total_var_comp) {
+        case 0:
+            dest_mask = 0b0;
+            break;
         case 1:
             dest_mask = 0b1;
             break;
@@ -422,6 +431,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 pa_dtype = DataType::F16;
             } else if (input_type == 0x10000000) {
                 pa_type = "fixed";
+                pa_dtype = DataType::UINT32;
                 // TODO: Supply data type
             } else if (input_type == 0x100000) {
                 if (input_id == 0xA000 || input_id == 0xB000) {
@@ -1552,14 +1562,14 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 
     add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE, "v_Psize", 1, 14);
     // TODO: these should be translated to gl_ClipDistance
-    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP0, "v_Clip0", 1);
-    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP1, "v_Clip1", 1);
-    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP2, "v_Clip2", 1);
-    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP3, "v_Clip3", 1);
-    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP4, "v_Clip4", 1);
-    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP5, "v_Clip5", 1);
-    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6, "v_Clip6", 1);
-    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, "v_Clip7", 1);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP0, "v_Clip0", 1, 0);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP1, "v_Clip1", 1, 1);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP2, "v_Clip2", 1, 2);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP3, "v_Clip3", 1, 3);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP4, "v_Clip4", 1, 4);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP5, "v_Clip5", 1, 5);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6, "v_Clip6", 1, 6);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, "v_Clip7", 1, 7);
 
     Operand o_op;
     o_op.bank = RegisterBank::OUTPUT;
@@ -1669,6 +1679,8 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
                     z = b.createBinOp(spv::OpFMul, f32, z, z_scale);
                     z = b.createBinOp(spv::OpFAdd, f32, z, z_offset);
 
+                    z = b.createBuiltinCall(f32, utils.std_builtins, GLSLstd450FMax, { z, zero });
+
                     if (!translation_state.is_vulkan) {
                         // convert [0,1] depth range (gxp, vulkan) to [-1,1] depth range (opengl)
                         z = b.createBinOp(spv::OpFMul, f32, z, b.makeFloatConstant(2.0f));
@@ -1759,7 +1771,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     SceGxmProgramType program_type = program.get_type();
 
     // SPV 1.3 is only supported by Vulkan 1.1
-    const unsigned int spv_version = translation_state.is_vulkan ? spv::Spv_1_0 : spv::Spv_1_3;
+    const unsigned int spv_version = translation_state.is_vulkan ? spv::Spv_1_0 : spv::Spv_1_4;
 
     spv::SpvBuildLogger spv_logger;
     spv::Builder b(spv_version, 0x1337 << 12, &spv_logger);
@@ -1918,18 +1930,16 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
     spirv_cross::CompilerGLSL::Options options;
 
 #ifdef ANDROID
-    options.fragment.default_float_precision = options.Highp;
+//    options.fragment.default_float_precision = options.Mediump;
 //    options.fragment.default_int_precision = options.Mediump;
     
     options.version = 320;
     options.es = true;
-    options.enable_row_major_load_workaround = false; // spirv.hpp say when true it reduce performance in some android devices
-    options.vertex.fixup_clipspace = false;
- //   options.enable_420pack_extension = false; // because opengles and default value is true
-#else
+//    options.enable_row_major_load_workaround = false; // spirv.hpp say when true it reduce performance in some android devices
+//    options.vertex.fixup_clipspace = false;
+ #else
     options.version = 430;
     options.es = false;
-    options.enable_420pack_extension = true;
 #endif
     
     // TODO: this might be needed in the future
