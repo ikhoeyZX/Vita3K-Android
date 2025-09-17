@@ -76,5 +76,9 @@ struct MemState {
 
     bool use_page_table = false;
     PageTable page_table;
+#if defined(__aarch64__ ) || defined(__x86_64__)
+    std::map<uint64_t, MemExternalMapping, std::greater<>> external_mapping;
+#else
     std::map<uintptr_t, MemExternalMapping, std::greater<>> external_mapping;
+#endif
 };
