@@ -137,11 +137,13 @@ bool init(MemState &state, const bool use_page_table) {
 #endif
 
     state.use_page_table = use_page_table;
+/*    
     if (use_page_table) {
         state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / state.page_size]);
         // we use an absolute offset (it is faster), so each entry is the same
         std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE / state.page_size, state.memory.get());
     }
+    */
 
     return true;
 }
@@ -267,18 +269,23 @@ void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm p
 }
 
 bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcept {
+#if defined(__aarch64__ ) || defined(__x86_64__)
+    const uint64_t memory_addr = std::bit_cast<uint64_t>(state.memory.get());
+    const uint64_t fault_addr = std::bit_cast<uint64_t>(addr);
+#else
     const uintptr_t memory_addr = reinterpret_cast<uintptr_t>(state.memory.get());
     const uintptr_t fault_addr = reinterpret_cast<uintptr_t>(addr);
-
+#endif
+    
     Address vaddr = 0;
     const std::unique_lock<std::mutex> lock(state.protect_mutex);
     if (fault_addr < memory_addr || fault_addr >= memory_addr + TOTAL_MEM_SIZE) {
         if (state.use_page_table) {
             // this may come from an external mapping
-#ifdef __arm__
-            uintptr_t addr_val = reinterpret_cast<uintptr_t>(addr);
+#if defined(__aarch64__ ) || defined(__x86_64__)
+            uint64_t addr_val = std::bit_cast<uint64_t>(addr);
 #else
-            uintptr_t addr_val = std::bit_cast<uintptr_t>(addr);
+            uintptr_t addr_val = reinterpret_cast<uintptr_t>(addr);
 #endif
             auto it = state.external_mapping.lower_bound(addr_val);
             if (it != state.external_mapping.end() && addr_val < it->first + it->second.size) {
@@ -385,8 +392,12 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     assert((size & 4095) == 0);
     if (!mem.use_page_table)
         return;
-
-    uintptr_t addr_value = std::bit_cast<uintptr_t>(addr_ptr);
+#if defined(__aarch64__ ) || defined(__x86_64__)
+    uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
+#else
+    uintptr_t addr_value = reinterpret_cast<uintptr_t>(addr_ptr);
+#endif
+    
     uint8_t *page_table_entry = addr_ptr - addr;
     uint8_t *original_address = &mem.memory[addr];
     for (int block = 0; block < size / KiB(4); block++) {
@@ -406,7 +417,12 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
 }
 
 void remove_external_mapping(MemState &mem, uint8_t *addr_ptr, uint32_t size) {
-    uintptr_t addr_value = std::bit_cast<uintptr_t>(addr_ptr);
+#if defined(__aarch64__ ) || defined(__x86_64__)
+    uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
+#else
+    uintptr_t addr_value = reinterpret_cast<uintptr_t>(addr_ptr);
+#endif
+    
     MemExternalMapping mapping;
     if(mem.use_page_table) {
         const std::unique_lock<std::mutex> lock(mem.protect_mutex);
@@ -532,7 +548,7 @@ const char *mem_name(Address address, MemState &state) {
     return "";
 }
 
-#ifdef WIN32
+#ifdef WIN32 //ifdef 1
 
 static LONG WINAPI exception_handler(PEXCEPTION_POINTERS pExp) noexcept {
     if (pExp->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT && IsDebuggerPresent()) {
@@ -558,12 +574,12 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
     }
 }
 
-#else
+#else //ifdef 1
 
 static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     auto context = static_cast<ucontext_t *>(uct);
 
-#ifdef __arm__
+#ifdef __arm__ //ifdef 2
     _arm_ctx *ctx = reinterpret_cast<_arm_ctx *>(context->uc_mcontext.__reserved);
     // get the ESR register
     while (ctx->magic != ESR_MAGIC) {
@@ -576,10 +592,11 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     }
 
     const uint64_t esr = reinterpret_cast<esr_context *>(ctx)->esr;
-#elif __aarch64__
-#ifdef __APPLE__
+#elif __aarch64__ // ifdef 2
+    
+#ifdef __APPLE__ // ifdef 3
     const uint32_t esr = context->uc_mcontext->__es.__esr;
-#else
+#else // ifdef 3
     _aarch64_ctx *ctx = reinterpret_cast<_aarch64_ctx *>(context->uc_mcontext.__reserved);
     // get the ESR register
     while (ctx->magic != ESR_MAGIC) {
@@ -592,21 +609,22 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     }
 
     const uint64_t esr = reinterpret_cast<esr_context *>(ctx)->esr;
-#endif
+#endif // ifdef 3
     // https://developer.arm.com/documentation/ddi0595/2021-03/AArch64-Registers/ESR-EL1--Exception-Syndrome-Register--EL1-
     const uint32_t exception_class = static_cast<uint32_t>(esr) >> 26;
     const bool is_executing = (exception_class == 0b100000) || (exception_class == 0b100001);
     const bool is_data_abort = (exception_class == 0b100100) || (exception_class == 0b100101);
     const bool is_writing = is_data_abort && (esr & (1 << 6));
-#else
-#ifdef __APPLE__
+#else // ifdef 2
+    
+#ifdef __APPLE__ // ifdef 4
     const uint64_t err = context->uc_mcontext->__es.__err;
-#else
+#else // ifdef 4
     const uint64_t err = context->uc_mcontext.gregs[REG_ERR];
-#endif
+#endif // ifdef 4
     const bool is_executing = err & 0x10;
     const bool is_writing = err & 0x2;
-#endif
+#endif //ifdef 2
 
     if (!is_executing) {
         if (access_violation_handler(reinterpret_cast<uint8_t *>(info->si_addr), is_writing)) {
@@ -637,4 +655,4 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
 #endif
 }
 
-#endif
+#endif // ifdef 1
