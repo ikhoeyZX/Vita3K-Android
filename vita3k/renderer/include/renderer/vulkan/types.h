@@ -327,7 +327,7 @@ struct VKContext : public renderer::Context {
     // TODO: properly destroy the context
     ~VKContext() override;
 
-    void start_recording();
+    void start_recording(bool first_in_scene = false);
     void start_render_pass(bool create_descriptor_set = true);
     void stop_render_pass();
     void stop_recording(const SceGxmNotification &notif1, const SceGxmNotification &notif2, bool submit = true);
