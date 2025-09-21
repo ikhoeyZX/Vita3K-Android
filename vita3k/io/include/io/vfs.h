@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,15 +24,9 @@ class VitaIoDevice;
 
 namespace vfs {
 
-struct SpaceInfo {
-    unsigned long long max_capacity;
-    unsigned long long used;
-    unsigned long long free;
-};
-
 using FileBuffer = std::vector<SceUInt8>;
 
 bool read_file(VitaIoDevice device, FileBuffer &buf, const fs::path &pref_path, const fs::path &vfs_file_path);
 bool read_app_file(FileBuffer &buf, const fs::path &pref_path, const std::string &app_path, const fs::path &vfs_file_path);
-SpaceInfo get_space_info(const VitaIoDevice device, const std::string &vfs_path, const fs::path &pref_path);
+SceSize get_directory_used_size(const VitaIoDevice device, const std::string &vfs_path, const fs::path &pref_path);
 } // namespace vfs
