@@ -152,7 +152,9 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     // if the depth-stencil buffer is not backed by memory or we don't read nor write it to memory, use the transient attachment instead
     if ((!ds_surface_fin->depth_data && !ds_surface_fin->stencil_data)
         || (!ds_surface_fin->force_load && !ds_surface_fin->force_store)) {
-
+        ds_surface_fin = nullptr;
+    }
+    
     VKState &state = context.state;
     state.surface_cache.set_render_target(rt);
 
