@@ -152,8 +152,6 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     // if the depth-stencil buffer is not backed by memory or we don't read nor write it to memory, use the transient attachment instead
     if ((!ds_surface_fin->depth_data && !ds_surface_fin->stencil_data)
         || (!ds_surface_fin->force_load && !ds_surface_fin->force_store)) {
-        ds_surface_fin = nullptr;
-    }
 
     VKState &state = context.state;
     state.surface_cache.set_render_target(rt);
@@ -232,6 +230,7 @@ void VKContext::start_recording(bool first_in_scene) {
         auto fence_insert_it = render_target->fences.begin() + render_target->fence_idx;
         if(!first_in_scene)
             fence_insert_it++;
+        
         render_target->fences.insert(fence_insert_it, state.device.createFence(fence_info));
     }
 
@@ -400,14 +399,14 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
         return;
     }
 
-    if (in_renderpass)
-        stop_render_pass();
-
-    
     struct VisibilityRange {
         uint32_t offset;
         uint32_t size;
     };
+    
+    if (in_renderpass)
+        stop_render_pass();
+
     std::vector<VisibilityRange> occlusion_ranges;
     if (visibility_max_used_idx != -1) {
         // get all the entry ranges that were used
@@ -493,13 +492,12 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
             state.request_queue.push(PostSurfaceSyncRequest{ surface_info });
         }
 
-        if(notif1.address || notif2.address){
-            // notifications last
-            NotificationRequest request = {
-                .notifications = { notif1, notif2 },
-            };
-            state.request_queue.push(request);
-        }
+        // the notification must be the last thing sent
+        NotificationRequest request = {
+            .notifications = { notif1, notif2 },
+        };
+
+        state.request_queue.push(request);
     }
 }
 
