@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -184,7 +184,7 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     // (textures can be still bound even though they are not used)
     context.last_vert_texture_count = ~0;
     context.last_frag_texture_count = ~0;
-    for (int i = 0; i < 16; i++) {
+    for (uint8_t i = 0; i < 16; i++) {
         context.vertex_textures[i].sampler = nullptr;
         context.fragment_textures[i].sampler = nullptr;
     }
@@ -266,7 +266,7 @@ void VKContext::start_recording(bool first_in_scene) {
 }
 
 // we only need one descriptor per scene, so this does not need to be too big
-static constexpr uint32_t DESCRIPTOR_PACK_SIZE = 16;
+static constexpr uint8_t DESCRIPTOR_PACK_SIZE = 16;
 
 static vk::DescriptorSet retrieve_color_descriptor(VKState &state, FrameDescriptor &frame_descriptor) {
     if (frame_descriptor.descriptors_idx < frame_descriptor.sets.size())
@@ -297,7 +297,7 @@ static vk::DescriptorSet retrieve_color_descriptor(VKState &state, FrameDescript
     auto descriptor_sets = state.device.allocateDescriptorSets(descr_set_info);
 
     // distribute them among all frames
-    for (int frame_idx = 0; frame_idx < MAX_FRAMES_RENDERING; frame_idx++) {
+    for (uint8_t frame_idx = 0; frame_idx < MAX_FRAMES_RENDERING; frame_idx++) {
         FrameDescriptor &frame_descr = state.frames[frame_idx].color_descriptor;
 
         // insert DESCRIPTOR_PACK_SIZE in each frame descriptor
@@ -324,14 +324,14 @@ void VKContext::start_render_pass(bool create_descriptor_set) {
 
     if (render_target->has_macroblock_sync && !ignore_macroblock) {
         // set the render area to the correct macroblock
-        curr_renderpass_info.renderArea = {
+        curr_renderpass_info.renderArea = vk::Rect2D {
             .offset = {
                 last_macroblock_x * render_target->macroblock_width,
                 last_macroblock_y * render_target->macroblock_height },
             .extent = { render_target->macroblock_width, render_target->macroblock_height }
         };
     } else {
-        curr_renderpass_info.renderArea = {
+        curr_renderpass_info.renderArea = vk::Rect2D {
             .offset = { 0, 0 },
             .extent = { render_target->width, render_target->height }
         };
@@ -585,7 +585,7 @@ void new_frame(VKContext &context) {
     device.resetCommandPool(frame.render_pool);
 
     // set the position in the used descriptor queue back to the beginning
-    for (int i = 0; i < 16; i++) {
+    for (uint8_t i = 0; i < 16; i++) {
         frame.vert_descriptors[i].descriptors_idx = 0;
         frame.frag_descriptors[i].descriptors_idx = 0;
     }
