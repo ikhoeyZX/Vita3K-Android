@@ -177,7 +177,8 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
 
     Framebuffer &framebuffer = state.surface_cache.retrieve_framebuffer_handle(mem, color_surface_fin, ds_surface_fin, context.current_render_pass, context.current_shader_interlock_pass, context.current_color_view, context.current_ds_view);
     context.current_framebuffer = framebuffer.standard;
-    context.current_shader_interlock_framebuffer = framebuffer.shader_interlock;
+    if (context.state.features.support_shader_interlock)
+        context.current_shader_interlock_framebuffer = framebuffer.shader_interlock;
     context.current_color_base_image = framebuffer.base_image;
 
     // make sure we are not keeping any texture from the previous pass
@@ -317,7 +318,7 @@ void VKContext::start_render_pass(bool create_descriptor_set) {
     if (!is_recording)
         start_recording();
 
-    curr_renderpass_info = {
+    curr_renderpass_info = vk::RenderPassBeginInfo {
         .renderPass = current_render_pass,
         .framebuffer = current_framebuffer
     };
