@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -513,7 +513,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["parental_controls"].c_str());
             ImGui::SameLine(310.f * SCALE.x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s %d", info["level"].c_str(), *reinterpret_cast<const uint16_t *>(get_app_index(gui, app_selected)->parental_level.c_str()));
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", info["level"].c_str(), get_app_index(gui, app_selected)->parental_level.c_str());
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["updated"].c_str());
             ImGui::SameLine(310.f * SCALE.x);
