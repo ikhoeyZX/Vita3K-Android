@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -189,7 +189,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             // Draw Progress bar
             ImGui::SetCursorPos(ImVec2(PROGRESS_BAR_POS, ImGui::GetCursorPosY() + (14.f * SCALE.y)));
             ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.y), "");
-            const auto progress_str = std::to_string(progress).append("%");
+            const auto progress_str = std::to_string(static_cast<uint32_t>(progress)).append("%");
             ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + (6.f * SCALE.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", progress_str.c_str());
             ImGui::PopStyleColor();
