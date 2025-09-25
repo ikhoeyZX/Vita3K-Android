@@ -140,7 +140,7 @@ std::string parameter_name(const SceGxmProgramParameter &parameter) {
         }
     }
 
-    
+    return full_name;
 }
 
 std::string parameter_struct_name(const SceGxmProgramParameter &parameter) {
