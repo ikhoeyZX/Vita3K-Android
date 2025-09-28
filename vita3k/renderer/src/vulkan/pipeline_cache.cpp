@@ -264,7 +264,7 @@ void PipelineCache::set_async_compilation(bool enable) {
         LOG_INFO("Asynchronous pipeline compilation is now disabled");
 
         // we assume that by the time set_async_compilation is called again with enable=true, all previous worker threads have already exited
-        for (uint8_8 i = 0; i < nb_worker_threads; i++)
+        for (uint8_t i = 0; i < nb_worker_threads; i++)
             // if a thread receives nullptr, it exits
             pipeline_compile_queue.enqueue(nullptr);
     }
