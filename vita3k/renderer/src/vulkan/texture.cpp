@@ -599,9 +599,9 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
         .mipLodBias = (static_cast<float>(texture.lod_bias) - 31.f) / 8.f,
         .maxAnisotropy = static_cast<float>(anisotropic_filtering),
         .compareEnable = VK_FALSE,
-        .minLod = texture.lod_min1 << 2,
+        .minLod = static_cast<float>(texture.lod_min0 | (texture.lod_min1 << 2)),
         .maxLod = VK_LOD_CLAMP_NONE,
-        .unnormalizedCoordinates = VK_TRUE, // Original VK_FALSE
+        .unnormalizedCoordinates = VK_FALSE,
     };
 
     // when using nearest filter, disable anisotropy as the pixels can contain data other than color
