@@ -338,16 +338,15 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     
     if (tmp2 <= 0){
         LOG_ERROR("Out of memory!, use default settings!");
-        const auto free_memory = align(mem_available(emuenv.mem) / 3, 0x1000);
-        tmp2 = free_memory;
-        if(free_memory < max_user){
-            free_memory = free_memory/4;
-            info->size_user = free_memory;
+        tmp2 = align(mem_available(emuenv.mem) / 3, 0x1000);
+        if(tmp2 < max_user){
+            tmp2 = tmp2/4;
+            info->size_user = tmp2;
         }else{
-            info->size_user = free_memory/2;
+            info->size_user = tmp2/2;
         }
-        info->size_cdram = free_memory/4;
-        info->size_phycont = free_memory/8;
+        info->size_cdram = tmp2/4;
+        info->size_phycont = tmp2/8;
     }else{
        // Set the free memory size info
        info->size_cdram = std::max<int>(max_cdram - state->allocated_cdram, 0);
