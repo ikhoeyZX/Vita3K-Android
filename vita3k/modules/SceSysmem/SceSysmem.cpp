@@ -331,18 +331,22 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
-    int tmp = mem_available(emuenv.mem);
+    const int tmp = mem_available(emuenv.mem);
     int tmp2 = tmp - max_user;
-    LOG_INFO("Free mem: {} MB", (tmp/MiB(1)));
-    LOG_INFO("Need mem: {} MB", (max_user/MiB(1)));
-    LOG_INFO("Used mem: {} MB", (tmp2/MiB(1)));
-
+    LOG_TRACE("Free mem: {} MB", (tmp/MiB(1)));
+    LOG_TRACE("Need mem: {} MB", (max_user/MiB(1)));
+    
     if (tmp2 <= 0){
         LOG_ERROR("Out of memory!, use default settings!");
         const auto free_memory = align(mem_available(emuenv.mem) / 3, 0x1000);
-        tmp = free_memory;
+        tmp2 = free_memory;
+        if(free_memory < max_user){
+            free_memory = free_memory/4;
+            info->size_user = free_memory;
+        }else{
+            info->size_user = free_memory/2;
+        }
         info->size_cdram = free_memory/4;
-        info->size_user = free_memory;
         info->size_phycont = free_memory/8;
     }else{
        // Set the free memory size info
@@ -350,10 +354,10 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
        info->size_user = std::max<int>(max_user - state->allocated_user, 0);
        info->size_phycont = std::max<int>(max_phycont - state->allocated_phycont, 0);
     }
-    LOG_INFO("Free mem final: {} MB", (tmp/MiB(1)));
-    LOG_INFO("size_cdram mem final: {} MB", info->size_cdram);
-    LOG_INFO("size_user mem final: {} MB", info->size_user);
-    LOG_INFO("Free size_phycont final: {} MB", info->size_phycont);
+    LOG_TRACE("Free mem final: {} MB", (tmp2/MiB(1)));
+    LOG_TRACE("size_cdram used: {} MB", (info->size_cdram/MiB(1)));
+    LOG_TRACE("size_user used: {} MB", (info->size_user/MiB(1)));
+    LOG_TRACE("size_phycont used: {} MB", (info->size_phycont/MiB(1)));
              
     return 0;
 }
