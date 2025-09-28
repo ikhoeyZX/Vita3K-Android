@@ -390,13 +390,13 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     const uint16_t mip_count = renderer::texture::get_upload_mip(gxm_texture.true_mip_count(), width, height);
 
     vk::Format vk_format = texture::translate_format(base_format);
-    // we need gamma correction first then decompress if not supported
-    if (gxm_texture.gamma_mode) 
-        vk_format = linear_to_srgb(vk_format);
         
     if (gxm::is_bcn_format(base_format) && !support_dxt)
         // texture will be decompressed
         vk_format = bcn_to_rgba8(vk_format);
+
+    if (gxm_texture.gamma_mode) 
+        vk_format = linear_to_srgb(vk_format);
     
     current_texture->mip_count = mip_count;
     current_texture->is_cube = is_cube;
@@ -599,9 +599,9 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
         .mipLodBias = (static_cast<float>(texture.lod_bias) - 31.f) / 8.f,
         .maxAnisotropy = static_cast<float>(anisotropic_filtering),
         .compareEnable = VK_FALSE,
-        .minLod = minLod, // original was (texture.lod_min1 << 2)
-        .maxLod = (minLod + 1.0f), // original was VK_LOD_CLAMP_NONE,
-        .unnormalizedCoordinates = VK_FALSE,
+        .minLod = texture.lod_min1 << 2,
+        .maxLod = VK_LOD_CLAMP_NONE,
+        .unnormalizedCoordinates = VK_TRUE, // Original VK_FALSE
     };
 
     // when using nearest filter, disable anisotropy as the pixels can contain data other than color
