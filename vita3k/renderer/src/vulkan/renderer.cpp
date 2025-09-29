@@ -334,7 +334,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
 		if(config.use_astc){
 	       LOG_INFO("DXT (BCn) support disabled");
-		   support_dxt = false;
+		   &texture_cache.support_dxt = false;
 		}else
 			if (!detect_patch_bcn(&texture_cache.support_dxt))
 	           LOG_ERROR("Failed to enable DXT (BCn) support!, system will use ASTC instead");
