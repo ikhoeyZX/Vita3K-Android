@@ -396,8 +396,8 @@ void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, co
         current_cmd_buffer.beginRenderPass(pass_info, vk::SubpassContents::eInline);
     }
 #endif
+    */
 }
-*/
     
 void ScreenRenderer::swap_window() {
     if (!current_cmd_buffer) {
