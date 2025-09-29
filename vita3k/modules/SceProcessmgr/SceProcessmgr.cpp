@@ -105,8 +105,8 @@ EXPORT(int, sceKernelCallAbortHandler, uint32_t param1, uint32_t param2) {
     LOG_TRACE("UNIMPLEMENTED FEATURE!");
     LOG_TRACE("param1 VAL = {}", param1);
     LOG_TRACE("param2 VAL = {}", param2);
-    
-    return CALL_EXPORT(abort);
+    std::abort();
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetCurrentProcess) {
