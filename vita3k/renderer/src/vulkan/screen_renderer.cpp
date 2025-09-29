@@ -162,11 +162,13 @@ void ScreenRenderer::create_swapchain() {
         vk::ImageUsageFlags surface_usage = vk::ImageUsageFlagBits::eColorAttachment;
 
         vk::ImageUsageFlags fsr_flags = vk::ImageUsageFlagBits::eTransferDst;
+/*
         if (!state.is_adreno_turnip)
             // workaround for a Turnip driver bug: adding storage flag here breaks the swapchain
             // and fsr works fine without this flag on Adreno
             fsr_flags |= vk::ImageUsageFlagBits::eStorage;
-
+*/
+        
         if (surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage)
             // needed for FSR
             surface_usage |= fsr_flags;
@@ -382,6 +384,7 @@ void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, co
 
     filter->render(false, image_view, layout, viewport);
 
+    /*
 #ifdef ANDROID
     // stock adreno driver bug
     // if there is too much load on the GPU, it just drops any render pass with ImGui graphics in it....
@@ -394,7 +397,8 @@ void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, co
     }
 #endif
 }
-
+*/
+    
 void ScreenRenderer::swap_window() {
     if (!current_cmd_buffer) {
         swapchain_image_idx = ~0;
