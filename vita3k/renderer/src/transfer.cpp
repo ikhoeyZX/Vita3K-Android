@@ -161,6 +161,9 @@ COMMAND(handle_transfer_copy) {
 
         // use a specialized function for each type (more optimized)
         switch (bpp) {
+        case 1:
+        case 2:
+        case 4:
         case 8:
             perform_transfer_copy_src_type<uint8_t, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
             break;
@@ -179,12 +182,13 @@ COMMAND(handle_transfer_copy) {
         case 128:
             perform_transfer_copy_src_type<std::array<uint64_t, 2>, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
             break;
+        default:
+            break;
         }
-
         delete[] images;
     };
 
-    if (renderer.current_backend == Backend::Vulkan && renderer.features.support_memory_mapping && !renderer.disable_surface_sync) {
+    if (renderer.current_backend == Backend::Vulkan && renderer.features.enable_memory_mapping && !renderer.disable_surface_sync) {
         if (dynamic_cast<vulkan::VKState &>(renderer).surface_cache.check_for_surface(mem, images[0].address.address(), copy_operation, images[1].address.address()))
             // let the vulkan surface cache handle it
             return;
@@ -221,6 +225,8 @@ COMMAND(handle_transfer_downscale) {
         case SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR:
             pixel_fmt = AV_PIX_FMT_RGBA;
             break;
+        case SCE_GXM_TRANSFER_FORMAT_U4U4U4U4_ABGR:
+            pixel_fmt = AV_PIX_FMT_RGB444LE;
         default:
             break;
         }
@@ -253,6 +259,9 @@ COMMAND(handle_transfer_downscale) {
                 }
             };
             switch (gxm::get_bits_per_pixel(src->format)) {
+            case 1:
+            case 2:
+            case 4:
             case 8:
                 perform_downscale(uint8_t());
                 break;
@@ -276,7 +285,7 @@ COMMAND(handle_transfer_downscale) {
         delete dst;
     };
 
-    if (renderer.current_backend == Backend::Vulkan && renderer.features.support_memory_mapping && !renderer.disable_surface_sync) {
+    if (renderer.current_backend == Backend::Vulkan && renderer.features.enable_memory_mapping && !renderer.disable_surface_sync) {
         if (dynamic_cast<vulkan::VKState &>(renderer).surface_cache.check_for_surface(mem, src->address.address(), downscale_operation, dst->address.address()))
             // let the vulkan surface cache handle it
             return;
