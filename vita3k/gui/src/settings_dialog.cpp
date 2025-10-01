@@ -1005,14 +1005,14 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Checkbox(lang.gpu["turbo"].c_str(), &emuenv.cfg.turbo_mode);
 
             if (ImGui::IsItemHovered()) {
-                SetTooltipEx(lang.emulator["turbo_description"].c_str());
+                SetTooltipEx(lang.gpu["turbo_description"].c_str());
             }
 
             ImGui::SameLine();
             ImGui::Checkbox(lang.gpu["use_astc"].c_str(), &emuenv.cfg.use_astc);
 
             if (ImGui::IsItemHovered()) {
-                SetTooltipEx(lang.emulator["use_astc_description"].c_str());
+                SetTooltipEx(lang.gpu["use_astc_description"].c_str());
             }
         }
 
