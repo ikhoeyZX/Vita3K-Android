@@ -1424,7 +1424,7 @@ std::vector<std::string> VKState::get_stencil_list() {
 
       // if not found use default instead
       if(result.empty()){
-          result.push_back(vk::to_string("vk::Format::eD24UnormS8Uint");
+          result.push_back(vk::to_string(vk::Format::eD24UnormS8Uint));
         }
 
     return result;
