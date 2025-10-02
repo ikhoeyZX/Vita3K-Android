@@ -1412,22 +1412,22 @@ std::vector<std::string> VKState::get_stencil_list() {
 
     std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm };
 
-    std::vector<std:string> result;
+    std::vector<std::string> result;
 
       for ( vk::Format format : candidates ) {
         vk::FormatProperties props = physical_device.getFormatProperties( format );
 
         if ( props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment )
-          result.push_back(vk::to_sring(format));
+          result.push_back(vk::to_string(format));
 
       }
 
       // if not found use default instead
       if(result.empty()){
-          return "vk::Format::eD24UnormS8Uint";
+          result.push_back(vk::to_string("vk::Format::eD24UnormS8Uint");
         }
 
-    return format;
+    return result;
 }
 
 
