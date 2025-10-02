@@ -585,6 +585,9 @@ struct LangState {
             { "clean_shaders", "Clean Shaders Cache and Log" },
             { "turbo", "Enable Turbo Mode" },
             { "turbo_description", "Provides a way to force the GPU to run at the maximum possible clocks (thermal constraints will still be applied)" },
+            { "deep_stencil", "Change Vulkan deep stencil format" },
+            { "deep_stencil_description", "Changing deep stencil format very usefull if you have problem with game, known issue that old POWERVR GPU can't use eD32SfloatS8Uint!" },
+
             { "use_astc", "Use ASTC texture" },
             { "use_astc_description", "Use ASTC texture compression instead DXT (BCn), render output maybe similiar to Mali GPU" },
             { "fps_hack", "FPS Hack" },

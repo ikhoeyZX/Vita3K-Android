@@ -259,7 +259,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.screen_filter = emuenv.cfg.screen_filter;
         config.memory_mapping = emuenv.cfg.memory_mapping;
         config.vk_mapping = emuenv.cfg.vk_mapping;
-        config.deep-stencil = emuenv.cfg.deep_stencil;
+        config.deep_stencil = emuenv.cfg.deep_stencil;
         config.v_sync = emuenv.cfg.v_sync;
         config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
         config.async_pipeline_compilation = emuenv.cfg.async_pipeline_compilation;
