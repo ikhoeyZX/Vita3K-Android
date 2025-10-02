@@ -183,7 +183,7 @@ static bool get_custom_config(EmuEnvState &emuenv, const std::string &app_path) 
                 config.screen_filter = gpu_child.attribute("screen-filter").as_string();
                 config.memory_mapping = gpu_child.attribute("memory-mapping").as_string();
                 config.vk_mapping = gpu_child.attribute("vk-mapping").as_string();
-                config.deep-stencil = gpu_child.attribute("deep-stencil").as_string();
+                config.deep_stencil = gpu_child.attribute("deep-stencil").as_string();
                 config.v_sync = gpu_child.attribute("v-sync").as_bool();
                 config.anisotropic_filtering = gpu_child.attribute("anisotropic-filtering").as_int();
                 config.async_pipeline_compilation = gpu_child.attribute("async-pipeline-compilation").as_bool();
