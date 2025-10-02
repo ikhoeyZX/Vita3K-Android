@@ -1046,8 +1046,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
             if (is_ingame)
                 ImGui::EndDisabled();
-        }
         */
+        }
+        
 
         if (emuenv.renderer->support_custom_drivers()) {
             ImGui::Spacing();
