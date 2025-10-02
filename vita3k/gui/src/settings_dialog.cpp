@@ -1005,7 +1005,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
 
             const std::vector<std::string> stencil_list_str = emuenv.renderer->get_stencil_list();
-            stat
+
             std::vector<const char *> stencil_list;
             for (const auto &stencil : stencil_list_str)
                 stencil_list.push_back(stencil.c_str());
