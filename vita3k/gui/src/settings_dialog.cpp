@@ -1010,7 +1010,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             for (const auto &stencil : stencil_list_str)
                 stencil_list.push_back(stencil.c_str());
 
-            ImGui::Combo(lang.gpu["deep_stencil"].c_str(), config.deep_stencil, stencil_list.data(), static_cast<int>(stencil_list.size()));
+            ImGui::Combo(lang.gpu["deep_stencil"].c_str(), config.deep_stencil, stencil_list.data(), static_cast<int>(stencil_list.size()), -1);
             SetTooltipEx(lang.gpu["deep_stencil_description"].c_str());
 
             /*
@@ -1041,6 +1041,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (is_ingame)
                 ImGui::EndDisabled();
         }
+        */
 
         if (emuenv.renderer->support_custom_drivers()) {
             ImGui::Spacing();
