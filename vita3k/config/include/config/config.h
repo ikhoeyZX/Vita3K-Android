@@ -78,7 +78,6 @@ enum ScreenshotFormat {
     code(bool, "turbo-mode", false, turbo_mode)                                                         \
     code(int, "gpu-idx", 0, gpu_idx)                                                                    \
     code(bool, "high-accuracy", false, high_accuracy)                                                   \
-    code(std::string, "deep-stencil", "vk::Format::eD24SfloatS8Uint", deep_stencil)                     \
     code(float, "resolution-multiplier", 1.0f, resolution_multiplier)                                   \
     code(bool, "disable-surface-sync", true, disable_surface_sync)                                      \
     code(std::string, "screen-filter", "Bilinear", screen_filter)                                       \
@@ -93,6 +92,7 @@ enum ScreenshotFormat {
     code(bool, "export-as-png", true, export_as_png)                                                    \
     code(std::string, "memory-mapping", "double-buffer", memory_mapping)                                \
     code(std::string, "vk-mapping", "mailbox", vk_mapping)                                              \
+    code(std::string, "deep-stencil", "vk::Format::eD24SfloatS8Uint", deep_stencil)                     \
     code(bool, "boot-apps-full-screen", false, boot_apps_full_screen)                                   \
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(int, "audio-volume", 100, audio_volume)                                                        \
