@@ -1011,7 +1011,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 stencil_list.push_back(stencil.c_str());
 
             static int current_stencil_list = std::find(stencil_list.begin(), stencil_list.end(), config.deep_stencil) - stencil_list.begin();
-            ImGui::Combo(lang.gpu["deep_stencil"].c_str(), &current_stencil_list, stencil_list.data(), static_cast<int>(stencil_list.size())){
+            if(ImGui::Combo(lang.gpu["deep_stencil"].c_str(), &current_stencil_list, stencil_list.data(), static_cast<int>(stencil_list.size()))) {
                 config.deep_stencil = config.deep_stencil[current_stencil_list];
             }
             if (ImGui::IsItemHovered()) {
