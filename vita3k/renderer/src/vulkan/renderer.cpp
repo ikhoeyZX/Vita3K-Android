@@ -1408,6 +1408,24 @@ std::vector<std::string> VKState::get_gpu_list() {
 }
 #endif
 
+std::vector<std::string> VKState::get_stencil_list() {
+
+    std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm };
+      for ( vk::Format format : candidates )
+      {
+        vk::FormatProperties props = physicalDevice.getFormatProperties( format );
+
+        if ( props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment )
+        {
+          return format;
+        }
+      }
+
+    // if not found use default instead
+    return "vk::Format::eD24UnormS8Uint";
+}
+
+
 uint32_t VKState::get_gpu_version() {
     return physical_device_properties.driverVersion;
 }

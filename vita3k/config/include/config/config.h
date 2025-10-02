@@ -71,18 +71,19 @@ enum ScreenshotFormat {
     code(bool, "display-system-apps", true, display_system_apps)                                        \
     code(bool, "stretch_the_display_area", false, stretch_the_display_area)                             \
     code(bool, "show-live-area-screen", true, show_live_area_screen)                                    \
-    code(int, "icon-size", 64, icon_size)                                                               \
+    code(uint16_t, "icon-size", 64, icon_size)                                                          \
     code(bool, "archive-log", false, archive_log)                                                       \
     code(std::string, "backend-renderer", "Vulkan", backend_renderer)                                   \
     code(std::string, "custom-driver-name", "", custom_driver_name)                                     \
     code(bool, "turbo-mode", false, turbo_mode)                                                         \
-    code(int, "gpu-idx", 0, gpu_idx)                                                                    \
+    code(uint8_t, "gpu-idx", 0, gpu_idx)                                                                \
     code(bool, "high-accuracy", false, high_accuracy)                                                   \
+    code(uint8_t, "deep-stencil", 0, deep_stencil)                                                      \
     code(float, "resolution-multiplier", 1.0f, resolution_multiplier)                                   \
     code(bool, "disable-surface-sync", true, disable_surface_sync)                                      \
     code(std::string, "screen-filter", "Bilinear", screen_filter)                                       \
     code(bool, "v-sync", true, v_sync)                                                                  \
-    code(int, "anisotropic-filtering", 1, anisotropic_filtering)                                        \
+    code(uint8_t, "anisotropic-filtering", 1, anisotropic_filtering)                                    \
     code(bool, "texture-cache", true, texture_cache)                                                    \
     code(bool, "async-pipeline-compilation", true, async_pipeline_compilation)                          \
     code(bool, "show-compile-shaders", true, show_compile_shaders)                                      \
@@ -94,7 +95,7 @@ enum ScreenshotFormat {
     code(std::string, "vk-mapping", "mailbox", vk_mapping)                                              \
     code(bool, "boot-apps-full-screen", false, boot_apps_full_screen)                                   \
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \
-    code(int, "audio-volume", 100, audio_volume)                                                        \
+    code(uint8_t, "audio-volume", 100, audio_volume)                                                    \
     code(bool, "ngs-enable", true, ngs_enable)                                                          \
     code(std::string, "audio-drv", "auto", audio_drv)                                                   \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
@@ -106,7 +107,7 @@ enum ScreenshotFormat {
     code(int, "delay-background", 4, delay_background)                                                  \
     code(int, "delay-start", 10, delay_start)                                                           \
     code(float, "background-alpha", .300f, background_alpha)                                            \
-    code(int, "log-level", static_cast<int>(spdlog::level::trace), log_level)                           \
+    code(uint8_t, "log-level", 0, log_level)                                                            \
     code(std::string, "cpu-backend", "Dynarmic", cpu_backend)                                           \
     code(bool, "cpu-opt", true, cpu_opt)                                                                \
     code(bool, "cpu-unsafe", false, cpu_unsafe)                                                         \
@@ -116,14 +117,14 @@ enum ScreenshotFormat {
     code(bool, "color-surface-debug", false, color_surface_debug)                                       \
     code(bool, "show-touchpad-cursor", true, show_touchpad_cursor)                                      \
     code(bool, "performance-overlay", false, performance_overlay)                                       \
-    code(int, "performance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)      \
-    code(int, "performance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position) \
-    code(int, "screenshot-format", static_cast<int>(JPEG), screenshot_format)                           \
+    code(uint8_t, "performance-overlay-detail", 1, performance_overlay_detail)                          \
+    code(uint8_t, "performance-overlay-position", 1, performance_overlay_position)                      \
+    code(uint8_t, "screenshot-format", 1, screenshot_format)                                            \
     code(bool, "enable-gamepad-overlay", true, enable_gamepad_overlay)                                  \
     code(bool, "overlay-show-touch-switch", false, overlay_show_touch_switch)                           \
     code(float, "overlay-scale", 1.0f, overlay_scale)                                                   \
     code(float, "overlay-scale-joystick", 1.0f, overlay_scale_joystick)                                 \
-    code(int, "overlay-opacity", 100, overlay_opacity)                                                  \
+    code(uint8_t, "overlay-opacity", 100, overlay_opacity)                                                  \
     code(bool, "calibrate-gyro", false, calibrate_gyro)                                                 \
     code(int, "keyboard-button-select", 229, keyboard_button_select)                                    \
     code(int, "keyboard-button-start", 40, keyboard_button_start)                                       \
@@ -168,12 +169,12 @@ enum ScreenshotFormat {
     code(bool, "fps-hack", false, fps_hack)                                                             \
     code(bool, "use-astc", true, use_astc)                                                              \
     code(bool, "acceleration-and-gyroscope", true, tiltsens)                                            \
-    code(int, "acceleration-pos", 0, tiltpos)                                                           \
+    code(uint8_t, "acceleration-pos", 0, tiltpos)                                                       \
     code(bool, "invert-gyro", false, invert_gyro)                                                       \
-    code(int, "screenmode-pos", 0, screenmode_pos)                                                      \
+    code(uint8_t, "screenmode-pos", 0, screenmode_pos)                                                  \
     code(uint64_t, "current-ime-lang", 4, current_ime_lang)                                             \
     code(bool, "native-screen", false, native_screen)                                                   \
-    code(int, "psn-signed-in", false, psn_signed_in)                                                    \
+    code(bool, "psn-signed-in", false, psn_signed_in)                                                   \
     code(bool, "http-enable", true, http_enable)                                                        \
     code(int, "http-timeout-attempts", 50, http_timeout_attempts)                                       \
     code(int, "http-timeout-sleep-ms", 100, http_timeout_sleep_ms)                                      \
