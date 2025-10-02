@@ -1005,10 +1005,11 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
 
             const std::vector<std::string> stencil_list_str = emuenv.renderer->get_stencil_list();
-            // must convert to a vector of char*
+
             std::vector<const char *> stencil_list;
             for (const auto &stencil : stencil_list_str)
                 stencil_list.push_back(stencil.c_str());
+
             ImGui::Combo(lang.gpu["deep_stencil"].c_str(), config.deep_stencil, stencil_list.data(), static_cast<int>(stencil_list.size()));
             SetTooltipEx(lang.gpu["deep_stencil_description"].c_str());
 
