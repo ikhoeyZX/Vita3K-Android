@@ -1004,20 +1004,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
             ImGui::Spacing();
 
-            const std::vector<std::string> stencil_list_str = emuenv.renderer->get_stencil_list();
-
-            std::vector<const char *> stencil_list;
-            for (const auto &stencil : stencil_list_str)
-                stencil_list.push_back(stencil.c_str());
-
-            static int current_stencil_list = std::find(stencil_list.begin(), stencil_list.end(), config.deep_stencil) - stencil_list.begin();
-            if(ImGui::Combo(lang.gpu["deep_stencil"].c_str(), &current_stencil_list, stencil_list.data(), static_cast<int>(stencil_list.size()))) {
-                config.deep_stencil = config.deep_stencil[current_stencil_list].c_str();
-            }
-            if (ImGui::IsItemHovered()) {
-                SetTooltipEx(lang.gpu["deep_stencil_description"].c_str());
-                ImGui::Spacing();
-            }
+            
 
             /*
             std::vector<const char *> vk_stencil_format_strings = {
@@ -1049,7 +1036,21 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         */
         }
         
+        const std::vector<std::string> stencil_list_str = emuenv.renderer->get_stencil_list();
 
+        std::vector<const char *> stencil_list;
+        for (const auto &stencil : stencil_list_str)
+            stencil_list.push_back(stencil.c_str());
+
+        static int current_stencil_list = std::find(stencil_list.begin(), stencil_list.end(), config.deep_stencil) - stencil_list.begin();
+        if(ImGui::Combo(lang.gpu["deep_stencil"].c_str(), &current_stencil_list, stencil_list.data(), static_cast<int>(stencil_list.size()))) {
+            config.deep_stencil = config.deep_stencil[current_stencil_list].c_str();
+        }
+        if (ImGui::IsItemHovered()) {
+            SetTooltipEx(lang.gpu["deep_stencil_description"].c_str());
+            ImGui::Spacing();
+        }
+        
         if (emuenv.renderer->support_custom_drivers()) {
             ImGui::Spacing();
             ImGui::Checkbox(lang.gpu["turbo"].c_str(), &emuenv.cfg.turbo_mode);
