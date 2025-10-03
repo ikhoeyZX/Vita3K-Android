@@ -137,7 +137,7 @@ struct State {
     virtual std::vector<std::string> get_gpu_list() {
         return { "Automatic" };
     }
-    virtual std::vector<std::string> get_stencil_list() {
+    virtual std::vector<std::string> get_vulkan_feature_list(int type) {
         return { "vk::Format::eD24UnormS8Uint" };
     }
     virtual bool support_custom_drivers() {
