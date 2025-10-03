@@ -149,7 +149,7 @@ struct VKState : public renderer::State {
     // return the GPU buffer device address matching this one
     uint64_t get_matching_device_address(const Address address);
     std::vector<std::string> get_gpu_list() override;
-    std::vector<std::string> get_stencil_list() override;
+    std::vector<std::string> get_vulkan_feature_list(int type) override;
     std::string_view get_gpu_name() override;
     uint32_t get_gpu_version() override;
 
