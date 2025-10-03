@@ -1414,7 +1414,7 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 		
 	switch(type) {
 		case 0:
-			const auto present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
+			const auto present_modes = physical_device.getSurfacePresentModesKHR(surface);
             
 			for ( vk::PresentModeKHR format : present_modes ) {
 				result.push_back(vk::to_string(format));
