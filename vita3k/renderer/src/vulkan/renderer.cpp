@@ -1412,10 +1412,10 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 	std::vector<std::string> result;
 		
 	switch (type) {
-		case 0:
+		case 0: {
 			const auto present_modes = physical_device.getSurfacePresentModesKHR(screen_renderer.surface);
             
-			for ( vk::PresentModeKHR format : present_modes ) {
+			for ( vk::PresentModeKHR format : present_modes ) 
 				result.push_back(vk::to_string(format));
 				
 	        // if not found use default instead
@@ -1424,8 +1424,8 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 			}
 			return result;
 	        break;
-	
-	    case 1:
+		}
+	    case 1: {
 			std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm };
 			
 			for ( vk::Format format : candidates ) {
@@ -1438,14 +1438,15 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
             if ( result.empty() ) {
                 result.push_back(vk::to_string(vk::Format::eD24UnormS8Uint));
             }
-			return result;
 	        break;
-		
-	    default:
+		}
+	    default: {
+			result.push_back("INVALID");
 		    break;
+		}
 	}
 	
-	return "INVALID_INPUT";
+	return result;
 }
 
 
