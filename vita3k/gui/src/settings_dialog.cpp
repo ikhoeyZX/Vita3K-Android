@@ -976,8 +976,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("%s", lang.gpu["mapping_method_description"].c_str());
             }
+            ImGui::Spacing();
+        }
 
-            if (emuenv.cfg.gpu_idx == 0) {
+       /* if (emuenv.cfg.gpu_idx == 0) {
                 ImGui::Spacing();
                 std::vector<const char *> vk_surface_format_strings = {
              //         "Immediate",
@@ -991,52 +993,26 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
               //         "fifo-relaxed",
                        "fifo"
                 };
-    
-                static int current_surface_format = std::find(vk_surface_format_methods_indexes.begin(), vk_surface_format_methods_indexes.end(), config.vk_mapping) - vk_surface_format_methods_indexes.begin();
-                if (ImGui::Combo(lang.gpu["surface_format_method"].c_str(), &current_surface_format, vk_surface_format_strings.data(), vk_surface_format_strings.size())) {
-                    config.vk_mapping = vk_surface_format_methods_indexes[current_surface_format];
-                }
-                if (ImGui::IsItemHovered()) {
-                    SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
-                    ImGui::Spacing();
-                }
-            }
-
-            ImGui::Spacing();
-
-            
-
-            /*
-            std::vector<const char *> vk_stencil_format_strings = {
-                    "D32_SFLOAT_S8_UINT",
-                    "D32_SFLOAT",
-                    "D24_UNORM_S8_UINT",
-                    "D16_UNORM_S8_UINT",
-                    "D16_UNORM"
-            };
-            std::vector<std::string_view> vk_stencil_format_methods_indexes = {
-                    "D32_SFLOAT_S8_UINT",
-                    "D32_SFLOAT",
-                    "D24_UNORM_S8_UINT",
-                    "D16UnormS8Uint",
-                    "D16_UNORM"
-            };
-
-            static int current_stencil_format = std::find(vk_stencil_format_methods_indexes.begin(), vk_stencil_format_methods_indexes.end(), config.deep-stencil) - vk_stencil_format_methods_indexes.begin();
-            if (ImGui::Combo(lang.gpu["surface_format_method"].c_str(), &current_stencil_format, vk_stencil_format_strings.data(), vk_stencil_format_strings.size())) {
-                config.deep_stencil = vk_stencil_format_methods_indexes[current_stencil_format];
-            }
-            if (ImGui::IsItemHovered()) {
-                SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
-                ImGui::Spacing();
-            }
-
-            if (is_ingame)
-                ImGui::EndDisabled();
-        */
-        }
+    */
         
-        const std::vector<std::string> stencil_list_str = emuenv.renderer->get_stencil_list();
+
+        const std::vector<std::string> vk_surface_list_str = emuenv.renderer->get_vulkan_feature_list(0);
+
+        std::vector<const char *> vk_surface_list;
+        for (const auto &vk_surface : vk_surface_list_str)
+            vk_surface_list.push_back(vk_surface.c_str());
+
+        static int current_surface_format = std::find(vk_surface_list.begin(), vk_surface_list.end(), config.vk_mapping) - vk_surface_list.begin();
+        if (ImGui::Combo(lang.gpu["surface_format_method"].c_str(), &current_surface_format, vk_surface_format_strings.data(), vk_surface_format_strings.size())) {
+            config.vk_mapping = vk_surface_list[current_surface_format];
+        }
+        if (ImGui::IsItemHovered()) {
+            SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
+            ImGui::Spacing();
+        }
+
+        
+        const std::vector<std::string> stencil_list_str = emuenv.renderer->get_vulkan_feature_list(1);
 
         std::vector<const char *> stencil_list;
         for (const auto &stencil : stencil_list_str)
@@ -1044,13 +1020,14 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         static int current_stencil_list = std::find(stencil_list.begin(), stencil_list.end(), config.deep_stencil) - stencil_list.begin();
         if(ImGui::Combo(lang.gpu["deep_stencil"].c_str(), &current_stencil_list, stencil_list.data(), static_cast<int>(stencil_list.size()))) {
-            const char* tmp = config.deep_stencil[current_stencil_list];
-            config.deep_stencil = tmp.c_str();
+            config.deep_stencil = stencil_list_str[current_stencil_list];
         }
         if (ImGui::IsItemHovered()) {
             SetTooltipEx(lang.gpu["deep_stencil_description"].c_str());
             ImGui::Spacing();
         }
+        if (is_ingame)
+            ImGui::EndDisabled();
         
         if (emuenv.renderer->support_custom_drivers()) {
             ImGui::Spacing();
