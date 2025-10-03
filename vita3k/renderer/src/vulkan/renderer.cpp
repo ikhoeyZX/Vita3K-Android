@@ -1409,10 +1409,9 @@ std::vector<std::string> VKState::get_gpu_list() {
 #endif
 
 std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
-
 	std::vector<std::string> result;
 		
-	switch(type) {
+	switch (type) {
 		case 0:
 			const auto present_modes = physical_device.getSurfacePresentModesKHR(screen_renderer.surface);
             
@@ -1423,6 +1422,7 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
             if ( result.empty() ) {
                 result.push_back(vk::to_string(vk::PresentModeKHR::eMailbox));
 			}
+			return result;
 	        break;
 	
 	    case 1:
@@ -1438,14 +1438,14 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
             if ( result.empty() ) {
                 result.push_back(vk::to_string(vk::Format::eD24UnormS8Uint));
             }
+			return result;
 	        break;
 		
 	    default:
-		    result.push_back("INVALID INPUT");
 		    break;
 	}
 	
-	return result;
+	return "INVALID_INPUT";
 }
 
 
