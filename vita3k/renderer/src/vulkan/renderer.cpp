@@ -1426,10 +1426,14 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 		}
 
 	    case 1: {
-			std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm };
+			// std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm };
+			const auto present_modes = physical_device.getFormatProperties( format );
+            
+			   for ( vk::PresentModeKHR format : present_modes ) {
+				   result.push_back(vk::to_string(format));
 			
-			for ( vk::Format format : candidates ) {
-				  vk::FormatProperties props = physical_device.getFormatProperties( format );
+			// for ( vk::Format format : candidates ) {
+			//	  vk::FormatProperties props = physical_device.getFormatProperties( format );
 				
                   if ( props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment )
                       result.push_back(vk::to_string(format));
