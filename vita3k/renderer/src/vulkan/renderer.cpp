@@ -1441,7 +1441,7 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 		}
 
 	    case 1: {
-			std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm, eS8Uint, eX8D24UnormPack32 };
+			std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm, vk::Format::eS8Uint, vk::Format::eX8D24UnormPack32 };
 			for ( vk::Format format : candidates ) {
 				  vk::FormatProperties props = physical_device.getFormatProperties( format );
 				
