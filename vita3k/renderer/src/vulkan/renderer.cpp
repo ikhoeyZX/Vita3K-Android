@@ -303,7 +303,22 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     {
         PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
-        
+
+		if(&config.deep_stencil == "eD32Sfloat")
+		   deep_stencil_use = vk::Format::eD32Sfloat;
+		else if(&config.deep_stencil == "eD32SfloatS8Uint")
+		   deep_stencil_use = vk::Format::eD32SfloatS8Uint;
+        else if(&config.deep_stencil == "eD16UnormS8Uint")
+		   deep_stencil_use = vk::Format::eD16UnormS8Uint;
+        else if(&config.deep_stencil == "eD16Unorm")
+		   deep_stencil_use = vk::Format::eD16Unorm;
+        else if(&config.deep_stencil == "eS8Uint")
+		   deep_stencil_use = vk::Format::eS8Uint;
+        else 
+		   deep_stencil_use = vk::Format::eD24UnormS8Uint;
+
+		LOG_INFO("deep_stencil_use = {}", vk::to_string(deep_stencil_use));
+
 #ifdef ANDROID
         if(adreno.is_adreno){
     	    const char *temp_dir = nullptr;
