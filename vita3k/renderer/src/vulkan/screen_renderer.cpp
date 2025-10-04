@@ -108,17 +108,16 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
 
     switch(vk_idx){
         case 1:
-            present_mode = vk::PresentModeKHR::eFifo;
+            present_mode = vk::PresentModeKHR::eMailbox;
             break;
-/*        case 2:
+        case 2:
             present_mode = vk::PresentModeKHR::eFifoRelaxed;
             break;
         case 3:
-            present_mode = vk::PresentModeKHR::eImmediate;
+            present_mode = vk::PresentModeKHR::eFifo;
             break;
-*/
         default:
-            present_mode = vk::PresentModeKHR::eMailbox;
+            present_mode = vk::PresentModeKHR::eImmediate;
             break;
     }
 
@@ -162,12 +161,11 @@ void ScreenRenderer::create_swapchain() {
         vk::ImageUsageFlags surface_usage = vk::ImageUsageFlagBits::eColorAttachment;
 
         vk::ImageUsageFlags fsr_flags = vk::ImageUsageFlagBits::eTransferDst;
-/*
+
         if (!state.is_adreno_turnip)
             // workaround for a Turnip driver bug: adding storage flag here breaks the swapchain
             // and fsr works fine without this flag on Adreno
             fsr_flags |= vk::ImageUsageFlagBits::eStorage;
-*/
         
         if (surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage)
             // needed for FSR
@@ -384,7 +382,6 @@ void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, co
 
     filter->render(false, image_view, layout, viewport);
 
-    /*
 #ifdef ANDROID
     // stock adreno driver bug
     // if there is too much load on the GPU, it just drops any render pass with ImGui graphics in it....
@@ -396,7 +393,7 @@ void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, co
         current_cmd_buffer.beginRenderPass(pass_info, vk::SubpassContents::eInline);
     }
 #endif
-    */
+    
 }
     
 void ScreenRenderer::swap_window() {
@@ -557,7 +554,8 @@ void ScreenRenderer::create_render_pass() {
     // renderpass after post processing filter
     color_attachment
         .setLoadOp(vk::AttachmentLoadOp::eLoad)
-        .setInitialLayout(vk::ImageLayout::eGeneral);
+   //     .setInitialLayout(vk::ImageLayout::eGeneral);
+        .setInitialLayout(vk::ImageLayout::ePresentSrcKHR);
     post_filter_render_pass = state.device.createRenderPass(pass_info);
 
 #ifdef ANDROID
