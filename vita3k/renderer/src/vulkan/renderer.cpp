@@ -1409,6 +1409,7 @@ std::vector<std::string> VKState::get_gpu_list() {
 #endif
 
 std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
+	/*
 	std::vector<std::string> result;
 		
 	switch (type) {
@@ -1447,6 +1448,8 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 	}
 	
 	return result;
+		*/
+	return "";
 }
 
 
