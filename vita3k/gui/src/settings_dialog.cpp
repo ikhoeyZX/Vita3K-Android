@@ -1003,7 +1003,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             vk_surface_list.push_back(vk_surface.c_str());
 
         static int current_surface_format = std::find(vk_surface_list.begin(), vk_surface_list.end(), config.vk_mapping) - vk_surface_list.begin();
-        if (ImGui::Combo(lang.gpu["surface_format_method"].c_str(), &current_surface_format, vk_surface_format_strings.data(), vk_surface_format_strings.size())) {
+        if (ImGui::Combo(lang.gpu["surface_format_method"].c_str(), &current_surface_format, vk_surface_list.data(), vk_surface_list.size())) {
             config.vk_mapping = vk_surface_list[current_surface_format];
         }
         if (ImGui::IsItemHovered()) {
