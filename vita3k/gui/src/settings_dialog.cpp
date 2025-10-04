@@ -979,26 +979,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
         }
 
-       /* if (emuenv.cfg.gpu_idx == 0) {
-                ImGui::Spacing();
-                std::vector<const char *> vk_surface_format_strings = {
-             //         "Immediate",
-                       "Mailbox",
-             //          "Fifo relaxed",
-                       "Fifo"
-                };
-                std::vector<std::string_view> vk_surface_format_methods_indexes = {
-              //         "Immediate",
-                       "mailbox",
-              //         "fifo-relaxed",
-                       "fifo"
-                };
-    */
-        
-
         const std::vector<std::string> vk_surface_list_str = emuenv.renderer->get_vulkan_feature_list(0);
 
-        std::vector<const char *> vk_surface_list;
+        static std::vector<const char *> vk_surface_list;
         for (const auto &vk_surface : vk_surface_list_str)
             vk_surface_list.push_back(vk_surface.c_str());
 
@@ -1014,7 +997,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         
         const std::vector<std::string> stencil_list_str = emuenv.renderer->get_vulkan_feature_list(1);
 
-        std::vector<const char *> stencil_list;
+        static std::vector<const char *> stencil_list;
         for (const auto &stencil : stencil_list_str)
             stencil_list.push_back(stencil.c_str());
 
@@ -1587,6 +1570,14 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     }
     SetTooltipEx(lang.main_window["keep_changes"].c_str());
 
+    if(SDL_GetAndroidSDKVersion < 29){ // android 9 bug
+        // because imgui bug, we need much empty
+        // at end space to make button visible
+        ImGui::Spacing();
+        ImGui::Spacing();
+        ImGui::Spacing();
+        ImGui::Spacing();
+    }
     ImGui::ScrollWhenDragging();
     ImGui::End();
 }
