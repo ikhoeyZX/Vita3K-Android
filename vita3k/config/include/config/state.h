@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -137,8 +137,8 @@ public:
         bool disable_surface_sync = false;
         std::string screen_filter = "Bilinear";
         std::string memory_mapping = "double-buffer";
-        std::string vk_mapping = "mailbox";
-        std::string deep_stencil = "vk::Format::eD24SfloatS8Uint";
+        std::string vk_mapping = "Mailbox";
+        std::string deep_stencil = "eD24SfloatS8Uint";
         bool v_sync = true;
         int anisotropic_filtering = 1;
         bool async_pipeline_compilation = true;
