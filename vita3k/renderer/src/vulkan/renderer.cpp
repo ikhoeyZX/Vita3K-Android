@@ -304,15 +304,15 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
-		if(&config.deep_stencil == "eD32Sfloat")
+		if(config.deep_stencil == "eD32Sfloat")
 		   deep_stencil_use = vk::Format::eD32Sfloat;
-		else if(&config.deep_stencil == "eD32SfloatS8Uint")
+		else if(config.deep_stencil == "eD32SfloatS8Uint")
 		   deep_stencil_use = vk::Format::eD32SfloatS8Uint;
-        else if(&config.deep_stencil == "eD16UnormS8Uint")
+        else if(config.deep_stencil == "eD16UnormS8Uint")
 		   deep_stencil_use = vk::Format::eD16UnormS8Uint;
-        else if(&config.deep_stencil == "eD16Unorm")
+        else if(config.deep_stencil == "eD16Unorm")
 		   deep_stencil_use = vk::Format::eD16Unorm;
-        else if(&config.deep_stencil == "eS8Uint")
+        else if(config.deep_stencil == "eS8Uint")
 		   deep_stencil_use = vk::Format::eS8Uint;
         else 
 		   deep_stencil_use = vk::Format::eD24UnormS8Uint;
@@ -1446,12 +1446,16 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
             
 			   for ( vk::Format format : present_modes ) {
 				   result.push_back(vk::to_string(format));
-			
-			// for ( vk::Format format : candidates ) {
-			//	  vk::FormatProperties props = physical_device.getFormatProperties( format );
+
+				   if ( present_modes.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment )
+                      result.push_back(vk::to_string(format));
+				   
+			/* for ( vk::Format format : candidates ) {
+				  vk::FormatProperties props = physical_device.getFormatProperties( format );
 				
                   if ( props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment )
                       result.push_back(vk::to_string(format));
+			*/
 				}
 	              // if not found use default instead
             if ( result.empty() ) 
