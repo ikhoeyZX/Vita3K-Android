@@ -123,9 +123,6 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
             present_mode = vk::PresentModeKHR::eSharedContinuousRefresh;
             break;
         case 6:
-            present_mode = vk::PresentModeKHR::eFifoLatestReady;
-            break;
-        case 7:
             present_mode = vk::PresentModeKHR::eFifoLatestReadyEXT;
             break;
         default:
