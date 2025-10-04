@@ -1412,7 +1412,7 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 	std::vector<std::string> result;
 		
 	switch (type) {
-		case 0: {
+		case 0: 
 			const auto present_modes = physical_device.getSurfacePresentModesKHR(screen_renderer.surface);
             
 			for ( vk::PresentModeKHR format : present_modes ) 
@@ -1424,22 +1424,22 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 			}
 			return result;
 	        break;
-		}
-	    case 1: {
+		
+	    case 1: 
 			std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm };
 			
-			for ( vk::Format format : candidates ) 
-				vk::FormatProperties props = physical_device.getFormatProperties( format );
+			for ( vk::Format format : candidates ) {
+                vk::FormatProperties props = physicalDevice.getFormatProperties( format );
 
-			if ( props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment )
-				result.push_back(vk::to_string(format));
-
+            if ( props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment )
+               result.push_back(vk::to_string(format));
+	        }
 	        // if not found use default instead
             if ( result.empty() ) {
                 result.push_back(vk::to_string(vk::Format::eD24UnormS8Uint));
             }
 	        break;
-		}
+		
 	    default: {
 			result.push_back("INVALID");
 		    break;
