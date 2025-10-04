@@ -1429,7 +1429,7 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 			std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm };
 			
 			for ( vk::Format format : candidates ) {
-                vk::FormatProperties props = physicalDevice.getFormatProperties( format );
+                vk::FormatProperties props = physical_device.getFormatProperties( format );
 
             if ( props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment )
                result.push_back(vk::to_string(format));
