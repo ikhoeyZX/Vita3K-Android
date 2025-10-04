@@ -1409,7 +1409,6 @@ std::vector<std::string> VKState::get_gpu_list() {
 #endif
 
 std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
-	/*
 	std::vector<std::string> result;
 		
 	switch (type) {
@@ -1429,7 +1428,7 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 	    case 1: {
 			std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm };
 			
-			for ( vk::Format format : candidates ) {
+			for ( vk::Format format : candidates ) 
 				vk::FormatProperties props = physical_device.getFormatProperties( format );
 
 			if ( props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment )
@@ -1448,8 +1447,6 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 	}
 	
 	return result;
-		*/
-	return "";
 }
 
 
