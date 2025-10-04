@@ -108,16 +108,28 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
 
     switch(vk_idx){
         case 1:
-            present_mode = vk::PresentModeKHR::eMailbox;
-            break;
-        case 2:
             present_mode = vk::PresentModeKHR::eFifoRelaxed;
             break;
-        case 3:
+        case 2:
             present_mode = vk::PresentModeKHR::eFifo;
             break;
-        default:
+        case 3:
             present_mode = vk::PresentModeKHR::eImmediate;
+            break;
+        case 4:
+            present_mode = vk::PresentModeKHR::eSharedDemandRefresh;
+            break;
+        case 5:
+            present_mode = vk::PresentModeKHR::eSharedContinuousRefresh;
+            break;
+        case 6:
+            present_mode = vk::PresentModeKHR::eFifoLatestReady;
+            break;
+        case 7:
+            present_mode = vk::PresentModeKHR::eFifoLatestReadyEXT;
+            break;
+        default:
+            present_mode = vk::PresentModeKHR::eMailbox;
             break;
     }
 
