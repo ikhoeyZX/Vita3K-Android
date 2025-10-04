@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -138,7 +138,7 @@ struct State {
         return { "Automatic" };
     }
     virtual std::vector<std::string> get_vulkan_feature_list(int type) {
-        return { "vk::Format::eD24UnormS8Uint" };
+        return { "eD24UnormS8Uint" };
     }
     virtual bool support_custom_drivers() {
         return false;
