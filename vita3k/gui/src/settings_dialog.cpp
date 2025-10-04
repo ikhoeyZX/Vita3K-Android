@@ -978,7 +978,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             }
             ImGui::Spacing();
         }
-
+        ImGui::Spacing();
         const std::vector<std::string> vk_surface_list_str = emuenv.renderer->get_vulkan_feature_list(0);
 
         static std::vector<const char *> vk_surface_list;
@@ -993,7 +993,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
             ImGui::Spacing();
         }
-
+        ImGui::Spacing();
         
         const std::vector<std::string> stencil_list_str = emuenv.renderer->get_vulkan_feature_list(1);
 
