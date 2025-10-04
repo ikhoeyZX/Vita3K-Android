@@ -1429,7 +1429,7 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 			// std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm };
 			const auto present_modes = physical_device.getFormatProperties( format );
             
-			   for ( vk::PresentModeKHR format : present_modes ) {
+			   for ( vk::Format format : present_modes ) {
 				   result.push_back(vk::to_string(format));
 			
 			// for ( vk::Format format : candidates ) {
