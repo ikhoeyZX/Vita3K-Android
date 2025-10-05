@@ -821,14 +821,20 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     auto &config_vk_mapping = config.vk_mapping;
     uint8_t vk_idx = 1;
     if(config.gpu_idx == 0){
-	    if (config_vk_mapping == "mailbox"){
+	    if (config_vk_mapping == "FifoRelaxed"){
 	        vk_idx = 1;
-	    }else if (config_vk_mapping == "fifo-relaxed"){
+	    }else if (config_vk_mapping == "Fifo"){
 	        vk_idx = 2;
-	    }else if (config_vk_mapping == "fifo"){
+		}else if (config_vk_mapping == "Immediate"){
 	        vk_idx = 3;
+		}else if (config_vk_mapping == "SharedDemandRefresh"){
+	        vk_idx = 4;
+		}else if (config_vk_mapping == "eSharedContinuousRefresh"){
+	        vk_idx = 5;
+		}else if (config_vk_mapping == "eFifoLatestReadyEXT"){
+	        vk_idx = 6;
 	    }else {
-	        vk_idx = 0; // Immediate
+	        vk_idx = 0; // Mailbox
 	    }
     }
     if (!screen_renderer.setup(vk_idx))
