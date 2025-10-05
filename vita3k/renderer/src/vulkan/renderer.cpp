@@ -304,16 +304,18 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
-		if(config.deep_stencil == "eD32Sfloat")
+		if(config.deep_stencil == "D32Sfloat")
 		   deep_stencil_use = vk::Format::eD32Sfloat;
-		else if(config.deep_stencil == "eD32SfloatS8Uint")
+		else if(config.deep_stencil == "D32SfloatS8Uint")
 		   deep_stencil_use = vk::Format::eD32SfloatS8Uint;
-        else if(config.deep_stencil == "eD16UnormS8Uint")
+        else if(config.deep_stencil == "D16UnormS8Uint")
 		   deep_stencil_use = vk::Format::eD16UnormS8Uint;
-        else if(config.deep_stencil == "eD16Unorm")
+        else if(config.deep_stencil == "D16Unorm")
 		   deep_stencil_use = vk::Format::eD16Unorm;
-        else if(config.deep_stencil == "eS8Uint")
+        else if(config.deep_stencil == "S8Uint")
 		   deep_stencil_use = vk::Format::eS8Uint;
+		else if(config.deep_stencil == "X8D24UnormPack32")
+		   deep_stencil_use = vk::Format::eX8D24UnormPack32;
         else 
 		   deep_stencil_use = vk::Format::eD24UnormS8Uint;
 
