@@ -518,7 +518,7 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
     vk::AttachmentStoreOp store_op = force_store ? vk::AttachmentStoreOp::eStore : vk::AttachmentStoreOp::eDontCare;
     vk::AttachmentDescription ds_attachment{
     //    .format = vk::Format::eD24UnormS8Uint,
-        .format = deep_stencil_use,
+        .format = state.deep_stencil_use,
         .samples = vk::SampleCountFlagBits::e1,
         .loadOp = load_op,
         .storeOp = store_op,
