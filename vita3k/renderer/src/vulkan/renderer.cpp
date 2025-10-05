@@ -829,9 +829,9 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 	        vk_idx = 3;
 		}else if (config_vk_mapping == "SharedDemandRefresh"){
 	        vk_idx = 4;
-		}else if (config_vk_mapping == "eSharedContinuousRefresh"){
+		}else if (config_vk_mapping == "SharedContinuousRefresh"){
 	        vk_idx = 5;
-		}else if (config_vk_mapping == "eFifoLatestReadyEXT"){
+		}else if (config_vk_mapping == "FifoLatestReadyEXT"){
 	        vk_idx = 6;
 	    }else {
 	        vk_idx = 0; // Mailbox
