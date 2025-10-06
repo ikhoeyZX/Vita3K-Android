@@ -299,7 +299,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
             color_mask |= vk::ColorComponentFlagBits::eB;
         if (blend->colorMask & SCE_GXM_COLOR_MASK_A)
             color_mask |= vk::ColorComponentFlagBits::eA;
-        };
+        
         // default values, only blendEnable and colorWriteMask are useful
         fp_vk->blending = vk::PipelineColorBlendAttachmentState{
             .blendEnable = VK_FALSE,
@@ -320,6 +320,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
     */
             
             .colorWriteMask = color_mask
+        };
     }
 
     // compute blending hash, as it will be used for the pipeline hash
