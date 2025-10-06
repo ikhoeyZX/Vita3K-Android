@@ -268,7 +268,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
 
     // Translate blending.
     // programs using native color can't use traditional blending
-//    if (blend != nullptr && !program.is_native_color()) {
+    if (blend != nullptr && !program.is_native_color()) {
         vk::ColorComponentFlags color_mask{};
         if (blend->colorMask & SCE_GXM_COLOR_MASK_R)
             color_mask |= vk::ColorComponentFlagBits::eR;
@@ -289,7 +289,17 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
             .alphaBlendOp = translate_blend_func(blend->alphaFunc),
             .colorWriteMask = color_mask
         };
-/*    } else {
+    } else {
+        vk::ColorComponentFlags color_mask{};
+        if (blend->colorMask & SCE_GXM_COLOR_MASK_R)
+            color_mask |= vk::ColorComponentFlagBits::eR;
+        if (blend->colorMask & SCE_GXM_COLOR_MASK_G)
+            color_mask |= vk::ColorComponentFlagBits::eG;
+        if (blend->colorMask & SCE_GXM_COLOR_MASK_B)
+            color_mask |= vk::ColorComponentFlagBits::eB;
+        if (blend->colorMask & SCE_GXM_COLOR_MASK_A)
+            color_mask |= vk::ColorComponentFlagBits::eA;
+        };
         // default values, only blendEnable and colorWriteMask are useful
         fp_vk->blending = vk::PipelineColorBlendAttachmentState{
             .blendEnable = VK_FALSE,
@@ -303,13 +313,15 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
             .srcAlphaBlendFactor = vk::BlendFactor::eZero,
             .dstAlphaBlendFactor = vk::BlendFactor::eOne,
             .alphaBlendOp = vk::BlendOp::eAdd,
-            .colorWriteMask = vk::ColorComponentFlagBits::eR
+     /*       .colorWriteMask = vk::ColorComponentFlagBits::eR
                 | vk::ColorComponentFlagBits::eG
                 | vk::ColorComponentFlagBits::eB
                 | vk::ColorComponentFlagBits::eA
-        };
+    */
+            
+            .colorWriteMask = color_mask
     }
-*/
+
     // compute blending hash, as it will be used for the pipeline hash
     fp_vk->blending_hash = XXH_INLINE_XXH3_64bits(&fp_vk->blending, sizeof(vk::PipelineColorBlendAttachmentState));
     return true;
