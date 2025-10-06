@@ -288,8 +288,8 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
             .dstAlphaBlendFactor = translate_blend_factor(blend->alphaDst),
             .alphaBlendOp = translate_blend_func(blend->alphaFunc),
             .colorWriteMask = color_mask
-/*        };
-    } else {
+        };
+/*    } else {
         // default values, only blendEnable and colorWriteMask are useful
         fp_vk->blending = vk::PipelineColorBlendAttachmentState{
             .blendEnable = VK_FALSE,
