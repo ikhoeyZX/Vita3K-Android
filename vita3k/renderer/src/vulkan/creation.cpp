@@ -289,37 +289,34 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
             .alphaBlendOp = translate_blend_func(blend->alphaFunc),
             .colorWriteMask = color_mask
         };
-    } else {
-        vk::ColorComponentFlags color_mask{};
-        if (blend->colorMask & SCE_GXM_COLOR_MASK_R)
-            color_mask |= vk::ColorComponentFlagBits::eR;
-        if (blend->colorMask & SCE_GXM_COLOR_MASK_G)
-            color_mask |= vk::ColorComponentFlagBits::eG;
-        if (blend->colorMask & SCE_GXM_COLOR_MASK_B)
-            color_mask |= vk::ColorComponentFlagBits::eB;
-        if (blend->colorMask & SCE_GXM_COLOR_MASK_A)
-            color_mask |= vk::ColorComponentFlagBits::eA;
-        
-        // default values, only blendEnable and colorWriteMask are useful
-        fp_vk->blending = vk::PipelineColorBlendAttachmentState{
-            .blendEnable = VK_FALSE,
-            //.srcColorBlendFactor = vk::BlendFactor::eOne,
-            //.dstColorBlendFactor = vk::BlendFactor::eZero,
-            .srcColorBlendFactor = vk::BlendFactor::eZero,
-            .dstColorBlendFactor = vk::BlendFactor::eOne,
-            .colorBlendOp = vk::BlendOp::eAdd,
-       //     .srcAlphaBlendFactor = vk::BlendFactor::eOne,
-       //     .dstAlphaBlendFactor = vk::BlendFactor::eZero,
-            .srcAlphaBlendFactor = vk::BlendFactor::eZero,
-            .dstAlphaBlendFactor = vk::BlendFactor::eOne,
-            .alphaBlendOp = vk::BlendOp::eAdd,
-     /*       .colorWriteMask = vk::ColorComponentFlagBits::eR
+    } else if (blend != nullptr) { 
+            fp_vk->blending = vk::PipelineColorBlendAttachmentState{
+            .blendEnable = (blend->colorFunc != SCE_GXM_BLEND_FUNC_NONE) || (blend->alphaFunc != SCE_GXM_BLEND_FUNC_NONE),
+            .srcColorBlendFactor = translate_blend_factor(blend->colorSrc),
+            .dstColorBlendFactor = translate_blend_factor(blend->colorDst),
+            .colorBlendOp = translate_blend_func(blend->colorFunc),
+            .srcAlphaBlendFactor = translate_blend_factor(blend->alphaSrc),
+            .dstAlphaBlendFactor = translate_blend_factor(blend->alphaDst),
+            .alphaBlendOp = translate_blend_func(blend->alphaFunc),
+            .colorWriteMask = vk::ColorComponentFlagBits::eR
                 | vk::ColorComponentFlagBits::eG
                 | vk::ColorComponentFlagBits::eB
                 | vk::ColorComponentFlagBits::eA
-    */
-            
-            .colorWriteMask = color_mask
+        };
+    }else {
+        // default values, only blendEnable and colorWriteMask are useful
+        fp_vk->blending = vk::PipelineColorBlendAttachmentState{
+            .blendEnable = VK_FALSE,
+            .srcColorBlendFactor = vk::BlendFactor::eOne,
+            .dstColorBlendFactor = vk::BlendFactor::eZero,
+            .colorBlendOp = vk::BlendOp::eAdd,
+            .srcAlphaBlendFactor = vk::BlendFactor::eOne,
+            .dstAlphaBlendFactor = vk::BlendFactor::eZero,
+            .alphaBlendOp = vk::BlendOp::eAdd,
+            .colorWriteMask = vk::ColorComponentFlagBits::eR
+                | vk::ColorComponentFlagBits::eG
+                | vk::ColorComponentFlagBits::eB
+                | vk::ColorComponentFlagBits::eA
         };
     }
 
