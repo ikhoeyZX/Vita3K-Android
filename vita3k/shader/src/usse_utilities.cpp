@@ -179,6 +179,7 @@ static spv::Function *make_fx10_unpack_func(spv::Builder &b, const SpirvUtilFunc
     spv::Function *fx10_unpack_func = b.makeFunctionEntry(
         spv::NoPrecision, type_f32_v3, "unpack3xFX10", { type_f32 }, { "to_unpack" },
         decorations, &fx10_unpack_func_block);
+    fx10_unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
 
     spv::Id extracted = fx10_unpack_func->getParamId(0);
 
@@ -260,6 +261,7 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
     spv::Function *unpack_func = b.makeFunctionEntry(
         spv::NoPrecision, output_type, func_name.c_str(), { type_f32 }, { "to_unpack" },
         decorations, &unpack_func_block);
+    unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
     spv::Id extracted = unpack_func->getParamId(0);
 
     const spv::Id result_type = is_signed ? type_i32 : type_ui32;
@@ -337,6 +339,7 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
         spv::NoPrecision, type_f32, func_name.c_str(), { input_type }, { "to_pack" },
         decorations, &pack_func_block);
 
+    pack_func->addParamPrecision(0, spv::DecorationRelaxedPrecision);
     spv::Id extracted = pack_func->getParamId(0);
     const int comp_bits = 32 / comp_count;
 
@@ -369,6 +372,7 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const SpirvUtilFunct
     spv::Function *f16_unpack_func = b.makeFunctionEntry(
         spv::NoPrecision, type_f32_v2, "unpack2xF16", { type_f32 }, { "to_unpack" },
         decorations, &f16_unpack_func_block);
+    f16_unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
 
     spv::Id extracted = f16_unpack_func->getParamId(0);
 
@@ -395,6 +399,7 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const SpirvUtilFunctio
         spv::NoPrecision, type_f32, "pack2xF16", { type_f32_v2 }, { "to_pack" },
         decorations, &f16_pack_func_block);
 
+    f16_pack_func->addParamPrecision(0, spv::DecorationRelaxedPrecision);
     spv::Id extracted = f16_pack_func->getParamId(0);
 
     // use packHalf2x16
