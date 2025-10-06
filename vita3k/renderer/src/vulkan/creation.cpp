@@ -268,7 +268,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
 
     // Translate blending.
     // programs using native color can't use traditional blending
-    if (blend != nullptr && !program.is_native_color()) {
+//    if (blend != nullptr && !program.is_native_color()) {
         vk::ColorComponentFlags color_mask{};
         if (blend->colorMask & SCE_GXM_COLOR_MASK_R)
             color_mask |= vk::ColorComponentFlagBits::eR;
@@ -288,7 +288,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
             .dstAlphaBlendFactor = translate_blend_factor(blend->alphaDst),
             .alphaBlendOp = translate_blend_func(blend->alphaFunc),
             .colorWriteMask = color_mask
-        };
+/*        };
     } else {
         // default values, only blendEnable and colorWriteMask are useful
         fp_vk->blending = vk::PipelineColorBlendAttachmentState{
@@ -309,7 +309,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
                 | vk::ColorComponentFlagBits::eA
         };
     }
-
+*/
     // compute blending hash, as it will be used for the pipeline hash
     fp_vk->blending_hash = XXH_INLINE_XXH3_64bits(&fp_vk->blending, sizeof(vk::PipelineColorBlendAttachmentState));
     return true;
