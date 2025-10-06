@@ -292,12 +292,17 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
     } else {
         // default values, only blendEnable and colorWriteMask are useful
         fp_vk->blending = vk::PipelineColorBlendAttachmentState{
-            .blendEnable = VK_FALSE,
-            .srcColorBlendFactor = vk::BlendFactor::eOne,
-            .dstColorBlendFactor = vk::BlendFactor::eZero,
+            // .blendEnable = VK_FALSE,
+            //.srcColorBlendFactor = vk::BlendFactor::eOne,
+            //.dstColorBlendFactor = vk::BlendFactor::eZero,
+            .blendEnable = VK_TRUE,
+            .srcColorBlendFactor = vk::BlendFactor::eZero,
+            .dstColorBlendFactor = vk::BlendFactor::eOne,
             .colorBlendOp = vk::BlendOp::eAdd,
-            .srcAlphaBlendFactor = vk::BlendFactor::eOne,
-            .dstAlphaBlendFactor = vk::BlendFactor::eZero,
+       //     .srcAlphaBlendFactor = vk::BlendFactor::eOne,
+       //     .dstAlphaBlendFactor = vk::BlendFactor::eZero,
+            .srcAlphaBlendFactor = vk::BlendFactor::eZero,
+            .dstAlphaBlendFactor = vk::BlendFactor::eOne,
             .alphaBlendOp = vk::BlendOp::eAdd,
             .colorWriteMask = vk::ColorComponentFlagBits::eR
                 | vk::ColorComponentFlagBits::eG
