@@ -16,6 +16,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <boost/unordered_map.hpp>
+
 #include <shader/spirv_recompiler.h>
 #include <shader/uniform_block.h>
 #include <shader/usse_disasm.h>
@@ -121,7 +123,7 @@ struct VertexProgramOutputProperties {
     std::uint32_t component_count{};
     std::uint32_t location{};
 };
-using VertexProgramOutputPropertiesMap = std::map<SceGxmVertexProgramOutputs, VertexProgramOutputProperties>;
+using VertexProgramOutputPropertiesMap = boost::unordered_map<SceGxmVertexProgramOutputs, VertexProgramOutputProperties>;
 
 // ******************************
 // * Functions (implementation) *
@@ -170,8 +172,7 @@ static spv::Id get_type_basic(spv::Builder &b, const Input &input) {
 }
 
 static spv::Id get_type_fallback(spv::Builder &b) {
-    return b.makeIntType(32);
-    // return b.makeFloatType(32);
+     return b.makeFloatType(32);
 }
 
 static spv::Id get_type_scalar(spv::Builder &b, const Input &input) {
@@ -366,7 +367,7 @@ static spv::Id create_builtin_sampler_for_raw(spv::Builder &b, const FeatureStat
 
 static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translation_state, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers,
     const SceGxmProgram &program) {
-    static const std::unordered_map<std::uint32_t, std::pair<std::string, std::uint32_t>> name_map = {
+    static const boost::unordered_map<std::uint32_t, std::pair<std::string, std::uint32_t>> name_map = {
         { 0xD000, { "v_Position", 0 } },
         { 0xC000, { "v_Fog", 3 } },
         { 0xA000, { "v_Color0", 1 } },
@@ -466,8 +467,10 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
                 pa_iter_var = b.createBinOp(spv::OpFDiv, v4, pa_iter_var, res_multiplier);
             } else {
+                spv::Decoration precision = get_data_type_size(pa_dtype) < 4 ? spv::DecorationRelaxedPrecision : spv::NoPrecision;
                 pa_iter_var = b.createVariable(spv::NoPrecision, spv::StorageClassInput, pa_iter_type, pa_name.c_str());
                 b.addDecoration(pa_iter_var, spv::DecorationLocation, pa_loc);
+
                 translation_state.interfaces.push_back(pa_iter_var);
             }
 
@@ -642,6 +645,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 tex_query_info.sampler = samplers[sampler_resource_index].id;
             }
 
+             if (store_type == DataType::F16)
+                b.setPrecision(tex_query_info.sampler, spv::DecorationRelaxedPrecision);
+
             tex_query_infos.push_back(tex_query_info);
 
             pa_offset += size;
@@ -703,6 +709,16 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         if (target_to_store.type == DataType::INT32 || target_to_store.type == DataType::UINT32)
             target_to_store.type = DataType::F32;
 
+        if (gxm::get_base_format(translation_state.hints->color_format) == SCE_GXM_COLOR_BASE_FORMAT_F32F32 && vertex_varyings_ptr->output_comp_count > 2) {
+            if (target_to_store.type == DataType::F16)
+                target_to_store.type = DataType::F32;
+        }
+
+        spv::Decoration precision = get_data_type_size(target_to_store.type) < 4 ? spv::DecorationRelaxedPrecision : spv::NoPrecision;
+        if (target_to_store.type == DataType::INT16 || target_to_store.type == DataType::UINT16)
+            // a F16 cannot hold a INT16 or UINT16
+            precision = spv::NoPrecision;
+
         auto store_source_result = [&](const bool direct_store = false) {
             if (source != spv::NoResult) {
                 if (!direct_store && !is_float_data_type(target_to_store.type)) {
@@ -731,12 +747,16 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             coord_0 = b.makeCompositeConstant(ivec2, { coord_0, coord_0 });
             source = b.createOp(spv::OpImageRead, v4, { b.createLoad(last_frag_data, spv::NoPrecision), coord_0 });
 
+            b.setPrecision(source, precision);
+
             translation_state.last_frag_data_id = last_frag_data;
         } else if (features.support_shader_interlock || features.support_texture_barrier) {
             // Create a global sampler, which is our color attachment
             spv::Id color_attachment = create_builtin_sampler(b, features, translation_state, "f_colorAttachment");
             b.addDecoration(color_attachment, spv::DecorationCoherent);
             spv::Id color_attachment_raw = spv::NoResult;
+            b.setPrecision(color_attachment, precision);
+
 
             if (translation_state.is_vulkan) {
                 b.addDecoration(color_attachment, spv::DecorationBinding, 0);
@@ -779,6 +799,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             } else {
                 source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
 
+                b.setPrecision(source, precision);
+
                 if (translation_state.is_vulkan) {
                     const spv::Id old_source = source;
                     // if (is_srgb)
@@ -790,8 +812,10 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                     spv::Id rgb = b.createOp(spv::OpVectorShuffle, v3, { { true, source }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 } });
                     const spv::Id gamma = utils::make_uniform_vector_from_type(b, v3, 2.2f);
                     rgb = b.createBuiltinCall(v3, utils.std_builtins, GLSLstd450Pow, { rgb, gamma });
+                    b.setPrecision(rgb, precision);
                     source = b.createOp(spv::OpVectorShuffle, v4, { { true, rgb }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 }, { false, 6 } });
 
+                    b.setPrecision(source, precision);
                     store_source_result();
 
                     // else (no shader gamma correction, nothing to do)
@@ -1011,6 +1035,10 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         ADD_VERT_UNIFORM_MEMBER(z_scale);
 
 #undef ADD_VERT_UNIFORM_MEMBER
+
+        // the resolution multiplier does not require a high precision
+        b.addMemberDecoration(render_buf_type, FRAG_UNIFORM_res_multiplier, spv::DecorationRelaxedPrecision);
+
 #define ADD_EXT_UNIFORM_MEMBER(name)                                                                                                                                                \
     spv_params.name##_id = curr_field_id;                                                                                                                                           \
     b.addMemberDecoration(render_buf_type, curr_field_id, spv::DecorationOffset, RenderVertUniformBlockExtended::get_##name##_offset(uniform_buffer_count, uniform_texture_count)); \
@@ -1114,6 +1142,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     const auto add_var_to_reg = [&](const Input &input, const std::string &name, std::uint16_t semantic, bool pa, bool regformat, std::int32_t location) {
         const int type_size = get_data_type_size(input.type);
+
+
         spv::Id var;
         if (regformat) {
             DataType unsigned_matching_type;
@@ -1413,6 +1443,19 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
             color_val_operand.type = DataType::F32;
     }
 
+    // if the output component count is greater than the surface component count,
+    // it means we must pack multiple components (with lower precision) into one of the surface component
+    // this is used in assassin creed 3
+    if (gxm::get_base_format(translate_state.hints->color_format) == SCE_GXM_COLOR_BASE_FORMAT_F32F32 && vertex_varyings_ptr->output_comp_count > 2) {
+        if (color_val_operand.type == DataType::F16)
+            color_val_operand.type = DataType::F32;
+    }
+
+    spv::Decoration precision = get_data_type_size(color_val_operand.type) < 4 ? spv::DecorationRelaxedPrecision : spv::NoPrecision;
+    if (color_val_operand.type == DataType::INT16 || color_val_operand.type == DataType::UINT16)
+        // a F16 cannot hold a INT16 or UINT16
+        precision = spv::NoPrecision;
+
     int reg_off = 0;
     if (!program.is_native_color() && vertex_varyings_ptr->output_param_type == 1) {
         reg_off = vertex_varyings_ptr->fragment_output_start;
@@ -1466,7 +1509,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
             b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_raw_id, spv::NoPrecision), translated_id, color });
         }
     } else {
-        spv::Id out = b.createVariable(spv::NoPrecision, spv::StorageClassOutput, b.makeVectorType(b.makeFloatType(32), 4), "out_color");
+        spv::Id out = b.createVariable(precision, spv::StorageClassOutput, b.makeVectorType(b.makeFloatType(32), 4), "out_color");
         translate_state.interfaces.push_back(out);
         b.addDecoration(out, spv::DecorationLocation, 0);
         b.createStore(color, out);
