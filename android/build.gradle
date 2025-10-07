@@ -105,7 +105,9 @@ dependencies {
 	implementation "androidx.core:core:1.17.0"
 	implementation 'androidx.core:core-google-shortcuts:1.2.0-alpha01'
 	implementation 'androidx.databinding:viewbinding:8.4.1'
-	implementation 'com.google.android.material:material:1.14.0-alpha05'
+	implementation 'androidx.databinding:databinding-adapters:8.4.1'
+    implementation 'androidx.databinding:databinding-runtime:8.4.1'
+    implementation 'com.google.android.material:material:1.14.0-alpha05'
 	implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
 	implementation 'com.getkeepsafe.relinker:relinker:1.4.5'
 	implementation 'com.jakewharton:process-phoenix:3.0.0'
