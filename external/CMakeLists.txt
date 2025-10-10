@@ -257,7 +257,7 @@ option(SPIRV_CROSS_ENABLE_UTIL "Enable util module support." OFF)
 option(SPIRV_CROSS_SKIP_INSTALL "Skips installation targets." ON)
 option(SPIRV_CROSS_NAMESPACE_OVERRIDE "spv_private" "Override the namespace used in the C++ API.")
 option(SPIRV_CROSS_SPV_HEADER_NAMESPACE_OVERRIDE "spv_private" "Override the namespace used by spirv.hpp (to workaround conflicts).")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSPIRV_CROSS_SPV_HEADER_NAMESPACE_OVERRIDE=spv_private")
+set(SPIRV_CROSS_SPV_HEADER_NAMESPACE_OVERRIDE "spv")
 add_subdirectory(SPIRV-Cross)
 
 add_library(dlmalloc STATIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc/dlmalloc.cc")
