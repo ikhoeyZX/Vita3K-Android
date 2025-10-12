@@ -216,30 +216,30 @@ spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, in
     bool has_4_comp = std::popcount(load_mask) == 4;
 
     static const spv::Op tb_comp_ops[3][2][4] = {
-        { { spv::OpFOrdNotEqual,
-              spv::OpFOrdLessThan,
-              spv::OpFOrdGreaterThan,
-              spv::OpAll },
-            { spv::OpFOrdEqual,
-                spv::OpFOrdLessThanEqual,
-                spv::OpFOrdGreaterThanEqual,
-                spv::OpAll } },
-        { { spv::OpINotEqual,
-              spv::OpSLessThan,
-              spv::OpSGreaterThan,
-              spv::OpAll },
-            { spv::OpIEqual,
-                spv::OpSLessThanEqual,
-                spv::OpSGreaterThanEqual,
-                spv::OpAll } },
-        { { spv::OpINotEqual,
-              spv::OpULessThan,
-              spv::OpUGreaterThan,
-              spv::OpAll },
-            { spv::OpIEqual,
-                spv::OpULessThanEqual,
-                spv::OpUGreaterThanEqual,
-                spv::OpAll } },
+        { { spv::Op::OpFOrdNotEqual,
+              spv::Op::OpFOrdLessThan,
+              spv::Op::OpFOrdGreaterThan,
+              spv::Op::OpAll },
+            { spv::Op::OpFOrdEqual,
+                spv::Op::OpFOrdLessThanEqual,
+                spv::Op::OpFOrdGreaterThanEqual,
+                spv::Op::OpAll } },
+        { { spv::Op::OpINotEqual,
+              spv::Op::OpSLessThan,
+              spv::Op::OpSGreaterThan,
+              spv::Op::OpAll },
+            { spv::Op::OpIEqual,
+                spv::Op::OpSLessThanEqual,
+                spv::Op::OpSGreaterThanEqual,
+                spv::Op::OpAll } },
+        { { spv::Op::OpINotEqual,
+              spv::Op::OpULessThan,
+              spv::Op::OpUGreaterThan,
+              spv::Op::OpAll },
+            { spv::Op::OpIEqual,
+                spv::Op::OpULessThanEqual,
+                spv::Op::OpUGreaterThanEqual,
+                spv::Op::OpAll } },
     };
 
     // Load our compares
@@ -279,7 +279,7 @@ spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, in
 
     const char *used_comp_str = tb_comp_str[compare_include_equal][sign_test];
 
-    m_b.setLine(m_recompiler.cur_pc);
+    m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
 
     if (is_sub_opcode(inst.opcode)) {
         if (mask) {
@@ -526,7 +526,7 @@ bool USSETranslatorVisitor::vtstmsk(
     }
     }
 
-    pred_result = m_b.createOp(spv::OpSelect, output_type, { pred_result, ones, zeros });
+    pred_result = m_b.createOp(spv::Op::OpSelect, output_type, { pred_result, ones, zeros });
 
     store(inst.opr.dest, pred_result);
 
