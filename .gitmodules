@@ -43,7 +43,7 @@
 	url = https://github.com/gabime/spdlog
 [submodule "external/SPIRV-Cross"]
 	path = external/SPIRV-Cross
-	url = https://github.com/KhronosGroup/SPIRV-Cross.git
+	url = https://github.com/ikhoeyZX/SPIRV-Cross.git
 [submodule "external/stb"]
 	path = external/stb
 	url = https://github.com/nothings/stb
