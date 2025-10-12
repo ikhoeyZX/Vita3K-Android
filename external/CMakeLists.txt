@@ -259,7 +259,7 @@ option(SPIRV_CROSS_SKIP_INSTALL "Skips installation targets." ON)
 # option(SPIRV_CROSS_SPV_HEADER_NAMESPACE_OVERRIDE "" "Override the namespace used by spirv.hpp (to workaround conflicts).")
 # set(SPIRV_CROSS_NAMESPACE_OVERRIDE "spvcross")
 # set(SPIRV_CROSS_SPV_HEADER_NAMESPACE_OVERRIDE "spvs")
-option(SPIRV_CROSS_SHARED "set as shared libs" OFF)
+option(SPIRV_CROSS_SHARED "set as shared libs" ON)
 option(SPIRV_CROSS_STATIC "set as static lib" OFF)
 add_subdirectory(SPIRV-Cross)
 
