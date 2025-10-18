@@ -89,7 +89,6 @@
 [submodule "external/ffmpeg-core"]
 	path = external/ffmpeg
 	url = https://github.com/ikhoeyZX/ffmpeg-core.git
-        branch = android
 [submodule "external/dynarmic"]
 	path = external/dynarmic
 	url = https://github.com/ikhoeyZX/dynarmic.git
