@@ -371,14 +371,14 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         };
 
         unsigned int instance_req_ext_count;
-        auto instance_extensions_str = SDL_Vulkan_GetInstanceExtensions(&instance_req_ext_count);
+        if (!SDL_Vulkan_GetInstanceExtensions(window, &instance_req_ext_count, nullptr)) {
+            LOG_ERROR("Could not get required extensions");
+            return false;
+        }
 
         std::vector<const char *> instance_extensions;
-        instance_extensions.reserve(instance_req_ext_count + 6);
-
-        for (size_t i = 0; i < instance_req_ext_count; i++) {
-            instance_extensions.push_back(instance_extensions_str[i]);
-        }
+        instance_extensions.resize(instance_req_ext_count);
+        SDL_Vulkan_GetInstanceExtensions(window, &instance_req_ext_count, instance_extensions.data());
 
         const std::set<std::string> optional_instance_extensions = {
             vk::KHRGetPhysicalDeviceProperties2ExtensionName, //Add comment More actions
