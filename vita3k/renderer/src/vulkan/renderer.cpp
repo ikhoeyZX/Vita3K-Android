@@ -902,7 +902,7 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
     if (mapping_method == MappingMethod::NativeBuffer) {
         // dynamically load the symbols
         void *libandroid = dlopen("libandroid.so", RTLD_LAZY);
-#ifdef (__arm__)
+#ifdef __arm__
         _AHardwareBuffer_getNativeHandle = reinterpret_cast<decltype(_AHardwareBuffer_getNativeHandle)>(dlsym(libandroid, "AHardwareBuffer_getNativeHandle"));
         _AHardwareBuffer_allocate = reinterpret_cast<decltype(_AHardwareBuffer_allocate)>(dlsym(libandroid, "AHardwareBuffer_allocate"));
         _AHardwareBuffer_lock = reinterpret_cast<decltype(_AHardwareBuffer_lock)>(dlsym(libandroid, "AHardwareBuffer_lock"));
