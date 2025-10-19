@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -67,7 +67,9 @@ EXPORT(int, scePowerGetBatteryChargingStatus) {
 
 EXPORT(int, scePowerGetBatteryCycleCount) {
     TRACY_FUNC(scePowerGetBatteryCycleCount);
-    return UNIMPLEMENTED();
+    LOG_TRACE_ONCE("scePowerGetBatteryCycleCount always 0");
+    return 0;
+    // return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBatteryElec) {
@@ -102,7 +104,9 @@ EXPORT(int, scePowerGetBatteryLifeTime) {
 
 EXPORT(int, scePowerGetBatteryRemainCapacity) {
     TRACY_FUNC(scePowerGetBatteryRemainCapacity);
-    return UNIMPLEMENTED();
+    LOG_TRACE_ONCE("scePowerGetBatteryRemainCapacity always 2000mAh");
+    return 2000;
+    //return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBatteryRemainLevel) {
@@ -133,27 +137,36 @@ EXPORT(int, scePowerGetBatterySOH) {
 
 EXPORT(int, scePowerGetBatteryTemp) {
     TRACY_FUNC(scePowerGetBatteryTemp);
-    return UNIMPLEMENTED();
+    LOG_TRACE_ONCE("scePowerGetBatteryTemp set to 25 celcius");
+    return 25;
+    // return UNIMPLEMENTED();
 }
 
-EXPORT(int, scePowerGetBatteryVolt) {
+EXPORT(float, scePowerGetBatteryVolt) {
     TRACY_FUNC(scePowerGetBatteryVolt);
-    return UNIMPLEMENTED();
+    LOG_TRACE_ONCE("scePowerGetBatteryVolt ALWAYS 4.2v");
+    return 4.2f; // 100%
+   // return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBusClockFrequency) {
     TRACY_FUNC(scePowerGetBusClockFrequency);
+    LOG_TRACE_ONCE("scePowerGetBusClockFrequency set to 222");
     return 222;
 }
 
 EXPORT(int, scePowerGetCaseTemp) {
     TRACY_FUNC(scePowerGetCaseTemp);
-    return UNIMPLEMENTED();
+    LOG_TRACE_ONCE("scePowerGetCaseTemp set 25 celcius");
+    return 25;
+    // return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetGpuClockFrequency) {
     TRACY_FUNC(scePowerGetGpuClockFrequency);
-    return 222;
+   // return 222;
+    LOG_TRACE_ONCE("scePowerGetGpuClockFrequency set to 333Mhz");
+    return 333; // always overclock mode
 }
 
 EXPORT(int, scePowerGetGpuXbarClockFrequency) {
@@ -249,6 +262,7 @@ EXPORT(int, scePowerSetArmClockFrequency, int freq) {
     if (freq < 0) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
+    LOG_TRACE_ONCE("scePowerSetArmClockFrequency = {}", freq);
     return 0;
 }
 
@@ -257,6 +271,7 @@ EXPORT(int, scePowerSetBusClockFrequency, int freq) {
     if (freq < 0) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
+    LOG_TRACE_ONCE("scePowerSetBusClockFrequency = {}", freq);
     return 0;
 }
 
@@ -273,6 +288,7 @@ EXPORT(int, scePowerSetGpuClockFrequency, int freq) {
     if (freq < 0) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
+    LOG_TRACE_ONCE("scePowerSetGpuClockFrequency = {}", freq);
     return 0;
 }
 
@@ -281,6 +297,7 @@ EXPORT(int, scePowerSetGpuXbarClockFrequency, int freq) {
     if (freq < 0) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
+    LOG_TRACE_ONCE("scePowerSetGpuXbarClockFrequency = {}", freq);
     return 0;
 }
 

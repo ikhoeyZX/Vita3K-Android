@@ -42,9 +42,14 @@
 
 #ifdef ANDROID
 #include <emuenv/state.h>
-#include <SDL.h>
+#include <SDL_messagebox.h>
+#include <SDL_system.h>
+
+#ifdef __aarch64__
 #include <adrenotools/bcenabler.h>
 #include <adrenotools/driver.h>
+#endif
+
 #include <boost/range/iterator_range.hpp>
 #include <sys/mman.h>
 #include <util/float_to_half.h>
@@ -140,7 +145,7 @@ const static std::vector<const char *> required_device_extensions = {
 
 namespace renderer::vulkan {
 
-#ifdef ANDROID
+#if defined(ANDROID) && !defined(__arm__)
 static bool detect_patch_bcn(bool *support_dxt) {
     // some Adreno GPUs support BCn textures even though they say they don't
     // and we might need to patch a function for it to work
@@ -321,7 +326,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
 		LOG_INFO("deep_stencil_use = {}", vk::to_string(deep_stencil_use));
 
-#ifdef ANDROID
+#if defined(ANDROID) && !defined(__arm__)
         if(adreno.is_adreno){
     	    const char *temp_dir = nullptr;
         	if (SDL_GetAndroidSDKVersion() < 29) { // ANDROID 9
@@ -366,14 +371,14 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         };
 
         unsigned int instance_req_ext_count;
-        if (!SDL_Vulkan_GetInstanceExtensions(window, &instance_req_ext_count, nullptr)) {
-            LOG_ERROR("Could not get required extensions");
-            return false;
-        }
+        auto instance_extensions_str = SDL_Vulkan_GetInstanceExtensions(&instance_req_ext_count);
 
         std::vector<const char *> instance_extensions;
-        instance_extensions.resize(instance_req_ext_count);
-        SDL_Vulkan_GetInstanceExtensions(window, &instance_req_ext_count, instance_extensions.data());
+        instance_extensions.reserve(instance_req_ext_count + 6);
+
+        for (size_t i = 0; i < instance_req_ext_count; i++) {
+            instance_extensions.push_back(instance_extensions_str[i]);
+        }
 
         const std::set<std::string> optional_instance_extensions = {
             vk::KHRGetPhysicalDeviceProperties2ExtensionName, //Add comment More actions
@@ -588,14 +593,16 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             }
         }
 
-        bool support_memory_mapping = true;
+        bool support_memory_mapping = false;
         if (support_buffer_device_address) {
+	    support_memory_mapping = true;
             auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceBufferDeviceAddressFeatures>();
             support_buffer_device_address &= static_cast<bool>(features.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress);
         }
         support_memory_mapping &= support_buffer_device_address;
 
         if (support_standard_layout) {
+	    support_memory_mapping = true;
             auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
             support_standard_layout &= static_cast<bool>(features.get<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>().uniformBufferStandardLayout);
         }
@@ -895,11 +902,19 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
     if (mapping_method == MappingMethod::NativeBuffer) {
         // dynamically load the symbols
         void *libandroid = dlopen("libandroid.so", RTLD_LAZY);
+#ifdef (__arm__)
         _AHardwareBuffer_getNativeHandle = reinterpret_cast<decltype(_AHardwareBuffer_getNativeHandle)>(dlsym(libandroid, "AHardwareBuffer_getNativeHandle"));
         _AHardwareBuffer_allocate = reinterpret_cast<decltype(_AHardwareBuffer_allocate)>(dlsym(libandroid, "AHardwareBuffer_allocate"));
         _AHardwareBuffer_lock = reinterpret_cast<decltype(_AHardwareBuffer_lock)>(dlsym(libandroid, "AHardwareBuffer_lock"));
         _AHardwareBuffer_unlock = reinterpret_cast<decltype(_AHardwareBuffer_unlock)>(dlsym(libandroid, "AHardwareBuffer_unlock"));
         _AHardwareBuffer_release = reinterpret_cast<decltype(_AHardwareBuffer_release)>(dlsym(libandroid, "AHardwareBuffer_release"));
+#else
+        _AHardwareBuffer_getNativeHandle = std::bit_cast<decltype(_AHardwareBuffer_getNativeHandle)>(dlsym(libandroid, "AHardwareBuffer_getNativeHandle"));
+        _AHardwareBuffer_allocate = std::bit_cast<decltype(_AHardwareBuffer_allocate)>(dlsym(libandroid, "AHardwareBuffer_allocate"));
+        _AHardwareBuffer_lock = std::bit_cast<decltype(_AHardwareBuffer_lock)>(dlsym(libandroid, "AHardwareBuffer_lock"));
+        _AHardwareBuffer_unlock = std::bit_cast<decltype(_AHardwareBuffer_unlock)>(dlsym(libandroid, "AHardwareBuffer_unlock"));
+        _AHardwareBuffer_release = std::bit_cast<decltype(_AHardwareBuffer_release)>(dlsym(libandroid, "AHardwareBuffer_release"));
+#endif
     }
 #endif
 
