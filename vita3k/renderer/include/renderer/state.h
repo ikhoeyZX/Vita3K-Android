@@ -138,7 +138,7 @@ struct State {
         return { "Automatic" };
     }
     virtual std::vector<std::string> get_vulkan_feature_list(int type) {
-        return { "eD24UnormS8Uint" };
+        return { "D32Sfloat" };
     }
     virtual bool support_custom_drivers() {
         return false;

@@ -24,7 +24,6 @@
 #include "vkutil/vkutil.h"
 
 #ifdef __ANDROID__
-#include <SDL.h>
 #include <jni.h>
 
 static bool has_surface = false;
@@ -131,6 +130,7 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
     }
 
     LOG_INFO("Present mode: {}", vk::to_string(present_mode));
+    state.mapping_id = vk_idx;
 
     create_render_pass();
 
@@ -434,6 +434,7 @@ void ScreenRenderer::swap_window() {
     };
         
     auto result = state.general_queue.presentKHR(&present_info);
+    if(!state.mapping_id == 4 || !state.mapping_id == 5)
     if (result == vk::Result::eSuboptimalKHR) {
         int width, height;
         SDL_Vulkan_GetDrawableSize(window, &width, &height);
@@ -563,8 +564,7 @@ void ScreenRenderer::create_render_pass() {
     // renderpass after post processing filter
     color_attachment
         .setLoadOp(vk::AttachmentLoadOp::eLoad)
-   //     .setInitialLayout(vk::ImageLayout::eGeneral);
-        .setInitialLayout(vk::ImageLayout::ePresentSrcKHR);
+        .setInitialLayout(vk::ImageLayout::eGeneral);
     post_filter_render_pass = state.device.createRenderPass(pass_info);
 
 #ifdef ANDROID
