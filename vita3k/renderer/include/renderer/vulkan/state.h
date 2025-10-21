@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <renderer/state.h>uint8_t
+#include <renderer/state.h>
 #include <renderer/types.h>
 
 #include <renderer/vulkan/pipeline_cache.h>
@@ -64,7 +64,6 @@ struct VKState : public renderer::State {
     std::vector<vk::QueueFamilyProperties> physical_device_queue_families;
 
     vk::Format deep_stencil_use;
-    uint8_t mapping_id;
 
     vma::Allocator allocator;
 
