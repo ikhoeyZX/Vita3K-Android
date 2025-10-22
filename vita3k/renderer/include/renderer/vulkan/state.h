@@ -58,9 +58,9 @@ struct VKState : public renderer::State {
 
     // Used for memory allocation and general query later.
     vk::PhysicalDevice physical_device;
-    vk::PhysicalDeviceProperties physical_device_properties;
-    vk::PhysicalDeviceFeatures physical_device_features;
-    vk::PhysicalDeviceMemoryProperties physical_device_memory;
+    vk::PhysicalDeviceProperties2 physical_device_properties;
+    vk::PhysicalDeviceFeatures2 physical_device_features;
+    vk::PhysicalDeviceMemoryProperties2 physical_device_memory;
     std::vector<vk::QueueFamilyProperties> physical_device_queue_families;
 
     vk::Format deep_stencil_use;
