@@ -637,7 +637,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 #endif
         }
 
-        if (physical_device_properties.features.vendorID == 4318) {
+        if (physical_device_properties.properties.vendorID == 4318) {
             // Nvidia does not allow us to set the device priority higher than normal
             // no need to remove the priority extension
             support_global_priority = false;
