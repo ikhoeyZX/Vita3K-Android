@@ -246,7 +246,7 @@ void VKTextureCache::prepare_staging_buffer(bool is_configure) {
 
 bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id) {
     // set a limit to the number of samplers which can be allocated at the same time
-    const size_t max_sampler_used = std::min(state.physical_device_properties.limits.maxSamplerAllocationCount / 2, 512U);
+    const size_t max_sampler_used = std::min(state.physical_device_properties.properties.limits.maxSamplerAllocationCount / 2, 512U);
 
     TextureCache::init(hashless_texture_cache, texture_folder, game_id, max_sampler_used);
     backend = Backend::Vulkan;
