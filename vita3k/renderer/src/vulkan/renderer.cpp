@@ -637,7 +637,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 #endif
         }
 
-        if (physical_device_properties.vendorID == 4318) {
+        if (physical_device_properties.features.vendorID == 4318) {
             // Nvidia does not allow us to set the device priority higher than normal
             // no need to remove the priority extension
             support_global_priority = false;
@@ -653,7 +653,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             }
         }
 
-        support_fsr &= static_cast<bool>(physical_device_features.shaderInt16);
+        support_fsr &= static_cast<bool>(physical_device_features.features.shaderInt16);
         if (support_fsr) {
             // double check for FP16 support
             auto props = physical_device.getFeatures2KHR<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceShaderFloat16Int8Features>();
@@ -667,7 +667,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             support_shader_interlock = false;
         }
 
-        support_shader_interlock &= static_cast<bool>(physical_device_features.fragmentStoresAndAtomics);
+        support_shader_interlock &= static_cast<bool>(physical_device_features.features.fragmentStoresAndAtomics);
         if (support_shader_interlock) {
             auto props = physical_device.getFeatures2KHR<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>();
             support_shader_interlock = static_cast<bool>(props.get<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>().fragmentShaderSampleInterlock);
@@ -1083,7 +1083,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             int mapped_memory_type = std::countr_zero(hardware_types);
             hardware_types -= (1 << mapped_memory_type);
 
-            if ((physical_device_memory.memoryTypes[mapped_memory_type].propertyFlags & flags) == flags)
+            if ((physical_device_memory.memoryProperties.memoryTypes[mapped_memory_type].propertyFlags & flags) == flags)
                 return mapped_memory_type;
         }
         return -1;
@@ -1257,7 +1257,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                 mapped_memory_type = std::countr_zero(host_mem_types);
                 host_mem_types -= (1 << mapped_memory_type);
 
-                if ((physical_device_memory.memoryTypes[mapped_memory_type].propertyFlags & flags) == flags)
+                if ((physical_device_memory.memoryProperties.memoryTypes[mapped_memory_type].propertyFlags & flags) == flags)
                     return;
             }
 
@@ -1402,7 +1402,7 @@ uint64_t VKState::get_matching_device_address(const Address address) {
 }
 
 int VKState::get_max_anisotropic_filtering() {
-    return static_cast<int>(physical_device_properties.limits.maxSamplerAnisotropy);
+    return static_cast<int>(physical_device_properties.features.limits.maxSamplerAnisotropy);
 }
 
 void VKState::set_anisotropic_filtering(int anisotropic_filtering) {
@@ -1416,7 +1416,7 @@ void VKState::set_async_compilation(bool enable) {
 #ifdef ANDROID
 std::vector<std::string> VKState::get_gpu_list() {
     if (!support_custom_drivers())
-        return { physical_device_properties.deviceName.data() };
+        return { physical_device_properties.properties.deviceName.data() };
 
     // get the stock name
     std::vector<std::string> gpu_list = { "Default" };
@@ -1488,11 +1488,11 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 
 
 uint32_t VKState::get_gpu_version() {
-    return physical_device_properties.driverVersion;
+    return physical_device_properties.properties.driverVersion;
 }
 
 std::string_view VKState::get_gpu_name() {
-    return physical_device_properties.deviceName.data();
+    return physical_device_properties.properties.deviceName.data();
 }
 
 void VKState::precompile_shader(const ShadersHash &hash) {
@@ -1518,7 +1518,7 @@ void VKState::preclose_action() {
 
 bool VKState::support_custom_drivers() {
     // vendor ID 0x5143 is Qualcomm, being stock or turnip
-    return physical_device_properties.vendorID == 0x5143;
+    return physical_device_properties.properties.vendorID == 0x5143;
 }
 
 void VKState::set_turbo_mode(bool set) {
