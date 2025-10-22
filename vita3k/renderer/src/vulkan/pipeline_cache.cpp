@@ -841,7 +841,7 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
     };
     vk::PipelineDynamicStateCreateInfo dynamic_info{};
     dynamic_info.setDynamicStates(dynamic_states);
-    if (!state.physical_device_features.wideLines)
+    if (!state.physical_device_features.features.wideLines)
         dynamic_info.dynamicStateCount--;
 
     // we still need to specify the viewport and scissor count even though they are dynamic
