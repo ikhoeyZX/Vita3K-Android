@@ -501,14 +501,14 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         physical_device_memory = physical_device.getMemoryProperties2();
         physical_device_queue_families = physical_device.getQueueFamilyProperties();
 
-        LOG_INFO("Vulkan device: {}", physical_device_properties.deviceName.data());
-        LOG_INFO("Driver version: {}", get_driver_version(physical_device_properties.vendorID, physical_device_properties.driverVersion));
+        LOG_INFO("Vulkan device: {}", physical_device_properties.properties.deviceName.data());
+        LOG_INFO("Driver version: {}", get_driver_version(physical_device_properties.properties.vendorID, physical_device_properties.properties.driverVersion));
     }
 
     if (support_custom_drivers()) {
         // First I was looking for "Turnip" in the device name, however some turnip driver do not have it in their name for whatever reason....
         // so as a ugly workaround, say it is a turnip driver if the major driver version is less than 100
-        uint32_t major_driver_version = physical_device_properties.driverVersion >> 22;
+        uint32_t major_driver_version = physical_device_properties.properties.driverVersion >> 22;
         is_adreno_stock = major_driver_version >= 100;
         is_adreno_turnip = major_driver_version < 100;
     }
@@ -531,13 +531,13 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         // use these features (because they are used by the vita GPU) if they are available
         vk::PhysicalDeviceFeatures enabled_features{
-            .fillModeNonSolid = physical_device_features.fillModeNonSolid,
-            .wideLines = physical_device_features.wideLines,
-            .samplerAnisotropy = physical_device_features.samplerAnisotropy,
-            .occlusionQueryPrecise = physical_device_features.occlusionQueryPrecise,
-            .fragmentStoresAndAtomics = physical_device_features.fragmentStoresAndAtomics,
-            .shaderStorageImageExtendedFormats = physical_device_features.shaderStorageImageExtendedFormats,
-            .shaderInt16 = physical_device_features.shaderInt16,
+            .fillModeNonSolid = physical_device_features.features.fillModeNonSolid,
+            .wideLines = physical_device_features.features.wideLines,
+            .samplerAnisotropy = physical_device_features.features.samplerAnisotropy,
+            .occlusionQueryPrecise = physical_device_features.features.occlusionQueryPrecise,
+            .fragmentStoresAndAtomics = physical_device_features.features.fragmentStoresAndAtomics,
+            .shaderStorageImageExtendedFormats = physical_device_features.features.shaderStorageImageExtendedFormats,
+            .shaderInt16 = physical_device_features.features.shaderInt16,
         };
 
         // look for optional extensions
