@@ -1402,7 +1402,7 @@ uint64_t VKState::get_matching_device_address(const Address address) {
 }
 
 int VKState::get_max_anisotropic_filtering() {
-    return static_cast<int>(physical_device_properties.features.limits.maxSamplerAnisotropy);
+    return static_cast<int>(physical_device_properties.properties.limits.maxSamplerAnisotropy);
 }
 
 void VKState::set_anisotropic_filtering(int anisotropic_filtering) {
