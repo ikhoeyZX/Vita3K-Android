@@ -46,8 +46,8 @@ VKContext::VKContext(VKState &state, MemState &mem)
     // for the vertex buffer, nothing should need more alignment than a vec4
     vertex_stream_ring_buffer.alignment = 4 * sizeof(float);
 
-    const uint32_t uniform_alignment = static_cast<uint32_t>(state.physical_device_properties.limits.minUniformBufferOffsetAlignment);
-    const uint32_t storage_alignment = static_cast<uint32_t>(state.physical_device_properties.limits.minStorageBufferOffsetAlignment);
+    const uint32_t uniform_alignment = static_cast<uint32_t>(state.physical_device_properties.properties.limits.minUniformBufferOffsetAlignment);
+    const uint32_t storage_alignment = static_cast<uint32_t>(state.physical_device_properties.properties.limits.minStorageBufferOffsetAlignment);
     vertex_uniform_stream_ring_buffer.alignment = storage_alignment;
     fragment_uniform_stream_ring_buffer.alignment = storage_alignment;
     vertex_info_uniform_buffer.alignment = uniform_alignment;
