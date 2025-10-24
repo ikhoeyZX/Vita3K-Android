@@ -188,7 +188,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         }
     }
 
-#ifndef ANDROID
+//#ifndef ANDROID
     {
         // look for rgb vertex attribute support
         // we need to look at each format because it is not the same for all usual 3-component formats (checked on AMD Radeon HD 7800)
@@ -222,7 +222,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         }
         state.features.support_rgb_attributes = unsupported_rgb_vertex_attribute_formats.empty();
     }
-#endif
+//#endif
     
     support_coherent_framebuffer_fetch = support_rasterized_order_access;
 
@@ -637,12 +637,20 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
             component_count = info.component_count;
             switch (info.gxm_type) {
             case SCE_GXM_PARAMETER_TYPE_U8:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_U8;
+                break;
             case SCE_GXM_PARAMETER_TYPE_S8:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_S8;
+                break;
             case SCE_GXM_PARAMETER_TYPE_C10:
                 attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_U8;
                 break;
             case SCE_GXM_PARAMETER_TYPE_U16:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_U16;
+                break;
             case SCE_GXM_PARAMETER_TYPE_S16:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_S16;
+                break;
             case SCE_GXM_PARAMETER_TYPE_F16:
                 attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_U16;
                 break;
@@ -793,11 +801,11 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
     // depth and stencil tests are always enabled on the ps vita as there is almost no cost in doing so
     // on a tiled renderer
     const vk::PipelineDepthStencilStateCreateInfo ds_info{
-        .depthTestEnable = VK_FALSE,
+        .depthTestEnable = VK_TRUE,
         .depthWriteEnable = (record.front_depth_write_mode == SCE_GXM_DEPTH_WRITE_ENABLED),
         .depthCompareOp = translate_depth_func(record.front_depth_func),
         .depthBoundsTestEnable = VK_FALSE,
-        .stencilTestEnable = VK_FALSE,
+        .stencilTestEnable = VK_TRUE,
         .front = convert_op_state(record.front_stencil_state_op),
         .back = convert_op_state(two_sided ? record.back_stencil_state_op : record.front_stencil_state_op)
     };
