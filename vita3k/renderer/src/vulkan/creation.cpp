@@ -316,7 +316,6 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
             .colorWriteMask = vk::ColorComponentFlagBits::eR
                 | vk::ColorComponentFlagBits::eG
                 | vk::ColorComponentFlagBits::eB
-                | vk::ColorComponentFlagBits::eA
         };
     }
 
