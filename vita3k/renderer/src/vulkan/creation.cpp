@@ -304,6 +304,15 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
                 | vk::ColorComponentFlagBits::eA
         };
     }else {
+        vk::ColorComponentFlags color_mask{};
+        if (blend->colorMask & SCE_GXM_COLOR_MASK_R)
+            color_mask |= vk::ColorComponentFlagBits::eR;
+        if (blend->colorMask & SCE_GXM_COLOR_MASK_G)
+            color_mask |= vk::ColorComponentFlagBits::eG;
+        if (blend->colorMask & SCE_GXM_COLOR_MASK_B)
+            color_mask |= vk::ColorComponentFlagBits::eB;
+        if (blend->colorMask & SCE_GXM_COLOR_MASK_A)
+            color_mask |= vk::ColorComponentFlagBits::eA;
         // default values, only blendEnable and colorWriteMask are useful
         fp_vk->blending = vk::PipelineColorBlendAttachmentState{
             .blendEnable = VK_FALSE,
@@ -313,10 +322,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
             .srcAlphaBlendFactor = vk::BlendFactor::eOne,
             .dstAlphaBlendFactor = vk::BlendFactor::eZero,
             .alphaBlendOp = vk::BlendOp::eAdd,
-            .colorWriteMask = vk::ColorComponentFlagBits::eR
-                | vk::ColorComponentFlagBits::eG
-                | vk::ColorComponentFlagBits::eB
-                | vk::ColorComponentFlagBits::eA
+            .colorWriteMask = color_mask
         };
     }
 
