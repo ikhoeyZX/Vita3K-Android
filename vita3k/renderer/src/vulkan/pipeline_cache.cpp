@@ -188,7 +188,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         }
     }
 
-//#ifndef ANDROID
+#ifndef ANDROID
     {
         // look for rgb vertex attribute support
         // we need to look at each format because it is not the same for all usual 3-component formats (checked on AMD Radeon HD 7800)
@@ -222,7 +222,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         }
         state.features.support_rgb_attributes = unsupported_rgb_vertex_attribute_formats.empty();
     }
-//#endif
+#endif
     
     support_coherent_framebuffer_fetch = support_rasterized_order_access;
 
@@ -651,8 +651,14 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
             case SCE_GXM_PARAMETER_TYPE_S16:
                 attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_S16;
                 break;
-            case SCE_GXM_PARAMETER_TYPE_F16:
+            case SCE_GXM_PARAMETER_TYPE_U16:
                 attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_U16;
+                break;
+            case SCE_GXM_PARAMETER_TYPE_F16:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_F16;
+                break;
+            case SCE_GXM_PARAMETER_TYPE_F32:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
                 break;
             default:
                 // U32 format
