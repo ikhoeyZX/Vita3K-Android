@@ -793,11 +793,11 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
     // depth and stencil tests are always enabled on the ps vita as there is almost no cost in doing so
     // on a tiled renderer
     const vk::PipelineDepthStencilStateCreateInfo ds_info{
-        .depthTestEnable = VK_TRUE,
+        .depthTestEnable = VK_FALSE,
         .depthWriteEnable = (record.front_depth_write_mode == SCE_GXM_DEPTH_WRITE_ENABLED),
         .depthCompareOp = translate_depth_func(record.front_depth_func),
         .depthBoundsTestEnable = VK_FALSE,
-        .stencilTestEnable = VK_TRUE,
+        .stencilTestEnable = VK_FALSE,
         .front = convert_op_state(record.front_stencil_state_op),
         .back = convert_op_state(two_sided ? record.back_stencil_state_op : record.front_stencil_state_op)
     };
@@ -811,7 +811,10 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
         // The write mask must be empty as the lack of a fragment shader results in undefined values
         static const vk::PipelineColorBlendAttachmentState blending = {
             .blendEnable = VK_FALSE,
-            .colorWriteMask = vk::ColorComponentFlags()
+            .colorWriteMask = vk::ColorComponentFlagBits::eR
+                | vk::ColorComponentFlagBits::eG
+                | vk::ColorComponentFlagBits::eB
+                | vk::ColorComponentFlagBits::eA
         };
         color_blending.setAttachments(blending);
     } else {
