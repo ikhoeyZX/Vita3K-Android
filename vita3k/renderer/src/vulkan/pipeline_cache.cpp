@@ -651,9 +651,6 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
             case SCE_GXM_PARAMETER_TYPE_S16:
                 attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_S16;
                 break;
-            case SCE_GXM_PARAMETER_TYPE_U16:
-                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_U16;
-                break;
             case SCE_GXM_PARAMETER_TYPE_F16:
                 attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_F16;
                 break;
