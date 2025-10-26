@@ -138,7 +138,7 @@ public:
         std::string screen_filter = "Bilinear";
         std::string memory_mapping = "double-buffer";
         std::string vk_mapping = "Mailbox";
-        std::string deep_stencil = "eD24SfloatS8Uint";
+        std::string deep_stencil = "D32Sfloat";
         bool v_sync = true;
         int anisotropic_filtering = 1;
         bool async_pipeline_compilation = true;
