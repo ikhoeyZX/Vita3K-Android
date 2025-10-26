@@ -18,6 +18,7 @@
 #include <gxm/types.h>
 #include <util/align.h>
 
+#include <algorithm>
 #include <bit>
 #include <cassert>
 #include <map>
