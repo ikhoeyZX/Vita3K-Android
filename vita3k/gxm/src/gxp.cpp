@@ -119,11 +119,9 @@ std::string parameter_name(const SceGxmProgramParameter &parameter) {
     const bool is_struct_type = dot_pos != std::string::npos;
     std::replace(full_name.begin(), full_name.end(), '.', '_');
 
-/*
     // replace brackets by underscores as on some drivers (Adreno) they cause the shader to crash
     std::replace(full_name.begin(), full_name.end(), '[', '_');
     std::replace(full_name.begin(), full_name.end(), ']', '_');
-*/
     
     if (is_struct_type) {
         // An example is abc[5].var where abc is array of struct, which will be transformed to abc_5_var
