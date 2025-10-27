@@ -24,7 +24,7 @@
 #include "vkutil/vkutil.h"
 
 #ifdef __ANDROID__
-#include <SDL.h>
+#include <SDL_system.h>
 #include <jni.h>
 
 static bool has_surface = false;
@@ -553,7 +553,7 @@ void ScreenRenderer::create_render_pass() {
         .dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite
     };
 
-    vk::RenderPassCreateInfo pass_info{};
+    vk::RenderPassCreateInfo2 pass_info{};
     pass_info.setAttachments(color_attachment);
     pass_info.setSubpasses(subpass);
     pass_info.setDependencies(dependency);
