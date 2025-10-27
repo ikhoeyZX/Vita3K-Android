@@ -153,6 +153,9 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     if (is_srgb) {
         if (vk_format == vk::Format::eR8G8B8A8Unorm) {
             vk_format = vk::Format::eR8G8B8A8Srgb;
+        } 
+        else if ( vk_format == vk::Format::eR8Unorm ) {
+            vk_format = vk::Format::eR8Snorm;
         } else {
             LOG_WARN("Trying to use gamma correction with non-compatible format {}", vk::to_string(vk_format));
         }
