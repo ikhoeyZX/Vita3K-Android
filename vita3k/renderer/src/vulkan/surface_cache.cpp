@@ -153,11 +153,10 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     if (is_srgb) {
         if (vk_format == vk::Format::eR8G8B8A8Unorm) {
             vk_format = vk::Format::eR8G8B8A8Srgb;
-        } 
-        else if ( vk_format == vk::Format::eR8Unorm ) {
-            vk_format = vk::Format::eR8Snorm;
+        } else if ( vk_format == vk::Format::eR8Unorm ) {
+            vk_format = vk::Format::eR8Srgb;
         } else {
-            LOG_WARN("Trying to use gamma correction with non-compatible format {}", vk::to_string(vk_format));
+            LOG_WARN("is_srgb : Trying to use gamma correction with non-compatible format {}", vk::to_string(vk_format));
         }
     }
 
@@ -338,8 +337,10 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
     if (is_srgb) {
         if (vk_format == vk::Format::eR8G8B8A8Unorm) {
             vk_format = vk::Format::eR8G8B8A8Srgb;
+        } else if ( vk_format == vk::Format::eR8Unorm ) {
+            vk_format = vk::Format::eR8Srgb;
         } else {
-            LOG_WARN("Trying to use gamma correction with non-compatible format {}", vk::to_string(vk_format));
+            LOG_WARN("is_srgb2 : Trying to use gamma correction with non-compatible format {}", vk::to_string(vk_format));
         }
     }
 
