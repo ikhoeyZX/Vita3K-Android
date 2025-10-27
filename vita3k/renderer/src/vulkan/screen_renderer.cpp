@@ -553,24 +553,24 @@ void ScreenRenderer::create_render_pass() {
         .dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite
     };
 
-    vk::RenderPassCreateInfo2 pass_info{};
+    vk::RenderPassCreateInfo pass_info{};
     pass_info.setAttachments(color_attachment);
     pass_info.setSubpasses(subpass);
     pass_info.setDependencies(dependency);
 
-    default_render_pass = state.device.createRenderPass2(pass_info);
+    default_render_pass = state.device.createRenderPass(pass_info);
 
     // renderpass after post processing filter
     color_attachment
         .setLoadOp(vk::AttachmentLoadOp::eLoad)
         .setInitialLayout(vk::ImageLayout::eGeneral);
-     post_filter_render_pass = state.device.createRenderPass2(pass_info);
+     post_filter_render_pass = state.device.createRenderPass(pass_info);
 
 #ifdef ANDROID
     if (state.is_adreno_stock) {
         // used to fix an adreno driver bug
         color_attachment.setInitialLayout(vk::ImageLayout::ePresentSrcKHR);
-        stock_adreno_pass = state.device.createRenderPass2(pass_info);
+        stock_adreno_pass = state.device.createRenderPass(pass_info);
     }
 #endif
 }
