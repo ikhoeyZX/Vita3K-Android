@@ -1973,13 +1973,13 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
     spirv_cross::CompilerGLSL::Options options;
 
 #ifdef ANDROID
-    options.fragment.default_float_precision = options.Mediump;
-    options.fragment.default_int_precision = options.Mediump;
+    options.fragment.default_float_precision = options.Highp;
+    options.fragment.default_int_precision = options.Highp;
     
     options.version = 320;
     options.es = true;
     options.enable_row_major_load_workaround = false; // spirv.hpp say when true it reduce performance in some android devices
-    options.vertex.fixup_clipspace = false;
+    options.vertex.fixup_clipspace = true;
  #else
     options.version = 430;
     options.es = false;
@@ -2026,20 +2026,51 @@ void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_
 static spv::ImageFormat translate_color_format(const SceGxmColorBaseFormat format) {
     switch (format) {
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8:
         return spv::ImageFormat::ImageFormatRgba8;
 
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8:
+        return spv::ImageFormat::ImageFormatRg8;
+        
+    case SCE_GXM_COLOR_BASE_FORMAT_S8:
+        return spv::ImageFormat::ImageFormatR8Snorm;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_S8S8:
+        return spv::ImageFormat::ImageFormatRg8Snorm;
+            
     case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
         return spv::ImageFormat::ImageFormatRgba8Snorm;
 
+    case SCE_GXM_COLOR_BASE_FORMAT_S16S16:
+        return spv::ImageFormat::ImageFormatRg16Snorm;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_U16:
+        return spv::ImageFormat::ImageFormatR16;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_U16U16:
+        return spv::ImageFormat::ImageFormatRg16;
+            
+    case SCE_GXM_COLOR_BASE_FORMAT_F16:
+        return spv::ImageFormat::ImageFormatR16f;
+        
+    case SCE_GXM_COLOR_BASE_FORMAT_F16F16:
+        return spv::ImageFormat::ImageFormatRg16f;
+        
     case SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16:
         return spv::ImageFormat::ImageFormatRgba16f;
 
     case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
+        return spv::ImageFormat::ImageFormatRgb10a2ui;
+        
+    case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
         return spv::ImageFormat::ImageFormatRgb10A2;
 
     case SCE_GXM_COLOR_BASE_FORMAT_F11F11F10:
         return spv::ImageFormat::ImageFormatR11fG11fB10f;
 
+        case SCE_GXM_COLOR_BASE_FORMAT_F32:
+        return spv::ImageFormat::ImageFormatR32f;
+        
     case SCE_GXM_COLOR_BASE_FORMAT_F32F32:
         return spv::ImageFormat::ImageFormatRg32f;
 
