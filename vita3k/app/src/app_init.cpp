@@ -43,12 +43,11 @@
 
 #include <gdbstub/functions.h>
 
-#include <SDL.h>
 #include <SDL_video.h>
 #include <SDL_vulkan.h>
 
 #ifdef ANDROID
-#include <SDL.h>
+#include <SDL_system.h>
 #include <boost/range/iterator_range.hpp>
 #include <jni.h>
 
@@ -447,17 +446,14 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     };
 #endif
 #ifdef ANDROID
-    if(SDL_GetAndroidSDKVersion() >= 30 && !state.cfg.native_screen) {
+    if(!state.cfg.native_screen) {
         float ddpi, hdpi, vdpi, max = 160.f;
         SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi);
         window_type |= SDL_WINDOW_ALLOW_HIGHDPI;
         LOG_INFO("Display DPI: ddpi = {}, hdpi = {}, vdpi = {}", ddpi, hdpi, vdpi);
 
         state.dpi_scale = ddpi / max;
-    }
-
-    
-    if(state.cfg.native_screen || SDL_GetAndroidSDKVersion() < 30){
+    } else {
        SDL_DisplayMode DM;
        SDL_GetCurrentDisplayMode(0, &DM);
        uint32_t width = DM.w;
@@ -515,7 +511,8 @@ bool init(EmuEnvState &state, const Root &root_paths) {
             
         state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type), SDL_DestroyWindow);
     }
-        
+
+    // try again!
     if (!state.window) {
         LOG_ERROR("SDL still fail to create window!\n Reason: {}\n check your hardware or config!", SDL_GetError());
         SDL_ClearError();
