@@ -152,7 +152,7 @@ static bool detect_patch_bcn(bool *support_dxt) {
 
     // create an instance to get the patch address
     vk::ApplicationInfo application_info{
-        .apiVersion = VK_API_VERSION_1_0
+        .apiVersion = VK_API_VERSION_1_1
     };
     vk::InstanceCreateInfo instance_info{
         .pApplicationInfo = &application_info
@@ -161,16 +161,16 @@ static bool detect_patch_bcn(bool *support_dxt) {
     vk::UniqueInstance instance = vk::createInstanceUnique(instance_info);
     // we need these 2 functions for the following part of the code
     VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumeratePhysicalDevices = reinterpret_cast<PFN_vkEnumeratePhysicalDevices>(VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(instance.get(), "vkEnumeratePhysicalDevices"));
-    VULKAN_HPP_DEFAULT_DISPATCHER.vkGetPhysicalDeviceProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(instance.get(), "vkGetPhysicalDeviceProperties"));
+    VULKAN_HPP_DEFAULT_DISPATCHER.vkGetPhysicalDeviceProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2>(VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(instance.get(), "vkGetPhysicalDeviceProperties2"));
     VULKAN_HPP_DEFAULT_DISPATCHER.vkDestroyInstance = reinterpret_cast<PFN_vkDestroyInstance>(VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(instance.get(), "vkDestroyInstance"));
 
     // assume there is only one gpu
     vk::PhysicalDevice gpu = instance->enumeratePhysicalDevices().front();
     vk::PhysicalDeviceProperties properties = gpu.getProperties();
 
-    const auto type = adrenotools_get_bcn_type(VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), properties.vendorID);
+    const auto type = adrenotools_get_bcn_type(VK_VERSION_MAJOR(properties.properties.driverVersion), VK_VERSION_MINOR(properties.properties.driverVersion), properties.properties.vendorID);
     if (type == ADRENOTOOLS_BCN_PATCH) {
-        void *function_to_patch = reinterpret_cast<void *>(VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(instance.get(), "vkGetPhysicalDeviceFormatProperties"));
+        void *function_to_patch = reinterpret_cast<void *>(VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(instance.get(), "vkGetPhysicalDeviceFormatProperties2"));
         if (adrenotools_patch_bcn(function_to_patch)) {
             LOG_INFO("Applied BCeNabler patch");
         } else {
@@ -343,11 +343,19 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
                                  adreno.adreno_inject_dir.c_str(),
                                  nullptr);
 
+
+			LOG_TRACE("Adreno Vulkan Injector:");
+			LOG_TRACE("adreno.adreno_lib_dir {}", adreno.adreno_lib_dir.c_str());
+			LOG_TRACE("adreno.adreno_driver_path {}", adreno.adreno_driver_path.c_str());
+			LOG_TRACE("adreno.adreno_main_so_name {}", adreno.adreno_main_so_name.c_str());
+			LOG_TRACE("adreno.adreno_inject_dir {}", adreno.adreno_inject_dir.c_str());
+			
             if (!vulkan_handle) {
                   LOG_ERROR("Could not open handle for custom driver {}",  adreno.adreno_main_so_name);
                   LOG_INFO("Using default vulkan driver instead");
                   SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Custom Driver Error!", fmt::format(" Could not open custom driver {} \n System will use default driver instead ", adreno.adreno_main_so_name).c_str(), window);
             }else{
+				  LOG_TRACE("vulkan_handle == SUCCESS");
                   // Inject custom driver
                   vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>( dlsym( vulkan_handle, "vkGetInstanceProcAddr" ) );
     	          VULKAN_HPP_DEFAULT_DISPATCHER.init( vkGetInstanceProcAddr );
@@ -364,10 +372,10 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         vk::ApplicationInfo app_info{
             .pApplicationName = app_name, // App Name
-            .applicationVersion = VK_MAKE_API_VERSION(0, 0, 0, 1), // App Version
+            .applicationVersion = VK_MAKE_API_VERSION(0, 1, 1, 0), // App Version
             .pEngineName = org_name, // Engine Name, using org instead.
-            .engineVersion = VK_MAKE_API_VERSION(0, 0, 0, 1), // Engine Version
-            .apiVersion = VK_API_VERSION_1_0
+            .engineVersion = VK_MAKE_API_VERSION(0, 1, 1, 0), // Engine Version
+            .apiVersion = VK_API_VERSION_1_1
         };
 
         unsigned int instance_req_ext_count;
@@ -1167,9 +1175,13 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                 vk::ImportAndroidHardwareBufferInfoANDROID{
                     .buffer = buffer },
                 vk::MemoryAllocateFlagsInfo{
-                    .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
+                    // .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
+					.flags = vk::MemoryAllocateFlagBits::eDeviceMask }
             };
             device_memory = device.allocateMemory(alloc_info.get());
+			LOG_TRACE("ALLOC SIZE: {}", size);
+			LOG_TRACE("mapped_memory_type {}", vk::to_string(mapped_memory_type));
+			LOG_TRACE("DEVICE MEMORY NATIVE BUFFER: {}", static_cast<uint64_t>(device_memory));
         } else {
             const native_handle_t *handle = _AHardwareBuffer_getNativeHandle(buffer);
             if (handle == nullptr || handle->numFds == 0 || handle->data[0] == -1) {
@@ -1229,15 +1241,25 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
         };
         buffer.init_buffer(mapped_memory_flags, memory_mapped_alloc);
-        const uintptr_t buffer_ptr_val = std::bit_cast<uintptr_t>(buffer.mapped_data);
-        const intptr_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
+#ifdef __aarch64__
+		const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
+        const int64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
         buffer.mapped_data = std::bit_cast<void *>(buffer_ptr_val + buffer_offset);
+#else
+		const uintptr_t buffer_ptr_val = reinterpret_cast<uintptr_t>(buffer.mapped_data);
+        const intptr_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
+		buffer.mapped_data = reinterpret_cast<void *>(buffer_ptr_val + buffer_offset);
+#endif
 
         vk::BufferDeviceAddressInfoKHR address_info{
             .buffer = buffer.buffer
         };
-        const uintptr_t buffer_address = device.getBufferAddress(address_info) + buffer_offset;
-        const vk::Buffer mapped_buffer = buffer.buffer;
+#ifndef __aarch64__
+        const uint64_t buffer_address = device.getBufferAddress(address_info) + buffer_offset;
+#else
+		const uintptr_t buffer_address = device.getBufferAddress(address_info) + buffer_offset;
+#endif
+        const vk::Buffer mapped_buffer = align(buffer.buffer, KiB(4));
 
         add_external_mapping(mem, address.address(), size, static_cast<uint8_t *>(buffer.mapped_data));
         mapped_memories[address.address()] = { address.address(), std::move(buffer), mapped_buffer, size, buffer_address };
