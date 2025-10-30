@@ -825,7 +825,7 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
         auto empty_param = emuenv.common_dialog.savedata.list_empty_param[index];
         if (empty_param) {
             emuenv.common_dialog.savedata.title[index] = empty_param->title ? empty_param->title.get(emuenv.mem) : emuenv.common_dialog.lang.save_data.save["new_saved_data"];
-            const auto iconPath = empty_param->iconPath.get(emuenv.mem);
+            const char *iconPath = empty_param->iconPath.get(emuenv.mem);
             SceUChar8 *iconBuf = empty_param->iconBuf.cast<SceUChar8>().get(emuenv.mem);
             const auto iconBufSize = empty_param->iconBufSize;
             if (iconPath) {
