@@ -166,7 +166,7 @@ static bool detect_patch_bcn(bool *support_dxt) {
 
     // assume there is only one gpu
     vk::PhysicalDevice gpu = instance->enumeratePhysicalDevices().front();
-    vk::PhysicalDeviceProperties2 properties = gpu.getProperties();
+    vk::PhysicalDeviceProperties2 properties = gpu.getProperties2();
 
     const auto type = adrenotools_get_bcn_type(VK_VERSION_MAJOR(properties.properties.driverVersion), VK_VERSION_MINOR(properties.properties.driverVersion), properties.properties.vendorID);
     if (type == ADRENOTOOLS_BCN_PATCH) {
