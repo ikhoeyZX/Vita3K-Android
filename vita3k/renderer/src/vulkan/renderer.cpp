@@ -1258,7 +1258,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 #else
 		const uintptr_t buffer_address = device.getBufferAddress(address_info) + buffer_offset;
 #endif
-        const vk::Buffer mapped_buffer = align(buffer.buffer, KiB(4));
+        const vk::Buffer mapped_buffer = buffer.buffer;
 
         add_external_mapping(mem, address.address(), size, static_cast<uint8_t *>(buffer.mapped_data));
         mapped_memories[address.address()] = { address.address(), std::move(buffer), mapped_buffer, size, buffer_address };
