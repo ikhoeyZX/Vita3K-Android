@@ -1164,7 +1164,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 
         vk::DeviceMemory device_memory;
         // prefer this extension
-/*        if (support_android_buffer_import) {
+        if (support_android_buffer_import) {
             const vk::AndroidHardwareBufferPropertiesANDROID hardware_props = device.getAndroidHardwareBufferPropertiesANDROID(*buffer);
 
             uint32_t mapped_memory_type = find_suitable_mapped_type(hardware_props.memoryTypeBits);
@@ -1175,13 +1175,13 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                 vk::ImportAndroidHardwareBufferInfoANDROID{
                     .buffer = buffer },
                 vk::MemoryAllocateFlagsInfo{
-                    // .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
+                   // .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
 					.flags = vk::MemoryAllocateFlagBits::eDeviceMask }
             };
             device_memory = device.allocateMemory(alloc_info.get());
 			LOG_TRACE("ALLOC SIZE: {}", size);
 			LOG_TRACE("DEVICE MEMORY NATIVE BUFFER: {}", static_cast<uint64_t>(device_memory));
-*///        } else {
+        } else {
             const native_handle_t *handle = _AHardwareBuffer_getNativeHandle(buffer);
             if (handle == nullptr || handle->numFds == 0 || handle->data[0] == -1) {
                 LOG_ERROR("Failed to get native handle");
@@ -1202,7 +1202,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                     .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
             };
             device_memory = device.allocateMemory(alloc_info.get());
-//        }
+        }
 
         vk::StructureChain<vk::BufferCreateInfo, vk::ExternalMemoryBufferCreateInfoKHR> buffer_info{
             vk::BufferCreateInfo{
@@ -1383,9 +1383,9 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
         AHardwareBuffer *hardware_buffer = reinterpret_cast<AHardwareBuffer *>(buffer.extra);
         _AHardwareBuffer_unlock(hardware_buffer, nullptr);
         // When using external fd, it takes ownership of the handle, so don't release it in this case
-        if (support_android_buffer_import)
+//        if (support_android_buffer_import)
             _AHardwareBuffer_release(hardware_buffer);
-        break;
+ //       break;
     }
 #endif
 
