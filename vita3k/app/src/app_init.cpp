@@ -47,9 +47,7 @@
 #include <SDL_vulkan.h>
 
 #ifdef ANDROID
-#include <SDL_hints.h>
-#include <SDL_messagebox.h>
-#include <SDL_system.h>
+#include <SDL.h>
 #include <boost/range/iterator_range.hpp>
 #include <jni.h>
 
