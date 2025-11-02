@@ -1180,7 +1180,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             };
             device_memory = device.allocateMemory(alloc_info.get());
 			LOG_TRACE("ALLOC SIZE: {}", size);
-			LOG_TRACE("DEVICE MEMORY NATIVE BUFFER: {}", device_memory.handle());
+			LOG_TRACE("DEVICE MEMORY NATIVE BUFFER: {}", static_cast<uint64_t>(device.allocateMemory(alloc_info.get()));
         } else {
             const native_handle_t *handle = _AHardwareBuffer_getNativeHandle(buffer);
             if (handle == nullptr || handle->numFds == 0 || handle->data[0] == -1) {
