@@ -4169,8 +4169,8 @@ EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xSc
         context->state.viewport.scale.z = zScale;
 
         if (!context->state.active) {
-            LOG_WARN_ONCE("The call was made outside of the Scene. It will be ignored.");
-            return;
+            LOG_WARN("The call was made outside of the Scene!!");
+           // return;
         }
 
         if (context->alloc_space) {
