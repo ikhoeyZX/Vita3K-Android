@@ -4158,7 +4158,13 @@ EXPORT(int, sceGxmSetVertexUniformBuffer, SceGxmContext *context, uint32_t buffe
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
     TRACY_FUNC(sceGxmSetViewport, context, xOffset, xScale, yOffset, yScale, zOffset, zScale);
-    // Set viewport to enable, enable more offset and scale to set
+    
+	if (!context->state.active) {
+        context->state.viewport.enable = true;
+        LOG_WARN("context->state.active is not yet enabled!");
+    }
+
+	// Set viewport to enable, enable more offset and scale to set
     if (context->state.viewport.offset.x != xOffset || (context->state.viewport.offset.y != yOffset) || (context->state.viewport.offset.z != zOffset)
         || (context->state.viewport.scale.x != xScale) || (context->state.viewport.scale.y != yScale) || (context->state.viewport.scale.z != zScale)) {
         context->state.viewport.offset.x = xOffset;
@@ -4169,10 +4175,10 @@ EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xSc
         context->state.viewport.scale.z = zScale;
 
         if (!context->state.active) {
-            LOG_WARN("The call was made outside of the Scene!!");
-           // return;
+           LOG_WARN("The call was made outside of the Scene!!");
+           return;
         }
-
+		
         if (context->alloc_space) {
             update_viewport(*emuenv.renderer, context);
         }
@@ -4186,8 +4192,8 @@ EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode
         context->state.viewport.enable = enable;
 
         if (!context->state.active) {
-            LOG_WARN_ONCE("The call was made outside of the Scene. It will be applied when the next Scene is called.");
-            return;
+           LOG_WARN_ONCE("The call was made outside of the Scene. It will be ignored.");
+           return;
         }
 
         if (context->alloc_space) {
