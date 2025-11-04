@@ -4160,7 +4160,7 @@ EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xSc
     TRACY_FUNC(sceGxmSetViewport, context, xOffset, xScale, yOffset, yScale, zOffset, zScale);
     
 	if (!context->state.active) {
-        context->state.viewport.enable = true;
+        context->state.viewport.enable = SCE_GXM_VIEWPORT_ENABLED;
         LOG_WARN("context->state.active is not yet enabled!");
     }
 
