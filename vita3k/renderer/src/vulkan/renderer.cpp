@@ -42,9 +42,14 @@
 
 #ifdef ANDROID
 #include <emuenv/state.h>
-#include <SDL.h>
+#include <SDL_messagebox.h>
+#include <SDL_system.h>
+
+#ifdef __aarch64__
 #include <adrenotools/bcenabler.h>
 #include <adrenotools/driver.h>
+#endif
+
 #include <boost/range/iterator_range.hpp>
 #include <sys/mman.h>
 #include <util/float_to_half.h>
@@ -131,23 +136,23 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_report_callback(
 }
 
 const static std::vector<const char *> required_device_extensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    vk::KHRSwapchainExtensionName,
     // needed in order to use storage buffers
-    VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME,
+    vk::KHRStorageBufferStorageClassExtensionName,
     // needed in order to use negative viewport height
-    VK_KHR_MAINTENANCE1_EXTENSION_NAME
+    vk::KHRMaintenance1ExtensionName
 };
 
 namespace renderer::vulkan {
 
-#ifdef ANDROID
+#if defined(ANDROID) && !defined(__arm__)
 static bool detect_patch_bcn(bool *support_dxt) {
     // some Adreno GPUs support BCn textures even though they say they don't
     // and we might need to patch a function for it to work
 
     // create an instance to get the patch address
     vk::ApplicationInfo application_info{
-        .apiVersion = VK_API_VERSION_1_0
+        .apiVersion = VK_API_VERSION_1_1
     };
     vk::InstanceCreateInfo instance_info{
         .pApplicationInfo = &application_info
@@ -156,16 +161,16 @@ static bool detect_patch_bcn(bool *support_dxt) {
     vk::UniqueInstance instance = vk::createInstanceUnique(instance_info);
     // we need these 2 functions for the following part of the code
     VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumeratePhysicalDevices = reinterpret_cast<PFN_vkEnumeratePhysicalDevices>(VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(instance.get(), "vkEnumeratePhysicalDevices"));
-    VULKAN_HPP_DEFAULT_DISPATCHER.vkGetPhysicalDeviceProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(instance.get(), "vkGetPhysicalDeviceProperties"));
+    VULKAN_HPP_DEFAULT_DISPATCHER.vkGetPhysicalDeviceProperties2 = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2>(VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(instance.get(), "vkGetPhysicalDeviceProperties2"));
     VULKAN_HPP_DEFAULT_DISPATCHER.vkDestroyInstance = reinterpret_cast<PFN_vkDestroyInstance>(VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(instance.get(), "vkDestroyInstance"));
 
     // assume there is only one gpu
     vk::PhysicalDevice gpu = instance->enumeratePhysicalDevices().front();
-    vk::PhysicalDeviceProperties properties = gpu.getProperties();
+    vk::PhysicalDeviceProperties2 properties = gpu.getProperties2();
 
-    const auto type = adrenotools_get_bcn_type(VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), properties.vendorID);
+    const auto type = adrenotools_get_bcn_type(VK_VERSION_MAJOR(properties.properties.driverVersion), VK_VERSION_MINOR(properties.properties.driverVersion), properties.properties.vendorID);
     if (type == ADRENOTOOLS_BCN_PATCH) {
-        void *function_to_patch = reinterpret_cast<void *>(VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(instance.get(), "vkGetPhysicalDeviceFormatProperties"));
+        void *function_to_patch = reinterpret_cast<void *>(VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(instance.get(), "vkGetPhysicalDeviceFormatProperties2"));
         if (adrenotools_patch_bcn(function_to_patch)) {
             LOG_INFO("Applied BCeNabler patch");
         } else {
@@ -303,8 +308,25 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     {
         PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
-        
-#ifdef ANDROID
+
+		if(config.deep_stencil == "D32Sfloat")
+		   deep_stencil_use = vk::Format::eD32Sfloat;
+		else if(config.deep_stencil == "D32SfloatS8Uint")
+		   deep_stencil_use = vk::Format::eD32SfloatS8Uint;
+        else if(config.deep_stencil == "D16UnormS8Uint")
+		   deep_stencil_use = vk::Format::eD16UnormS8Uint;
+        else if(config.deep_stencil == "D16Unorm")
+		   deep_stencil_use = vk::Format::eD16Unorm;
+        else if(config.deep_stencil == "S8Uint")
+		   deep_stencil_use = vk::Format::eS8Uint;
+		else if(config.deep_stencil == "X8D24UnormPack32")
+		   deep_stencil_use = vk::Format::eX8D24UnormPack32;
+        else 
+		   deep_stencil_use = vk::Format::eD24UnormS8Uint;
+
+		LOG_INFO("deep_stencil_use = {}", vk::to_string(deep_stencil_use));
+
+#if defined(ANDROID) && !defined(__arm__)
         if(adreno.is_adreno){
     	    const char *temp_dir = nullptr;
         	if (SDL_GetAndroidSDKVersion() < 29) { // ANDROID 9
@@ -321,27 +343,39 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
                                  adreno.adreno_inject_dir.c_str(),
                                  nullptr);
 
+
+			LOG_TRACE("Adreno Vulkan Injector:");
+			LOG_TRACE("adreno.adreno_lib_dir {}", adreno.adreno_lib_dir.c_str());
+			LOG_TRACE("adreno.adreno_driver_path {}", adreno.adreno_driver_path.c_str());
+			LOG_TRACE("adreno.adreno_main_so_name {}", adreno.adreno_main_so_name.c_str());
+			LOG_TRACE("adreno.adreno_inject_dir {}", adreno.adreno_inject_dir.c_str());
+			
             if (!vulkan_handle) {
                   LOG_ERROR("Could not open handle for custom driver {}",  adreno.adreno_main_so_name);
                   LOG_INFO("Using default vulkan driver instead");
                   SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Custom Driver Error!", fmt::format(" Could not open custom driver {} \n System will use default driver instead ", adreno.adreno_main_so_name).c_str(), window);
             }else{
+				  LOG_TRACE("vulkan_handle == SUCCESS");
                   // Inject custom driver
                   vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>( dlsym( vulkan_handle, "vkGetInstanceProcAddr" ) );
     	          VULKAN_HPP_DEFAULT_DISPATCHER.init( vkGetInstanceProcAddr );
             }
         }
-        
-        if (!detect_patch_bcn(&texture_cache.support_dxt))
-            return false;
+
+		if(config.use_astc){
+	       LOG_INFO("DXT (BCn) support disabled");
+		   texture_cache.support_dxt = false;
+		}else
+			if (!detect_patch_bcn(&texture_cache.support_dxt))
+	           LOG_ERROR("Failed to enable DXT (BCn) support!, system will use ASTC instead");
 #endif
 
         vk::ApplicationInfo app_info{
             .pApplicationName = app_name, // App Name
-            .applicationVersion = VK_MAKE_API_VERSION(0, 0, 0, 1), // App Version
+            .applicationVersion = VK_MAKE_API_VERSION(0, 1, 1, 0), // App Version
             .pEngineName = org_name, // Engine Name, using org instead.
-            .engineVersion = VK_MAKE_API_VERSION(0, 0, 0, 1), // Engine Version
-            .apiVersion = VK_API_VERSION_1_0
+            .engineVersion = VK_MAKE_API_VERSION(0, 1, 1, 0), // Engine Version
+            .apiVersion = VK_API_VERSION_1_1
         };
 
         unsigned int instance_req_ext_count;
@@ -355,11 +389,12 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         SDL_Vulkan_GetInstanceExtensions(window, &instance_req_ext_count, instance_extensions.data());
 
         const std::set<std::string> optional_instance_extensions = {
-            VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
-            VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
-            VK_KHR_DEVICE_GROUP_CREATION_EXTENSION_NAME,
+            vk::KHRGetPhysicalDeviceProperties2ExtensionName, //Add comment More actions
+            vk::KHRExternalMemoryCapabilitiesExtensionName,
+            vk::KHRDeviceGroupCreationExtensionName,
 #ifdef __APPLE__
-            VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+            vk::KHRPortabilityEnumerationExtensionName,
+            vk::EXTLayerSettingsExtensionName,
 #endif
         };
         for (const vk::ExtensionProperties &prop : vk::enumerateInstanceExtensionProperties()) {
@@ -412,27 +447,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         instance = vk::createInstance(instance_info);
         VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
-
-        if (has_validation_layer && !found_debug_extension.empty() && config.validation_layer) {
-            // we support two debugging extensions
-            if (found_debug_extension == VK_EXT_DEBUG_UTILS_EXTENSION_NAME) {
-                vk::DebugUtilsMessengerCreateInfoEXT debug_info{
-                    .messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
-                        | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
-                    .messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
-                        | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
-                    .pfnUserCallback = debug_util_callback
-                };
-                debug_messenger = instance.createDebugUtilsMessengerEXT(debug_info);
-
-            } else if (found_debug_extension == VK_EXT_DEBUG_REPORT_EXTENSION_NAME) {
-                vk::DebugReportCallbackCreateInfoEXT report_info{
-                    .flags = vk::DebugReportFlagBitsEXT::eError,
-                    .pfnCallback = debug_report_callback
-                };
-                debug_report = instance.createDebugReportCallbackEXT(report_info);
-            }
-        }
     }
 
 #ifdef __APPLE__
@@ -490,19 +504,19 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             LOG_ERROR("Failed to select Vulkan physical device.");
             return false;
         }
-        physical_device_properties = physical_device.getProperties();
-        physical_device_features = physical_device.getFeatures();
-        physical_device_memory = physical_device.getMemoryProperties();
+        physical_device_properties = physical_device.getProperties2();
+        physical_device_features = physical_device.getFeatures2();
+        physical_device_memory = physical_device.getMemoryProperties2();
         physical_device_queue_families = physical_device.getQueueFamilyProperties();
 
-        LOG_INFO("Vulkan device: {}", physical_device_properties.deviceName.data());
-        LOG_INFO("Driver version: {}", get_driver_version(physical_device_properties.vendorID, physical_device_properties.driverVersion));
+        LOG_INFO("Vulkan device: {}", physical_device_properties.properties.deviceName.data());
+        LOG_INFO("Driver version: {}", get_driver_version(physical_device_properties.properties.vendorID, physical_device_properties.properties.driverVersion));
     }
 
     if (support_custom_drivers()) {
         // First I was looking for "Turnip" in the device name, however some turnip driver do not have it in their name for whatever reason....
         // so as a ugly workaround, say it is a turnip driver if the major driver version is less than 100
-        uint32_t major_driver_version = physical_device_properties.driverVersion >> 22;
+        uint32_t major_driver_version = physical_device_properties.properties.driverVersion >> 22;
         is_adreno_stock = major_driver_version >= 100;
         is_adreno_turnip = major_driver_version < 100;
     }
@@ -525,13 +539,13 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         // use these features (because they are used by the vita GPU) if they are available
         vk::PhysicalDeviceFeatures enabled_features{
-            .fillModeNonSolid = physical_device_features.fillModeNonSolid,
-            .wideLines = physical_device_features.wideLines,
-            .samplerAnisotropy = physical_device_features.samplerAnisotropy,
-            .occlusionQueryPrecise = physical_device_features.occlusionQueryPrecise,
-            .fragmentStoresAndAtomics = physical_device_features.fragmentStoresAndAtomics,
-            .shaderStorageImageExtendedFormats = physical_device_features.shaderStorageImageExtendedFormats,
-            .shaderInt16 = physical_device_features.shaderInt16,
+            .fillModeNonSolid = physical_device_features.features.fillModeNonSolid,
+            .wideLines = physical_device_features.features.wideLines,
+            .samplerAnisotropy = physical_device_features.features.samplerAnisotropy,
+            .occlusionQueryPrecise = physical_device_features.features.occlusionQueryPrecise,
+            .fragmentStoresAndAtomics = physical_device_features.features.fragmentStoresAndAtomics,
+            .shaderStorageImageExtendedFormats = physical_device_features.features.shaderStorageImageExtendedFormats,
+            .shaderInt16 = physical_device_features.features.shaderInt16,
         };
 
         // look for optional extensions
@@ -542,28 +556,28 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         bool support_external_memory = false;
         bool support_shader_interlock = false;
         const std::map<std::string_view, bool *> optional_extensions = {
-            { VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, &temp_bool },
+            { vk::KHRGetMemoryRequirements2ExtensionName, &temp_bool },
             // can be used by vma to improve performance
-            { VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME, &support_dedicated_allocations },
+            { vk::KHRDedicatedAllocationExtensionName, &support_dedicated_allocations },
             // used to tell the driver this application is high priority
-            { VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME, &support_global_priority },
+            { vk::EXTGlobalPriorityExtensionName, &support_global_priority },
             // can be used to specify which format will be used by mutable images
-            { VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME, &surface_cache.support_image_format_specifier },
-            { VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME, &temp_bool },
-            { VK_KHR_DEVICE_GROUP_EXTENSION_NAME, &temp_bool },
+            { vk::KHRImageFormatListExtensionName, &surface_cache.support_image_format_specifier },
+            { vk::KHRExternalMemoryExtensionName, &temp_bool }, // Add comment More actions
+            { vk::KHRDeviceGroupExtensionName, &temp_bool },
             // can host memory directly be used for gxm memory
-            { VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME, &support_external_memory },
+            { vk::EXTExternalMemoryHostExtensionName, &support_external_memory },
             // also needed for reading mapped memory in the shader
-            { VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, &support_buffer_device_address },
+            { vk::KHRBufferDeviceAddressExtensionName, &support_buffer_device_address },
             // needed for uniform uvec2 arrays not to take twice the size
-            { VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME, &support_standard_layout },
+            { vk::KHRUniformBufferStandardLayoutExtensionName, &support_standard_layout },
             // needed for FSR
-            { VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME, &support_fsr },
+            { vk::KHRShaderFloat16Int8ExtensionName, &support_fsr },
             // used for accurate programmable blending on desktop GPUs
-            { VK_EXT_FRAGMENT_SHADER_INTERLOCK_EXTENSION_NAME, &support_shader_interlock },
+            { vk::EXTFragmentShaderInterlockExtensionName, &support_shader_interlock },
 #ifdef __APPLE__
             // Needed to create the MoltenVK device
-            { VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME, &temp_bool },
+            { vk::KHRPortabilitySubsetExtensionName, &temp_bool },
 #endif
             // used for coherent framebuffer fetch
             { VK_EXT_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_EXTENSION_NAME, &support_rasterized_order_access },
@@ -587,14 +601,16 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             }
         }
 
-        bool support_memory_mapping = true;
+        bool support_memory_mapping = false;
         if (support_buffer_device_address) {
+	    support_memory_mapping = true;
             auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceBufferDeviceAddressFeatures>();
             support_buffer_device_address &= static_cast<bool>(features.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress);
         }
         support_memory_mapping &= support_buffer_device_address;
 
         if (support_standard_layout) {
+	    support_memory_mapping = true;
             auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
             support_standard_layout &= static_cast<bool>(features.get<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>().uniformBufferStandardLayout);
         }
@@ -629,7 +645,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 #endif
         }
 
-        if (physical_device_properties.vendorID == 4318) {
+        if (physical_device_properties.properties.vendorID == 4318) {
             // Nvidia does not allow us to set the device priority higher than normal
             // no need to remove the priority extension
             support_global_priority = false;
@@ -645,7 +661,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             }
         }
 
-        support_fsr &= static_cast<bool>(physical_device_features.shaderInt16);
+        support_fsr &= static_cast<bool>(physical_device_features.features.shaderInt16);
         if (support_fsr) {
             // double check for FP16 support
             auto props = physical_device.getFeatures2KHR<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceShaderFloat16Int8Features>();
@@ -659,7 +675,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             support_shader_interlock = false;
         }
 
-        support_shader_interlock &= static_cast<bool>(physical_device_features.fragmentStoresAndAtomics);
+        support_shader_interlock &= static_cast<bool>(physical_device_features.features.fragmentStoresAndAtomics);
         if (support_shader_interlock) {
             auto props = physical_device.getFeatures2KHR<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>();
             support_shader_interlock = static_cast<bool>(props.get<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>().fragmentShaderSampleInterlock);
@@ -822,14 +838,20 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     auto &config_vk_mapping = config.vk_mapping;
     uint8_t vk_idx = 1;
     if(config.gpu_idx == 0){
-	    if (config_vk_mapping == "mailbox"){
+	    if (config_vk_mapping == "FifoRelaxed"){
 	        vk_idx = 1;
-	    }else if (config_vk_mapping == "fifo-relaxed"){
+	    }else if (config_vk_mapping == "Fifo"){
 	        vk_idx = 2;
-	    }else if (config_vk_mapping == "fifo"){
+		}else if (config_vk_mapping == "Immediate"){
 	        vk_idx = 3;
+		}else if (config_vk_mapping == "SharedDemandRefresh"){
+	        vk_idx = 4;
+		}else if (config_vk_mapping == "SharedContinuousRefresh"){
+	        vk_idx = 5;
+		}else if (config_vk_mapping == "FifoLatestReadyEXT"){
+	        vk_idx = 6;
 	    }else {
-	        vk_idx = 0; // Immediate
+	        vk_idx = 0; // Mailbox
 	    }
     }
     if (!screen_renderer.setup(vk_idx))
@@ -888,11 +910,19 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
     if (mapping_method == MappingMethod::NativeBuffer) {
         // dynamically load the symbols
         void *libandroid = dlopen("libandroid.so", RTLD_LAZY);
+#ifdef __arm__
         _AHardwareBuffer_getNativeHandle = reinterpret_cast<decltype(_AHardwareBuffer_getNativeHandle)>(dlsym(libandroid, "AHardwareBuffer_getNativeHandle"));
         _AHardwareBuffer_allocate = reinterpret_cast<decltype(_AHardwareBuffer_allocate)>(dlsym(libandroid, "AHardwareBuffer_allocate"));
         _AHardwareBuffer_lock = reinterpret_cast<decltype(_AHardwareBuffer_lock)>(dlsym(libandroid, "AHardwareBuffer_lock"));
         _AHardwareBuffer_unlock = reinterpret_cast<decltype(_AHardwareBuffer_unlock)>(dlsym(libandroid, "AHardwareBuffer_unlock"));
         _AHardwareBuffer_release = reinterpret_cast<decltype(_AHardwareBuffer_release)>(dlsym(libandroid, "AHardwareBuffer_release"));
+#else
+        _AHardwareBuffer_getNativeHandle = std::bit_cast<decltype(_AHardwareBuffer_getNativeHandle)>(dlsym(libandroid, "AHardwareBuffer_getNativeHandle"));
+        _AHardwareBuffer_allocate = std::bit_cast<decltype(_AHardwareBuffer_allocate)>(dlsym(libandroid, "AHardwareBuffer_allocate"));
+        _AHardwareBuffer_lock = std::bit_cast<decltype(_AHardwareBuffer_lock)>(dlsym(libandroid, "AHardwareBuffer_lock"));
+        _AHardwareBuffer_unlock = std::bit_cast<decltype(_AHardwareBuffer_unlock)>(dlsym(libandroid, "AHardwareBuffer_unlock"));
+        _AHardwareBuffer_release = std::bit_cast<decltype(_AHardwareBuffer_release)>(dlsym(libandroid, "AHardwareBuffer_release"));
+#endif
     }
 #endif
 
@@ -1061,7 +1091,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             int mapped_memory_type = std::countr_zero(hardware_types);
             hardware_types -= (1 << mapped_memory_type);
 
-            if ((physical_device_memory.memoryTypes[mapped_memory_type].propertyFlags & flags) == flags)
+            if ((physical_device_memory.memoryProperties.memoryTypes[mapped_memory_type].propertyFlags & flags) == flags)
                 return mapped_memory_type;
         }
         return -1;
@@ -1145,9 +1175,12 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                 vk::ImportAndroidHardwareBufferInfoANDROID{
                     .buffer = buffer },
                 vk::MemoryAllocateFlagsInfo{
-                    .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
+                   // .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
+					.flags = vk::MemoryAllocateFlagBits::eDeviceMask }
             };
             device_memory = device.allocateMemory(alloc_info.get());
+			LOG_TRACE("ALLOC SIZE: {}", size);
+			// LOG_TRACE("DEVICE MEMORY NATIVE BUFFER: {}", static_cast<uint64_t>(device.allocateMemory(alloc_info.get()));
         } else {
             const native_handle_t *handle = _AHardwareBuffer_getNativeHandle(buffer);
             if (handle == nullptr || handle->numFds == 0 || handle->data[0] == -1) {
@@ -1207,14 +1240,24 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
         };
         buffer.init_buffer(mapped_memory_flags, memory_mapped_alloc);
-        const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
-        const uint64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
+#ifdef __aarch64__
+		const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
+        const int64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
         buffer.mapped_data = std::bit_cast<void *>(buffer_ptr_val + buffer_offset);
+#else
+		const uintptr_t buffer_ptr_val = reinterpret_cast<uintptr_t>(buffer.mapped_data);
+        const intptr_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
+		buffer.mapped_data = reinterpret_cast<void *>(buffer_ptr_val + buffer_offset);
+#endif
 
         vk::BufferDeviceAddressInfoKHR address_info{
             .buffer = buffer.buffer
         };
+#ifndef __aarch64__
         const uint64_t buffer_address = device.getBufferAddress(address_info) + buffer_offset;
+#else
+		const uintptr_t buffer_address = device.getBufferAddress(address_info) + buffer_offset;
+#endif
         const vk::Buffer mapped_buffer = buffer.buffer;
 
         add_external_mapping(mem, address.address(), size, static_cast<uint8_t *>(buffer.mapped_data));
@@ -1235,7 +1278,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                 mapped_memory_type = std::countr_zero(host_mem_types);
                 host_mem_types -= (1 << mapped_memory_type);
 
-                if ((physical_device_memory.memoryTypes[mapped_memory_type].propertyFlags & flags) == flags)
+                if ((physical_device_memory.memoryProperties.memoryTypes[mapped_memory_type].propertyFlags & flags) == flags)
                     return;
             }
 
@@ -1340,9 +1383,9 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
         AHardwareBuffer *hardware_buffer = reinterpret_cast<AHardwareBuffer *>(buffer.extra);
         _AHardwareBuffer_unlock(hardware_buffer, nullptr);
         // When using external fd, it takes ownership of the handle, so don't release it in this case
-        if (support_android_buffer_import)
+//        if (support_android_buffer_import)
             _AHardwareBuffer_release(hardware_buffer);
-        break;
+ //       break;
     }
 #endif
 
@@ -1380,7 +1423,7 @@ uint64_t VKState::get_matching_device_address(const Address address) {
 }
 
 int VKState::get_max_anisotropic_filtering() {
-    return static_cast<int>(physical_device_properties.limits.maxSamplerAnisotropy);
+    return static_cast<int>(physical_device_properties.properties.limits.maxSamplerAnisotropy);
 }
 
 void VKState::set_anisotropic_filtering(int anisotropic_filtering) {
@@ -1394,7 +1437,7 @@ void VKState::set_async_compilation(bool enable) {
 #ifdef ANDROID
 std::vector<std::string> VKState::get_gpu_list() {
     if (!support_custom_drivers())
-        return { physical_device_properties.deviceName.data() };
+        return { physical_device_properties.properties.deviceName.data() };
 
     // get the stock name
     std::vector<std::string> gpu_list = { "Default" };
@@ -1424,12 +1467,53 @@ std::vector<std::string> VKState::get_gpu_list() {
 }
 #endif
 
+std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
+	std::vector<std::string> result;
+		
+	switch (type) {
+		case 0: {
+			const auto present_modes = physical_device.getSurfacePresentModesKHR(screen_renderer.surface);
+            
+			for ( vk::PresentModeKHR format : present_modes ) {
+				result.push_back(vk::to_string(format));
+			
+	        // if not found use default instead
+            if ( result.empty() ) 
+                result.push_back(vk::to_string(vk::PresentModeKHR::eMailbox));
+			}
+	        break;
+		}
+
+	    case 1: {
+			std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm, vk::Format::eS8Uint, vk::Format::eX8D24UnormPack32 };
+			for ( vk::Format format : candidates ) {
+				  vk::FormatProperties props = physical_device.getFormatProperties( format );
+				
+                  if ( props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment )
+                      result.push_back(vk::to_string(format));
+				}
+	              // if not found use default instead
+            if ( result.empty() ) 
+                result.push_back(vk::to_string(vk::Format::eD24UnormS8Uint));
+				
+	        break;
+		}
+		
+	    default: 
+			result.push_back("INVALID");
+		    break;
+	}
+	
+	return result;
+}
+
+
 uint32_t VKState::get_gpu_version() {
-    return physical_device_properties.driverVersion;
+    return physical_device_properties.properties.driverVersion;
 }
 
 std::string_view VKState::get_gpu_name() {
-    return physical_device_properties.deviceName.data();
+    return physical_device_properties.properties.deviceName.data();
 }
 
 void VKState::precompile_shader(const ShadersHash &hash) {
@@ -1455,7 +1539,7 @@ void VKState::preclose_action() {
 
 bool VKState::support_custom_drivers() {
     // vendor ID 0x5143 is Qualcomm, being stock or turnip
-    return physical_device_properties.vendorID == 0x5143;
+    return physical_device_properties.properties.vendorID == 0x5143;
 }
 
 void VKState::set_turbo_mode(bool set) {
