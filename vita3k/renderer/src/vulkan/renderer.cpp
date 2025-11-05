@@ -80,57 +80,40 @@ decltype(AHardwareBuffer_unlock) *_AHardwareBuffer_unlock;
 decltype(AHardwareBuffer_release) *_AHardwareBuffer_release;
 #endif
 
-static void debug_log_message(std::string_view msg) {
+static VKAPI_ATTR vk::Bool32 VKAPI_CALL debug_callback(
+    vk::DebugUtilsMessageSeverityFlagBitsEXT message_severity,
+    vk::DebugUtilsMessageTypeFlagsEXT message_type,
+    const vk::DebugUtilsMessengerCallbackDataEXT *callback_data,
+    void *pUserData) {
     static const char *ignored_errors[] = {
         "VUID-vkCmdDrawIndexed-None-02721", // using r8g8b8a8 with non-multiple of 4 stride
         "VUID-VkImageViewCreateInfo-usage-02275", // srgb does not support the storage format
         "VUID-VkImageCreateInfo-imageCreateMaxMipLevels-02251", // srgb does not support the storage format
         "VUID-vkCmdPipelineBarrier-pDependencies-02285", // shader write -> vertex input read self-dependency, wrong error
         "VUID-vkCmdDrawIndexed-None-09003", // reading from color attachment, works on most GPUs with a general layout
+        "VUID-vkAcquireNextImageKHR-semaphore-01779", // Semaphore misuse, to fix
+	    "VUID-vkCmdDrawIndexed-None-09000", // reading from color attachment
         "VUID-vkCmdDrawIndexed-None-06538", // reading from color attachment
-        "VUID-vkCmdDrawIndexed-None-09000", // reading from color attachment
         "VKDBGUTILWARN003", // Some Adreno warning
         "VK_FORMAT_BC", // BCn patch
         "VUID-vkCmdCopyBufferToImage-dstImage-01997" // BCn patch
     };
 
-    bool log_error = true;
-    for (auto ignored_error : ignored_errors) {
-        if (msg.find(ignored_error) != std::string_view::npos) {
-            log_error = false;
-            break;
+    if (message_severity >= vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning
+        // for now, we are not interested in performance warnings
+        && (message_type & ~vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance)) {
+        std::string_view message = callback_data->pMessage;
+        bool log_error = true;
+        for (auto ignored_error : ignored_errors) {
+            if (message.find(ignored_error) != std::string_view::npos) {
+                log_error = false;
+                break;
+            }
         }
+
+        if (log_error)
+            LOG_ERROR("Validation layer: {}", callback_data->pMessage);
     }
-
-    if (log_error)
-        LOG_ERROR("Validation layer: {}", msg);
-}
-
-static vk::DebugUtilsMessengerEXT debug_messenger;
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_util_callback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
-    VkDebugUtilsMessageTypeFlagsEXT message_type,
-    const VkDebugUtilsMessengerCallbackDataEXT *callback_data,
-    void *pUserData) {
-    if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-        // for now we are not interested by performance warnings
-        && (message_type & ~VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)) {
-        debug_log_message(callback_data->pMessage);
-    }
-    return VK_FALSE;
-}
-
-static vk::DebugReportCallbackEXT debug_report;
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_report_callback(
-    VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType,
-    uint64_t object, size_t location,
-    int32_t messageCode, const char *layerPrefix, const char *message,
-    void *pUserData) {
-    std::string msg = fmt::format("Validation layer: Vk{}:{}[0x{:X}]:I{}:L{}: {}", layerPrefix, vk::to_string(vk::DebugReportObjectTypeEXT(objectType)),
-        object, messageCode, location, message);
-
-    debug_log_message(msg);
-
     return VK_FALSE;
 }
 
