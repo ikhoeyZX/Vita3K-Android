@@ -394,35 +394,31 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         }
 
         // look if we can use the validation layer
+        bool has_debug_extension = false;
         bool has_validation_layer = false;
-        const std::array<const std::string, 2> debug_extensions = { VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-            VK_EXT_DEBUG_REPORT_EXTENSION_NAME };
-        // use a string, not a string view, on some mali devices the memory gets modified
-        std::string found_debug_extension;
+        const std::string debug_extension = vk::EXTDebugUtilsExtensionName;
         for (const vk::ExtensionProperties &prop : vk::enumerateInstanceExtensionProperties()) {
-            const std::string_view extension(prop.extensionName.data());
-            for (const auto &debug_ext : debug_extensions) {
-                if (debug_ext == extension)
-                    found_debug_extension = extension;
+            if (std::string(prop.extensionName.data()) == debug_extension) {
+                has_debug_extension = true;
+                break;
             }
         }
         const std::string validation_layer = "VK_LAYER_KHRONOS_validation";
         for (const vk::LayerProperties &layer : vk::enumerateInstanceLayerProperties()) {
-            if (std::string_view(layer.layerName.data()) == validation_layer) {
+            if (std::string(layer.layerName.data()) == validation_layer) {
                 has_validation_layer = true;
                 break;
             }
         }
 
         std::vector<const char *> instance_layers;
-        if (has_validation_layer && !found_debug_extension.empty()) {
+        if (has_debug_extension && has_validation_layer) {
             if (config.validation_layer) {
                 LOG_INFO("Enabling vulkan validation layers (has a performance impact but allows better error messages)");
+                instance_extensions.push_back(debug_extension.c_str());
                 instance_layers.push_back(validation_layer.c_str());
-                instance_extensions.push_back(found_debug_extension.data());
-            } else {
+            } else
                 LOG_INFO("Disabling Vulkan validation layers (may improve performance but provides limited error messages)");
-            }
         }
 
 #ifdef __APPLE__
@@ -537,14 +533,14 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         // use these features (because they are used by the vita GPU) if they are available
         vk::PhysicalDeviceFeatures enabled_features{
-            .depthClamp = physical_device_features.depthClamp,
-            .fillModeNonSolid = physical_device_features.fillModeNonSolid,
-            .wideLines = physical_device_features.wideLines,
-            .samplerAnisotropy = physical_device_features.samplerAnisotropy,
-            .occlusionQueryPrecise = physical_device_features.occlusionQueryPrecise,
-            .fragmentStoresAndAtomics = physical_device_features.fragmentStoresAndAtomics,
-            .shaderStorageImageExtendedFormats = physical_device_features.shaderStorageImageExtendedFormats,
-            .shaderInt16 = physical_device_features.shaderInt16,
+            .depthClamp = physical_device_features.features.depthClamp,
+            .fillModeNonSolid = physical_device_features.features.fillModeNonSolid,
+            .wideLines = physical_device_features.features.wideLines,
+            .samplerAnisotropy = physical_device_features.features.samplerAnisotropy,
+            .occlusionQueryPrecise = physical_device_features.features.occlusionQueryPrecise,
+            .fragmentStoresAndAtomics = physical_device_features.features.fragmentStoresAndAtomics,
+            .shaderStorageImageExtendedFormats = physical_device_features.features.shaderStorageImageExtendedFormats,
+            .shaderInt16 = physical_device_features.features.shaderInt16,
         };
 
         // look for optional extensions
