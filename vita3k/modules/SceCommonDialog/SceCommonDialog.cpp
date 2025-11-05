@@ -28,7 +28,7 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#include <SDL3/SDL_timer.h>
+#include <SDL_timer.h>
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceCommonDialog);
@@ -830,10 +830,14 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
             const char *iconPath = empty_param->iconPath.get(emuenv.mem);
             SceUChar8 *iconBuf = empty_param->iconBuf.cast<SceUChar8>().get(emuenv.mem);
             const auto iconBufSize = empty_param->iconBufSize;
-            if (iconPath && (std::strlen(iconPath) > 0)) {
-                auto device = device::get_device(iconPath);
-                const auto thumbnail_path = translate_path(empty_param->iconPath.get(emuenv.mem), device, emuenv.io.device_paths);
-                vfs::read_file(VitaIoDevice::ux0, icon_buf_tmp, emuenv.pref_path, thumbnail_path);
+            if (iconPath) {
+				if (iconPath && (std::strlen(iconPath) > 0)) {
+                   auto device = device::get_device(iconPath);
+                   const auto thumbnail_path = translate_path(empty_param->iconPath.get(emuenv.mem), device, emuenv.io.device_paths);
+                   vfs::read_file(VitaIoDevice::ux0, icon_buf_tmp, emuenv.pref_path, thumbnail_path);
+				}else{
+					LOG_WARN("Icon is empty file! or path was invalid!");
+				}
             } else if (iconBuf && (iconBufSize > 0)) {
                 icon_buf_tmp.insert(icon_buf_tmp.end(), iconBuf, iconBuf + iconBufSize);
             }
