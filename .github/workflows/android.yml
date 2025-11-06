@@ -37,8 +37,8 @@ jobs:
       - name: Set up build environment
         run: |
           sudo apt-get install -y ninja-build
-#          vcpkg update
-#          vcpkg upgrade --no-dry-run
+          echo vcpkg update
+          echo vcpkg upgrade --no-dry-run
           vcpkg install boost-system:arm-neon-android boost-filesystem:arm-neon-android boost-program-options:arm-neon-android boost-icl:arm-neon-android boost-variant:arm-neon-android openssl:arm-neon-android zlib:arm-neon-android ffmpeg:arm-neon-android boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
 
 #          vcpkg install boost-system:arm-neon-android boost-filesystem:arm-neon-android boost-program-options:arm-neon-android boost-icl:arm-neon-android boost-variant:arm-neon-android openssl:arm-neon-android zlib:arm-neon-android ffmpeg:arm-neon-android
