@@ -145,16 +145,21 @@ static spv::Id get_type_basic(spv::Builder &b, const Input &input) {
     switch (input.type) {
         // clang-format off
     case DataType::F16:
+         return b.makeFloatType(16);
     case DataType::F32:
          return b.makeFloatType(32);
 
     case DataType::UINT8:
+        return b.makeUintType(8);
     case DataType::UINT16:
+        return b.makeUintType(16);
     case DataType::UINT32:
         return b.makeUintType(32);
 
     case DataType::INT8:
+        return b.makeIntType(8);
     case DataType::INT16:
+        return b.makeIntType(16);
     case DataType::INT32:
         return b.makeIntType(32);
 
@@ -261,6 +266,10 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
 
     auto get_dest_mask = [&]() {
         switch (total_var_comp) {
+        case 0:
+            dest_mask = 0b0;
+            break;
+            
         case 1:
             dest_mask = 0b1;
             break;
@@ -430,6 +439,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 pa_dtype = DataType::F16;
             } else if (input_type == 0x10000000) {
                 pa_type = "fixed";
+                pa_dtype = DataType::INT32;
                 // TODO: Supply data type
             } else if (input_type == 0x100000) {
                 if (input_id == 0xA000 || input_id == 0xB000) {
@@ -813,6 +823,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                     b.setPrecision(rgb, precision);
                     source = b.createOp(spv::OpVectorShuffle, v4, { { true, rgb }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 }, { false, 6 } });
 
+                    b.setPrecision(source, precision);
                     store_source_result();
 
                     // else (no shader gamma correction, nothing to do)
@@ -1032,6 +1043,10 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         ADD_VERT_UNIFORM_MEMBER(z_scale);
 
 #undef ADD_VERT_UNIFORM_MEMBER
+
+        // the resolution multiplier does not require a high precision
+        b.addMemberDecoration(render_buf_type, FRAG_UNIFORM_res_multiplier, spv::DecorationRelaxedPrecision);
+
 #define ADD_EXT_UNIFORM_MEMBER(name)                                                                                                                                                \
     spv_params.name##_id = curr_field_id;                                                                                                                                           \
     b.addMemberDecoration(render_buf_type, curr_field_id, spv::DecorationOffset, RenderVertUniformBlockExtended::get_##name##_offset(uniform_buffer_count, uniform_texture_count)); \
@@ -1219,7 +1234,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
         var_to_reg.var = var;
         translation_state.var_to_regs.push_back(var_to_reg);
-
+        
         switch (semantic) {
         case SCE_GXM_PARAMETER_SEMANTIC_INDEX:
             if (translation_state.is_vulkan)
@@ -2052,20 +2067,51 @@ void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_
 static spv::ImageFormat translate_color_format(const SceGxmColorBaseFormat format) {
     switch (format) {
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8:
         return spv::ImageFormat::ImageFormatRgba8;
 
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8:
+        return spv::ImageFormat::ImageFormatRg8;
+        
+    case SCE_GXM_COLOR_BASE_FORMAT_S8:
+        return spv::ImageFormat::ImageFormatR8Snorm;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_S8S8:
+        return spv::ImageFormat::ImageFormatRg8Snorm;
+            
     case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
         return spv::ImageFormat::ImageFormatRgba8Snorm;
 
+    case SCE_GXM_COLOR_BASE_FORMAT_S16S16:
+        return spv::ImageFormat::ImageFormatRg16Snorm;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_U16:
+        return spv::ImageFormat::ImageFormatR16;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_U16U16:
+        return spv::ImageFormat::ImageFormatRg16;
+            
+    case SCE_GXM_COLOR_BASE_FORMAT_F16:
+        return spv::ImageFormat::ImageFormatR16f;
+        
+    case SCE_GXM_COLOR_BASE_FORMAT_F16F16:
+        return spv::ImageFormat::ImageFormatRg16f;
+        
     case SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16:
         return spv::ImageFormat::ImageFormatRgba16f;
 
     case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
+        return spv::ImageFormat::ImageFormatRgb10a2ui;
+        
+    case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
         return spv::ImageFormat::ImageFormatRgb10A2;
 
     case SCE_GXM_COLOR_BASE_FORMAT_F11F11F10:
         return spv::ImageFormat::ImageFormatR11fG11fB10f;
 
+        case SCE_GXM_COLOR_BASE_FORMAT_F32:
+        return spv::ImageFormat::ImageFormatR32f;
+        
     case SCE_GXM_COLOR_BASE_FORMAT_F32F32:
         return spv::ImageFormat::ImageFormatRg32f;
 
