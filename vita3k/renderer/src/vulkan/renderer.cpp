@@ -925,7 +925,7 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
 
     pipeline_cache.init(support_rasterized_order_access);
 
-    texture_cache.init(false, texture_folder(), game_id);
+    texture_cache.init(true, texture_folder(), game_id);
 }
 
 void VKState::cleanup() {
