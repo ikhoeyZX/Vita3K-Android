@@ -120,11 +120,11 @@ static VKAPI_ATTR vk::Bool32 VKAPI_CALL debug_callback(
 }
 
 const static std::vector<const char *> required_device_extensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    vk::KHRSwapchainExtensionName,
     // needed in order to use storage buffers
-    VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME,
+    vk::KHRStorageBufferStorageClassExtensionName,
     // needed in order to use negative viewport height
-    VK_KHR_MAINTENANCE1_EXTENSION_NAME
+    vk::KHRMaintenance1ExtensionName
 };
 
 namespace renderer::vulkan {
@@ -380,12 +380,12 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 #endif
         
         const std::set<std::string> optional_instance_extensions = {
-            VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
-            VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
-            VK_KHR_DEVICE_GROUP_CREATION_EXTENSION_NAME,
+            vk::KHRGetPhysicalDeviceProperties2ExtensionName, //Add comment More actions
+            vk::KHRExternalMemoryCapabilitiesExtensionName,
+            vk::KHRDeviceGroupCreationExtensionName,
 #ifdef __APPLE__
-            VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
-		    VK_EXT_LAYER_SETTINGS_EXTENSION_NAME,
+            vk::KHRPortabilityEnumerationExtensionName,
+            vk::EXTLayerSettingsExtensionName,
 #endif
         };
         for (const vk::ExtensionProperties &prop : vk::enumerateInstanceExtensionProperties()) {
@@ -489,8 +489,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
                     // if it is an integrated gpu, try to find a discrete one
                     if (device.getProperties().deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
-                        break;
-					
+                    //  break;
                     if (device.getProperties().deviceType == vk::PhysicalDeviceType::eIntegratedGpu)
                         break;
                 }
@@ -553,30 +552,29 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         bool support_buffer_device_address = false;
         bool support_external_memory = false;
         bool support_shader_interlock = false;
-        
         const std::map<std::string_view, bool *> optional_extensions = {
-            { VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, &temp_bool },
+                        { vk::KHRGetMemoryRequirements2ExtensionName, &temp_bool },
             // can be used by vma to improve performance
-            { VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME, &support_dedicated_allocations },
+            { vk::KHRDedicatedAllocationExtensionName, &support_dedicated_allocations },
             // used to tell the driver this application is high priority
-            { VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME, &support_global_priority },
+            { vk::EXTGlobalPriorityExtensionName, &support_global_priority },
             // can be used to specify which format will be used by mutable images
-            { VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME, &surface_cache.support_image_format_specifier },
-            { VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME, &temp_bool },
-            { VK_KHR_DEVICE_GROUP_EXTENSION_NAME, &temp_bool },
+            { vk::KHRImageFormatListExtensionName, &surface_cache.support_image_format_specifier },
+            { vk::KHRExternalMemoryExtensionName, &temp_bool },
+            { vk::KHRDeviceGroupExtensionName, &temp_bool },
             // can host memory directly be used for gxm memory
-            { VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME, &support_external_memory },
+            { vk::EXTExternalMemoryHostExtensionName, &support_external_memory },
             // also needed for reading mapped memory in the shader
-            { VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, &support_buffer_device_address },
+            { vk::KHRBufferDeviceAddressExtensionName, &support_buffer_device_address },
             // needed for uniform uvec2 arrays not to take twice the size
-            { VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME, &support_standard_layout },
+            { vk::KHRUniformBufferStandardLayoutExtensionName, &support_standard_layout },
             // needed for FSR
-            { VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME, &support_fsr },
+            { vk::KHRShaderFloat16Int8ExtensionName, &support_fsr },
             // used for accurate programmable blending on desktop GPUs
-            { VK_EXT_FRAGMENT_SHADER_INTERLOCK_EXTENSION_NAME, &support_shader_interlock },
+            { vk::EXTFragmentShaderInterlockExtensionName, &support_shader_interlock },
 #ifdef __APPLE__
             // Needed to create the MoltenVK device
-            { VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME, &temp_bool },
+            { vk::KHRPortabilitySubsetExtensionName, &temp_bool },
 #endif
             // used for coherent framebuffer fetch
             { VK_EXT_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_EXTENSION_NAME, &support_rasterized_order_access },
@@ -818,7 +816,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     }
 
     // create the frame objects
-    for (uint8_t i = 0; i < MAX_FRAMES_RENDERING; i++) {
+    for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
         FrameObject &frame = frames[i];
 
         vk::CommandPoolCreateInfo pool_info{
