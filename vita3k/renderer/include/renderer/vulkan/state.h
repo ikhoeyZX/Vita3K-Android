@@ -111,8 +111,8 @@ struct VKState : public renderer::State {
     
 #ifdef ANDROID
 // SDK > 26
-    bool support_android_buffer_import = true;
-    bool support_unix_fd_import = true;
+    bool support_android_buffer_import = false;
+    bool support_unix_fd_import = false;
 #endif
 
     VKState(int gpu_idx);
