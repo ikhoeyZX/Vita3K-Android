@@ -833,14 +833,15 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
         vk::DynamicState::eStencilCompareMask,
         vk::DynamicState::eStencilReference,
         vk::DynamicState::eStencilWriteMask,
-        vk::DynamicState::eDepthBias,
+        vk::DynamicState::eDepthBias
 
-        vk::DynamicState::eBlendConstants,
+      /*  vk::DynamicState::eBlendConstants,
         vk::DynamicState::eDepthBounds,
         vk::DynamicState::ePrimitiveTopology,
         vk::DynamicState::eViewportWithCount,
         vk::DynamicState::eScissorWithCount,
         vk::DynamicState::eStencilOp
+    */
     };
     vk::PipelineDynamicStateCreateInfo dynamic_info{};
     dynamic_info.setDynamicStates(dynamic_states);
