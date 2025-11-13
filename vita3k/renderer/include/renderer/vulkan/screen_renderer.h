@@ -80,7 +80,7 @@ public:
 
     bool create(SDL_Window *window);
     // called after the logical device has been created
-    bool setup(uint8_t config_vk_mapping);
+    bool setup(uint8_t vk_idx, bool custom_drv);
     void cleanup();
 
     bool acquire_swapchain_image(bool start_render_pass = false);
