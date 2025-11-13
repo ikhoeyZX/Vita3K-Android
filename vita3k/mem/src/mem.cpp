@@ -41,7 +41,7 @@
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
 constexpr bool LOG_PROTECT = false;
 constexpr bool PAGE_NAME_TRACKING = false;
-constexpr uint64_t MAX_TOTAL_MEM_SIZE = GiB(8);
+constexpr uint64_t MAX_TOTAL_MEM_SIZE = GiB(4);
 uint64_t TOTAL_MEM_SIZE = GiB(3);
 
 // TODO: support multiple handlers
@@ -77,7 +77,7 @@ bool init(MemState &state, const bool use_page_table) {
     if(TOTAL_MEM_SIZE > mem_size_tmp){
        LOG_DEBUG("Virtual Memory size too low!, using lowest allowed value!");
     } else if (MAX_TOTAL_MEM_SIZE < mem_size_tmp){
-        LOG_DEBUG("Virtual Memory size too big!, limit to 8GB now!");
+        // do nothing
     } else {
        TOTAL_MEM_SIZE = mem_size_tmp;
     }
@@ -132,8 +132,8 @@ bool init(MemState &state, const bool use_page_table) {
     const BOOL ret = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
 #else
-    // const int ret = mprotect(state.memory.get(), state.page_size, PROT_NONE);
-    // LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+    const int ret = mprotect(state.memory.get(), state.page_size, PROT_NONE);
+    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
 #endif
 
     state.use_page_table = use_page_table;
@@ -310,16 +310,16 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
     auto it = state.protect_tree.lower_bound(vaddr);
     if (it == state.protect_tree.end()) {
         // HACK: keep going
-        unprotect_inner(state, align_down(vaddr, state.page_size), state.page_size);
         LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
+        unprotect_inner(state, align_down(vaddr, state.page_size), state.page_size);
         return true;
     }
 
     ProtectSegmentInfo &info = it->second;
     if (vaddr < it->first || vaddr >= it->first + info.size) {
         // HACK: keep going
-        unprotect_inner(state, align_down(vaddr, state.page_size), state.page_size);
         LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
+        unprotect_inner(state, align_down(vaddr, state.page_size), state.page_size);
         return true;
     }
 
