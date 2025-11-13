@@ -46,6 +46,7 @@
 
 #include <gui/imgui_impl_sdl.h>
 
+#include <ctime>
 #include <regex>
 
 #include <SDL.h>
@@ -552,6 +553,14 @@ static void take_screenshot(EmuEnvState &emuenv) {
         return;
     }
 
+    auto t = std::time(nullptr);
+    struct tm localtime;
+#ifdef _WIN32
+    localtime_s(&localtime, &t);
+#else
+    localtime_r(&t, &localtime);
+#endif
+    
     uint32_t width, height;
     std::vector<uint32_t> frame = emuenv.renderer->dump_frame(emuenv.display, width, height);
 
@@ -568,7 +577,7 @@ static void take_screenshot(EmuEnvState &emuenv) {
     fs::create_directories(save_folder);
 
     const auto img_format = emuenv.cfg.screenshot_format == JPEG ? ".jpg" : ".png";
-    const fs::path save_file = save_folder / fmt::format("{}_{:%Y-%m-%d-%H%M%OS}{}", string_utils::remove_special_chars(emuenv.current_app_title), fmt::localtime(std::time(nullptr)), img_format);
+    const fs::path save_file = save_folder / fmt::format("{}_{:%Y-%m-%d-%H%M%OS}{}", string_utils::remove_special_chars(emuenv.current_app_title), localtime, img_format);
     constexpr int quality = 85; // google recommended value
     bool screenshot_ok = false;
     if (emuenv.cfg.screenshot_format == JPEG) {
