@@ -121,7 +121,6 @@ bool ScreenRenderer::setup(uint8_t vk_idx, bool custom_drv) {
                break;
            }else{
               LOG_ERROR("getSurfacePresentModesKHR : no supported feature found!");
-              present_modes = state.physical_device.getSurfacePresentModesEXT(surface);
               break;
            }
        }
