@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -197,6 +197,19 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Checkbox(emulator["invert_gyro"].c_str(), &emuenv.cfg.invert_gyro);
             SetTooltipEx(emulator["invert_gyro_description"].c_str());
         }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        TextColoredCentered(GUI_COLOR_TEXT_TITLE, "Analog Stick Multiplier");
+        ImGui::Spacing();
+        auto &mult = emuenv.cfg.controller_analog_multiplier;
+        if (ImGui::SliderFloat("##analog_multiplier", &mult, 0.1f, 2.f, "%.1fx", ImGuiSliderFlags_AlwaysClamp))
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        SetTooltipEx("Analog multipiler can be used to change the sensitivity of your stick movements.");
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
     }
 
     ImGui::Spacing();
