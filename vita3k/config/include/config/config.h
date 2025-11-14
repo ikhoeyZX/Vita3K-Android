@@ -94,7 +94,7 @@ enum ScreenshotFormat {
     code(std::string, "vk-mapping", "Mailbox", vk_mapping)                                              \
     code(std::string, "deep-stencil", "D32Sfloat", deep_stencil)                                        \
     code(bool, "boot-apps-full-screen", false, boot_apps_full_screen)                                   \
-    code(std::string, "audio-backend", "Cubeb", audio_backend)                                            \
+    code(std::string, "audio-backend", "Cubeb", audio_backend)                                          \
     code(int, "audio-volume", 100, audio_volume)                                                        \
     code(bool, "ngs-enable", true, ngs_enable)                                                          \
     code(std::string, "audio-drv", "auto", audio_drv)                                                   \
@@ -121,6 +121,7 @@ enum ScreenshotFormat {
     code(int, "performance-overlay-position", 1, performance_overlay_position)                          \
     code(int, "screenshot-format", 1, screenshot_format)                                                \
     code(bool, "enable-gamepad-overlay", true, enable_gamepad_overlay)                                  \
+    code(float, "controller-analog-multiplier", 1.0f, controller_analog_multiplier)                     \
     code(bool, "overlay-show-touch-switch", false, overlay_show_touch_switch)                           \
     code(float, "overlay-scale", 1.0f, overlay_scale)                                                   \
     code(float, "overlay-scale-joystick", 1.0f, overlay_scale_joystick)                                 \
