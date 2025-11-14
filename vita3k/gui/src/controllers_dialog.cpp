@@ -395,6 +395,16 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::Separator();
                     ImGui::Spacing();
 
+                    TextColoredCentered(GUI_COLOR_TEXT_TITLE, "Analog Stick Multiplier");
+                    ImGui::Spacing();
+                    auto &mult = emuenv.cfg.controller_analog_multiplier;
+                    if (ImGui::SliderFloat("##analog_multiplier", &mult, 0.1f, 2.f, "%.1fx", ImGuiSliderFlags_AlwaysClamp))
+                        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+                    SetTooltipEx("Analog multipiler can be used to change the sensitivity of your stick movements.");
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    ImGui::Spacing();
+                    
                     if (ctrl.controllers[guid].has_led) {
                         const auto set_led_color = [&](const std::vector<int> &led) {
                             SDL_GameControllerSetLED(ctrl.controllers[guid].controller.get(), led[0], led[1], led[2]);
