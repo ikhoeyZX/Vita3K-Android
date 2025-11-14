@@ -342,10 +342,10 @@ static void apply_controller(EmuEnvState &emuenv, uint32_t *buttons, float axes[
     }
 
     auto &analog_multiplier = emuenv.cfg.controller_analog_multiplier;
-    axes[0] += axis_to_axis(SDL_GetGamepadAxis(controller, SDL_GAMEPAD_AXIS_LEFTX), analog_multiplier);
-    axes[1] += axis_to_axis(SDL_GetGamepadAxis(controller, SDL_GAMEPAD_AXIS_LEFTY), analog_multiplier);
-    axes[2] += axis_to_axis(SDL_GetGamepadAxis(controller, SDL_GAMEPAD_AXIS_RIGHTX), analog_multiplier);
-    axes[3] += axis_to_axis(SDL_GetGamepadAxis(controller, SDL_GAMEPAD_AXIS_RIGHTY), analog_multiplier);
+    axes[0] += axis_to_axis(SDL_GameControllerGetAxis(controller, SDL_GAMEPAD_AXIS_LEFTX), analog_multiplier);
+    axes[1] += axis_to_axis(SDL_GameControllerGetAxis(controller, SDL_GAMEPAD_AXIS_LEFTY), analog_multiplier);
+    axes[2] += axis_to_axis(SDL_GameControllerGetAxis(controller, SDL_GAMEPAD_AXIS_RIGHTX), analog_multiplier);
+    axes[3] += axis_to_axis(SDL_GameControllerGetAxis(controller, SDL_GAMEPAD_AXIS_RIGHTY), analog_multiplier);
 }
 
 static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool negative, bool from_ext_function, SceUInt32 &buttons, SceUInt8 &lx, SceUInt8 &ly, SceUInt8 &rx, SceUInt8 &ry) {
