@@ -457,7 +457,7 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
     curl_easy_setopt(curl_download, CURLOPT_XFERINFOFUNCTION, curl_callback);
     curl_easy_setopt(curl_download, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
 #ifdef ANDROID
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(curl_download, CURLOPT_SSL_VERIFYPEER, 0L);
 #endif 
     
     auto fp = fopen(output_file_path.c_str(), "ab");
