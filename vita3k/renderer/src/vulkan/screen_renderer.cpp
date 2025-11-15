@@ -416,11 +416,12 @@ void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, co
     // if there is too much load on the GPU, it just drops any render pass with ImGui graphics in it....
     // I still don't know exactly why
     // so as a partial fix, render the gui and screen in different render passes
-    if (state.is_adreno_stock) {
+    LOG_WARN("TEST ADRENO in all gpu");
+//    if (state.is_adreno_stock) {
         current_cmd_buffer.endRenderPass();
         pass_info.renderPass = stock_adreno_pass;
         current_cmd_buffer.beginRenderPass(pass_info, vk::SubpassContents::eInline);
-    }
+//    }
 #endif
     
 }
