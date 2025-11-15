@@ -29,6 +29,8 @@
 #include <ifaddrs.h>
 #include <net/if.h>
 #include <netinet/in.h>
+#else
+#include <curl/curl.h> 
 #endif
 
 #include <condition_variable>
