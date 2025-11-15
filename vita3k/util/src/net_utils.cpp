@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,14 +15,20 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <util/log.h>
 #include <util/net_utils.h>
 
 #include <curl/curl.h>
 
 #ifdef _WIN32
+#include <iphlpapi.h>
 #include <winsock2.h>
 #else
+#include <arpa/inet.h>
 #include <fcntl.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <netinet/in.h>
 #endif
 
 #include <condition_variable>
@@ -50,8 +56,7 @@ SceHttpErrorCode parse_url(const std::string &url, parsedUrl &out) {
     }
 
     auto end_scheme_pos = url.find(':');
-    auto path_pos = url.find('/', end_scheme_pos + 3);
-    auto has_path = path_pos != std::string::npos;
+    auto has_path = url.find('/', end_scheme_pos + 3) != std::string::npos;
 
     auto full_wo_scheme = url.substr(end_scheme_pos + 3);
 
@@ -59,7 +64,7 @@ SceHttpErrorCode parse_url(const std::string &url, parsedUrl &out) {
         // username:password@lttstore.com:727/wysi/cookie.php?pog=gers#extremeexploit
 
         {
-            path_pos = std::string(full_wo_scheme).find('/');
+            auto path_pos = std::string(full_wo_scheme).find('/');
             auto full_no_scheme_path = full_wo_scheme.substr(0, path_pos);
             // full_no_scheme_path = username:password@lttstore.com:727
             auto c = full_no_scheme_path.find('@');
@@ -281,14 +286,14 @@ bool parseHeaders(std::string &headersRaw, HeadersMapType &headersOut) {
 
         auto name = line.substr(0, line.find(':'));
         int valueStart = name.length() + 1;
-        if (line.find(": "))
+        if (line.find(": ") != std::string_view::npos)
             // Theres a space between semicolon and value, trim it
             valueStart++;
 
         auto value = line.substr(valueStart);
 
-        headersOut.insert({ std::string(name), std::string(value) });
-        ptr = strtok(NULL, "\r\n");
+        headersOut.emplace(std::string(name), std::string(value));
+        ptr = strtok(nullptr, "\r\n");
     }
     return true;
 }
@@ -314,7 +319,7 @@ bool parseResponse(const std::string &res, SceRequestResponse &reqres) {
 }
 
 bool socketSetBlocking(int sockfd, bool blocking) {
-#ifdef WIN32
+#ifdef _WIN32
     u_long blocking_tmp = blocking;
     ioctlsocket(sockfd, FIONBIO, &blocking_tmp);
 #else
@@ -339,10 +344,6 @@ std::string get_web_response(const std::string &url) {
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
 
-#ifdef ANDROID
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-#endif 
-    
     std::string response_string;
     const auto writeFunc = +[](void *ptr, size_t size, size_t nmemb, std::string *data) {
         data->append((char *)ptr, size * nmemb);
@@ -381,7 +382,7 @@ std::string get_web_regex_result(const std::string &url, const std::regex &regex
     return result;
 }
 
-uint64_t get_current_time_ms() {
+static uint64_t get_current_time_ms() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 }
 
@@ -453,10 +454,6 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
     curl_easy_setopt(curl_download, CURLOPT_XFERINFOFUNCTION, curl_callback);
     curl_easy_setopt(curl_download, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
 
-#ifdef ANDROID
-    curl_easy_setopt(curl_download, CURLOPT_SSL_VERIFYPEER, 0L);
-#endif 
-    
     auto fp = fopen(output_file_path.c_str(), "ab");
     if (!fp) {
         LOG_CRITICAL("Could not fopen file {}", output_file_path);
@@ -478,6 +475,97 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
         LOG_CRITICAL("Aborted update by user");
 
     return res == CURLE_OK;
+}
+
+std::vector<AssignedAddr> get_all_assigned_addrs() {
+    std::vector<AssignedAddr> out_addrs;
+    const auto ret_addrs = [&out_addrs]() {
+        if (out_addrs.empty())
+            out_addrs.push_back({ "localhost", "127.0.0.1", "255.255.255.255" });
+
+        return out_addrs;
+    };
+
+#ifdef _WIN32
+    PIP_ADAPTER_INFO pAdapterInfo;
+    DWORD dwRetVal = 0;
+    UINT i;
+    ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
+    pAdapterInfo = (IP_ADAPTER_INFO *)malloc(sizeof(IP_ADAPTER_INFO));
+    if (pAdapterInfo == NULL) {
+        LOG_CRITICAL("Error allocating memory needed to call GetAdaptersinfo");
+        return ret_addrs();
+    }
+    // Make an initial call to GetAdaptersInfo to get the necessary size into the ulOutBufLen variable
+    if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW) {
+        free(pAdapterInfo);
+        pAdapterInfo = (IP_ADAPTER_INFO *)malloc(ulOutBufLen);
+        if (pAdapterInfo == NULL) {
+            LOG_CRITICAL("Error allocating memory needed to call GetAdaptersinfo");
+            return ret_addrs();
+        }
+    }
+    if ((dwRetVal = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
+        PIP_ADAPTER_INFO pAdapter = pAdapterInfo;
+        const std::string noAddress = "0.0.0.0";
+        while (pAdapter) {
+            IP_ADDR_STRING *pIPAddr = &pAdapter->IpAddressList;
+            while (pIPAddr) {
+                if (noAddress.compare(pIPAddr->IpAddress.String) != 0)
+                    out_addrs.push_back({ pAdapter->Description, pIPAddr->IpAddress.String, pIPAddr->IpMask.String });
+                pIPAddr = pIPAddr->Next;
+            }
+            pAdapter = pAdapter->Next;
+        }
+    } else {
+        LOG_CRITICAL("GetAdaptersInfo failed with error: {}", dwRetVal);
+    }
+#else
+    struct ifaddrs *ifAddrStruct = NULL;
+    struct ifaddrs *ifa = NULL;
+    void *tmpAddrPtr = NULL;
+
+    getifaddrs(&ifAddrStruct);
+
+    for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr)
+            continue;
+        if ((ifa->ifa_flags & IFF_LOOPBACK) != 0)
+            continue;
+        if (ifa->ifa_flags)
+            if (ifa->ifa_addr->sa_family == AF_INET) { // check it is IP4
+                char netMaskAddrStr[INET_ADDRSTRLEN];
+                auto netMaskAddr = ((sockaddr_in *)ifa->ifa_netmask)->sin_addr;
+                inet_ntop(AF_INET, &netMaskAddr, netMaskAddrStr, INET_ADDRSTRLEN);
+                // is a valid IP4 Address
+                tmpAddrPtr = &((sockaddr_in *)ifa->ifa_addr)->sin_addr;
+                char addressBuffer[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
+                out_addrs.push_back({ ifa->ifa_name, addressBuffer, netMaskAddrStr });
+            }
+    }
+    if (ifAddrStruct != NULL)
+        freeifaddrs(ifAddrStruct);
+#endif
+    return ret_addrs();
+}
+
+AssignedAddr get_selected_assigned_addr(int32_t &outIndex) {
+    const auto addrs = get_all_assigned_addrs();
+    if (outIndex >= addrs.size()) {
+        LOG_ERROR("Invalid index {}, returning first address", outIndex);
+        outIndex = 0;
+    }
+    return addrs[outIndex];
+}
+
+void init_address(int32_t &outIndex, uint32_t &netAddr, uint32_t &broadcastAddr) {
+    // Initialize the net and broadcast address based on the assigned address and netmask
+    const auto addr = get_selected_assigned_addr(outIndex);
+    int netMask;
+    inet_pton(AF_INET, addr.addr.c_str(), &netAddr);
+    inet_pton(AF_INET, addr.netMask.c_str(), &netMask);
+    broadcastAddr = netAddr | ~netMask;
 }
 
 } // namespace net_utils
