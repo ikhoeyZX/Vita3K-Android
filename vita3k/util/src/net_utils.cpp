@@ -335,7 +335,7 @@ bool socketSetBlocking(int sockfd, bool blocking) {
 }
 
 std::string get_web_response(const std::string &url) {
-    CURL curl = curl_easy_init();
+    CURL *curl = curl_easy_init();
     if (!curl)
         return {};
 
