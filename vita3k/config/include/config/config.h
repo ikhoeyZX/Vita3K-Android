@@ -160,7 +160,7 @@ enum ScreenshotFormat {
     code(std::string, "user-id", std::string{}, user_id)                                                \
     code(bool, "user-auto-connect", false, auto_user_login)                                             \
     code(std::string, "user-lang", std::string{}, user_lang)                                            \
-    code(bool, "display-info-message", false, display_info_message)                                      \
+    code(bool, "display-info-message", false, display_info_message)                                     \
     code(bool, "show-welcome", true, show_welcome)                                                      \
     code(bool, "check-for-updates", false, check_for_updates)                                           \
     code(bool, "dencrypt-installs", true, dencrypt_installs)                                            \
@@ -168,15 +168,16 @@ enum ScreenshotFormat {
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(bool, "fps-hack", false, fps_hack)                                                             \
-    code(bool, "use-astc", false, use_astc)                                                              \
+    code(bool, "use-astc", false, use_astc)                                                             \
     code(bool, "acceleration-and-gyroscope", true, tiltsens)                                            \
     code(int, "acceleration-pos", 0, tiltpos)                                                           \
     code(bool, "invert-gyro", false, invert_gyro)                                                       \
     code(int, "screenmode-pos", 0, screenmode_pos)                                                      \
     code(uint64_t, "current-ime-lang", 4, current_ime_lang)                                             \
     code(bool, "native-screen", false, native_screen)                                                   \
-    code(bool, "psn-signed-in", true, psn_signed_in)                                                   \
+    code(bool, "psn-signed-in", true, psn_signed_in)                                                    \
     code(bool, "http-enable", true, http_enable)                                                        \
+    code(int, "adhoc-addr", 0, adhoc_addr)                                                              \
     code(int, "http-timeout-attempts", 50, http_timeout_attempts)                                       \
     code(int, "http-timeout-sleep-ms", 100, http_timeout_sleep_ms)                                      \
     code(int, "http-read-end-attempts", 10, http_read_end_attempts)                                     \
