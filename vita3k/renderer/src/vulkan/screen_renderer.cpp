@@ -416,7 +416,9 @@ void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, co
     // if there is too much load on the GPU, it just drops any render pass with ImGui graphics in it....
     // I still don't know exactly why
     // so as a partial fix, render the gui and screen in different render passes
-    LOG_WARN("TEST ADRENO in all gpu");
+
+    // i think it make game run much faster in mali gpu so i unlock this for all gpu type
+    LOG_INFO_ONCE("Adreno gpu render hack enabled to all gpu type");
 //    if (state.is_adreno_stock) {
         current_cmd_buffer.endRenderPass();
         pass_info.renderPass = stock_adreno_pass;
@@ -588,7 +590,8 @@ void ScreenRenderer::create_render_pass() {
      post_filter_render_pass = state.device.createRenderPass(pass_info);
 
 #ifdef ANDROID
-    LOG_WARN("TES ADRENO MODE IN ALL GPU");
+    // no issue in my mali gpu
+    LOG_INFO_ONCE("adreno hack enabled to all gpu type");
    // if (state.is_adreno_stock) {
         // used to fix an adreno driver bug
         color_attachment.setInitialLayout(vk::ImageLayout::ePresentSrcKHR);
