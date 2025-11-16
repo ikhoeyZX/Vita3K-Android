@@ -588,11 +588,12 @@ void ScreenRenderer::create_render_pass() {
      post_filter_render_pass = state.device.createRenderPass(pass_info);
 
 #ifdef ANDROID
-    if (state.is_adreno_stock) {
+    LOG_WARN("TES ADRENO MODE IN ALL GPU");
+   // if (state.is_adreno_stock) {
         // used to fix an adreno driver bug
         color_attachment.setInitialLayout(vk::ImageLayout::ePresentSrcKHR);
         stock_adreno_pass = state.device.createRenderPass(pass_info);
-    }
+  //  }
 #endif
 }
 
