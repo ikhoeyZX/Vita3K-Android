@@ -344,14 +344,14 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
                   vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>( dlsym( vulkan_handle, "vkGetInstanceProcAddr" ) );
     	          VULKAN_HPP_DEFAULT_DISPATCHER.init( vkGetInstanceProcAddr );
             }
-        }
 
-		if(config.use_astc){
-	       LOG_INFO("DXT (BCn) support disabled");
-		   texture_cache.support_dxt = false;
-		}else
-			if (!detect_patch_bcn(&texture_cache.support_dxt))
-	           LOG_ERROR("Failed to enable DXT (BCn) support!, system will use ASTC instead");
+		   if(config.use_astc){
+	          LOG_INFO("DXT (BCn) support disabled");
+		      texture_cache.support_dxt = false;
+		   }else
+			  if (!detect_patch_bcn(&texture_cache.support_dxt))
+	             LOG_ERROR("Failed to enable DXT (BCn) support!, system will use ASTC instead");
+        }
 #endif
 
         vk::ApplicationInfo app_info{
@@ -1229,8 +1229,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         // also make sure later the mapped address is 4K aligned
         vkutil::Buffer buffer(size + KiB(4));
         constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
-            .flags = vma::AllocationCreateFlagBits::eStrategyBestFit,
-	  //  .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
+	    .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
           //  .usage = vma::MemoryUsage::eAutoPreferHost,
 	    .usage = vma::MemoryUsage::eAuto,
             .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
@@ -1334,7 +1333,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         };
         const uint64_t buffer_address = device.getBufferAddress(address_info);
         const vk::Buffer mapped_buffer = buffer.buffer;
-        mapped_memories[address.address()] = { address.address(), std::move(buffer), mapped_buffer, size, buffer_address };
+        mapped_memories[address.address()] = { address.address(), std::copy(buffer), mapped_buffer, size, buffer_address };
         break;
     }
 
@@ -1437,7 +1436,7 @@ std::vector<std::string> VKState::get_gpu_list() {
         return { physical_device_properties.properties.deviceName.data() };
 
     // get the stock name
-    std::vector<std::string> gpu_list = { "Default" };
+    std::vector<std::string> gpu_list = { physical_device_properties.properties.deviceName.data() };
 
     // First value is the stock driver
     fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver";
