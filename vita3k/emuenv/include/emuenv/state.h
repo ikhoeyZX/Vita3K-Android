@@ -63,11 +63,11 @@ struct HTTPState;
 #ifdef ANDROID
 struct libadreno_var {
     bool is_adreno = false;
-    std::string adreno_temp_dir = "";
-    std::string adreno_lib_dir = "";
-    std::string adreno_driver_path = "";
-    std::string adreno_main_so_name = "";
-    std::string adreno_inject_dir = "";
+    std::string adreno_temp_dir;
+    std::string adreno_lib_dir;
+    std::string adreno_driver_path;
+    std::string adreno_main_so_name;
+    std::string adreno_inject_dir;
 };
 #endif
 
