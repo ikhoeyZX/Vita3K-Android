@@ -1333,7 +1333,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         };
         const uint64_t buffer_address = device.getBufferAddress(address_info);
         const vk::Buffer mapped_buffer = buffer.buffer;
-        mapped_memories[address.address()] = { address.address(), std::copy(buffer), mapped_buffer, size, buffer_address };
+        mapped_memories[address.address()] = { address.address(), std::move(buffer), mapped_buffer, size, buffer_address };
         break;
     }
 
