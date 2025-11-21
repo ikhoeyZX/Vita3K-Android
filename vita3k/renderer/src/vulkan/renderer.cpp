@@ -684,7 +684,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT,
             vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>
             device_info{
-                vk::InstanceCreateInfo{
+                vk::DeviceCreateInfo{
                     .pEnabledFeatures = &enabled_features },
                 vk::PhysicalDeviceBufferDeviceAddressFeatures{
                     .bufferDeviceAddress = VK_TRUE },
