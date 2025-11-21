@@ -677,14 +677,14 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             features.support_shader_interlock = support_shader_interlock;
         }
 
-        vk::StructureChain<vk::DeviceCreateInfo,
+        vk::StructureChain<vk::InstanceCreateInfo,
             vk::PhysicalDeviceBufferDeviceAddressFeatures,
             vk::PhysicalDeviceUniformBufferStandardLayoutFeatures,
             vk::PhysicalDeviceShaderFloat16Int8Features,
             vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT,
             vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>
             device_info{
-                vk::DeviceCreateInfo{
+                vk::InstanceCreateInfo{
                     .pEnabledFeatures = &enabled_features },
                 vk::PhysicalDeviceBufferDeviceAddressFeatures{
                     .bufferDeviceAddress = VK_TRUE },
