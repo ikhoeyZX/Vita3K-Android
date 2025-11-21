@@ -352,48 +352,54 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
                 return lhs.app_ver < rhs.app_ver;
             case DESCENDANT:
                 return lhs.app_ver > rhs.app_ver;
+            default:
+                return false;
             }
-            break;
         case CATEGORY:
             switch (sorted) {
             case ASCENDANT:
                 return lhs.category < rhs.category;
             case DESCENDANT:
                 return lhs.category > rhs.category;
+            default:
+                return false;
             }
-            break;
         case COMPAT:
             switch (sorted) {
             case ASCENDANT:
                 return lhs.compat < rhs.compat;
             case DESCENDANT:
                 return lhs.compat > rhs.compat;
+            default:
+                return false;
             }
-            break;
         case LAST_TIME:
             switch (sorted) {
             case ASCENDANT:
                 return lhs.last_time > rhs.last_time;
             case DESCENDANT:
                 return lhs.last_time < rhs.last_time;
+            default:
+                return false;
             }
-            break;
         case TITLE:
             switch (sorted) {
             case ASCENDANT:
                 return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
             case DESCENDANT:
                 return string_utils::toupper(lhs.title) > string_utils::toupper(rhs.title);
+            default:
+                return false;
             }
-            break;
         case TITLE_ID:
             switch (sorted) {
             case ASCENDANT:
                 return lhs.title_id < rhs.title_id;
             case DESCENDANT:
                 return lhs.title_id > rhs.title_id;
+            default:
+                return false;
             }
-            break;
         default:
             break;
         }
