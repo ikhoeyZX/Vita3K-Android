@@ -677,6 +677,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             features.support_shader_interlock = support_shader_interlock;
         }
 
+		/*
         vk::StructureChain<vk::InstanceCreateInfo,
             vk::PhysicalDeviceBufferDeviceAddressFeatures,
             vk::PhysicalDeviceUniformBufferStandardLayoutFeatures,
@@ -701,6 +702,32 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         device_info.get().setQueueCreateInfos(queue_infos);
         device_info.get().setPEnabledExtensionNames(device_extensions);
 
+		*/
+		
+vk::StructureChain<
+    vk::DeviceCreateInfo,
+    vk::PhysicalDeviceFeatures2,
+    vk::PhysicalDeviceBufferDeviceAddressFeatures,
+    vk::PhysicalDeviceUniformBufferStandardLayoutFeatures,
+    vk::PhysicalDeviceShaderFloat16Int8Features,
+    vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT,
+    vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT
+> device_info;
+
+auto& features2 = device_info.get<vk::PhysicalDeviceFeatures2>();
+features2.features = enabled_features;
+
+device_info.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress = VK_TRUE;
+device_info.get<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>().uniformBufferStandardLayout = VK_TRUE;
+device_info.get<vk::PhysicalDeviceShaderFloat16Int8Features>().shaderFloat16 = VK_TRUE;
+device_info.get<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>().fragmentShaderSampleInterlock = VK_TRUE;
+device_info.get<vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>().rasterizationOrderColorAttachmentAccess = VK_TRUE;
+
+device_info.get<vk::DeviceCreateInfo>().setQueueCreateInfos(queue_infos);
+device_info.get<vk::DeviceCreateInfo>().setPEnabledExtensionNames(device_extensions);
+device = physical_device.createDevice(device_info.get<vk::DeviceCreateInfo>());
+
+		
         if (!support_memory_mapping)
             device_info.unlink<vk::PhysicalDeviceBufferDeviceAddressFeatures>();
 
