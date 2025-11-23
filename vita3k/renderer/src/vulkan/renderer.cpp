@@ -704,30 +704,28 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
 		*/
 		
-vk::StructureChain<
-    vk::DeviceCreateInfo,
-    vk::PhysicalDeviceFeatures2,
-    vk::PhysicalDeviceBufferDeviceAddressFeatures,
-    vk::PhysicalDeviceUniformBufferStandardLayoutFeatures,
-    vk::PhysicalDeviceShaderFloat16Int8Features,
-    vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT,
-    vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT
-> device_info;
+        vk::StructureChain<
+            vk::DeviceCreateInfo,
+            vk::PhysicalDeviceFeatures2,
+            vk::PhysicalDeviceBufferDeviceAddressFeatures,
+            vk::PhysicalDeviceUniformBufferStandardLayoutFeatures,
+            vk::PhysicalDeviceShaderFloat16Int8Features,
+            vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT,
+            vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT
+        > device_info;
 
-auto& features2 = device_info.get<vk::PhysicalDeviceFeatures2>();
-features2.features = enabled_features;
+        auto& features2 = device_info.get<vk::PhysicalDeviceFeatures2>();
+        features2.features = enabled_features;
 
-device_info.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress = VK_TRUE;
-device_info.get<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>().uniformBufferStandardLayout = VK_TRUE;
-device_info.get<vk::PhysicalDeviceShaderFloat16Int8Features>().shaderFloat16 = VK_TRUE;
-device_info.get<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>().fragmentShaderSampleInterlock = VK_TRUE;
-device_info.get<vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>().rasterizationOrderColorAttachmentAccess = VK_TRUE;
+        device_info.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress = VK_TRUE;
+        device_info.get<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>().uniformBufferStandardLayout = VK_TRUE;
+        device_info.get<vk::PhysicalDeviceShaderFloat16Int8Features>().shaderFloat16 = VK_TRUE;
+        device_info.get<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>().fragmentShaderSampleInterlock = VK_TRUE;
+        device_info.get<vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>().rasterizationOrderColorAttachmentAccess = VK_TRUE;
 
-device_info.get<vk::DeviceCreateInfo>().setQueueCreateInfos(queue_infos);
-device_info.get<vk::DeviceCreateInfo>().setPEnabledExtensionNames(device_extensions);
-device = physical_device.createDevice(device_info.get<vk::DeviceCreateInfo>());
+        device_info.get<vk::DeviceCreateInfo>().setQueueCreateInfos(queue_infos);
+        device_info.get<vk::DeviceCreateInfo>().setPEnabledExtensionNames(device_extensions);
 
-		
         if (!support_memory_mapping)
             device_info.unlink<vk::PhysicalDeviceBufferDeviceAddressFeatures>();
 
@@ -744,16 +742,22 @@ device = physical_device.createDevice(device_info.get<vk::DeviceCreateInfo>());
             device_info.unlink<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>();
 
         try {
-            device = physical_device.createDevice(device_info.get());
+			device = physical_device.createDevice(device_info.get<vk::DeviceCreateInfo>());
+
+         //   device = physical_device.createDevice(device_info.get());
        // } catch (vk::NotPermittedKHRError &) {
 	} catch (vk::NotPermittedError &) {
             // according to the vk spec, when using a priority higher than medium
             // we can get this error (although I think it will only possibly happen
             // for realtime priority)
+
+			LOG_INFO("vk realtime priority : off");
             for (auto &queue_info : queue_infos) {
                 queue_info.pNext = nullptr;
             }
-            device = physical_device.createDevice(device_info.get());
+			device = physical_device.createDevice(device_info.get<vk::DeviceCreateInfo>());
+
+         //   device = physical_device.createDevice(device_info.get());
         }
         VULKAN_HPP_DEFAULT_DISPATCHER.init(device);
     }
@@ -795,7 +799,7 @@ device = physical_device.createDevice(device_info.get<vk::DeviceCreateInfo>());
             .device = device,
             .pVulkanFunctions = &vulkan_functions,
             .instance = instance,
-            .vulkanApiVersion = VK_API_VERSION_1_0,
+            .vulkanApiVersion = VK_API_VERSION_1_1,
         };
 
         if (support_dedicated_allocations)
