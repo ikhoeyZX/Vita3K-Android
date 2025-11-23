@@ -599,6 +599,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         }
 
         bool support_memory_mapping = true;
+		
         if (support_buffer_device_address) {
             auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceBufferDeviceAddressFeatures>();
             support_buffer_device_address &= static_cast<bool>(features.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress);
@@ -726,20 +727,30 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         device_info.get<vk::DeviceCreateInfo>().setQueueCreateInfos(queue_infos);
         device_info.get<vk::DeviceCreateInfo>().setPEnabledExtensionNames(device_extensions);
 
-        if (!support_memory_mapping)
+        if (!support_memory_mapping){
+			LOG_WARN_ONCE("Your device didn't support memory mapping!");
             device_info.unlink<vk::PhysicalDeviceBufferDeviceAddressFeatures>();
+		}
 
-        if (!support_standard_layout)
+        if (!support_standard_layout){
+			LOG_WARN_ONCE("Your device didn't support standard layout!");
             device_info.unlink<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
+		}
 
-        if (!support_rasterized_order_access)
+        if (!support_rasterized_order_access){
+			LOG_WARN_ONCE("Your device didn't support rasterized order access!");
             device_info.unlink<vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>();
+		}
 
-        if (!support_fsr)
+        if (!support_fsr){
+			LOG_WARN_ONCE("Your device didn't support FSR filter!");
             device_info.unlink<vk::PhysicalDeviceShaderFloat16Int8Features>();
+		}
 
-        if (!support_shader_interlock)
+        if (!support_shader_interlock){
+			LOG_WARN_ONCE("Your device didn't support shader interlock!");
             device_info.unlink<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>();
+		}
 
         try {
 			device = physical_device.createDevice(device_info.get<vk::DeviceCreateInfo>());
