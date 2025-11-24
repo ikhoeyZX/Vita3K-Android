@@ -8,9 +8,9 @@
 
 # Known Issue
 - Adreno GPU Driver only supported v11.5 (old sdl2 version) and [v12_build10](https://github.com/ikhoeyZX/Vita3K-Android/releases/tag/v12_build10) or newer (new sdl2 version)
-- Some adreno devices have issue with Custom driver in Android 15 (libadrenotools issue)
-- since i dont have adreno or powervr gpu phone, newer bug maybe exist in that gpu
-- Vulkan 1.0 can run but it's too buggy, use OpenGL(ES) instead (adreno only, other SoC didn't support openGLES in this emu for now, because most mobile devices other than snapdragon doesn't support Vertex Shader SSBO) 
+- Some Adreno devices have issue with Custom driver in Android 15 (libadrenotools issue)
+- since i don't have Adreno or PowerVR gpu phone, newer bug maybe exist in that gpu
+- Vulkan 1.0 can run but it's too buggy, use OpenGL(ES) instead (Adreno only, other SoC didn't support openGLES in this emu for now, because most mobile devices other than Snapdragon doesn't support Vertex Shader SSBO) 
 - PowerVR GPU now supported in [v12_build14](https://github.com/ikhoeyZX/Vita3K-Android/releases/tag/v12_build14) but because it's have limited vulkan feature, not all games can run well.
 
 # Vita3K
@@ -98,3 +98,4 @@ Thank you to the supporters and to all those who support us on our [ko-fi](https
 The purpose of this emulator is not to enable illegal activity. You can dump games from a Vita by using [NoNpDrm](https://github.com/TheOfficialFloW/NoNpDrm) or [FAGDec](https://github.com/CelesteBlue-dev/PSVita-RE-tools/tree/master/FAGDec/build). You can get homebrew programs from [VitaDB](https://vitadb.rinnegatamante.it/).
 
 PlayStation, PlayStation Vita and PlayStation Network are all registered trademarks of Sony Interactive Entertainment Inc. This emulator is not related to or endorsed by Sony, or derived from confidential materials belonging to Sony.
+
