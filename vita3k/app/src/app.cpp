@@ -152,7 +152,7 @@ void add_custom_driver(EmuEnvState &emuenv) {
 
     LOG_INFO("Successfully installed driver {}!", driver);
     emuenv.cfg.gpu_idx = 0;
-    set_config(emuenv, emuenv.io.app_path);
+    config::serialize_config(emuenv, emuenv.io.app_path);
 }
 
 void remove_custom_driver(EmuEnvState &emuenv, const std::string &driver) {
@@ -166,7 +166,7 @@ void remove_custom_driver(EmuEnvState &emuenv, const std::string &driver) {
     fs::remove_all(driver_path);
     LOG_INFO("Driver {} was successfully removed!", driver);
     emuenv.cfg.gpu_idx = 0;
-    set_config(emuenv, emuenv.io.app_path);
+    config::serialize_config(emuenv, emuenv.io.app_path);
 }
 #else
 void add_custom_driver(EmuEnvState &emuenv) {}
