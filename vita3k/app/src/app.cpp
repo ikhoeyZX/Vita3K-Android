@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -151,6 +151,8 @@ void add_custom_driver(EmuEnvState &emuenv) {
     driver_name_file.close();
 
     LOG_INFO("Successfully installed driver {}!", driver);
+    emuenv.cfg.gpu_idx = 0;
+    set_config(emuenv, emuenv.io.app_path);
 }
 
 void remove_custom_driver(EmuEnvState &emuenv, const std::string &driver) {
@@ -163,6 +165,8 @@ void remove_custom_driver(EmuEnvState &emuenv, const std::string &driver) {
 
     fs::remove_all(driver_path);
     LOG_INFO("Driver {} was successfully removed!", driver);
+    emuenv.cfg.gpu_idx = 0;
+    set_config(emuenv, emuenv.io.app_path);
 }
 #else
 void add_custom_driver(EmuEnvState &emuenv) {}
