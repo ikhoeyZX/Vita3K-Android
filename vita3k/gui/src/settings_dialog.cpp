@@ -984,21 +984,25 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
         }
         ImGui::Spacing();
-        const std::vector<std::string> vk_surface_list_str = emuenv.renderer->get_vulkan_feature_list(0);
 
-        std::vector<const char *> vk_surface_list;
-        for (const auto &vk_surface : vk_surface_list_str)
-            vk_surface_list.push_back(vk_surface.c_str());
+        // custom gpu set to auto instead, since it mostly not support other than mailbox
+        if (emuenv.cfg.gpu_idx == 0){
+            const std::vector<std::string> vk_surface_list_str = emuenv.renderer->get_vulkan_feature_list(0);
 
-        static int current_surface_format = std::find(vk_surface_list.begin(), vk_surface_list.end(), config.vk_mapping) - vk_surface_list.begin();
-        if (ImGui::Combo(lang.gpu["surface_format_method"].c_str(), &current_surface_format, vk_surface_list.data(), vk_surface_list.size())) {
-            config.vk_mapping = vk_surface_list[current_surface_format];
+            std::vector<const char *> vk_surface_list;
+            for (const auto &vk_surface : vk_surface_list_str)
+                vk_surface_list.push_back(vk_surface.c_str());
+
+            static int current_surface_format = std::find(vk_surface_list.begin(), vk_surface_list.end(), config.vk_mapping) - vk_surface_list.begin();
+            if (ImGui::Combo(lang.gpu["surface_format_method"].c_str(), &current_surface_format, vk_surface_list.data(), vk_surface_list.size())) {
+               config.vk_mapping = vk_surface_list[current_surface_format];
+           }
+           if (ImGui::IsItemHovered()) {
+               SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
+               ImGui::Spacing();
+           }
+           ImGui::Spacing();
         }
-        if (ImGui::IsItemHovered()) {
-            SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
-            ImGui::Spacing();
-        }
-        ImGui::Spacing();
         
         const std::vector<std::string> stencil_list_str = emuenv.renderer->get_vulkan_feature_list(1);
 
@@ -1014,23 +1018,29 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             SetTooltipEx(lang.gpu["deep_stencil_description"].c_str());
             ImGui::Spacing();
         }
-        if (is_ingame)
-            ImGui::EndDisabled();
-        
+
         if (emuenv.renderer->support_custom_drivers()) {
-            ImGui::Spacing();
+            if (is_vulkan) {
+                ImGui::Spacing();
+                ImGui::Checkbox(lang.gpu["use_astc"].c_str(), &emuenv.cfg.use_astc);
+
+               if (ImGui::IsItemHovered()) {
+                  SetTooltipEx(lang.gpu["use_astc_description"].c_str());
+               }
+               ImGui::SameLine();
+                
+               if (is_ingame)
+                  ImGui::EndDisabled();
+            }
+            
             ImGui::Checkbox(lang.gpu["turbo"].c_str(), &emuenv.cfg.turbo_mode);
 
             if (ImGui::IsItemHovered()) {
                 SetTooltipEx(lang.gpu["turbo_description"].c_str());
             }
-
-            ImGui::SameLine();
-            ImGui::Checkbox(lang.gpu["use_astc"].c_str(), &emuenv.cfg.use_astc);
-
-            if (ImGui::IsItemHovered()) {
-                SetTooltipEx(lang.gpu["use_astc_description"].c_str());
-            }
+        }else{
+            if (is_ingame)
+               ImGui::EndDisabled();
         }
 
         // Shaders
