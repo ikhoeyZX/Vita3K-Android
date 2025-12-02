@@ -58,7 +58,12 @@ jobs:
 #        with:
 #             ndk-version: 28.0.12674087-rc1
 #             link-to-sdk: true
-             
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-home-cache-cleanup: true
+          
       - name: Gradle build 64bit
         env:
           SIGNING_STORE_PATH: "/home/runner/keystore.jks"
