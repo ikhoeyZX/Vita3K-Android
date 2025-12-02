@@ -714,7 +714,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 if (ImGui::Button("Add custom driver")) {
                     app::add_custom_driver(emuenv);
                     // also set it to stock after
-                    emuenv.cfg.gpu_idx = 0;
+                    // emuenv.cfg.gpu_idx = 0;
+                    LOG_TRACE("Add custom driver button ok!");
                 }
 
                 // first is the stock gpu
@@ -725,8 +726,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     if (ImGui::Button("Remove custom driver")) {
                         app::remove_custom_driver(emuenv, config.custom_driver_name);
                         // set back to stock
-                        emuenv.cfg.gpu_idx = 0;
+                        // emuenv.cfg.gpu_idx = 0;
                         config.custom_driver_name = "";
+                        LOG_TRACE("Remove custom driver button ok");
                     }
                 }
             }
