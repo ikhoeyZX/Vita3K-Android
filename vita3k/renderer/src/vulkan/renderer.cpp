@@ -290,9 +290,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 #endif
     // Create Instance
     {
-        PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
-        VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
-
 		if(config.deep_stencil == "D32Sfloat")
 		   deep_stencil_use = vk::Format::eD32Sfloat;
 		else if(config.deep_stencil == "D32SfloatS8Uint")
@@ -309,6 +306,9 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 		   deep_stencil_use = vk::Format::eD24UnormS8Uint;
 
 		LOG_INFO("deep_stencil_use = {}", vk::to_string(deep_stencil_use));
+
+        PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
+        VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
 #if defined(ANDROID) && !defined(__arm__)
         if(adreno.is_adreno){
@@ -333,6 +333,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 			LOG_TRACE("adreno.adreno_driver_path {}", adreno.adreno_driver_path.c_str());
 			LOG_TRACE("adreno.adreno_main_so_name {}", adreno.adreno_main_so_name.c_str());
 			LOG_TRACE("adreno.adreno_inject_dir {}", adreno.adreno_inject_dir.c_str());
+			if (SDL_GetAndroidSDKVersion() < 29)  // ANDROID 9
+			   LOG_TRACE("adreno.adreno_temp_dir {}", temp_dir);
 			
             if (!vulkan_handle) {
                   LOG_ERROR("Could not open handle for custom driver {}",  adreno.adreno_main_so_name);
@@ -678,33 +680,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             features.support_shader_interlock = support_shader_interlock;
         }
 
-		/*
-        vk::StructureChain<vk::InstanceCreateInfo,
-            vk::PhysicalDeviceBufferDeviceAddressFeatures,
-            vk::PhysicalDeviceUniformBufferStandardLayoutFeatures,
-            vk::PhysicalDeviceShaderFloat16Int8Features,
-            vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT,
-            vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>
-            device_info{
-                vk::DeviceCreateInfo{
-                    .pEnabledFeatures = &enabled_features },
-                vk::PhysicalDeviceBufferDeviceAddressFeatures{
-                    .bufferDeviceAddress = VK_TRUE },
-                vk::PhysicalDeviceUniformBufferStandardLayoutFeatures{
-                    .uniformBufferStandardLayout = VK_TRUE },
-                vk::PhysicalDeviceShaderFloat16Int8Features{
-                    // FSR uses float16
-                    .shaderFloat16 = VK_TRUE },
-                vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT{
-                    .fragmentShaderSampleInterlock = VK_TRUE },
-                vk::PhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT{
-                    .rasterizationOrderColorAttachmentAccess = VK_TRUE },
-            };
-        device_info.get().setQueueCreateInfos(queue_infos);
-        device_info.get().setPEnabledExtensionNames(device_extensions);
-
-		*/
-		
         vk::StructureChain<
             vk::DeviceCreateInfo,
             vk::PhysicalDeviceFeatures2,
@@ -754,10 +729,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         try {
 			device = physical_device.createDevice(device_info.get<vk::DeviceCreateInfo>());
-
-         //   device = physical_device.createDevice(device_info.get());
-       // } catch (vk::NotPermittedKHRError &) {
-	} catch (vk::NotPermittedError &) {
+	    } catch (vk::NotPermittedError &) {
             // according to the vk spec, when using a priority higher than medium
             // we can get this error (although I think it will only possibly happen
             // for realtime priority)
@@ -767,8 +739,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
                 queue_info.pNext = nullptr;
             }
 			device = physical_device.createDevice(device_info.get<vk::DeviceCreateInfo>());
-
-         //   device = physical_device.createDevice(device_info.get());
         }
         VULKAN_HPP_DEFAULT_DISPATCHER.init(device);
     }
@@ -890,18 +860,21 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 	        vk_idx = 6;
 	    }else {
 	        vk_idx = 0; // Mailbox
-			custom_drv = true;
 	    }
-    }
+    }else{
+		vk_idx = 0; // Mailbox
+		custom_drv = true;
+	}
+	
     if (!screen_renderer.setup(vk_idx, custom_drv))
         return false;
 
     support_fsr &= static_cast<bool>(screen_renderer.surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage);
 
-#if defined(__linux__) && !defined(ANDROID)
+// #if defined(__linux__) && !defined(ANDROID)
     // According to my tests (Macdu), mprotect on buffers (mapped with external memory host) only works with Nvidia drivers
     surface_cache.can_mprotect_mapped_memory = std::string_view(physical_device_properties.deviceName).find("NVIDIA") != std::string_view::npos;
-#endif
+// #endif
 
     return true;
 }
