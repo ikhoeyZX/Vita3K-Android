@@ -707,15 +707,17 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Combo(lang.gpu["gpu"].c_str(), &emuenv.cfg.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size()));
             SetTooltipEx(lang.gpu["select_gpu"].c_str());
 
+            bool is_add_driver = false;
             if (emuenv.renderer->support_custom_drivers()) {
                 if (emuenv.cfg.gpu_idx == 0)
                     config.custom_driver_name = "";
 
+                
                 if (ImGui::Button("Add custom driver")) {
                     app::add_custom_driver(emuenv);
                     // also set it to stock after
-                    // emuenv.cfg.gpu_idx = 0;
-                    LOG_TRACE("Add custom driver button ok!");
+                    emuenv.cfg.gpu_idx = 0;
+                    is_add_driver = true;
                 }
 
                 // first is the stock gpu
@@ -726,9 +728,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     if (ImGui::Button("Remove custom driver")) {
                         app::remove_custom_driver(emuenv, config.custom_driver_name);
                         // set back to stock
-                        // emuenv.cfg.gpu_idx = 0;
+                        emuenv.cfg.gpu_idx = 0;
                         config.custom_driver_name = "";
-                        LOG_TRACE("Remove custom driver button ok");
+                        is_add_driver = true;
                     }
                 }
             }
@@ -988,7 +990,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
 
         // custom gpu set to auto instead, since it mostly not support other than mailbox
-        if (emuenv.cfg.gpu_idx == 0){
+        if (emuenv.cfg.gpu_idx == 0 && !is_add_driver){
             const std::vector<std::string> vk_surface_list_str = emuenv.renderer->get_vulkan_feature_list(0);
 
             std::vector<const char *> vk_surface_list;
