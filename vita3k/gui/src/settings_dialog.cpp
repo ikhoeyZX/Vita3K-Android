@@ -698,7 +698,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         const bool is_vulkan = (emuenv.backend_renderer == renderer::Backend::Vulkan);
         const bool is_ingame = !emuenv.io.title_id.empty();
         const bool is_renderer_changed = (emuenv.backend_renderer != emuenv.renderer->current_backend);
-        bool is_add_driver = false;
+        static bool is_add_driver;
         if (is_vulkan && !is_renderer_changed) {
             const std::vector<std::string> gpu_list_str = emuenv.renderer->get_gpu_list();
             // must convert to a vector of char*
