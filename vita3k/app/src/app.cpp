@@ -25,9 +25,12 @@
 #include <io/state.h>
 #include <util/log.h>
 
-#include <SDL.h>
+#include <SDL_timer.h>
+#include <SDL_messagebox.h>>
+#include <SDL_video.h>
 
 #ifdef ANDROID
+#include <SDL_system.h>
 #include <host/dialog/filesystem.h>
 #include <miniz.h>
 #endif
