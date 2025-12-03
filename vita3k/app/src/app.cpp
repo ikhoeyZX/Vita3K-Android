@@ -16,8 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <app/functions.h>
-
-#include <config/functions.h>
 #include <config/state.h>
 #include <config/version.h>
 #include <display/state.h>
@@ -65,11 +63,13 @@ void calculate_fps(EmuEnvState &emuenv) {
         emuenv.fps_values[emuenv.current_fps_offset] = static_cast<float>(emuenv.fps);
         emuenv.current_fps_offset = (emuenv.current_fps_offset + 1) % frames_size;
         
+        float avg_fps = 0;
+        for (uint32_t i = 0; i < frames_size; i++)
+            avg_fps += emuenv.fps_values[i];
+        
+        emuenv.avg_fps = static_cast<uint32_t>(avg_fps) / frames_size;
+        
         if(emuenv.cfg.performance_overlay_detail >= 2){
-           float avg_fps = 0;
-           for (uint32_t i = 0; i < frames_size; i++)
-               avg_fps += emuenv.fps_values[i];
-           emuenv.avg_fps = static_cast<uint32_t>(avg_fps) / frames_size;
            emuenv.min_fps = static_cast<uint32_t>(*std::min_element(emuenv.fps_values, std::next(emuenv.fps_values, frames_size)));
            emuenv.max_fps = static_cast<uint32_t>(*std::max_element(emuenv.fps_values, std::next(emuenv.fps_values, frames_size)));
         }
@@ -167,8 +167,6 @@ void add_custom_driver(EmuEnvState &emuenv) {
     driver_name_file.close();
 
     LOG_INFO("Successfully installed driver {}!", driver);
-    emuenv.cfg.gpu_idx = 0;
-    config::serialize_config(emuenv.cfg, emuenv.config_path);
 }
 
 void remove_custom_driver(EmuEnvState &emuenv, const std::string &driver) {
@@ -181,8 +179,6 @@ void remove_custom_driver(EmuEnvState &emuenv, const std::string &driver) {
 
     fs::remove_all(driver_path);
     LOG_INFO("Driver {} was successfully removed!", driver);
-    emuenv.cfg.gpu_idx = 0;
-    config::serialize_config(emuenv.cfg, emuenv.config_path);
 }
 #else
 void add_custom_driver(EmuEnvState &emuenv) {}
