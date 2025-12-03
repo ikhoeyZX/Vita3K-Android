@@ -826,16 +826,17 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
 
     // all of these can be changed at any time using the vita graphics api (like opengl)
     // Because each one can take a lot of different values, it's better to set them as dynamic
-    static vk::DynamicState dynamic_states[] = {
-        vk::DynamicState::eViewport,
-        vk::DynamicState::eScissor,
-        vk::DynamicState::eLineWidth,
-        vk::DynamicState::eStencilCompareMask,
-        vk::DynamicState::eStencilReference,
-        vk::DynamicState::eStencilWriteMask,
-        vk::DynamicState::eDepthBias
+    
+    std::vector<vk::DynamicState> dynamic_states = {
+    vk::DynamicState::eViewport,
+    vk::DynamicState::eScissor,
+    vk::DynamicState::eStencilCompareMask,
+    vk::DynamicState::eStencilReference,
+    vk::DynamicState::eStencilWriteMask,
+    vk::DynamicState::eDepthBias
 
-      /*  vk::DynamicState::eBlendConstants,
+    //need more info
+    /*  vk::DynamicState::eBlendConstants,
         vk::DynamicState::eDepthBounds,
         vk::DynamicState::ePrimitiveTopology,
         vk::DynamicState::eViewportWithCount,
@@ -843,10 +844,13 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
         vk::DynamicState::eStencilOp
     */
     };
+
+    if (state.physical_device_features.features.wideLines) {
+       dynamic_states.push_back(vk::DynamicState::eLineWidth);
+    }
+
     vk::PipelineDynamicStateCreateInfo dynamic_info{};
     dynamic_info.setDynamicStates(dynamic_states);
-    if (!state.physical_device_features.features.wideLines)
-        dynamic_info.dynamicStateCount--;
 
     // we still need to specify the viewport and scissor count even though they are dynamic
     vk::PipelineViewportStateCreateInfo viewport{
