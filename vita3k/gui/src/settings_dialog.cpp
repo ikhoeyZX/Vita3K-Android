@@ -698,6 +698,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         const bool is_vulkan = (emuenv.backend_renderer == renderer::Backend::Vulkan);
         const bool is_ingame = !emuenv.io.title_id.empty();
         const bool is_renderer_changed = (emuenv.backend_renderer != emuenv.renderer->current_backend);
+        bool is_add_driver = false;
         if (is_vulkan && !is_renderer_changed) {
             const std::vector<std::string> gpu_list_str = emuenv.renderer->get_gpu_list();
             // must convert to a vector of char*
@@ -707,7 +708,6 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Combo(lang.gpu["gpu"].c_str(), &emuenv.cfg.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size()));
             SetTooltipEx(lang.gpu["select_gpu"].c_str());
 
-            bool is_add_driver = false;
             if (emuenv.renderer->support_custom_drivers()) {
                 if (emuenv.cfg.gpu_idx == 0)
                     config.custom_driver_name = "";
