@@ -82,52 +82,6 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
     // the only drawback for mailbox is that it draws more power, so maybe on a portable device use something else
     state.format_present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
     
-  /*  if(custom_drv){
-    // this one should always be available
-       format_present_modes = vk::PresentModeKHR::eImmediate;
-       for (const auto &mode : format_present_modes) {
-           if (mode == vk::PresentModeKHR::eMailbox) {
-               format_present_modes = mode;
-               break;
-           }
-
-           if (mode == vk::PresentModeKHR::eFifoRelaxed) {
-               format_present_modes = mode;
-               break;
-           }
-
-           if (mode == vk::PresentModeKHR::eFifo) {
-               format_present_modes = mode;
-               break;
-           }
-           
-           if (mode == vk::PresentModeKHR::eImmediate) {
-               format_present_modes = mode;
-               break;
-           }
-           
-           if (mode == vk::PresentModeKHR::eSharedDemandRefresh) {
-               format_present_modes = mode;
-               break;
-           }
-
-           if (mode == vk::PresentModeKHR::eSharedContinuousRefresh) {
-               format_present_modes = mode;
-               break;
-           }
-
-           if (mode == vk::PresentModeKHR::eFifoLatestReadyEXT) {
-               format_present_modes = mode;
-               break;
-           }else{
-              LOG_ERROR("getSurfacePresentModesKHR : no supported feature found!");
-              break;
-           }
-       }
-    }else{ 
-    */
-    
-
        switch(vk_idx){
            case 1:
                present_mode = vk::PresentModeKHR::eFifoRelaxed;
@@ -151,7 +105,7 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
                present_mode = vk::PresentModeKHR::eMailbox;
                break;
        }
-    }
+
     LOG_INFO("Present mode: {}", vk::to_string(present_mode));
 
     create_render_pass();
