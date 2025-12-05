@@ -80,73 +80,74 @@ bool ScreenRenderer::setup(uint8_t vk_idx, bool custom_drv) {
 
     // preferred order : mailbox > fifo_relaxed > fifo > whatever
     // the only drawback for mailbox is that it draws more power, so maybe on a portable device use something else
-    const auto present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
+    format_present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
     
-    if(custom_drv){
+  /*  if(custom_drv){
     // this one should always be available
-       present_mode = vk::PresentModeKHR::eImmediate;
-       for (const auto &mode : present_modes) {
+       format_present_modes = vk::PresentModeKHR::eImmediate;
+       for (const auto &mode : format_present_modes) {
            if (mode == vk::PresentModeKHR::eMailbox) {
-               present_mode = mode;
+               format_present_modes = mode;
                break;
            }
 
            if (mode == vk::PresentModeKHR::eFifoRelaxed) {
-               present_mode = mode;
+               format_present_modes = mode;
                break;
            }
 
            if (mode == vk::PresentModeKHR::eFifo) {
-               present_mode = mode;
+               format_present_modes = mode;
                break;
            }
            
            if (mode == vk::PresentModeKHR::eImmediate) {
-               present_mode = mode;
+               format_present_modes = mode;
                break;
            }
            
            if (mode == vk::PresentModeKHR::eSharedDemandRefresh) {
-               present_mode = mode;
+               format_present_modes = mode;
                break;
            }
 
            if (mode == vk::PresentModeKHR::eSharedContinuousRefresh) {
-               present_mode = mode;
+               format_present_modes = mode;
                break;
            }
 
            if (mode == vk::PresentModeKHR::eFifoLatestReadyEXT) {
-               present_mode = mode;
+               format_present_modes = mode;
                break;
            }else{
               LOG_ERROR("getSurfacePresentModesKHR : no supported feature found!");
               break;
            }
        }
-    }else{
+    }else{ 
+    */
 
        switch(vk_idx){
            case 1:
-               present_mode = vk::PresentModeKHR::eFifoRelaxed;
+               format_present_modes = vk::PresentModeKHR::eFifoRelaxed;
                break;
            case 2:
-               present_mode = vk::PresentModeKHR::eFifo;
+               format_present_modes = vk::PresentModeKHR::eFifo;
                break;
            case 3:
-               present_mode = vk::PresentModeKHR::eImmediate;
+               format_present_modes = vk::PresentModeKHR::eImmediate;
                break;
            case 4:
-               present_mode = vk::PresentModeKHR::eSharedDemandRefresh;
+               format_present_modes = vk::PresentModeKHR::eSharedDemandRefresh;
                break;
            case 5:
-               present_mode = vk::PresentModeKHR::eSharedContinuousRefresh;
+               format_present_modes = vk::PresentModeKHR::eSharedContinuousRefresh;
                break;
            case 6:
-               present_mode = vk::PresentModeKHR::eFifoLatestReadyEXT;
+               format_present_modes = vk::PresentModeKHR::eFifoLatestReadyEXT;
                break;
            default:
-               present_mode = vk::PresentModeKHR::eMailbox;
+               format_present_modes = vk::PresentModeKHR::eMailbox;
                break;
        }
     }
