@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@ public:
 
     bool create(SDL_Window *window);
     // called after the logical device has been created
-    bool setup(uint8_t vk_idx, bool custom_drv);
+    bool setup(uint8_t vk_idx);
     void cleanup();
 
     bool acquire_swapchain_image(bool start_render_pass = false);
