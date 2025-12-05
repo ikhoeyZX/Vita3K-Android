@@ -62,7 +62,7 @@ bool ScreenRenderer::create(SDL_Window *window) {
     return true;
 }
 
-bool ScreenRenderer::setup(uint8_t vk_idx, bool custom_drv) {
+bool ScreenRenderer::setup(uint8_t vk_idx) {
     const auto surface_formats = state.physical_device.getSurfaceFormatsKHR(surface);
     bool surface_format_found = false;
     for (const auto &format : surface_formats) {
@@ -80,7 +80,7 @@ bool ScreenRenderer::setup(uint8_t vk_idx, bool custom_drv) {
 
     // preferred order : mailbox > fifo_relaxed > fifo > whatever
     // the only drawback for mailbox is that it draws more power, so maybe on a portable device use something else
-    format_present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
+    state.format_present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
     
   /*  if(custom_drv){
     // this one should always be available
@@ -129,25 +129,25 @@ bool ScreenRenderer::setup(uint8_t vk_idx, bool custom_drv) {
 
        switch(vk_idx){
            case 1:
-               format_present_modes = vk::PresentModeKHR::eFifoRelaxed;
+               state.format_present_modes = vk::PresentModeKHR::eFifoRelaxed;
                break;
            case 2:
-               format_present_modes = vk::PresentModeKHR::eFifo;
+               state.format_present_modes = vk::PresentModeKHR::eFifo;
                break;
            case 3:
-               format_present_modes = vk::PresentModeKHR::eImmediate;
+               state.format_present_modes = vk::PresentModeKHR::eImmediate;
                break;
            case 4:
-               format_present_modes = vk::PresentModeKHR::eSharedDemandRefresh;
+               state.format_present_modes = vk::PresentModeKHR::eSharedDemandRefresh;
                break;
            case 5:
-               format_present_modes = vk::PresentModeKHR::eSharedContinuousRefresh;
+               state.format_present_modes = vk::PresentModeKHR::eSharedContinuousRefresh;
                break;
            case 6:
-               format_present_modes = vk::PresentModeKHR::eFifoLatestReadyEXT;
+               state.format_present_modes = vk::PresentModeKHR::eFifoLatestReadyEXT;
                break;
            default:
-               format_present_modes = vk::PresentModeKHR::eMailbox;
+               state.format_present_modes = vk::PresentModeKHR::eMailbox;
                break;
        }
     }
