@@ -844,7 +844,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
     auto &config_vk_mapping = config.vk_mapping;
     uint8_t vk_idx = 0;
-	bool custom_drv = false;
     if(config.gpu_idx == 0){
 	    if (config_vk_mapping == "FifoRelaxed"){
 	        vk_idx = 1;
@@ -861,12 +860,9 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 	    }else {
 	        vk_idx = 0; // Mailbox
 	    }
-    }else{
-		vk_idx = 0; // Mailbox
-		custom_drv = true;
 	}
 	
-    if (!screen_renderer.setup(vk_idx, custom_drv))
+    if (!screen_renderer.setup(vk_idx))
         return false;
 
     support_fsr &= static_cast<bool>(screen_renderer.surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage);
