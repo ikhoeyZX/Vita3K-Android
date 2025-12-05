@@ -1483,9 +1483,7 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 		
 	switch (type) {
 		case 0: {
-			const auto present_modes = physical_device.getSurfacePresentModesKHR(screen_renderer.surface);
-            
-			for ( vk::PresentModeKHR format : present_modes ) {
+			for ( vk::PresentModeKHR format : format_present_modes ) {
 				result.push_back(vk::to_string(format));
 			
 	        // if not found use default instead
