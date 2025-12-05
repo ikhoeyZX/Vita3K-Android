@@ -126,28 +126,29 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
        }
     }else{ 
     */
+    
 
        switch(vk_idx){
            case 1:
-               state.format_present_modes = vk::PresentModeKHR::eFifoRelaxed;
+               present_mode = vk::PresentModeKHR::eFifoRelaxed;
                break;
            case 2:
-               state.format_present_modes = vk::PresentModeKHR::eFifo;
+               present_mode = vk::PresentModeKHR::eFifo;
                break;
            case 3:
-               state.format_present_modes = vk::PresentModeKHR::eImmediate;
+               present_mode = vk::PresentModeKHR::eImmediate;
                break;
            case 4:
-               state.format_present_modes = vk::PresentModeKHR::eSharedDemandRefresh;
+               present_mode = vk::PresentModeKHR::eSharedDemandRefresh;
                break;
            case 5:
-               state.format_present_modes = vk::PresentModeKHR::eSharedContinuousRefresh;
+               present_mode = vk::PresentModeKHR::eSharedContinuousRefresh;
                break;
            case 6:
-               state.format_present_modes = vk::PresentModeKHR::eFifoLatestReadyEXT;
+               present_mode = vk::PresentModeKHR::eFifoLatestReadyEXT;
                break;
            default:
-               state.format_present_modes = vk::PresentModeKHR::eMailbox;
+               present_mode = vk::PresentModeKHR::eMailbox;
                break;
        }
     }
