@@ -52,7 +52,7 @@ struct VKState : public renderer::State {
     VKTextureCache texture_cache;
 
     vk::Instance instance;
-    vk::Device device;
+    static vk::Device device;
 
     ScreenRenderer screen_renderer;
 
