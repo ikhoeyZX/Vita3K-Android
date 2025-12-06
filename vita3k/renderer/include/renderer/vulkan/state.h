@@ -52,7 +52,7 @@ struct VKState : public renderer::State {
     VKTextureCache texture_cache;
 
     vk::Instance instance;
-    static vk::Device device;
+    vk::Device device;
 
     ScreenRenderer screen_renderer;
 
@@ -64,7 +64,7 @@ struct VKState : public renderer::State {
     std::vector<vk::QueueFamilyProperties> physical_device_queue_families;
 
     vk::Format deep_stencil_use;
-    std::vector<vk::PresentModeKHR> format_present_modes;
+    static std::vector<vk::PresentModeKHR> format_present_modes;
 
     vma::Allocator allocator;
 
