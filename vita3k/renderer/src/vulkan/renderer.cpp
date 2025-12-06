@@ -1479,7 +1479,7 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 		
 	switch (type) {
 		case 0: {
-			for ( vk::PresentModeKHR format : state.format_present_modes ) {
+			for ( vk::PresentModeKHR format : format_present_modes ) {
 				result.push_back(vk::to_string(format));
 			
 	        // if not found use default instead
