@@ -125,12 +125,11 @@ public:
     bool support_dxt = false;
     // format for replaced texture, supported mostly by smartphone GPUs
     bool support_astc = false;
-    // some smartphone GPUs do not support linear filtering on depth surfaces
+    // some smartphone GPUs do not support linear filtering on depth surfaces (d24)
     bool support_depth_linear_filtering = true;
-
     // some gpu maybe not support it
-    bool support_d24 = false;
     bool support_x8d24 = false;
+    
 
     bool init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id, const size_t sampler_cache_size = 0);
     void set_replacement_state(bool import_textures, bool export_textures, bool export_as_png);
