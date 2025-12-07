@@ -110,10 +110,6 @@ struct VKState : public renderer::State {
     bool support_standard_layout = false;
     bool support_rasterized_order_access = false;
 
-    // native support
-    bool support_d24 = false;
-    bool support_x8d24 = false;
-
 #ifdef ANDROID
 // SDK > 26
     bool support_android_buffer_import = false;
