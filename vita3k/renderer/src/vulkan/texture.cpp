@@ -260,6 +260,10 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     const vk::FormatProperties x8d24_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
     support_x8d24 = static_cast<bool>(x8d24_support))
 
+    // powerVR only
+    const vk::FormatProperties pvrt_support = state.physical_device.getFormatProperties(vk::Format::ePvrtc12BppUnormBlockIMG);
+    support_pvrt = static_cast<bool>(pvrt_support))
+
     // check for dxt support
     const vk::FormatProperties dxt_support = state.physical_device.getFormatProperties(vk::Format::eBc1RgbaSrgbBlock);
     // support_dxt might have already been set by the bcn patch on android
