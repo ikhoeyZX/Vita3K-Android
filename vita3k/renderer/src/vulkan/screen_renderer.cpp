@@ -72,9 +72,19 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
             && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
             surface_format = format;
             surface_format_found = true;
+        }
+        if (format.format == vk::Format::eD24UnormS8Uint) {
+            support_d24 = true;
+        }
+        if (format.format == vk::Format::eX8D24UnormPack32) {
+            support_x8d24 = true;
+        }
+        // exit now since we got all depencies
+        if (surface_format_found && support_d24 && support_x8d24) {
             break;
         }
     }
+
     if (!surface_format_found)
         surface_format = surface_formats[0];
 
