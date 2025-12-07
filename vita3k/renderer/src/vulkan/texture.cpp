@@ -260,8 +260,12 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     const vk::FormatProperties x8d24_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
     support_x8d24 = static_cast<bool>(x8d24_support);
 
+    const vk::FormatProperties e5gbr8m_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
+    if(static_cast<bool>(e5gbr8m_support)
+        LOG_INFO("VK_FORMAT_E5B9G9R9_UFLOAT_PACK32 SUPPORTED");
+
     // powerVR only
-    const vk::FormatProperties pvrt_support = state.physical_device.getFormatProperties(vk::Format::ePvrtc12BppUnormBlockIMG);
+    const vk::FormatProperties pvrt_support = state.physical_device.getFormatProperties(vk::Format::eE5B9G9R9UfloatPack32);
     support_pvrt = static_cast<bool>(pvrt_support);
 
     // check for dxt support
