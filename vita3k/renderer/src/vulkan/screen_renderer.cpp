@@ -75,10 +75,10 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
             surface_format_found = true;
         }
         if (format.format == vk::Format::eD24UnormS8Uint) {
-            texture_cache.support_d24 = true;
+            support_d24 = true;
         }
         if (format.format == vk::Format::eX8D24UnormPack32) {
-            texture_cache.support_x8d24 = true;
+            support_x8d24 = true;
         }
         // exit now since we got all depencies
         if (surface_format_found && support_d24 && support_x8d24) {
