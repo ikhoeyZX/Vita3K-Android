@@ -81,30 +81,37 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
     // preferred order : mailbox > fifo_relaxed > fifo > whatever
     // the only drawback for mailbox is that it draws more power, so maybe on a portable device use something else
     state.format_present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
-    
-       switch(vk_idx){
-           case 1:
-               present_mode = vk::PresentModeKHR::eFifoRelaxed;
-               break;
-           case 2:
-               present_mode = vk::PresentModeKHR::eFifo;
-               break;
-           case 3:
-               present_mode = vk::PresentModeKHR::eImmediate;
-               break;
-           case 4:
-               present_mode = vk::PresentModeKHR::eSharedDemandRefresh;
-               break;
-           case 5:
-               present_mode = vk::PresentModeKHR::eSharedContinuousRefresh;
-               break;
-           case 6:
-               present_mode = vk::PresentModeKHR::eFifoLatestReadyEXT;
-               break;
-           default:
-               present_mode = vk::PresentModeKHR::eMailbox;
-               break;
-       }
+
+    //remove it for now since idk how to implement it
+    state.format_present_modes.erase(
+       std::remove_if(
+           state.format_present_modes.begin(),
+           state.format_present_modes.end(),
+           [](vk::PresentModeKHR mode) {
+               return mode == vk::PresentModeKHR::eSharedDemandRefresh ||
+                      mode == vk::PresentModeKHR::eSharedContinuousRefresh;
+           }
+       ),
+       state.format_present_modes.end()
+    );
+
+    switch(vk_idx){
+        case 1:
+            present_mode = vk::PresentModeKHR::eFifoRelaxed;
+            break;
+        case 2:
+            present_mode = vk::PresentModeKHR::eFifo;
+            break;
+        case 3:
+            present_mode = vk::PresentModeKHR::eImmediate;
+            break;
+        case 4:
+            present_mode = vk::PresentModeKHR::eFifoLatestReadyEXT;
+            break;
+        default:
+            present_mode = vk::PresentModeKHR::eMailbox;
+            break;
+    }
 
     LOG_INFO("Present mode: {}", vk::to_string(present_mode));
 
