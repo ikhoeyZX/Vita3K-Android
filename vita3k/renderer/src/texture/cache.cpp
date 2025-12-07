@@ -461,6 +461,12 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+            // ignore conversion if your gpu is powerVR and it supported
+            if(support_pvrt){
+                LOG_INFO_ONCE("your device support SCE_GXM_TEXTURE_BASE_FORMAT_PVRT");
+                break;
+            }
+            
             if (!is_swizzled)
                 LOG_ERROR_ONCE("Unhandled non-swizzled PVRT format, please report it to the developers");
 
@@ -498,6 +504,12 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16;
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
+            // skip conversion if supported by GPU
+            if(support_depth_linear_filtering && support_x8d24){
+                LOG_INFO_ONCE("your device support SCE_GXM_TEXTURE_BASE_FORMAT_X8U24");
+                break;
+            }
+
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
             if (is_vulkan) {
                 // d24_u8 or x8_d24 is not supported on all GPUs (thanks AMD)
