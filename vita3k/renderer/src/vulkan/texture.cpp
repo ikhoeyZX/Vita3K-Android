@@ -256,6 +256,9 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     // check for linear filtering on depth support
     const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(vk::Format::eD24UnormS8Uint);
     support_depth_linear_filtering = static_cast<bool>(depth_linear.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
+    
+    const vk::FormatProperties x8d24_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
+    support_x8d24 = static_cast<bool>(x8d24_support))
 
     // check for dxt support
     const vk::FormatProperties dxt_support = state.physical_device.getFormatProperties(vk::Format::eBc1RgbaSrgbBlock);
@@ -268,6 +271,7 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
 
     LOG_TRACE("max_sampler_used : {}", max_sampler_used);
     LOG_TRACE("support_depth_linear_filtering : {}",support_depth_linear_filtering);
+    LOG_TRACE("support_x8d24 : {}",support_x8d24);
     LOG_TRACE("support_dxt : {}", support_dxt);
     LOG_TRACE("support_astc : {}", support_astc);
     
