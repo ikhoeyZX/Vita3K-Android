@@ -62,10 +62,11 @@ struct VKState : public renderer::State {
     vk::PhysicalDeviceFeatures2 physical_device_features;
     vk::PhysicalDeviceMemoryProperties2 physical_device_memory;
     std::vector<vk::QueueFamilyProperties> physical_device_queue_families;
+    std::vector<vk::PresentModeKHR> format_present_modes;
+    std::vector<vk::Format> deep_stencil_format;
 
     vk::Format deep_stencil_use;
-    std::vector<vk::PresentModeKHR> format_present_modes;
-
+    
     vma::Allocator allocator;
 
     uint32_t general_family_index = 0;
