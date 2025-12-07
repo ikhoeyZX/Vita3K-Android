@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "renderer/texture_cache.h"
 #include "renderer/vulkan/screen_renderer.h"
 
 #include <SDL_vulkan.h>
@@ -74,10 +75,10 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
             surface_format_found = true;
         }
         if (format.format == vk::Format::eD24UnormS8Uint) {
-            support_d24 = true;
+            texture_cache.support_d24 = true;
         }
         if (format.format == vk::Format::eX8D24UnormPack32) {
-            support_x8d24 = true;
+            texture_cache.support_x8d24 = true;
         }
         // exit now since we got all depencies
         if (surface_format_found && support_d24 && support_x8d24) {
