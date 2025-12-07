@@ -261,7 +261,8 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     support_x8d24 = static_cast<bool>(x8d24_support);
 
     const vk::FormatProperties e5gbr8m_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
-    if(static_cast<bool>(e5gbr8m_support)
+    bool e5gbr8m = static_cast<bool>(e5gbr8m_support);
+    if(e5gbr8m)
         LOG_INFO("VK_FORMAT_E5B9G9R9_UFLOAT_PACK32 SUPPORTED");
 
     // powerVR only
