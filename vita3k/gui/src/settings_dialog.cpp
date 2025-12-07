@@ -201,6 +201,7 @@ static bool get_custom_config(EmuEnvState &emuenv, const std::string &app_path) 
             // Load Audio Config
             if (!config_child.child("audio").empty()) {
                 const auto audio_child = config_child.child("audio");
+                config.audio_backend = audio_child.attribute("audio-backend").as_string();
                 config.audio_volume = audio_child.attribute("audio-volume").as_int();
                 config.ngs_enable = audio_child.attribute("enable-ngs").as_bool();
             }
@@ -272,6 +273,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.export_textures = emuenv.cfg.export_textures;
         config.export_as_png = emuenv.cfg.export_as_png;
         config.fps_hack = emuenv.cfg.fps_hack;
+        config.audio_backend = emuenv.cfg.audio_backend;
         config.audio_volume = emuenv.cfg.audio_volume;
         config.ngs_enable = emuenv.cfg.ngs_enable;
         config.pstv_mode = emuenv.cfg.pstv_mode;
@@ -378,6 +380,7 @@ void save_config(GuiState &gui, EmuEnvState &emuenv) {  // has static
 
         // Audio
         auto audio_child = config_child.append_child("audio");
+        audio_child.append_attribute("audio-backend") = config.audio_backend;
         audio_child.append_attribute("audio-volume") = config.audio_volume;
         audio_child.append_attribute("enable-ngs") = config.ngs_enable;
 
@@ -418,6 +421,7 @@ void save_config(GuiState &gui, EmuEnvState &emuenv) {  // has static
         emuenv.cfg.export_textures = config.export_textures;
         emuenv.cfg.export_as_png = config.export_as_png;
         emuenv.cfg.fps_hack = config.fps_hack;
+        emuenv.cfg.audio_backend = config.audio_backend;
         emuenv.cfg.audio_volume = config.audio_volume;
         emuenv.cfg.ngs_enable = config.ngs_enable;
         emuenv.cfg.pstv_mode = config.pstv_mode;
@@ -698,7 +702,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         const bool is_vulkan = (emuenv.backend_renderer == renderer::Backend::Vulkan);
         const bool is_ingame = !emuenv.io.title_id.empty();
         const bool is_renderer_changed = (emuenv.backend_renderer != emuenv.renderer->current_backend);
-        static bool is_add_driver;
+
         if (is_vulkan && !is_renderer_changed) {
             const std::vector<std::string> gpu_list_str = emuenv.renderer->get_gpu_list();
             // must convert to a vector of char*
@@ -717,7 +721,6 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     app::add_custom_driver(emuenv);
                     // also set it to stock after
                     emuenv.cfg.gpu_idx = 0;
-                    is_add_driver = true;
                 }
 
                 // first is the stock gpu
@@ -730,7 +733,6 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                         // set back to stock
                         emuenv.cfg.gpu_idx = 0;
                         config.custom_driver_name = "";
-                        is_add_driver = true;
                     }
                 }
             }
@@ -989,25 +991,26 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
         ImGui::Spacing();
 
-        // custom gpu set to auto instead, since it mostly not support other than mailbox
-        if (emuenv.cfg.gpu_idx == 0 && !is_add_driver){
-            const std::vector<std::string> vk_surface_list_str = emuenv.renderer->get_vulkan_feature_list(0);
+        // Swapchain
+        // you need restart to take effect in this menu
+        const std::vector<std::string> vk_surface_list_str = emuenv.renderer->get_vulkan_feature_list(0);
 
-            std::vector<const char *> vk_surface_list;
-            for (const auto &vk_surface : vk_surface_list_str)
-                vk_surface_list.push_back(vk_surface.c_str());
+        std::vector<const char *> vk_surface_list;
+        for (const auto &vk_surface : vk_surface_list_str)
+            vk_surface_list.push_back(vk_surface.c_str());
 
-            static int current_surface_format = std::find(vk_surface_list.begin(), vk_surface_list.end(), config.vk_mapping) - vk_surface_list.begin();
-            if (ImGui::Combo(lang.gpu["surface_format_method"].c_str(), &current_surface_format, vk_surface_list.data(), vk_surface_list.size())) {
-               config.vk_mapping = vk_surface_list[current_surface_format];
-           }
-           if (ImGui::IsItemHovered()) {
-               SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
-               ImGui::Spacing();
-           }
-           ImGui::Spacing();
+        static int current_surface_format = std::find(vk_surface_list.begin(), vk_surface_list.end(), config.vk_mapping) - vk_surface_list.begin();
+        if (ImGui::Combo(lang.gpu["surface_format_method"].c_str(), &current_surface_format, vk_surface_list.data(), vk_surface_list.size())) {
+            config.vk_mapping = vk_surface_list[current_surface_format];
         }
-        
+        if (ImGui::IsItemHovered()) {
+            SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
+            ImGui::Spacing();
+        }
+        ImGui::Spacing();
+
+        // Deep stencil
+        // usefull for some games and old hardware
         const std::vector<std::string> stencil_list_str = emuenv.renderer->get_vulkan_feature_list(1);
 
         std::vector<const char *> stencil_list;
