@@ -63,8 +63,7 @@ struct VKState : public renderer::State {
     vk::PhysicalDeviceMemoryProperties2 physical_device_memory;
     std::vector<vk::QueueFamilyProperties> physical_device_queue_families;
     std::vector<vk::PresentModeKHR> format_present_modes;
-    std::vector<vk::Format> deep_stencil_format;
-
+    
     vk::Format deep_stencil_use;
     
     vma::Allocator allocator;
@@ -110,7 +109,11 @@ struct VKState : public renderer::State {
     // support for the VK_KHR_uniform_buffer_standard_layout extension, needed for memory mapping and texture viewport
     bool support_standard_layout = false;
     bool support_rasterized_order_access = false;
-    
+
+    // native support
+    bool support_d24 = false;
+    bool support_x8d24 = false;
+
 #ifdef ANDROID
 // SDK > 26
     bool support_android_buffer_import = false;
