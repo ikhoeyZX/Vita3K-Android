@@ -255,15 +255,19 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
 
     // check for linear filtering on depth support
     const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(vk::Format::eD24UnormS8Uint);
-    support_depth_linear_filtering = static_cast<bool>(depth_linear.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
-    
     const vk::FormatProperties x8d24_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
-    support_x8d24 = static_cast<bool>(x8d24_support);
+    support_depth_linear_filtering = static_cast<bool>(depth_linear.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
+    support_x8d24 = static_cast<bool>(static_cast<bool>(x8d24_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
 
+    // other format
     const vk::FormatProperties e5gbr8m_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
-    bool e5gbr8m = static_cast<bool>(e5gbr8m_support);
-    if(e5gbr8m)
-        LOG_INFO("VK_FORMAT_E5B9G9R9_UFLOAT_PACK32 SUPPORTED");
+    const vk::FormatProperties a2rgb10_support = state.physical_device.getFormatProperties(vk::Format::eA2R10G10B10UnormPack32);
+    const vk::FormatProperties yuv420p2_support = state.physical_device.getFormatProperties(vk::Format::eG8B8R82Plane420Unorm);
+    const vk::FormatProperties yuv420p3_support = state.physical_device.getFormatProperties(vk::Format::eG8B8R83Plane420Unorm);
+    support_e5rgb9 = static_cast<bool>(e5gbr8m_support);
+    support_a2rgb10 = static_cast<bool>(a2rgb10_support);
+    support_yuv420p2 = static_cast<bool>(yuv420p2_support);
+    support_yuv420p3 = static_cast<bool>(yuv420p3_support);
 
     // powerVR only
     const vk::FormatProperties pvrt_support = state.physical_device.getFormatProperties(vk::Format::ePvrtc12BppUnormBlockIMG);
@@ -279,10 +283,16 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     support_astc = static_cast<bool>(astc_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
 
     LOG_TRACE("max_sampler_used : {}", max_sampler_used);
-    LOG_TRACE("support_depth_linear_filtering : {}",support_depth_linear_filtering);
-    LOG_TRACE("support_x8d24 : {}",support_x8d24);
-    LOG_TRACE("support_dxt : {}", support_dxt);
+    LOG_TRACE("support_depth_linear_filtering : {}", support_depth_linear_filtering);
+    LOG_TRACE("support_x8d24    : {}", support_x8d24);
+    LOG_TRACE("support_e5rgb9   : {}", support_e5rgb9);
+    LOG_TRACE("support_a2rgb10  : {}", support_a2rgb10);
+    LOG_TRACE("support_yuv420p2 : {}", support_yuv420p2);
+    LOG_TRACE("support_yuv420p3 : {}", support_yuv420p3);
+    
+    LOG_TRACE("support_dxt  : {}", support_dxt);
     LOG_TRACE("support_astc : {}", support_astc);
+    LOG_TRACE("support_pvrt : {}", support_pvrt);
     
     return true;
 }
