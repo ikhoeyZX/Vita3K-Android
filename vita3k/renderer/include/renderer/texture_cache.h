@@ -129,6 +129,11 @@ public:
     bool support_depth_linear_filtering = true;
     // some gpu maybe not support it
     bool support_x8d24 = false;
+    bool support_e5rgb9 = false;
+    bool support_a2rgb10 = false;
+    bool support_yuv420p2 = false;
+    bool support_yuv420p3 = false;
+
     // powerVR only
     bool support_pvrt = false;
     
