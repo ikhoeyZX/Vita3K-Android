@@ -278,14 +278,14 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     const vk::FormatProperties astc_support = state.physical_device.getFormatProperties(vk::Format::eAstc4x4SrgbBlock);
     support_astc = static_cast<bool>(astc_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
 
-    LOG_TRACE("max_sampler_used : {}", max_sampler_used);
-    LOG_TRACE("support_d24u8_depth_linear_filtering : {}", support_depth_linear_filtering);
-    LOG_TRACE("support_x8d24    : {}", support_x8d24);
-    LOG_TRACE("support_e5rgb9   : {}", support_e5rgb9);
-    LOG_TRACE("support_a2rgb10  : {}", support_a2rgb10);
-    LOG_TRACE("support_dxt      : {}", support_dxt);
-    LOG_TRACE("support_astc     : {}", support_astc);
-    LOG_TRACE("support_pvrt     : {}", support_pvrt);
+    LOG_INFO("max_sampler_used : {}", max_sampler_used);
+    LOG_INFO("support_d24u8_depth_linear_filtering : {}", support_depth_linear_filtering);
+    LOG_INFO("support_x8d24    : {}", support_x8d24);
+    LOG_INFO("support_e5rgb9   : {}", support_e5rgb9);
+    LOG_INFO("support_a2rgb10  : {}", support_a2rgb10);
+    LOG_INFO("support_dxt      : {}", support_dxt);
+    LOG_INFO("support_astc     : {}", support_astc);
+    LOG_INFO("support_pvrt     : {}", support_pvrt);
     
     return true;
 }
@@ -312,7 +312,7 @@ static vk::Format linear_to_srgb(const vk::Format format) {
     case vk::Format::eBc7UnormBlock:
         return vk::Format::eBc7SrgbBlock;
     default: {
-        LOG_ERROR("BCN : Trying to use gamma correction with non-compatible format {}", vk::to_string(format));
+        LOG_ERROR("SRGB : Trying to use gamma correction with non-compatible format {}", vk::to_string(format));
         return format;
     }
     }
@@ -369,7 +369,7 @@ static vk::Format bcn_to_rgba8(const vk::Format format) {
         return vk::Format::eR16G16B16A16Unorm;
 
     default:{
-        LOG_ERROR("Trying to convert bcn format with non-compatible format: {}", vk::to_string(format));
+        LOG_ERROR("Linear: Trying to convert BCN format with non-compatible format: {}", vk::to_string(format));
         return vk::Format::eR8G8B8A8Unorm;
     }
     }
@@ -652,12 +652,12 @@ void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
         state.frame().destroy_queue.add_image(image);
 
     vk::Format vk_format = texture::translate_format(base_format);
+    if (!support_dxt)
+        vk_format = bcn_to_rgba8(vk_format); // for mali users
+
     if (is_srgb)
         vk_format = linear_to_srgb(vk_format);
 
-    if (!support_dxt)
-        vk_format = bcn_to_rgba8(vk_format); // for mali users
-    
     // manually initialize the image
     image.width = width;
     image.height = height;
