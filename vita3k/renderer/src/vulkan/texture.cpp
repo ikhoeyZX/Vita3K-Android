@@ -262,8 +262,6 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     // other format
     const vk::FormatProperties e5gbr8m_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
     const vk::FormatProperties a2rgb10_support = state.physical_device.getFormatProperties(vk::Format::eA2R10G10B10UnormPack32);
-    const vk::FormatProperties yuv420p2_support = state.physical_device.getFormatProperties(vk::Format::eG8B8R82Plane420Unorm);
-    const vk::FormatProperties yuv420p3_support = state.physical_device.getFormatProperties(vk::Format::eG8B8R83Plane420Unorm);
     support_e5rgb9 = static_cast<bool>(e5gbr8m_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
     support_a2rgb10 = static_cast<bool>(a2rgb10_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
     
@@ -281,16 +279,13 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     support_astc = static_cast<bool>(astc_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
 
     LOG_TRACE("max_sampler_used : {}", max_sampler_used);
-    LOG_TRACE("support_depth_linear_filtering : {}", support_depth_linear_filtering);
+    LOG_TRACE("support_d24u8_depth_linear_filtering : {}", support_depth_linear_filtering);
     LOG_TRACE("support_x8d24    : {}", support_x8d24);
     LOG_TRACE("support_e5rgb9   : {}", support_e5rgb9);
     LOG_TRACE("support_a2rgb10  : {}", support_a2rgb10);
-    LOG_TRACE("support_yuv420p2 : {}", support_yuv420p2);
-    LOG_TRACE("support_yuv420p3 : {}", support_yuv420p3);
-    
-    LOG_TRACE("support_dxt  : {}", support_dxt);
-    LOG_TRACE("support_astc : {}", support_astc);
-    LOG_TRACE("support_pvrt : {}", support_pvrt);
+    LOG_TRACE("support_dxt      : {}", support_dxt);
+    LOG_TRACE("support_astc     : {}", support_astc);
+    LOG_TRACE("support_pvrt     : {}", support_pvrt);
     
     return true;
 }
