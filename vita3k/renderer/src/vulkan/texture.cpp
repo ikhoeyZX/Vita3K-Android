@@ -264,14 +264,12 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     const vk::FormatProperties a2rgb10_support = state.physical_device.getFormatProperties(vk::Format::eA2R10G10B10UnormPack32);
     const vk::FormatProperties yuv420p2_support = state.physical_device.getFormatProperties(vk::Format::eG8B8R82Plane420Unorm);
     const vk::FormatProperties yuv420p3_support = state.physical_device.getFormatProperties(vk::Format::eG8B8R83Plane420Unorm);
-    support_e5rgb9 = static_cast<bool>(e5gbr8m_support);
-    support_a2rgb10 = static_cast<bool>(a2rgb10_support);
-    support_yuv420p2 = static_cast<bool>(yuv420p2_support);
-    support_yuv420p3 = static_cast<bool>(yuv420p3_support);
-
+    support_e5rgb9 = static_cast<bool>(e5gbr8m_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+    support_a2rgb10 = static_cast<bool>(a2rgb10_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+    
     // powerVR only
     const vk::FormatProperties pvrt_support = state.physical_device.getFormatProperties(vk::Format::ePvrtc12BppUnormBlockIMG);
-    support_pvrt = static_cast<bool>(pvrt_support);
+    support_pvrt = static_cast<bool>(pvrt_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
 
     // check for dxt support
     const vk::FormatProperties dxt_support = state.physical_device.getFormatProperties(vk::Format::eBc1RgbaSrgbBlock);
