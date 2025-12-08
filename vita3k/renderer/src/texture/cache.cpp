@@ -488,16 +488,20 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
             // this format is supported on all GPUs with vulkan
-            if (is_vulkan)
+            if (is_vulkan && support_e5rgb9){
+                LOG_INFO_ONCE("your device support SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9");
                 break;
+            }
+            
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 6);
             decompress_packed_float_e5m9m9m9(base_format, texture_data_decompressed.data(), pixels, width, memory_height);
             pixels = texture_data_decompressed.data();
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
             // don't change what openGL is doing (which is completely wrong)
-            if (!is_vulkan)
+            if (!is_vulkan || support_a2rgb10)
                 break;
+            
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 8);
             convert_u2f10f10f10_to_f16f16f16f16(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height, fmt);
             pixels = texture_data_decompressed.data();
@@ -531,7 +535,15 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_F32;
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
+            if(support_yuv420p2){
+                LOG_INFO_ONCE("your device support SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2");
+                break;
+            }
         case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
+            if(support_yuv420p3){
+                LOG_INFO_ONCE("your device support SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3");
+                break;
+            }
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
             yuv420_texture_to_rgb(texture_data_decompressed.data(),
                 static_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, layout_width, layout_height,
