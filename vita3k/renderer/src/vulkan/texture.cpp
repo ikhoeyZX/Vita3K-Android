@@ -257,7 +257,7 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(vk::Format::eD24UnormS8Uint);
     const vk::FormatProperties x8d24_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
     support_depth_linear_filtering = static_cast<bool>(depth_linear.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
-    support_x8d24 = static_cast<bool>(static_cast<bool>(x8d24_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
+    support_x8d24 = static_cast<bool>(x8d24_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
 
     // other format
     const vk::FormatProperties e5gbr8m_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
