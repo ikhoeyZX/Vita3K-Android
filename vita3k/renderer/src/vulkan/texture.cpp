@@ -262,7 +262,7 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     // other format
     const vk::FormatProperties e5rgb9_support = state.physical_device.getFormatProperties(vk::Format::eE5B9G9R9UfloatPack32);
     const vk::FormatProperties a2rgb10_support = state.physical_device.getFormatProperties(vk::Format::eA2R10G10B10UnormPack32);
-    support_e5rgb9 = static_cast<bool>(e5rgb_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+    support_e5rgb9 = static_cast<bool>(e5rgb9_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
     support_a2rgb10 = static_cast<bool>(a2rgb10_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
     
     // powerVR only
