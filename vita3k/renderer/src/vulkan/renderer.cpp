@@ -913,7 +913,8 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
 #ifdef ANDROID
     if (mapping_method == MappingMethod::NativeBuffer) {
         // dynamically load the symbols
-        void *libandroid = dlopen("libandroid.so", RTLD_LAZY);
+        // void *libandroid = dlopen("libandroid.so", RTLD_LAZY);
+		void *libandroid = dlopen("libandroid.so", RTLD_NOW);
 #ifdef __arm__
         _AHardwareBuffer_getNativeHandle = reinterpret_cast<decltype(_AHardwareBuffer_getNativeHandle)>(dlsym(libandroid, "AHardwareBuffer_getNativeHandle"));
         _AHardwareBuffer_allocate = reinterpret_cast<decltype(_AHardwareBuffer_allocate)>(dlsym(libandroid, "AHardwareBuffer_allocate"));
@@ -935,6 +936,8 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
     pipeline_cache.init(support_rasterized_order_access);
 
     texture_cache.init(true, texture_folder(), game_id);
+	
+	LOG_INFO("Memory init success!");
 }
 
 void VKState::cleanup() {
@@ -1098,6 +1101,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             if ((physical_device_memory.memoryProperties.memoryTypes[mapped_memory_type].propertyFlags & flags) == flags)
                 return mapped_memory_type;
         }
+		LOG_ERROR("map_memory FAIL!");
         return -1;
     };
 
@@ -1182,9 +1186,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                    // .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
 					.flags = vk::MemoryAllocateFlagBits::eDeviceMask }
             };
+			LOG_INFO("ALLOC MEM NOW");
             device_memory = device.allocateMemory(alloc_info.get());
-			LOG_TRACE("ALLOC SIZE: {}", size);
-			// LOG_TRACE("DEVICE MEMORY NATIVE BUFFER: {}", static_cast<uint64_t>(device.allocateMemory(alloc_info.get()));
         } else {
             const native_handle_t *handle = _AHardwareBuffer_getNativeHandle(buffer);
             if (handle == nullptr || handle->numFds == 0 || handle->data[0] == -1) {
@@ -1226,6 +1229,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 
         add_external_mapping(mem, address.address(), size, reinterpret_cast<uint8_t *>(mapped_location));
         mapped_memories[address.address()] = { address.address(), ExternalBuffer{ device_memory, buffer }, mapped_buffer, size, buffer_address };
+		LOG_INFO("END OF MEMORY MAPPING!");
 #else
         LOG_ERROR("Native buffer is only supported on Android!\n");
 #endif
