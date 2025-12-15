@@ -65,6 +65,8 @@ bool ScreenRenderer::create(SDL_Window *window) {
 bool ScreenRenderer::setup(uint8_t vk_idx) {
     const auto surface_formats = state.physical_device.getSurfaceFormatsKHR(surface);
     bool surface_format_found = false;
+    LOG_INFO("------------");
+    LOG_INFO("Supported Vulkan Color format:");
     for (const auto &format : surface_formats) {
         // actually we don't care that much because we will just be copying what the game rendered
         // rgba8 or bgra8 should be the best as it matches the format output from the vita (we don't care about the swizzle)
@@ -72,9 +74,11 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
             && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
             surface_format = format;
             surface_format_found = true;
-            break;
+           // break;
         }
+        LOG_INFO("{}\n", vk::to_string(format.format));
     }
+    LOG_INFO("------------");
 
     if (!surface_format_found)
         surface_format = surface_formats[0];
