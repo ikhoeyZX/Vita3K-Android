@@ -1102,10 +1102,25 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             if ((physical_device_memory.memoryProperties.memoryTypes[mapped_memory_type].propertyFlags & flags) == flags)
                 return mapped_memory_type;
         }
-		LOG_ERROR("map_memory FAIL!");
         return -1;
     };
 
+	auto find_suitable_mapped_type = [&](uint32_t hardware_types) {
+        // first try to find a memory that is both coherent and cached
+        int mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
+        if (mapped_memory_type == -1)
+            // then only coherent (lower performance)
+            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent, hardware_types);
+
+        if (mapped_memory_type == -1) {
+            static bool has_happened = false;
+            LOG_CRITICAL_IF(!has_happened, "No coherent memory available for memory mapping!");
+            has_happened = true;
+            mapped_memory_type = std::countr_zero(hardware_types);
+        }
+
+    return static_cast<uint32_t>(mapped_memory_type);
+	/*
     LOG_INFO("find_suitable_mapped_type");
     auto find_suitable_mapped_type = [&](uint32_t hardware_types) {
         // first try to find a memory that is both coherent and cached
@@ -1150,6 +1165,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 	    }
 	    LOG_INFO("mapped_memory_type = {}",mapped_memory_type);
 	    return static_cast<uint32_t>(mapped_memory_type);
+		*/
     };
 
     switch (mapping_method) {
