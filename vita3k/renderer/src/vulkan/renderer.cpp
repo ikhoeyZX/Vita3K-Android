@@ -1232,8 +1232,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             .height = 1,
             .layers = 1,
             .format = AHARDWAREBUFFER_FORMAT_BLOB,
-           // .usage = AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER | AHARDWAREBUFFER_USAGE_CPU_READ_MASK | AHARDWAREBUFFER_USAGE_CPU_WRITE_MASK,
-            .usage = AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER | AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER | AHARDWAREBUFFER_USAGE_CPU_READ_MASK | AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN | AHARDWAREBUFFER_USAGE_CPU_WRITE_MASK | AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN,
+            .usage = AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER | AHARDWAREBUFFER_USAGE_CPU_READ_MASK | AHARDWAREBUFFER_USAGE_CPU_WRITE_MASK,
         };
         AHardwareBuffer *buffer;
         int err = _AHardwareBuffer_allocate(&buffer_desc, &buffer);
@@ -1322,10 +1321,14 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessRandom,
             // .usage = vma::MemoryUsage::eAutoPreferHost,
 	        .usage = vma::MemoryUsage::eAuto,
-		    .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
-            .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
+		//	.requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
+        //    .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
+		    .requiredFlags = vk::MemoryPropertyFlagBits::eHostVisible,
+            .preferredFlags = vk::MemoryPropertyFlagBits::eDeviceLocal,
         };
         buffer.init_buffer(mapped_memory_flags, memory_mapped_alloc);
+
+		/*
 #ifdef __aarch64__
 		const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
         const int64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
@@ -1335,6 +1338,10 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         const intptr_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
 		buffer.mapped_data = reinterpret_cast<void *> (buffer_ptr_val + buffer_offset);
 #endif
+		*/
+		const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
+        const int64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
+        buffer.mapped_data = std::bit_cast<void *> (align(buffer_ptr_val, KiB(4)));
 
         vk::BufferDeviceAddressInfoKHR address_info{
             .buffer = buffer.buffer
