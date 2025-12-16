@@ -27,6 +27,8 @@
 #include <mutex>
 #include <utility>
 
+#include <SDL_cpuinfo.h> // to call size of memory free
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -37,9 +39,10 @@
 #endif
 
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
-constexpr size_t TOTAL_MEM_SIZE = GiB(4);
 constexpr bool LOG_PROTECT = false;
 constexpr bool PAGE_NAME_TRACKING = false;
+constexpr uint64_t MAX_TOTAL_MEM_SIZE = GiB(4);
+uint64_t TOTAL_MEM_SIZE = GiB(3);
 
 // TODO: support multiple handlers
 static AccessViolationHandler access_violation_handler;
@@ -68,9 +71,23 @@ bool init(MemState &state, const bool use_page_table) {
 #endif
     state.page_size = std::max(STANDARD_PAGE_SIZE, state.page_size);
 
+    uint64_t mem_size_tmp = static_cast<int>(SDL_GetSystemRAM());
+    mem_size_tmp = mem_size_tmp - (mem_size_tmp / 3);
+    mem_size_tmp = MB(mem_size_tmp);
+    if(TOTAL_MEM_SIZE > mem_size_tmp){
+       LOG_DEBUG("Virtual Memory size too low!, using lowest allowed value!");
+    } else if (MAX_TOTAL_MEM_SIZE < mem_size_tmp){
+        // do nothing
+    } else {
+       TOTAL_MEM_SIZE = mem_size_tmp;
+    }
+    mem_size_tmp = TOTAL_MEM_SIZE / MB(1);
+    LOG_DEBUG("Virtual Memory size set: {} MB", mem_size_tmp);
+    
     assert(state.page_size >= 4096); // Limit imposed by Unicorn.
     assert(!use_page_table || state.page_size == KiB(4));
 
+    LOG_TRACE("set preferred_address");
     void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
 
 #ifdef _WIN32
@@ -116,16 +133,18 @@ bool init(MemState &state, const bool use_page_table) {
     const BOOL ret = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
 #else
-    //const int ret = mprotect(state.memory.get(), state.page_size, PROT_NONE);
-    //LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+    const int ret = mprotect(state.memory.get(), state.page_size, PROT_NONE);
+    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
 #endif
 
+/*
     state.use_page_table = use_page_table;
     if (use_page_table) {
         state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / KiB(4)]);
         // we use an absolute offset (it is faster), so each entry is the same
         std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE / KiB(4), state.memory.get());
     }
+*/
 
     return true;
 }
