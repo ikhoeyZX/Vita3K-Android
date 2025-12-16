@@ -936,8 +936,6 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
     pipeline_cache.init(support_rasterized_order_access);
 
     texture_cache.init(true, texture_folder(), game_id);
-	
-	LOG_INFO("Memory init success!");
 }
 
 void VKState::cleanup() {
@@ -1265,21 +1263,23 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         // also make sure later the mapped address is 4K aligned
         vkutil::Buffer buffer(size + KiB(4));
         constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
-	        .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
-            .usage = vma::MemoryUsage::eAutoPreferHost,
-	    // .usage = vma::MemoryUsage::eAuto,
-            .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
-            .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
+	        // .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
+            .flags = vma::AllocationCreateFlagBits::eDedicatedMemory | vma::AllocationCreateFlagBits::eHostAccessRandom,
+            // .usage = vma::MemoryUsage::eAutoPreferHost,
+	        .usage = vma::MemoryUsage::eAuto,
+		   // .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
+           // .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
+		    .preferredFlags = vk::MemoryPropertyFlagBits::eDeviceLocal,
         };
         buffer.init_buffer(mapped_memory_flags, memory_mapped_alloc);
 #ifdef __aarch64__
 		const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
         const int64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
-        buffer.mapped_data = std::bit_cast<void *> (align((buffer_ptr_val + buffer_offset), KiB(4)));
+        buffer.mapped_data = std::bit_cast<void *> (buffer_ptr_val + buffer_offset);
 #else
 		const uintptr_t buffer_ptr_val = reinterpret_cast<uintptr_t>(buffer.mapped_data);
         const intptr_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
-		buffer.mapped_data = reinterpret_cast<void *> (align((buffer_ptr_val + buffer_offset), KiB(4)));
+		buffer.mapped_data = reinterpret_cast<void *> (buffer_ptr_val + buffer_offset);
 #endif
 
         vk::BufferDeviceAddressInfoKHR address_info{
