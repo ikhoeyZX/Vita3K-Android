@@ -1220,7 +1220,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             }
 
             int fd = handle->data[0];
-            const vk::MemoryFdPropertiesKHR fd_props = device.getMemoryFdPropertiesKHR(vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd, fd);
+          //  const vk::MemoryFdPropertiesKHR fd_props = device.getMemoryFdPropertiesKHR(vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd, fd);
+            const vk::MemoryFdPropertiesKHR fd_props = device.getMemoryFdPropertiesKHR(vk::ExternalMemoryHandleTypeFlagBits::eAndroidHardwareBufferANDROID, fd);
             uint32_t mapped_memory_type = find_suitable_mapped_type(fd_props.memoryTypeBits);
             vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportMemoryFdInfoKHR, vk::MemoryAllocateFlagsInfo> alloc_info{
                 vk::MemoryAllocateInfo{
