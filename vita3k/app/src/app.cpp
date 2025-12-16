@@ -43,7 +43,7 @@ void error_dialog(const std::string &message, SDL_Window *window) {
 
 static constexpr uint32_t frames_size = 20;
 void calculate_fps(EmuEnvState &emuenv) {
-    if(emuenv.cfg.performance_overlay_detail == 0)
+    if(!emuenv.cfg.performance_overlay)
         return;
     
     const uint32_t sdl_ticks_now = SDL_GetTicks();
@@ -63,13 +63,23 @@ void calculate_fps(EmuEnvState &emuenv) {
         emuenv.fps_values[emuenv.current_fps_offset] = static_cast<float>(emuenv.fps);
         emuenv.current_fps_offset = (emuenv.current_fps_offset + 1) % frames_size;
         
-        float avg_fps = 0;
-        for (uint32_t i = 0; i < frames_size; i++)
-            avg_fps += emuenv.fps_values[i];
+        if(emuenv.cfg.performance_overlay_detail >= 1){
+           float avg_fps = 0;
+           for (uint32_t i = 0; i < frames_size; i++)
+               avg_fps += emuenv.fps_values[i];
         
            emuenv.avg_fps = static_cast<uint32_t>(avg_fps) / frames_size;
+        }else{
+            emuenv.avg_fps = 0;
+        }
+        
+        if(emuenv.cfg.performance_overlay_detail >= 2){
            emuenv.min_fps = static_cast<uint32_t>(*std::min_element(emuenv.fps_values, std::next(emuenv.fps_values, frames_size)));
            emuenv.max_fps = static_cast<uint32_t>(*std::max_element(emuenv.fps_values, std::next(emuenv.fps_values, frames_size)));
+        }else{
+           emuenv.min_fps = 0;
+           emuenv.max_fps = 0;
+        }
     }
 }
 
