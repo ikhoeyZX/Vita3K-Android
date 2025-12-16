@@ -1194,7 +1194,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 
         vk::DeviceMemory device_memory;
         // prefer this extension
-     /*   if (support_android_buffer_import) {
+        if (support_android_buffer_import) {
+			LOG_INFO_ONCE("support_android_buffer_import");
             const vk::AndroidHardwareBufferPropertiesANDROID hardware_props = device.getAndroidHardwareBufferPropertiesANDROID(*buffer);
 
             uint32_t mapped_memory_type = find_suitable_mapped_type(hardware_props.memoryTypeBits);
@@ -1205,12 +1206,12 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                 vk::ImportAndroidHardwareBufferInfoANDROID{
                     .buffer = buffer },
                 vk::MemoryAllocateFlagsInfo{
-                    .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
+                    // .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
+				    .flags = vk::MemoryAllocateFlagBits::eDeviceMask }
             };
-			LOG_INFO("ALLOC MEM NOW");
             device_memory = device.allocateMemory(alloc_info.get());
         } else { 
-*/
+			LOG_WARN_ONCE("support_android_buffer_import not supported");
             const native_handle_t *handle = _AHardwareBuffer_getNativeHandle(buffer);
             if (handle == nullptr || handle->numFds == 0 || handle->data[0] == -1) {
                 LOG_ERROR("Failed to get native handle");
@@ -1218,8 +1219,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             }
 
             int fd = handle->data[0];
-          //  const vk::MemoryFdPropertiesKHR fd_props = device.getMemoryFdPropertiesKHR(vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd, fd);
-            const vk::MemoryFdPropertiesKHR fd_props = device.getMemoryFdPropertiesKHR(vk::ExternalMemoryHandleTypeFlagBits::eAndroidHardwareBufferANDROID, fd);
+            const vk::MemoryFdPropertiesKHR fd_props = device.getMemoryFdPropertiesKHR(vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd, fd);
             uint32_t mapped_memory_type = find_suitable_mapped_type(fd_props.memoryTypeBits);
             vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportMemoryFdInfoKHR, vk::MemoryAllocateFlagsInfo> alloc_info{
                 vk::MemoryAllocateInfo{
@@ -1232,7 +1232,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                     .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
             };
             device_memory = device.allocateMemory(alloc_info.get());
- //       }
+        }
 
         vk::StructureChain<vk::BufferCreateInfo, vk::ExternalMemoryBufferCreateInfoKHR> buffer_info{
             vk::BufferCreateInfo{
@@ -1264,12 +1264,11 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         vkutil::Buffer buffer(size + KiB(4));
         constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
 	        // .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
-            .flags = vma::AllocationCreateFlagBits::eDedicatedMemory | vma::AllocationCreateFlagBits::eHostAccessRandom,
+            .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessRandom,
             // .usage = vma::MemoryUsage::eAutoPreferHost,
 	        .usage = vma::MemoryUsage::eAuto,
-		   // .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
-           // .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
-		    .preferredFlags = vk::MemoryPropertyFlagBits::eDeviceLocal,
+		    .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
+            .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
         };
         buffer.init_buffer(mapped_memory_flags, memory_mapped_alloc);
 #ifdef __aarch64__
