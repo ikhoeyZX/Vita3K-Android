@@ -1105,6 +1105,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         return -1;
     };
 
+	/*
 	auto find_suitable_mapped_type = [&](uint32_t hardware_types) {
         // first try to find a memory that is both coherent and cached
         int mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
@@ -1120,22 +1121,22 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         }
 
     return static_cast<uint32_t>(mapped_memory_type);
-	/*
-    LOG_INFO("find_suitable_mapped_type");
+	*/
+	
     auto find_suitable_mapped_type = [&](uint32_t hardware_types) {
         // first try to find a memory that is both coherent and cached
         int mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
 
 	    if (mapped_memory_type == -1){
+            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eDeviceLocal, hardware_types);
+          // LOG_TRACE_ONCE("Call mapped_memory_type : eDeviceLocal");
+	    }
+		
+		if (mapped_memory_type == -1){
             mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
           //  LOG_TRACE_ONCE("Call mapped_memory_type : eHostCached");
 	    }
 	
-	    if (mapped_memory_type == -1){
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eDeviceLocal, hardware_types);
-          // LOG_TRACE_ONCE("Call mapped_memory_type : eDeviceLocal");
-        }
-    
         if (mapped_memory_type == -1){
             mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
           //  LOG_TRACE_ONCE("Call mapped_memory_type : eHostCached");
@@ -1165,7 +1166,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 	    }
 	    LOG_INFO("mapped_memory_type = {}",mapped_memory_type);
 	    return static_cast<uint32_t>(mapped_memory_type);
-		*/
+		
     };
 
     switch (mapping_method) {
@@ -1195,7 +1196,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 
         vk::DeviceMemory device_memory;
         // prefer this extension
-        if (support_android_buffer_import) {
+     /*   if (support_android_buffer_import) {
             const vk::AndroidHardwareBufferPropertiesANDROID hardware_props = device.getAndroidHardwareBufferPropertiesANDROID(*buffer);
 
             uint32_t mapped_memory_type = find_suitable_mapped_type(hardware_props.memoryTypeBits);
@@ -1210,7 +1211,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             };
 			LOG_INFO("ALLOC MEM NOW");
             device_memory = device.allocateMemory(alloc_info.get());
-        } else {
+        } else { 
+*/
             const native_handle_t *handle = _AHardwareBuffer_getNativeHandle(buffer);
             if (handle == nullptr || handle->numFds == 0 || handle->data[0] == -1) {
                 LOG_ERROR("Failed to get native handle");
@@ -1231,7 +1233,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                     .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
             };
             device_memory = device.allocateMemory(alloc_info.get());
-        }
+ //       }
 
         vk::StructureChain<vk::BufferCreateInfo, vk::ExternalMemoryBufferCreateInfoKHR> buffer_info{
             vk::BufferCreateInfo{
@@ -1263,8 +1265,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         vkutil::Buffer buffer(size + KiB(4));
         constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
 	    .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
-          //  .usage = vma::MemoryUsage::eAutoPreferHost,
-	    .usage = vma::MemoryUsage::eAuto,
+            .usage = vma::MemoryUsage::eAutoPreferHost,
+	    // .usage = vma::MemoryUsage::eAuto,
             .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
             .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
         };
@@ -1412,9 +1414,9 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
         AHardwareBuffer *hardware_buffer = reinterpret_cast<AHardwareBuffer *>(buffer.extra);
         _AHardwareBuffer_unlock(hardware_buffer, nullptr);
         // When using external fd, it takes ownership of the handle, so don't release it in this case
-//        if (support_android_buffer_import)
+        if (support_android_buffer_import)
             _AHardwareBuffer_release(hardware_buffer);
- //       break;
+        break;
     }
 #endif
 
