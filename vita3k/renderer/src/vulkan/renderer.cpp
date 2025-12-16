@@ -1120,7 +1120,63 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 
     return static_cast<uint32_t>(mapped_memory_type);
 	*/
+
+
+	auto find_suitable_mapped_type = [&](uint32_t hardware_types) {
+        // first try to find a memory that is both coherent and cached
+        int mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
+
+		if (mapped_memory_type == -1){ // 4 val
+            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCached | vk::MemoryPropertyFlagBits::eHostCoherent, hardware_types);
+		}
+		
+		if (mapped_memory_type == -1){ // 3 val
+            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCached | vk::MemoryPropertyFlagBits::eHostCoherent, hardware_types);
+		}
+		
+		if (mapped_memory_type == -1){ // 3 val
+            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, hardware_types);
+		}
+		
+		if (mapped_memory_type == -1){ // 3 val
+            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
+		}
+		
+	    if (mapped_memory_type == -1){
+            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, hardware_types);
+	    }
+		
+		if (mapped_memory_type == -1){
+            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
+		}
+		
+		if (mapped_memory_type == -1){
+            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eLazilyAllocated, hardware_types);
+		}
+		
+		if (mapped_memory_type == -1){
+            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eDeviceLocal, hardware_types);
+		}
+		
+	    if (mapped_memory_type == -1){
+            // then only coherent (lower performance)
+            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent, hardware_types);
+            LOG_WARN_ONCE("Call mapped_memory_type : eHostCoherent");
+        }
+
+	    if (mapped_memory_type == -1) {
+            static bool has_happened = false;
+            LOG_CRITICAL_IF(!has_happened, "No coherent memory available for memory mapping!");
+            has_happened = true;
+            mapped_memory_type = std::countr_zero(hardware_types);
+	    }
+	    return static_cast<uint32_t>(mapped_memory_type);
+		
+    };
 	
+
+
+/*
     auto find_suitable_mapped_type = [&](uint32_t hardware_types) {
         // first try to find a memory that is both coherent and cached
         int mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
@@ -1162,10 +1218,9 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             has_happened = true;
             mapped_memory_type = std::countr_zero(hardware_types);
 	    }
-	    LOG_INFO("mapped_memory_type = {}",mapped_memory_type);
 	    return static_cast<uint32_t>(mapped_memory_type);
 		
-    };
+    }; */
 
     switch (mapping_method) {
     case MappingMethod::NativeBuffer: {
@@ -1177,7 +1232,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             .height = 1,
             .layers = 1,
             .format = AHARDWAREBUFFER_FORMAT_BLOB,
-            .usage = AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER | AHARDWAREBUFFER_USAGE_CPU_READ_MASK | AHARDWAREBUFFER_USAGE_CPU_WRITE_MASK,
+           // .usage = AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER | AHARDWAREBUFFER_USAGE_CPU_READ_MASK | AHARDWAREBUFFER_USAGE_CPU_WRITE_MASK,
+            .usage = AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER | AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER | AHARDWAREBUFFER_USAGE_CPU_READ_MASK | AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN | AHARDWAREBUFFER_USAGE_CPU_WRITE_MASK | AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN,
         };
         AHardwareBuffer *buffer;
         int err = _AHardwareBuffer_allocate(&buffer_desc, &buffer);
@@ -1251,8 +1307,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         const uint64_t buffer_address = device.getBufferAddress(address_info);
 
         add_external_mapping(mem, address.address(), size, reinterpret_cast<uint8_t *>(mapped_location));
-        mapped_memories[address.address()] = { address.address(), ExternalBuffer{ device_memory, buffer }, mapped_buffer, size, buffer_address };
-		LOG_INFO("END OF MEMORY MAPPING!");
+        mapped_memories[address.address()] = { address.address(), ExternalBuffer{ device_memory, std::move(buffer) }, mapped_buffer, size, buffer_address };
 #else
         LOG_ERROR("Native buffer is only supported on Android!\n");
 #endif
