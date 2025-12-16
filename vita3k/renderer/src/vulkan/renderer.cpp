@@ -1328,7 +1328,6 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         };
         buffer.init_buffer(mapped_memory_flags, memory_mapped_alloc);
 
-		/*
 #ifdef __aarch64__
 		const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
         const int64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
@@ -1338,10 +1337,6 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         const intptr_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
 		buffer.mapped_data = reinterpret_cast<void *> (buffer_ptr_val + buffer_offset);
 #endif
-		*/
-		const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
-        const int64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
-        buffer.mapped_data = std::bit_cast<void *> (align(buffer_ptr_val, KiB(4)));
 
         vk::BufferDeviceAddressInfoKHR address_info{
             .buffer = buffer.buffer
