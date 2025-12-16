@@ -1264,7 +1264,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         // also make sure later the mapped address is 4K aligned
         vkutil::Buffer buffer(size + KiB(4));
         constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
-	    .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
+	        .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
             .usage = vma::MemoryUsage::eAutoPreferHost,
 	    // .usage = vma::MemoryUsage::eAuto,
             .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
@@ -1274,11 +1274,11 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 #ifdef __aarch64__
 		const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
         const int64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
-        buffer.mapped_data = std::bit_cast<void *>(buffer_ptr_val + buffer_offset);
+        buffer.mapped_data = std::bit_cast<void *> (align((buffer_ptr_val + buffer_offset), KiB(4)));
 #else
 		const uintptr_t buffer_ptr_val = reinterpret_cast<uintptr_t>(buffer.mapped_data);
         const intptr_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
-		buffer.mapped_data = reinterpret_cast<void *>(buffer_ptr_val + buffer_offset);
+		buffer.mapped_data = reinterpret_cast<void *> (align((buffer_ptr_val + buffer_offset), KiB(4)));
 #endif
 
         vk::BufferDeviceAddressInfoKHR address_info{
