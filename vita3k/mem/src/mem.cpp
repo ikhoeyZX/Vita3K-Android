@@ -84,9 +84,10 @@ bool init(MemState &state, const bool use_page_table) {
     mem_size_tmp = TOTAL_MEM_SIZE / MB(1);
     LOG_DEBUG("Virtual Memory size set: {} MB", mem_size_tmp);
     
- //   assert(state.page_size >= 4096); // Limit imposed by Unicorn.
+    assert(state.page_size >= 4096); // Limit imposed by Unicorn.
     assert(!use_page_table || state.page_size == KiB(4));
 
+    LOG_TRACE("set preferred_address");
     void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
 
 #ifdef WIN32
@@ -102,10 +103,11 @@ bool init(MemState &state, const bool use_page_table) {
     }
 #else
     // http://man7.org/linux/man-pages/man2/mmap.2.html
-    constexpr int prot = PROT_NONE;
-    constexpr int flags = MAP_PRIVATE | MAP_ANONYMOUS;
-    constexpr int fd = 0;
-    constexpr off_t offset = 0;
+    int prot = PROT_NONE;
+    int flags = MAP_PRIVATE | MAP_ANONYMOUS;
+    int fd = 0;
+    off_t offset = 0;
+    LOG_TRACE("create mmap");
     // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address
     state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
     if (state.memory.get() == MAP_FAILED) {
@@ -114,6 +116,7 @@ bool init(MemState &state, const bool use_page_table) {
     }
 #endif
 
+    LOG_TRACE("alloc table");
     const size_t table_length = TOTAL_MEM_SIZE / state.page_size;
     state.alloc_table = AllocPageTable(new AllocMemPage[table_length]);
     memset(state.alloc_table.get(), 0, sizeof(AllocMemPage) * table_length);
@@ -132,19 +135,22 @@ bool init(MemState &state, const bool use_page_table) {
     const BOOL ret = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
 #else
+    LOG_TRACE("mprotect get");
     const int ret = mprotect(state.memory.get(), state.page_size, PROT_NONE);
     LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
 #endif
 
+    /*
     state.use_page_table = use_page_table;
-/*    
+    
     if (use_page_table) {
         state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / state.page_size]);
         // we use an absolute offset (it is faster), so each entry is the same
         std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE / state.page_size, state.memory.get());
     }
-    */
-
+    
+*/
+    LOG_TRACE("mem init ok");
     return true;
 }
 
