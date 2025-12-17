@@ -15,22 +15,38 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include <util/bytes.h>
 
-#include <bit>
-#include <cstdint>
-
-template <typename T>
-T byte_swap(T val);
-
-template <typename T>
-T network_to_host_order(T val) {
-    static_assert(((std::endian::native == std::endian::big) || (std::endian::native == std::endian::little)), "Mixed endian is unsupported");
-    if constexpr (std::endian::native == std::endian::big) {
-        return val;
-    } else {
-        return byte_swap(val);
-    }
+template <>
+uint16_t byte_swap(uint16_t val) {
+    return (val >> 8) | (val << 8);
 }
 
-void float_to_half(const float *src, std::uint16_t *dest, const int total);
+template <>
+uint32_t byte_swap(uint32_t val) {
+    //        AA              BB00                      CC0000                       DD000000
+    return (val >> 24) | ((val >> 8) & 0xFF00) | ((val << 8) & 0xFF0000) | ((val << 24) & 0xFF000000);
+}
+
+template <>
+uint64_t byte_swap(uint64_t val) {
+    val = ((val << 8) & 0xFF00FF00FF00FF00ULL) | ((val >> 8) & 0x00FF00FF00FF00FFULL);
+    val = ((val << 16) & 0xFFFF0000FFFF0000ULL) | ((val >> 16) & 0x0000FFFF0000FFFFULL);
+
+    return (val << 32) | (val >> 32);
+}
+
+template <>
+int16_t byte_swap(int16_t val) {
+    return byte_swap(static_cast<uint16_t>(val));
+}
+
+template <>
+int32_t byte_swap(int32_t val) {
+    return byte_swap(static_cast<uint32_t>(val));
+}
+
+template <>
+int64_t byte_swap(int64_t val) {
+    return byte_swap(static_cast<uint64_t>(val));
+}
