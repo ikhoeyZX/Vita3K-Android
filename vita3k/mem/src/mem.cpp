@@ -27,8 +27,6 @@
 #include <mutex>
 #include <utility>
 
-#include <SDL_cpuinfo.h> // to call size of memory free
-
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -39,10 +37,9 @@
 #endif
 
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
+constexpr size_t TOTAL_MEM_SIZE = GiB(4);
 constexpr bool LOG_PROTECT = false;
 constexpr bool PAGE_NAME_TRACKING = false;
-constexpr uint64_t MAX_TOTAL_MEM_SIZE = GiB(4);
-uint64_t TOTAL_MEM_SIZE = GiB(3);
 
 // TODO: support multiple handlers
 static AccessViolationHandler access_violation_handler;
@@ -71,23 +68,9 @@ bool init(MemState &state, const bool use_page_table) {
 #endif
     state.page_size = std::max(STANDARD_PAGE_SIZE, state.page_size);
 
-    uint64_t mem_size_tmp = static_cast<int>(SDL_GetSystemRAM());
-    mem_size_tmp = mem_size_tmp - (mem_size_tmp / 3);
-    mem_size_tmp = MB(mem_size_tmp);
-    if(TOTAL_MEM_SIZE > mem_size_tmp){
-       LOG_DEBUG("Virtual Memory size too low!, using lowest allowed value!");
-    } else if (MAX_TOTAL_MEM_SIZE < mem_size_tmp){
-        // do nothing
-    } else {
-       TOTAL_MEM_SIZE = mem_size_tmp;
-    }
-    mem_size_tmp = TOTAL_MEM_SIZE / MB(1);
-    LOG_DEBUG("Virtual Memory size set: {} MB", mem_size_tmp);
-    
     assert(state.page_size >= 4096); // Limit imposed by Unicorn.
     assert(!use_page_table || state.page_size == KiB(4));
 
-    LOG_TRACE("set preferred_address");
     void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
 
 #ifdef _WIN32
@@ -133,15 +116,15 @@ bool init(MemState &state, const bool use_page_table) {
     const BOOL ret = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
 #else
-    // const int ret = mprotect(state.memory.get(), state.page_size, PROT_NONE);
-    // LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+    //const int ret = mprotect(state.memory.get(), state.page_size, PROT_NONE);
+    //LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
 #endif
 
     state.use_page_table = use_page_table;
     if (use_page_table) {
         state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / KiB(4)]);
         // we use an absolute offset (it is faster), so each entry is the same
-        std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE, state.memory.get());
+        std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE / KiB(4), state.memory.get());
     }
 
     return true;
@@ -268,15 +251,24 @@ void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm p
 }
 
 bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcept {
+#if defined(__aarch64__ ) || defined(__x86_64__)
+    const uint64_t memory_addr = std::bit_cast<uint64_t>(state.memory.get());
+    const uint64_t fault_addr = std::bit_cast<uint64_t>(addr);
+#else
     const uintptr_t memory_addr = reinterpret_cast<uintptr_t>(state.memory.get());
     const uintptr_t fault_addr = reinterpret_cast<uintptr_t>(addr);
-
+#endif
+    
     Address vaddr = 0;
     const std::unique_lock<std::mutex> lock(state.protect_mutex);
     if (fault_addr < memory_addr || fault_addr >= memory_addr + TOTAL_MEM_SIZE) {
         if (state.use_page_table) {
             // this may come from an external mapping
+#if defined(__aarch64__ ) || defined(__x86_64__)
             uint64_t addr_val = std::bit_cast<uint64_t>(addr);
+#else
+            uintptr_t addr_val = reinterpret_cast<uintptr_t>(addr);
+#endif      
             auto it = state.external_mapping.lower_bound(addr_val);
             if (it != state.external_mapping.end() && addr_val < it->first + it->second.size) {
                 vaddr = static_cast<Address>(addr_val - it->first + it->second.address);
@@ -383,7 +375,11 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     if (!mem.use_page_table)
         return;
 
+    #if defined(__aarch64__ ) || defined(__x86_64__)
     uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
+#else
+    uintptr_t addr_value = reinterpret_cast<uintptr_t>(addr_ptr);
+#endif    
     uint8_t *page_table_entry = addr_ptr - addr;
     uint8_t *original_address = &mem.memory[addr];
     for (int block = 0; block < size / KiB(4); block++) {
@@ -402,7 +398,11 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
 }
 
 void remove_external_mapping(MemState &mem, uint8_t *addr_ptr, uint32_t size) {
+    #if defined(__aarch64__ ) || defined(__x86_64__)
     uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
+#else
+    uintptr_t addr_value = reinterpret_cast<uintptr_t>(addr_ptr);
+#endif
     MemExternalMapping mapping;
     if (mem.use_page_table) {
         const std::unique_lock<std::mutex> lock(mem.protect_mutex);
@@ -508,9 +508,10 @@ void free(MemState &state, Address address) {
     const BOOL ret = VirtualFree(memory, page.size * state.page_size, MEM_DECOMMIT);
     LOG_CRITICAL_IF(!ret, "VirtualFree failed: {}", get_error_msg());
 #else
-    int ret = mprotect(memory, page.size * state.page_size, PROT_NONE);
+    const auto pagesize = page.size * state.page_size;
+    int ret = mprotect(memory, pagesize, PROT_NONE);
     LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
-    ret = madvise(memory, page.size * state.page_size, MADV_DONTNEED);
+    ret = madvise(memory, pagesize, MADV_DONTNEED);
     LOG_CRITICAL_IF(ret == -1, "madvise failed: {}", get_error_msg());
 #endif
 }
@@ -526,7 +527,7 @@ const char *mem_name(Address address, MemState &state) {
     return "";
 }
 
-#ifdef _WIN32
+#ifdef _WIN32 // ifdef 1
 
 static LONG WINAPI exception_handler(PEXCEPTION_POINTERS pExp) noexcept {
     if (pExp->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT && IsDebuggerPresent()) {
@@ -552,15 +553,29 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
     }
 }
 
-#else
+#else //ifdef 1
 
 static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     auto context = static_cast<ucontext_t *>(uct);
 
-#ifdef __aarch64__
-#ifdef __APPLE__
+#ifdef __arm__ //ifdef 2
+    _arm_ctx *ctx = reinterpret_cast<_arm_ctx *>(context->uc_mcontext.__reserved);
+    // get the ESR register
+    while (ctx->magic != ESR_MAGIC) {
+        if (ctx->magic == 0)
+            [[unlikely]]
+            raise(SIGTRAP);
+        else
+            [[likely]]
+            ctx = reinterpret_cast<_arm_ctx *>(reinterpret_cast<uint8_t *>(ctx) + ctx->size);
+    }
+
+    const uint64_t esr = reinterpret_cast<esr_context *>(ctx)->esr;
+#elif __aarch64__ // ifdef 2
+    
+#ifdef __APPLE__ // ifdef 3
     const uint32_t esr = context->uc_mcontext->__es.__esr;
-#else
+#else // ifdef 3
     _aarch64_ctx *ctx = reinterpret_cast<_aarch64_ctx *>(context->uc_mcontext.__reserved);
     // get the ESR register
     while (ctx->magic != ESR_MAGIC) {
@@ -573,21 +588,22 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     }
 
     const uint64_t esr = reinterpret_cast<esr_context *>(ctx)->esr;
-#endif
+#endif // ifdef 3
     // https://developer.arm.com/documentation/ddi0595/2021-03/AArch64-Registers/ESR-EL1--Exception-Syndrome-Register--EL1-
     const uint32_t exception_class = static_cast<uint32_t>(esr) >> 26;
     const bool is_executing = (exception_class == 0b100000) || (exception_class == 0b100001);
     const bool is_data_abort = (exception_class == 0b100100) || (exception_class == 0b100101);
     const bool is_writing = is_data_abort && (esr & (1 << 6));
-#else
-#ifdef __APPLE__
+#else // ifdef 2
+    
+#ifdef __APPLE__ // ifdef 4
     const uint64_t err = context->uc_mcontext->__es.__err;
-#else
+#else // ifdef 4
     const uint64_t err = context->uc_mcontext.gregs[REG_ERR];
-#endif
+#endif // ifdef 4
     const bool is_executing = err & 0x10;
     const bool is_writing = err & 0x2;
-#endif
+#endif //ifdef 2
 
     if (!is_executing) {
         if (access_violation_handler(reinterpret_cast<uint8_t *>(info->si_addr), is_writing)) {
@@ -595,7 +611,7 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
         }
     }
 
-    LOG_CRITICAL("Unhandled access to {}", log_hex(*reinterpret_cast<uint64_t *>(&info->si_addr)));
+    LOG_CRITICAL("Unhandled access to {}", log_hex(*reinterpret_cast<uintptr_t *>(&info->si_addr)));
     raise(SIGTRAP);
     return;
 }
@@ -618,4 +634,4 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
 #endif
 }
 
-#endif
+#endif // ifdef 1
