@@ -310,7 +310,6 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     if (!log_mem && cpu_opt) {
          config.fastmem_exclusive_access = true; 
          config.recompile_on_exclusive_fastmem_failure = true;
-         config.silently_mirror_fastmem = false;
          config.fastmem_pointer = std::optional<uintptr_t>(reinterpret_cast<uintptr_t>(parent->mem->memory.get()));
        // config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
     }else{
@@ -319,7 +318,6 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
          config.recompile_on_exclusive_fastmem_failure = false; // this one
     }
     
-    config.fastmem_address_space_bits = 32;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;  
     config.hook_hint_instructions = true;
     config.global_monitor = monitor;
@@ -338,10 +336,10 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     }
     
     // Code cache size
-#if defined __aarch64__ || defined __arm__
-    config.code_cache_size = 128_MiB;
+#if defined __aarch64__
+    config.code_cache_size =  128 * 1024 * 1024;
 #else
-    config.code_cache_size = 512_MiB;
+    config.code_cache_size =  512 * 1024 * 1024;
 #endif
     
     return std::make_unique<Dynarmic::A32::Jit>(config);
