@@ -310,7 +310,7 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     if (!log_mem && cpu_opt) {
          config.fastmem_exclusive_access = true; 
          config.recompile_on_exclusive_fastmem_failure = true;
-        silently_mirror_fastmem = false;
+         config.silently_mirror_fastmem = false;
          config.fastmem_pointer = std::optional<uintptr_t>(reinterpret_cast<uintptr_t>(parent->mem->memory.get()));
        // config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
     }else{
