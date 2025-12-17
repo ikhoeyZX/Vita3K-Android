@@ -1091,7 +1091,6 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     constexpr vk::BufferUsageFlags mapped_memory_flags = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eTransferDst;
 
     auto find_mem_type_with_flag = [&](const vk::MemoryPropertyFlags flags, uint32_t hardware_types) {
-		LOG_INFO("hardware_types = {}", hardware_types);
         while (hardware_types != 0) {
             // try to find a cached memory type
             int mapped_memory_type = std::countr_zero(hardware_types);
@@ -1102,25 +1101,6 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         }
         return -1;
     };
-
-	/*
-	auto find_suitable_mapped_type = [&](uint32_t hardware_types) {
-        // first try to find a memory that is both coherent and cached
-        int mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
-        if (mapped_memory_type == -1)
-            // then only coherent (lower performance)
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent, hardware_types);
-
-        if (mapped_memory_type == -1) {
-            static bool has_happened = false;
-            LOG_CRITICAL_IF(!has_happened, "No coherent memory available for memory mapping!");
-            has_happened = true;
-            mapped_memory_type = std::countr_zero(hardware_types);
-        }
-
-    return static_cast<uint32_t>(mapped_memory_type);
-	*/
-
 
 	auto find_suitable_mapped_type = [&](uint32_t hardware_types) {
         // first try to find a memory that is both coherent and cached
@@ -1173,54 +1153,6 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 	    return static_cast<uint32_t>(mapped_memory_type);
 		
     };
-	
-
-
-/*
-    auto find_suitable_mapped_type = [&](uint32_t hardware_types) {
-        // first try to find a memory that is both coherent and cached
-        int mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
-
-	    if (mapped_memory_type == -1){
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eDeviceLocal, hardware_types);
-          // LOG_TRACE_ONCE("Call mapped_memory_type : eDeviceLocal");
-	    }
-		
-		if (mapped_memory_type == -1){
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
-          //  LOG_TRACE_ONCE("Call mapped_memory_type : eHostCached");
-	    }
-	
-        if (mapped_memory_type == -1){
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
-          //  LOG_TRACE_ONCE("Call mapped_memory_type : eHostCached");
-	    }
-	    
-	    if (mapped_memory_type == -1){
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostVisible, hardware_types);
-          // LOG_TRACE_ONCE("Call mapped_memory_type : eHostVisible");
-	    }
-
-	    if (mapped_memory_type == -1){
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eLazilyAllocated, hardware_types);
-          // LOG_TRACE_ONCE("Call mapped_memory_type : eLazilyAllocated");
-	    }
-
-	    if (mapped_memory_type == -1){
-            // then only coherent (lower performance)
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent, hardware_types);
-          //  LOG_TRACE_ONCE("Call mapped_memory_type : eHostCoherent");
-        }
-
-	    if (mapped_memory_type == -1) {
-            static bool has_happened = false;
-            LOG_CRITICAL_IF(!has_happened, "No coherent memory available for memory mapping!");
-            has_happened = true;
-            mapped_memory_type = std::countr_zero(hardware_types);
-	    }
-	    return static_cast<uint32_t>(mapped_memory_type);
-		
-    }; */
 
     switch (mapping_method) {
     case MappingMethod::NativeBuffer: {
