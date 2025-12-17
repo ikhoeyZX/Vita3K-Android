@@ -21,6 +21,7 @@
 #include <util/bit_cast.h>
 #include <util/log.h>
 
+#include <mem/state.h>
 #include <mem/ptr.h>
 
 //#include <dynarmic/frontend/A32/a32_ir_emitter.h>
@@ -307,7 +308,8 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
     }
     if (!log_mem && cpu_opt) {
-        config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
+       // config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
+        config.fastmem_pointer = std::bit_cast<uintptr_t>(page_table.get());
     }
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;  
     config.fastmem_exclusive_access = false; // if this and below set true native buffer works but only 1-3 fps, weird
