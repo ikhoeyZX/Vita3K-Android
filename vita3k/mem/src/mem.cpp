@@ -133,8 +133,8 @@ bool init(MemState &state, const bool use_page_table) {
     const BOOL ret = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
 #else
-    const int ret = mprotect(state.memory.get(), state.page_size, PROT_NONE);
-    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+    // const int ret = mprotect(state.memory.get(), state.page_size, PROT_NONE);
+    // LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
 #endif
 
 /*
