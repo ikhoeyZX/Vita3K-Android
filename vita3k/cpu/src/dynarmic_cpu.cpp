@@ -308,12 +308,19 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
     }
     if (!log_mem && cpu_opt) {
+         config.fastmem_exclusive_access = true; 
+         config.recompile_on_exclusive_fastmem_failure = true;
+        silently_mirror_fastmem = false;
+         config.fastmem_pointer = std::optional<uintptr_t>(reinterpret_cast<uintptr_t>(parent->mem->memory.get()));
        // config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
-        config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->page_table.get());
+    }else{
+         config.fastmem_pointer = std::optional<uintptr_t>(std::nullopt);
+         config.fastmem_exclusive_access = false; // if this and below set true native buffer works but only 1-3 fps, weird
+         config.recompile_on_exclusive_fastmem_failure = false; // this one
     }
+    
+    config.fastmem_address_space_bits = 32;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;  
-    config.fastmem_exclusive_access = false; // if this and below set true native buffer works but only 1-3 fps, weird
-    config.recompile_on_exclusive_fastmem_failure = false; // this one
     config.hook_hint_instructions = true;
     config.global_monitor = monitor;
     config.coprocessors[15] = cp15;
@@ -329,6 +336,13 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     } else {
         config.unsafe_optimizations = false;
     }
+    
+    // Code cache size
+#if defined __aarch64__ || defined __arm__
+    config.code_cache_size = 128_MiB;
+#else
+    config.code_cache_size = 512_MiB;
+#endif
     
     return std::make_unique<Dynarmic::A32::Jit>(config);
 }
