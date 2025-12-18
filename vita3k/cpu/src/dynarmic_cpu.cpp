@@ -301,13 +301,15 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     Dynarmic::A32::UserConfig config{};
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
     config.callbacks = cb.get();
+    // disable it because it make memory mapping crash
 /*    if (parent->mem->use_page_table) {
         config.page_table = (log_mem || !cpu_opt) ? nullptr : std::bit_cast<decltype(config.page_table)>(parent->mem->page_table.get());
         config.absolute_offset_page_table = true;
-        config.detect_misaligned_access_via_page_table = 8 | 16 | 32 | 64 | 128;
+        config.detect_misaligned_access_via_page_table = 4;
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
     }
 */
+
     if (!log_mem && cpu_opt) {
          config.fastmem_exclusive_access = true; 
          config.recompile_on_exclusive_fastmem_failure = true;
