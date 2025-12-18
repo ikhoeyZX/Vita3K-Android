@@ -1028,6 +1028,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         if (emuenv.renderer->support_custom_drivers()) {
             if (is_vulkan) {
+                if (is_ingame)
+                ImGui::BeginDisabled();
+
                 ImGui::Spacing();
                 ImGui::Checkbox(lang.gpu["use_astc"].c_str(), &emuenv.cfg.use_astc);
 
