@@ -780,7 +780,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             .device = device,
             .pVulkanFunctions = &vulkan_functions,
             .instance = instance,
-            .vulkanApiVersion = VK_API_VERSION_1_1,
+            .vulkanApiVersion = VK_API_VERSION_1_0, // motorola didn't support vk 1.1?
         };
 
         if (support_dedicated_allocations)
