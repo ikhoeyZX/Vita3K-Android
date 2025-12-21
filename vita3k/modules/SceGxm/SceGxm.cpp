@@ -1,3 +1,4 @@
+
 // Vita3K emulator project
 // Copyright (C) 2025 Vita3K team
 //
@@ -41,6 +42,7 @@
 #include <renderer/functions.h>
 #include <renderer/state.h>
 #include <renderer/types.h>
+#include <util/align.h>
 #include <util/bytes.h>
 #include <util/log.h>
 
@@ -993,7 +995,7 @@ struct SceGxmContext {
     size_t command_next_free_pos;
     // this one is atomic as it is read from one thread and written to by another
     std::atomic<size_t> command_last_free_pos;
-    size_t command_allocator_size = 0;
+    uint32_t command_allocator_size = 0;
 
     bool last_precomputed = false;
 
@@ -1151,7 +1153,7 @@ struct SceGxmContext {
         renderer::Command *new_command = nullptr;
 
         if (state.type == SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
-            if (command_allocator_size > 0 && command_next_free_pos <= command_last_free_pos) {
+            if (command_allocator_size > 0 && command_next_free_pos <= command_last_free_pos.load(std::memory_order_acquire)) {
                 size_t offset = command_next_free_pos % command_allocator_size;
                 command_next_free_pos++;
                 new_command = alloc_space.cast<renderer::Command>().get(mem) + offset;
@@ -1175,11 +1177,15 @@ struct SceGxmContext {
             if (cmd->flags & renderer::Command::FLAG_FROM_HOST) {
                 delete cmd;
             } else {
-                ++command_last_free_pos;
+                command_last_free_pos.fetch_add(1, std::memory_order_release);
             }
         }
     }
 };
+
+// the size of the context on a PS Vita is 2048 bytes
+// the +4 is for alignment reasons
+static_assert(sizeof(SceGxmContext) + 4 <= 2048);
 
 struct SceGxmRenderTarget {
     std::unique_ptr<renderer::RenderTarget> renderer;
@@ -1765,9 +1771,10 @@ EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmCo
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    *context = params->hostMem.cast<SceGxmContext>();
+    // This structure needs 8-byte alignment
+    *context = Ptr<SceGxmContext>(align(params->hostMem.address(), 8));
 
-    SceGxmContext *const ctx = context->get(emuenv.mem);
+    SceGxmContext *ctx = context->get(emuenv.mem);
     new (ctx) SceGxmContext(emuenv.gxm.callback_lock);
 
     ctx->state.fragment_ring_buffer = params->fragmentRingBufferMem;
@@ -1813,8 +1820,8 @@ EXPORT(int, sceGxmCreateDeferredContext, SceGxmDeferredContextParams *params, Pt
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    *deferredContext = params->hostMem.cast<SceGxmContext>();
-    SceGxmContext *const ctx = deferredContext->get(emuenv.mem);
+    *deferredContext = Ptr<SceGxmContext>(align(params->hostMem.address(), 8));
+    SceGxmContext *ctx = deferredContext->get(emuenv.mem);
     new (ctx) SceGxmContext(emuenv.gxm.callback_lock);
 
     ctx->state.vertex_memory_callback = params->vertexCallback;
@@ -4158,8 +4165,7 @@ EXPORT(int, sceGxmSetVertexUniformBuffer, SceGxmContext *context, uint32_t buffe
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
     TRACY_FUNC(sceGxmSetViewport, context, xOffset, xScale, yOffset, yScale, zOffset, zScale);
-
-	// Set viewport to enable, enable more offset and scale to set
+    // Set viewport to enable, enable more offset and scale to set
     if (context->state.viewport.offset.x != xOffset || (context->state.viewport.offset.y != yOffset) || (context->state.viewport.offset.z != zOffset)
         || (context->state.viewport.scale.x != xScale) || (context->state.viewport.scale.y != yScale) || (context->state.viewport.scale.z != zScale)) {
         context->state.viewport.offset.x = xOffset;
@@ -4170,10 +4176,10 @@ EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xSc
         context->state.viewport.scale.z = zScale;
 
         if (!context->state.active) {
-           LOG_WARN("The call was made outside of the Scene!!");
-           return;
+            LOG_WARN_ONCE("The call was made outside of the Scene. It will be ignored.");
+            return;
         }
-		
+
         if (context->alloc_space) {
             update_viewport(*emuenv.renderer, context);
         }
@@ -4187,8 +4193,8 @@ EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode
         context->state.viewport.enable = enable;
 
         if (!context->state.active) {
-           LOG_WARN_ONCE("The call was made outside of the Scene. It will be ignored.");
-           return;
+            LOG_WARN_ONCE("The call was made outside of the Scene. It will be applied when the next Scene is called.");
+            return;
         }
 
         if (context->alloc_space) {
@@ -5459,6 +5465,15 @@ EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
     auto ite = emuenv.gxm.memory_mapped_regions.find(aligned_base);
     if (ite == emuenv.gxm.memory_mapped_regions.end()) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
+    // this memory range may contain trapped region, so untrap everything to make sure
+    // we don't run into issues later
+    // TODO: call a mem function to invalidate the range instead
+    uint8_t *addr_start = base.cast<uint8_t>().get(emuenv.mem);
+    for (volatile uint8_t *addr = addr_start; addr < addr_start + ite->second.size; addr += emuenv.mem.page_size) {
+        // this should cause a read and a write
+        *addr = *addr;
     }
 
     if (emuenv.renderer->features.enable_memory_mapping && ite->second.size > 0)
