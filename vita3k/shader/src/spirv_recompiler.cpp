@@ -2066,13 +2066,6 @@ void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_
 
 static spv::ImageFormat translate_color_format(const SceGxmColorBaseFormat format) {
     switch (format) {
-    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
-    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8:
-        return spv::ImageFormat::ImageFormatRgba8;
-
-    case SCE_GXM_COLOR_BASE_FORMAT_U8U8:
-        return spv::ImageFormat::ImageFormatRg8;
-        
     case SCE_GXM_COLOR_BASE_FORMAT_S8:
         return spv::ImageFormat::ImageFormatR8Snorm;
 
@@ -2082,15 +2075,15 @@ static spv::ImageFormat translate_color_format(const SceGxmColorBaseFormat forma
     case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
         return spv::ImageFormat::ImageFormatRgba8Snorm;
 
-    case SCE_GXM_COLOR_BASE_FORMAT_S16S16:
-        return spv::ImageFormat::ImageFormatRg16Snorm;
+    case SCE_GXM_COLOR_BASE_FORMAT_U8:
+        return spv::ImageFormat::ImageFormatR8;
+        
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8:
+        return spv::ImageFormat::ImageFormatRg8;
 
-    case SCE_GXM_COLOR_BASE_FORMAT_U16:
-        return spv::ImageFormat::ImageFormatR16;
-
-    case SCE_GXM_COLOR_BASE_FORMAT_U16U16:
-        return spv::ImageFormat::ImageFormatRg16;
-            
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
+        return spv::ImageFormat::ImageFormatRgba8;
+    
     case SCE_GXM_COLOR_BASE_FORMAT_F16:
         return spv::ImageFormat::ImageFormatR16f;
         
@@ -2100,10 +2093,19 @@ static spv::ImageFormat translate_color_format(const SceGxmColorBaseFormat forma
     case SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16:
         return spv::ImageFormat::ImageFormatRgba16f;
 
-    case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
-        return spv::ImageFormat::ImageFormatRgb10a2ui;
+    case SCE_GXM_COLOR_BASE_FORMAT_S16:
+        return spv::ImageFormat::ImageFormatR16Snorm;
         
-    case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
+    case SCE_GXM_COLOR_BASE_FORMAT_S16S16:
+        return spv::ImageFormat::ImageFormatRg16Snorm;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_U16:
+        return spv::ImageFormat::ImageFormatR16;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_U16U16:
+        return spv::ImageFormat::ImageFormatRg16;
+            
+    case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
         return spv::ImageFormat::ImageFormatRgb10A2;
 
     case SCE_GXM_COLOR_BASE_FORMAT_F11F11F10:
@@ -2115,6 +2117,11 @@ static spv::ImageFormat translate_color_format(const SceGxmColorBaseFormat forma
     case SCE_GXM_COLOR_BASE_FORMAT_F32F32:
         return spv::ImageFormat::ImageFormatRg32f;
 
+    // no known format in spirv and it's a float!
+    case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
+    case SCE_GXM_COLOR_BASE_FORMAT_SE5M9M9M9:
+        return spv::ImageFormat::ImageFormatRgba16f;
+        
     default:
         return spv::ImageFormat::ImageFormatRgba8;
     }
