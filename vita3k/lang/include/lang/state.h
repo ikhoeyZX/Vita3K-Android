@@ -176,7 +176,7 @@ struct LangState {
             { "information", "Information" }
         };
         std::map<std::string, std::string> deleting = {
-            { "app_delete", "This application and all related data, including saved data, will be deleted." },
+            { "app_delete", "Delete this application, save files not touched or removed." },
             { "app_delete_description", "Deleting an application may take a while,\ndepending on its size and your hardware." },
             { "addcont_delete", "Do you want to delete this add-on data?" },
             { "license_delete", "Do you want to delete this license?" },
