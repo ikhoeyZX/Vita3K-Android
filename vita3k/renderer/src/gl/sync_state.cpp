@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@
 #include <gxm/types.h>
 #include <util/align.h>
 #include <util/log.h>
-#include <util/vector_utils.h>
 
 #include <shader/spirv_recompiler.h>
 
@@ -112,9 +111,20 @@ static GLenum translate_stencil_func(SceGxmStencilFunc stencil_func) {
 
 void sync_mask(const GLState &state, GLContext &context, const MemState &mem) {
     GLubyte initial_byte = context.record.depth_stencil_surface.mask ? 0xFF : 0;
+    auto width = context.render_target->width;
+    auto height = context.render_target->height;
 
+#ifdef ANDROID
+    std::vector<GLubyte> emptyData(width * height * 4, initial_byte);
+    GLint texId;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &texId);
+    glBindTexture(GL_TEXTURE_2D, context.render_target->masktexture[0]);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &emptyData[0]);
+    glBindTexture(GL_TEXTURE_2D, texId);
+#else
     GLubyte clear_bytes[4] = { initial_byte, initial_byte, initial_byte, initial_byte };
     glClearTexImage(context.render_target->masktexture[0], 0, GL_RGBA, GL_UNSIGNED_BYTE, clear_bytes);
+#endif
 }
 
 void sync_viewport_flat(const GLState &state, GLContext &context) {
@@ -136,8 +146,8 @@ void sync_viewport_real(const GLState &state, GLContext &context, const float xO
     const GLfloat x = xOffset - std::abs(xScale);
     const GLfloat y = std::min<GLfloat>(ymin, ymax);
 
-    glViewportIndexedf(0, x * state.res_multiplier, y * state.res_multiplier, w * state.res_multiplier, h * state.res_multiplier);
-    glDepthRange(0, 1);
+    glViewport(x * state.res_multiplier, y * state.res_multiplier, w * state.res_multiplier, h * state.res_multiplier);
+    glDepthRangef(0.0f, 1.0f);
 }
 
 void sync_clipping(const GLState &state, GLContext &context) {
@@ -206,8 +216,8 @@ void sync_depth_data(const renderer::GxmRecordState &state) {
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
 
-    if (!state.depth_stencil_surface.force_load) {
-        glClearDepth(state.depth_stencil_surface.background_depth);
+    if (!state.depth_stencil_surface.force_load && state.depth_stencil_surface.depth_data) {
+        glClearDepthf(state.depth_stencil_surface.background_depth);
         glClear(GL_DEPTH_BUFFER_BIT);
     }
 }
@@ -327,6 +337,21 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
                 // tiles are 32x32
                 stride_in_pixels = align(stride_in_pixels, 32);
                 break;
+            case SCE_GXM_TEXTURE_SWIZZLED:
+                LOG_ERROR_ONCE("Unsupported SCE_GXM_TEXTURE_SWIZZLED");
+                stride_in_pixels = static_cast<std::uint16_t>(stride_in_pixels / gxm::bits_per_pixel(base_format));
+                break;
+            case SCE_GXM_TEXTURE_CUBE:
+                LOG_ERROR_ONCE("Unsupported SCE_GXM_TEXTURE_CUBE");
+                stride_in_pixels = align(stride_in_pixels, 16);
+                break;
+            case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY:
+                LOG_ERROR_ONCE("Unsupported SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY");
+                stride_in_pixels = align(static_cast<std::uint16_t>(stride_in_pixels / gxm::bits_per_pixel(base_format)), 4);
+                break;
+            default:
+                LOG_ERROR_ONCE("Unsupported texture_type!");
+                break;
             }
 
             std::uint32_t swizz_raw = 0;
@@ -381,11 +406,26 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
                         }
                     } else {
                         const GLint default_rgba[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+#ifdef ANDROID
+                        for(uint8_t i = 0; i < 4; i++){
+                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, default_rgba[i]);
+                        }
+#else
                         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, default_rgba);
+#endif
                     }
                 } else {
-                    LOG_TRACE("No surface swizzle found, use default texture swizzle");
+                    static bool has_happened = false;
+                    LOG_TRACE_IF(!has_happened, "No surface swizzle found, use default texture swizzle");
+                    has_happened = true;
                     glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+#ifdef ANDROID
+                    for(uint8_t i = 0; i < 4; i++){
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, swizzle[i]);
+                    }
+#else
+                    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+#endif
                 }
             }
         }
