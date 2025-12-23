@@ -1,4 +1,3 @@
-
 // Vita3K emulator project
 // Copyright (C) 2025 Vita3K team
 //
@@ -35,7 +34,7 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
-#include <SDL3/SDL_video.h>
+#include <SDL_video.h>
 
 #include <array>
 #include <mutex>
@@ -175,8 +174,22 @@ static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum 
 bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &config) {
     auto &gl_state = dynamic_cast<GLState &>(*state);
 
+#ifndef NDEBUG
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif
+
+    uint8_t choosen_minor_version = 0;
+
+#ifdef ANDROID
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+
+    gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
+    choosen_minor_version = 6;
+#else
     // Recursively create GL version until one accepts
-    // Major 4 is mandatory
+        // Major 4 is mandatory
     // We use glBufferStorage which needs OpenGL 4.4
     constexpr std::array accept_gl_minor_versions = {
         6, // OpenGL 4.6
@@ -186,26 +199,27 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-#ifndef NDEBUG
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
-#endif
 
-    for (int minor_version : accept_gl_minor_versions) {
+    for (uint8_t minor_version : accept_gl_minor_versions) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor_version);
-        gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), [](SDL_GLContext context) { SDL_GL_DestroyContext(context); });
+        gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
         if (gl_state.context) {
             break;
         }
     }
+#endif
 
     if (!gl_state.context)
         return false;
 
-    if (!gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress))
+#ifdef ANDROID
+    if(!gladLoadGLES2Loader((GLADloadproc)SDL_GL_GetProcAddress))
         return false;
-
-    gladSetGLPostCallback(after_callback);
-
+#else
+    if(gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
+        return false;
+#endif
+    
     // Detect GPU and features
     const std::string gpu_name = reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
     const std::string version = reinterpret_cast<const GLchar *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
@@ -252,9 +266,23 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
     }
 
-    // always enabled in the opengl renderer
+    GLint stencilBits = 0;
+    glGetIntegerv(GL_STENCIL_BITS, &stencilBits);
+    LOG_TRACE("GL_STENCIL_BITS : {}", stencilBits);
+    if (stencilBits > 0)
+        gl_state.features.use_mask_bit = true;
+    else
+        gl_state.features.use_mask_bit = false;
+    
+    
+    /*
+#ifdef ANDROID
+    gl_state.features.use_mask_bit = false;
+#else
     gl_state.features.use_mask_bit = true;
-
+#endif
+    */
+    
     return gl_state.init();
 }
 
@@ -295,6 +323,7 @@ bool create(GLState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
     GLRenderTarget *render_target = reinterpret_cast<GLRenderTarget *>(rt.get());
 
     if (!render_target->maskbuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
+        LOG_WARN_ONCE("Mask buffer not supported");
         return false;
     }
 
@@ -395,7 +424,8 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
         glDisable(GL_SCISSOR_TEST);
     }
 
-    sync_mask(state, context, mem);
+    if(state.features.use_mask_bit)
+       sync_mask(state, context, mem);
 
     // TODO: Take request to force load from given memory
     // Sync depth/stencil based on depth stencil surface.
@@ -703,7 +733,14 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
         const GLint standard_swizzle[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
 
         glBindTexture(GL_TEXTURE_2D, surface_handle);
+        
+#ifdef ANDROID
+        for(uint8_t i = 0; i < 4; i++){
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, standard_swizzle[i]);
+        }
+#else
         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, standard_swizzle);
+#endif
     }
 
     glBindTexture(GL_TEXTURE_2D, last_texture);
