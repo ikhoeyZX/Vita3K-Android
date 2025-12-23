@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -130,11 +130,11 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         }
 
         if (cache_probably_freed) {
-            for (auto ite = framebuffer_array.begin(); ite != framebuffer_array.end();) {
-                if ((ite->first & 0xFFFFFFFF) == key) {
-                    ite = framebuffer_array.erase(ite);
+            for (auto fbuf_ite = framebuffer_array.begin(); fbuf_ite != framebuffer_array.end();) {
+                if ((fbuf_ite->first & 0xFFFFFFFF) == key) {
+                    fbuf_ite = framebuffer_array.erase(fbuf_ite);
                 } else {
-                    ++ite;
+                    ++fbuf_ite;
                 }
             }
             // Clear out. We will recreate later
@@ -397,7 +397,6 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                 }
 
                 last_use_color_surface_index.push_back(ite->first);
-                info.is_ping_pong_dirty = true;
                 return info.gl_texture[0];
             } else {
                 return 0;
@@ -419,7 +418,6 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
     info_added->format = base_format;
     info_added->swizzle = swizzle;
     info_added->flags = 0;
-    info_added->is_ping_pong_dirty = true;
 
     if (!info_added->gl_texture.init(glGenTextures, glDeleteTextures)) {
         LOG_ERROR("Failed to initialise color surface texture!");
@@ -495,9 +493,6 @@ GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void>
 
     GLColorSurfaceCacheInfo &info = *ite->second;
 
-    if(!info.is_ping_pong_dirty)
-        return info.gl_ping_pong_texture[0];
-
     GLenum surface_internal_format = color::translate_internal_format(info.format);
     GLenum surface_upload_format = color::translate_format(info.format);
     GLenum surface_data_type = color::translate_type(info.format);
@@ -517,8 +512,6 @@ GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void>
     }
 
     glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, info.gl_ping_pong_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, info.width, info.height, 1);
-    info.is_ping_pong_dirty = false;
-    
     return info.gl_ping_pong_texture[0];
 }
 
@@ -704,7 +697,7 @@ GLuint GLSurfaceCache::retrieve_framebuffer_handle(const State &state, const Mem
         LOG_ERROR("Framebuffer is not completed. Proceed anyway...");
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClearDepthf(1.0);
+    glClearDepth(1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
