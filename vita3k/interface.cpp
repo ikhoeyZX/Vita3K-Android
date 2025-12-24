@@ -55,8 +55,11 @@
 
 #include <gdbstub/functions.h>
 
+#if defined(__arm__) || defined(__aarch64__)
 #include <glad/gles2.h>
+#else
 #include <glad/gl.h>
+#endif
 
 #if USE_DISCORD
 #include <app/discord.h>
