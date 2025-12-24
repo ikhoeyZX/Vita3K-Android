@@ -36,8 +36,11 @@
 
 #include <SDL_video.h>
 
+#if defined(__arm__) || defined(__aarch64__)
 #include <glad/gles2.h>
+#else
 #include <glad/gl.h>
+#endif
 
 #include <array>
 #include <mutex>
