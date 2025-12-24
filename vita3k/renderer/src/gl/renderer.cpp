@@ -34,7 +34,7 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
-#include <SDL_video.h>
+#include <SDL3/SDL_video.h>
 
 #include <array>
 #include <mutex>
@@ -110,15 +110,9 @@ void bind_fundamental(GLContext &context) {
     glBindVertexArray(context.vertex_array[0]);
 }
 
-static void after_callback(void *ret, const char *name, GLADapiproc apiproc, int len_args, ...) {
-    GLAD_UNUSED(ret);
-    GLAD_UNUSED(apiproc);
-    GLAD_UNUSED(len_args);
-
-    GLenum error_code = glad_glGetError();
-
-    if (error_code != GL_NO_ERROR) {
-        LOG_ERROR("OpenGL: {} set error {}.", name, error_code);
+static void after_callback(const char *name, void *funcptr, int len_args, ...) {
+    for (GLenum error = glad_glGetError(); error != GL_NO_ERROR; error = glad_glGetError()) {
+        LOG_ERROR("OpenGL: {} set error {}.", name, error);
     }
 }
 
@@ -173,23 +167,22 @@ static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum 
 
 bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &config) {
     auto &gl_state = dynamic_cast<GLState &>(*state);
-
 #ifndef NDEBUG
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
 
-    uint8_t choosen_minor_version = 0;
+    int choosen_minor_version = 0;
 
-#ifdef ANDROID
+#ifdef __ANDROID__
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 
-    gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
+    gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), [](SDL_GLContext context) { SDL_GL_DestroyContext(context); });
     choosen_minor_version = 6;
 #else
     // Recursively create GL version until one accepts
-        // Major 4 is mandatory
+    // Major 4 is mandatory
     // We use glBufferStorage which needs OpenGL 4.4
     constexpr std::array accept_gl_minor_versions = {
         6, // OpenGL 4.6
@@ -200,9 +193,9 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    for (uint8_t minor_version : accept_gl_minor_versions) {
+    for (int minor_version : accept_gl_minor_versions) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor_version);
-        gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
+        gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), [](SDL_GLContext context) { SDL_GL_DestroyContext(context); });
         if (gl_state.context) {
             break;
         }
@@ -212,14 +205,12 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     if (!gl_state.context)
         return false;
 
-#ifdef ANDROID
-    if(!gladLoadGLES2Loader((GLADloadproc)SDL_GL_GetProcAddress))
-        return false;
+#ifdef __ANDROID__
+    gladLoadGLES2Loader((GLADloadproc)SDL_GL_GetProcAddress);
 #else
-    if(gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
-        return false;
+    gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 #endif
-    
+    // glad_set_post_callback(after_callback);
     // Detect GPU and features
     const std::string gpu_name = reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
     const std::string version = reinterpret_cast<const GLchar *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
@@ -266,23 +257,13 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
     }
 
-    GLint stencilBits = 0;
-    glGetIntegerv(GL_STENCIL_BITS, &stencilBits);
-    LOG_TRACE("GL_STENCIL_BITS : {}", stencilBits);
-    if (stencilBits > 0)
-        gl_state.features.use_mask_bit = true;
-    else
-        gl_state.features.use_mask_bit = false;
-    
-    
-    /*
-#ifdef ANDROID
+    // always enabled in the opengl renderer
+#ifdef __ANDROID__
     gl_state.features.use_mask_bit = false;
 #else
     gl_state.features.use_mask_bit = true;
 #endif
-    */
-    
+
     return gl_state.init();
 }
 
@@ -298,7 +279,7 @@ bool GLState::init() {
 }
 
 void GLState::late_init(const Config &cfg, const std::string_view game_id, MemState &mem) {
-    texture_cache.init(cfg.hashless_texture_cache, texture_folder(), game_id);
+    texture_cache.init(true, texture_folder(), game_id);
 }
 
 bool create(std::unique_ptr<Context> &context) {
@@ -322,8 +303,7 @@ bool create(GLState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
     rt = std::make_unique<GLRenderTarget>();
     GLRenderTarget *render_target = reinterpret_cast<GLRenderTarget *>(rt.get());
 
-    if (!render_target->maskbuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
-        LOG_WARN_ONCE("Mask buffer not supported");
+    if (state.features.use_mask_bit && !render_target->maskbuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
         return false;
     }
 
@@ -340,18 +320,20 @@ bool create(GLState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
     glBindTexture(GL_TEXTURE_2D, render_target->attachments[1]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, render_target->width, render_target->height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
 
-    render_target->masktexture.init(glGenTextures, glDeleteTextures);
-    glBindTexture(GL_TEXTURE_2D, render_target->masktexture[0]);
-    // we need to make the masktexture format immutable, otherwise image load operations
-    // won't work on mesa drivers
-    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, render_target->width, render_target->height);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindFramebuffer(GL_FRAMEBUFFER, render_target->maskbuffer[0]);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, render_target->masktexture[0], 0);
-    GLenum drawbuffers[1] = { GL_COLOR_ATTACHMENT0 };
-    glDrawBuffers(1, drawbuffers);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    if (state.features.use_mask_bit) {
+        render_target->masktexture.init(glGenTextures, glDeleteTextures);
+        glBindTexture(GL_TEXTURE_2D, render_target->masktexture[0]);
+        // we need to make the masktexture format immutable, otherwise image load operations
+        // won't work on mesa drivers
+        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, render_target->width, render_target->height);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindFramebuffer(GL_FRAMEBUFFER, render_target->maskbuffer[0]);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, render_target->masktexture[0], 0);
+        GLenum drawbuffers[1] = { GL_COLOR_ATTACHMENT0 };
+        glDrawBuffers(1, drawbuffers);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
 
     return true;
 }
@@ -417,6 +399,7 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
         state, mem, color_surface_fin, ds_surface_fin, &current_color_attachment_handle, nullptr, &current_framebuffer_height);
     context.current_color_attachment = current_color_attachment_handle;
     context.current_framebuffer_height = current_framebuffer_height;
+    context.self_sampling_indices.clear();
 
     glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
 
@@ -424,8 +407,8 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
         glDisable(GL_SCISSOR_TEST);
     }
 
-    if(state.features.use_mask_bit)
-       sync_mask(state, context, mem);
+    if (state.features.use_mask_bit)
+        sync_mask(state, context, mem);
 
     // TODO: Take request to force load from given memory
     // Sync depth/stencil based on depth stencil surface.
@@ -710,20 +693,11 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
         // Maybe a victim of surface locking (early from client GXM) when no frame yet renders!
         const auto pixels = frame.base.cast<void>().get(mem);
 
-        if (pixels) {
-            open_access_parent_protect_segment(mem, frame.base.address());
-            unprotect_inner(mem, frame.base.address(), texture_data_size);
-        }
-
         glPixelStorei(GL_UNPACK_ROW_LENGTH, frame.pitch);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, frame.image_size.x, frame.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-
-        if (pixels) {
-            close_access_parent_protect_segment(mem, frame.base.address());
-        }
 
         texture_size.x = static_cast<float>(frame.image_size.x);
         texture_size.y = static_cast<float>(frame.image_size.y);
@@ -733,9 +707,8 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
         const GLint standard_swizzle[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
 
         glBindTexture(GL_TEXTURE_2D, surface_handle);
-        
-#ifdef ANDROID
-        for(uint8_t i = 0; i < 4; i++){
+#ifdef __ANDROID__
+        for (int i = 0; i < 4; i++) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, standard_swizzle[i]);
         }
 #else
@@ -783,6 +756,12 @@ int GLState::get_max_anisotropic_filtering() {
 
 void GLState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
+}
+
+int GLState::get_max_2d_texture_width() {
+    GLint max_texture_size;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
+    return static_cast<int>(max_texture_size);
 }
 
 std::string_view GLState::get_gpu_name() {
