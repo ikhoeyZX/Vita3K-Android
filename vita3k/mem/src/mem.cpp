@@ -370,6 +370,40 @@ bool is_protecting(MemState &state, Address addr, MemPerm *perm) {
     return false;
 }
 
+void open_access_parent_protect_segment(MemState &state, Address addr) {
+    const std::lock_guard<std::mutex> lock(state.protect_mutex);
+    auto ite = state.protect_tree.lower_bound(addr);
+
+    if (ite != state.protect_tree.end() && addr < ite->first + ite->second.size) {
+        ite->second.ref_count++;
+    } else {
+        ProtectSegmentInfo protect(0, MemPerm::ReadWrite);
+        protect.ref_count = 1;
+
+        state.protect_tree.emplace(align_down(addr, state.page_size), std::move(protect));
+    }
+}
+
+void close_access_parent_protect_segment(MemState &state, Address addr) {
+    const std::lock_guard<std::mutex> lock(state.protect_mutex);
+    auto ite = state.protect_tree.lower_bound(addr);
+
+    if (ite != state.protect_tree.end()) {
+        ProtectSegmentInfo &info = ite->second;
+        if (info.ref_count > 0) {
+            info.ref_count--;
+        }
+
+        if (info.ref_count == 0) {
+            if (info.blocks.empty() || info.size == 0) {
+                state.protect_tree.erase(ite);
+            } else {
+                protect_inner(state, ite->first, info.size, info.perm);
+            }
+        }
+    }
+}
+
 void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *addr_ptr) {
     assert((size & 4095) == 0);
     if (!mem.use_page_table)
