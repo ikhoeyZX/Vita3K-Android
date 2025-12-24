@@ -17,6 +17,9 @@
 
 #pragma once
 
+#if defined(__arm__) || defined(__aarch64__)
 #include <glad/gles2.h>
+#else
 #include <glad/gl.h>
+#endif
 #undef APIENTRY
