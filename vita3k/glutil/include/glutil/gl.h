@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,5 +17,9 @@
 
 #pragma once
 
-#include <glad/glad.h>
+#if define __ARM__ || define __AARCH64__
+#include <glad/gles2.h>
+#else
+#include <glad/gl.h>
+#elif
 #undef APIENTRY
