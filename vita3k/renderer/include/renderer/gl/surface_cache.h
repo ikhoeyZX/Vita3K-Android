@@ -27,11 +27,11 @@
 #include <unordered_map>
 #include <vector>
 
-#if define __ARM__ || define __AARCH64__
+#if define (__ARM__) || define (__AARCH64__)
 #include <glad/gles2.h>
 #else
 #include <glad/gl.h>
-#elif
+#endif
 
 
 struct MemState;
