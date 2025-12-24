@@ -34,7 +34,7 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
-#include <SDL3/SDL_video.h>
+#include <SDL_video.h>
 
 #include <array>
 #include <mutex>
@@ -178,7 +178,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 
-    gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), [](SDL_GLContext context) { SDL_GL_DestroyContext(context); });
+    gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
     choosen_minor_version = 6;
 #else
     // Recursively create GL version until one accepts
@@ -195,7 +195,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
 
     for (int minor_version : accept_gl_minor_versions) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor_version);
-        gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), [](SDL_GLContext context) { SDL_GL_DestroyContext(context); });
+        gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
         if (gl_state.context) {
             break;
         }
@@ -693,11 +693,20 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
         // Maybe a victim of surface locking (early from client GXM) when no frame yet renders!
         const auto pixels = frame.base.cast<void>().get(mem);
 
+        if (pixels) {
+            open_access_parent_protect_segment(mem, frame.base.address());
+            unprotect_inner(mem, frame.base.address(), texture_data_size);
+        }
+
         glPixelStorei(GL_UNPACK_ROW_LENGTH, frame.pitch);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, frame.image_size.x, frame.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
+        if (pixels) {
+            close_access_parent_protect_segment(mem, frame.base.address());
+        }
 
         texture_size.x = static_cast<float>(frame.image_size.x);
         texture_size.y = static_cast<float>(frame.image_size.y);
@@ -756,12 +765,6 @@ int GLState::get_max_anisotropic_filtering() {
 
 void GLState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
-}
-
-int GLState::get_max_2d_texture_width() {
-    GLint max_texture_size;
-    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
-    return static_cast<int>(max_texture_size);
 }
 
 std::string_view GLState::get_gpu_name() {
