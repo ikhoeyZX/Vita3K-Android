@@ -27,9 +27,11 @@
 #include <unordered_map>
 #include <vector>
 
+#if defined(__arm__) || defined(__aarch64__)
 #include <glad/gles2.h>
+#else
 #include <glad/gl.h>
-
+#endif
 
 struct MemState;
 
