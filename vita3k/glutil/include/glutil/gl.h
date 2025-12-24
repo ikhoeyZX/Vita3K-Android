@@ -18,7 +18,7 @@
 #pragma once
 
 #if defined(__ARM__) || defined(__AARCH64__)
-#include <glad/gles.h>
+#include <glad/gles2.h>
 #else
 #include <glad/gl.h>
 #endif
