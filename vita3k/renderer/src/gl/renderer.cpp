@@ -36,6 +36,9 @@
 
 #include <SDL_video.h>
 
+#include <glad/gles2.h>
+#include <glad/gl.h>
+
 #include <array>
 #include <mutex>
 #include <string_view>
