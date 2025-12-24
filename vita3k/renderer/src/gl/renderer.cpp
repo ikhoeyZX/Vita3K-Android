@@ -206,9 +206,9 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
         return false;
 
 #ifdef __ANDROID__
-    gladLoadGLES2Loader((GLADloadfunc)SDL_GL_GetProcAddress);
+    gladLoadGLES2((GLADloadfunc)SDL_GL_GetProcAddress);
 #else
-    gladLoadGLLoader((GLADloadfunc)SDL_GL_GetProcAddress);
+    gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);
 #endif
     // glad_set_post_callback(after_callback);
     // Detect GPU and features
