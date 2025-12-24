@@ -55,7 +55,11 @@
 
 #include <gdbstub/functions.h>
 
-#include <glad/glad.h>
+#if define __ARM__ || define __AARCH64__
+#include <glad/gles2.h>
+#else
+#include <glad/gl.h>
+#elif
 
 
 #if USE_DISCORD
