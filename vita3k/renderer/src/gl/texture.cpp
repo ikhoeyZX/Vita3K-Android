@@ -177,6 +177,44 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     }
 }
 
+std::vector<uint8_t> GLTextureCache::repack_compressed_data( SceGxmTextureBaseFormat base_format, uint32_t width,  uint32_t height,  const void* pixels,  uint32_t pixels_per_stride) {
+    uint32_t block_width, block_height;
+    if (gxm::is_bcn_format(base_format)) {
+        block_width = 4;
+        block_height = 4;
+    } else {
+        auto [bw, bh] = gxm::get_block_size(base_format);
+        block_width = bw;
+        block_height = bh;
+    }
+
+    // All BC formats and ASTC formats use 16 bytes per block, 
+    // EXCEPT BC1 (UBC1), BC4 (UBC4/SBC4) which use 8 bytes.
+    size_t bytes_per_block = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC1 || 
+                              base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC4 || 
+                              base_format == SCE_GXM_TEXTURE_BASE_FORMAT_SBC4) ? 8 : 16;
+
+    uint32_t blocks_x = (width + block_width - 1) / block_width;
+    uint32_t blocks_y = (height + block_height - 1) / block_height;
+    uint32_t stride_blocks_x = (pixels_per_stride + block_width - 1) / block_width;
+
+    size_t bytes_per_block_row = blocks_x * bytes_per_block;
+    size_t stride_bytes_per_row = stride_blocks_x * bytes_per_block;
+
+    std::vector<uint8_t> packed_data;
+    packed_data.reserve(bytes_per_block_row * blocks_y);
+
+    const uint8_t* src_ptr = static_cast<const uint8_t*>(pixels);
+
+    for (uint32_t y = 0; y < blocks_y; ++y) {
+        packed_data.insert(packed_data.end(), src_ptr, src_ptr + bytes_per_block_row);
+        
+        src_ptr += stride_bytes_per_row;
+    }
+
+    return packed_data;
+}
+
 void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) {
     R_PROFILE(__func__);
 
@@ -254,9 +292,6 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
     }
 #endif
 }
-
-
-
 
 void GLTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) {
     SceGxmTexture &gxm_texture = current_info->texture;
