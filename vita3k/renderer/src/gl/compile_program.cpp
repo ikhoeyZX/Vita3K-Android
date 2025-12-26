@@ -75,11 +75,13 @@ static SharedGLObject compile_glsl(GLenum type, const std::string &source) {
 static SharedGLObject compile_spirv(GLenum type, const std::vector<std::uint32_t> &source) {
     R_PROFILE(__func__);
 
+    SharedGLObject shader = std::make_shared<GLObject>();
+    
 #if defined(__arm__) || defined(__aarch64__)
     // not supported
     return SharedGLObject();
 #else
-    SharedGLObject shader = std::make_shared<GLObject>();
+    
     if (!shader->init(glCreateShader(type), glDeleteShader)) {
         return SharedGLObject();
     }
