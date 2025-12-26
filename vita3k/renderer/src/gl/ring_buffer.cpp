@@ -49,7 +49,7 @@ void RingBuffer::create_and_map() {
     glBindBuffer(purpose_, buffer_[0]);
 #if defined(__arm__) || defined(__aarch64__)
     glBufferData(purpose_, capacity_, nullptr, GL_DYNAMIC_DRAW);
-    base_ = static_cast<std::uint8_t *>(glMapBufferRange(purpose_, 0, capacity_, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT));
+    base_ = static_cast<std::uint8_t *>(glMapBufferRange(purpose_, 0, capacity_, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
 #else
     glBufferStorage(purpose_, capacity_, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
     base_ = static_cast<std::uint8_t *>(glMapBufferRange(purpose_, 0, capacity_, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT));
