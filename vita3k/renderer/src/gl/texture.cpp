@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -185,7 +185,37 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
         // GXM's cube map index is same as OpenGL: right, left, top, bottom, front, back
         upload_type = GL_TEXTURE_CUBE_MAP_POSITIVE_X + (face - 1);
 
+    const GLenum format = translate_format(base_format);
+
+#if defined(__arm__) || defined(__aarch64__)
+
     if (gxm::is_bcn_format(base_format) || renderer::texture::is_astc_format(base_format)) {
+        // GLES 3.x does NOT support GL_UNPACK_ROW_LENGTH for compressed formats
+        // If data has a stride/padding, you must pack it into a temporary buffer
+        const void* upload_pixels = pixels;
+        std::vector<uint8_t> packed_buffer;
+
+        if (pixels_per_stride > 0 && pixels_per_stride != width) {
+            // Manual re-packing: Copy the compressed data block-row by block-row
+            // to remove any padding caused by the stride.
+            packed_buffer = repack_compressed_data(base_format, width, height, pixels, pixels_per_stride);
+            upload_pixels = packed_buffer.data();
+        }
+
+        size_t compressed_size = renderer::texture::get_compressed_size(base_format, width, height);
+        glCompressedTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, static_cast<GLsizei>(compressed_size), upload_pixels);
+    } else {
+        // Supported in GLES 3.0+ for UNCOMPRESSED formats
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<GLint>(pixels_per_stride));
+        
+        const GLenum type = translate_type(base_format);
+        glTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, type, pixels);
+        
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0); // Reset state
+    }
+#else
+    if (gxm::is_bcn_format(base_format) || renderer::texture::is_astc_format(base_format)) {
+
         glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<GLint>(pixels_per_stride));
 
         if (gxm::is_bcn_format(base_format)) {
@@ -205,6 +235,7 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
         }
 
         const GLenum format = translate_format(base_format);
+        
         size_t compressed_size = renderer::texture::get_compressed_size(base_format, width, height);
         glCompressedTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, static_cast<GLsizei>(compressed_size), pixels);
 
@@ -221,7 +252,11 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
 
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     }
+#endif
 }
+
+
+
 
 void GLTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) {
     SceGxmTexture &gxm_texture = current_info->texture;
