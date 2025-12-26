@@ -209,6 +209,135 @@ static const GLint *translate_swizzle(SceGxmTextureSwizzleYUV422Mode mode) {
     return swizzle_yuyv_csc0;
 }
 
+#if defined(__arm__) || defined(__aarch64__)
+GLenum translate_internal_format(SceGxmTextureBaseFormat base_format) {
+    switch (base_format) {
+    // 1 Component.
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
+        return GL_R8;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
+        return GL_R8_SNORM;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S16:
+        return GL_R16I;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F16:
+        return GL_R16F;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
+        return GL_R32F;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
+        return GL_R32UI;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
+        return GL_R32I;
+
+    // 2 components (red-green.)
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
+        return GL_RG8;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
+        return GL_RG8_SNORM;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16:
+        return GL_RG16I;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
+        return GL_RG16F;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32:
+        return GL_RG32F;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
+        return GL_RG32UI;
+
+    // 2 components (depth-stencil.)
+    case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
+        return GL_DEPTH_STENCIL;
+
+    // 3 components.
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6:
+        return GL_RGB565;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_X8S8S8U8:
+        return GL_RGB8;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
+        return GL_RGB8;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
+        return GL_RGB8_SNORM;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10:
+        return GL_R11F_G11F_B10F;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
+        return GL_RGB16F;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
+        return GL_RGBA8;
+
+    // 4 components.
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
+        return GL_RGBA;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
+        return GL_RGBA8_SNORM;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
+        return GL_RGB10_A2;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16:
+        return GL_RGBA16F;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16S16S16:
+        return GL_RGBA16I;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
+        return GL_RGBA;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
+        return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
+        return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
+        return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
+        return GL_COMPRESSED_R11_EAC;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+        return GL_COMPRESSED_SIGNED_R11_EAC;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
+        return GL_COMPRESSED_RG11_EAC;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+        return GL_COMPRESSED_SIGNED_RG11_EAC;
+
+/* not supported
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC6H:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC6H:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC7:
+        return GL_COMPRESSED_RGBA_BPTC_UNORM;
+*/
+        
+#define ASTC_FMT(b_x, b_y)                              \
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ASTC##b_x##x##b_y: \
+        return GL_COMPRESSED_RGBA_ASTC_##b_x##x##b_y;
+
+#include "../texture/astc_formats.inc"
+#undef ASTC_FMT
+
+    default:
+        LOG_ERROR("Missing case texture base format {}, fallback to GL_RGBA", fmt::underlying(base_format));
+        return GL_RGBA;
+    }
+}
+
+#else
 GLenum translate_internal_format(SceGxmTextureBaseFormat base_format) {
     switch (base_format) {
     // 1 Component.
@@ -340,6 +469,7 @@ GLenum translate_internal_format(SceGxmTextureBaseFormat base_format) {
         return GL_RGBA;
     }
 }
+#endif
 
 GLenum translate_format(SceGxmTextureBaseFormat base_format) {
     switch (base_format) {
