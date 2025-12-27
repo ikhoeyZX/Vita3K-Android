@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -114,7 +114,7 @@ void sync_mask(const GLState &state, GLContext &context, const MemState &mem) {
     auto width = context.render_target->width;
     auto height = context.render_target->height;
 
-#ifdef ANDROID
+#if defined(__arm__) || defined(__aarch64__)
     std::vector<GLubyte> emptyData(width * height * 4, initial_byte);
     GLint texId;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &texId);
@@ -253,23 +253,33 @@ void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front) {
     case SCE_GXM_POLYGON_MODE_POINT:
     case SCE_GXM_POLYGON_MODE_POINT_01UV:
     case SCE_GXM_POLYGON_MODE_TRIANGLE_POINT:
-        glPolygonMode(face, GL_POINT);
+        glPolygonMode(face, GL_POINTS);
         break;
     case SCE_GXM_POLYGON_MODE_LINE:
     case SCE_GXM_POLYGON_MODE_TRIANGLE_LINE:
-        glPolygonMode(face, GL_LINE);
+        glPolygonMode(face, GL_LINES);
         break;
     case SCE_GXM_POLYGON_MODE_TRIANGLE_FILL:
+#if defined(__arm__) || defined(__aarch64__)
+        // uh idk workaround for this
+        glPolygonMode(face, GL_TRIANGLES);
+#else
         glPolygonMode(face, GL_FILL);
+#endif
         break;
     }
 }
 
 void sync_point_line_width(const GLState &state, const std::uint32_t width, const bool is_front) {
+
     // Point Line Width
     if (is_front) {
         glLineWidth(width * state.res_multiplier);
+#if defined(__arm__) || defined(__aarch64__)
+        LOG_ERROR_ONCE("glPointSize : No workaround for now, ignored");
+#else
         glPointSize(width * state.res_multiplier);
+#endif
     }
 }
 
@@ -406,7 +416,8 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
                         }
                     } else {
                         const GLint default_rgba[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
-#ifdef ANDROID
+                        
+#if defined(__arm__) || defined(__aarch64__)
                         for(uint8_t i = 0; i < 4; i++){
                             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, default_rgba[i]);
                         }
@@ -418,8 +429,8 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
                     static bool has_happened = false;
                     LOG_TRACE_IF(!has_happened, "No surface swizzle found, use default texture swizzle");
                     has_happened = true;
-                    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
-#ifdef ANDROID
+                    
+#if defined(__arm__) || defined(__aarch64__)
                     for(uint8_t i = 0; i < 4; i++){
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, swizzle[i]);
                     }
