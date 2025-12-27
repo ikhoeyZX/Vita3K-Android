@@ -46,8 +46,8 @@ struct ProtectBlockInfo {
 struct ProtectSegmentInfo {
     std::multimap<Address, ProtectBlockInfo> blocks;
     uint32_t size = 0;
-    int32_t ref_count = 0; // When reference count is active, we don't interfere protection.
     MemPerm perm = MemPerm::None;
+    int32_t ref_count = 0; // When reference count is active, we don't interfere protection.
 
     explicit ProtectSegmentInfo() = default;
     explicit ProtectSegmentInfo(uint32_t size, MemPerm perm)
@@ -77,5 +77,9 @@ struct MemState {
 
     bool use_page_table = false;
     PageTable page_table;
+#if defined(__aarch64__ ) || defined(__x86_64__)
     std::map<uint64_t, MemExternalMapping, std::greater<>> external_mapping;
+#else
+    std::map<uintptr_t, MemExternalMapping, std::greater<>> external_mapping;
+#endif
 };
