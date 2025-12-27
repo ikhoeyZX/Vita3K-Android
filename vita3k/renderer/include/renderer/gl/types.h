@@ -63,7 +63,7 @@ public:
 
     void import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) override;
 
-    std::vector<uint8_t> repack_compressed_data( SceGxmTextureBaseFormat base_format, uint32_t width,  uint32_t height,  const void* pixels,  uint32_t pixels_per_stride) override;
+    std::vector<uint8_t> repack_compressed_data( SceGxmTextureBaseFormat base_format, uint32_t width,  uint32_t height,  const void* pixels,  uint32_t pixels_per_stride);
 };
 
 struct GLRenderTarget;
