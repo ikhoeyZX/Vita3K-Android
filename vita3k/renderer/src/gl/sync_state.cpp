@@ -133,7 +133,7 @@ void sync_viewport_flat(const GLState &state, GLContext &context) {
 
     glViewport(0, static_cast<GLint>((context.current_framebuffer_height - display_h) * state.res_multiplier),
         static_cast<GLsizei>(display_w * state.res_multiplier), static_cast<GLsizei>(display_h * state.res_multiplier));
-    glDepthRange(0, 1);
+    glDepthRangef(0, 1);
 }
 
 void sync_viewport_real(const GLState &state, GLContext &context, const float xOffset, const float yOffset, const float zOffset,
@@ -244,7 +244,9 @@ void sync_stencil_data(const GxmRecordState &state, const MemState &mem) {
 }
 
 void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front) {
-#if !defined(__arm__) || !defined(__aarch64__)
+#if defined(__arm__) || defined(__aarch64__)
+    LOG_ERROR_ONCE("sync_polygon_mode : no workaround yet");
+#else
     // TODO: Why decap this?
     const GLint face = GL_FRONT_AND_BACK;
 
