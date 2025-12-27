@@ -627,7 +627,25 @@ void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSu
     }
 
     if (renderer.features.support_get_texture_sub_image) {
+#if defined(__arm__) || defined(__aarch64__)
+        GLint last_fbo = 0;
+        GLuint temp_fbo = 0;
+
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &last_fbo);
+        glGenFramebuffers(1, &temp_fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, temp_fbo);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_handle, 0);
+
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+            glReadPixels(0, 0, width, height, gl_format, gl_type, temp_store);
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, last_fbo);
+        glDeleteFramebuffers(1, &temp_fbo);
+#else
         glGetTextureSubImage(tex_handle, 0, 0, 0, 0, width, height, 1, gl_format, gl_type, buffer_size, temp_store);
+#endif
     } else {
         GLint last_texture = 0;
 
