@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -46,6 +46,7 @@ struct ProtectBlockInfo {
 struct ProtectSegmentInfo {
     std::multimap<Address, ProtectBlockInfo> blocks;
     uint32_t size = 0;
+    int32_t ref_count = 0; // When reference count is active, we don't interfere protection.
     MemPerm perm = MemPerm::None;
 
     explicit ProtectSegmentInfo() = default;
@@ -76,9 +77,5 @@ struct MemState {
 
     bool use_page_table = false;
     PageTable page_table;
-#if defined(__aarch64__ ) || defined(__x86_64__)
     std::map<uint64_t, MemExternalMapping, std::greater<>> external_mapping;
-#else
-    std::map<uintptr_t, MemExternalMapping, std::greater<>> external_mapping;
-#endif
 };
