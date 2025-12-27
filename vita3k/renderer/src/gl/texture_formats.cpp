@@ -515,7 +515,11 @@ GLenum translate_type(SceGxmTextureBaseFormat base_format) {
         return GL_FLOAT;
     case SCE_GXM_TEXTURE_BASE_FORMAT_X8S8S8U8:
         LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_X8S8S8U8");
+#if defined(__arm__) || defined(__aarch64__)
+        return GL_UNSIGNED_BYTE;
+#else
         return GL_UNSIGNED_INT_8_8_8_8_REV;
+#endif
     case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
         return GL_UNSIGNED_INT_24_8;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
@@ -659,7 +663,11 @@ GLenum translate_wrap_mode(SceGxmTextureAddrMode src) {
     case SCE_GXM_TEXTURE_ADDR_CLAMP:
         return GL_CLAMP_TO_EDGE;
     case SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP:
+#if defined(__arm__) || defined(__aarch64__)
+        return GL_CLAMP_TO_EDGE;
+#else
         return GL_MIRROR_CLAMP_TO_EDGE;
+#endif
     case SCE_GXM_TEXTURE_ADDR_REPEAT_IGNORE_BORDER:
         return GL_REPEAT; // FIXME: Is this correct?
     case SCE_GXM_TEXTURE_ADDR_CLAMP_FULL_BORDER:
