@@ -647,12 +647,16 @@ void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSu
         glGetTextureSubImage(tex_handle, 0, 0, 0, 0, width, height, 1, gl_format, gl_type, buffer_size, temp_store);
 #endif
     } else {
+#if defined(__arm__) || defined(__aarch64__)
+        //nothing
+#else
         GLint last_texture = 0;
 
         glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
         glBindTexture(GL_TEXTURE_2D, tex_handle);
         glGetTexImage(GL_TEXTURE_2D, 0, gl_format, gl_type, temp_store);
         glBindTexture(GL_TEXTURE_2D, last_texture);
+#endif
     }
 
     post_process_pixels_data(renderer, pixels, temp_store, width, height, surface.strideInPixels, surface);
@@ -694,6 +698,9 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
 
     const SceGxmColorBaseFormat base_format = gxm::get_base_format(format);
     if (renderer.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(base_format)) {
+#if defined(__arm__) || defined(__aarch64__)
+        // idk, skiped
+#else
         // we can't get the content of raw textures with glReadPixels
         GLint last_texture = 0;
 
@@ -701,6 +708,7 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
         glBindTexture(GL_TEXTURE_2D, context.current_color_attachment);
         glGetTexImage(GL_TEXTURE_2D, 0, color::get_raw_store_upload_format_type(base_format), color::get_raw_store_upload_data_type(base_format), temp_store);
         glBindTexture(GL_TEXTURE_2D, last_texture);
+#endif
     } else {
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), format_gl->second.first, format_gl->second.second, temp_store);
     }
