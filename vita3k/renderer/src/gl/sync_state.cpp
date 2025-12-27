@@ -244,6 +244,7 @@ void sync_stencil_data(const GxmRecordState &state, const MemState &mem) {
 }
 
 void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front) {
+#if !defined(__arm__) || !defined(__aarch64__)
     // TODO: Why decap this?
     const GLint face = GL_FRONT_AND_BACK;
 
@@ -260,14 +261,10 @@ void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front) {
         glPolygonMode(face, GL_LINES);
         break;
     case SCE_GXM_POLYGON_MODE_TRIANGLE_FILL:
-#if defined(__arm__) || defined(__aarch64__)
-        // uh idk workaround for this
-        glPolygonMode(face, GL_TRIANGLES);
-#else
         glPolygonMode(face, GL_FILL);
-#endif
         break;
     }
+#endif
 }
 
 void sync_point_line_width(const GLState &state, const std::uint32_t width, const bool is_front) {
