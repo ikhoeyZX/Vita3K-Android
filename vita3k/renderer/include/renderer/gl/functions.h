@@ -20,11 +20,15 @@
 #include <config/state.h>
 #include <glutil/object.h>
 #include <gxm/types.h>
+#include <util/hash.h>
 
 #include <renderer/gl/state.h>
 #include <renderer/gl/types.h>
 
+#include <map>
 #include <memory>
+#include <string>
+#include <tuple>
 
 struct MemState;
 struct FeatureState;
@@ -72,6 +76,7 @@ void bind_fundamental(GLContext &context);
 void clear_previous_uniform_storage(GLContext &context);
 
 struct GLTextureCacheState;
+struct TextureCacheState;
 
 // Attribute formats.
 GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format);
