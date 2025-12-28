@@ -222,9 +222,7 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
     if (face > 0)
         // GXM's cube map index is same as OpenGL: right, left, top, bottom, front, back
         upload_type = GL_TEXTURE_CUBE_MAP_POSITIVE_X + (face - 1);
-
-    const GLenum format = translate_format(base_format);
-
+    
 #if defined(__arm__) || defined(__aarch64__)
 
     if (gxm::is_bcn_format(base_format) || renderer::texture::is_astc_format(base_format)) {
