@@ -224,7 +224,7 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
         upload_type = GL_TEXTURE_CUBE_MAP_POSITIVE_X + (face - 1);
     
 #if defined(__arm__) || defined(__aarch64__)
-    const GLenum format = translate_format(base_format);
+/*    const GLenum format = translate_format(base_format);
     
     const GLenum type = translate_type(base_format);
     if (gxm::is_bcn_format(base_format) || renderer::texture::is_astc_format(base_format)) {
@@ -250,6 +250,7 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
         
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     }
+        */
 #else
     if (gxm::is_bcn_format(base_format) || renderer::texture::is_astc_format(base_format)) {
 
