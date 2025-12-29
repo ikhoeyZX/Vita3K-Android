@@ -225,12 +225,13 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
     
 #if defined(__arm__) || defined(__aarch64__)
 
+    const GLenum type = translate_type(base_format);
     if (gxm::is_bcn_format(base_format) || renderer::texture::is_astc_format(base_format)) {
         // GLES 3.x does NOT support GL_UNPACK_ROW_LENGTH for compressed formats
         // If data has a stride/padding, you must pack it into a temporary buffer
         const void* upload_pixels = pixels;
         std::vector<uint8_t> packed_buffer;
-
+        
         if (pixels_per_stride > 0 && pixels_per_stride != width) {
             // Manual re-packing: Copy the compressed data block-row by block-row
             // to remove any padding caused by the stride.
@@ -244,10 +245,9 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
         // Supported in GLES 3.0+ for UNCOMPRESSED formats
         glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<GLint>(pixels_per_stride));
         
-        const GLenum type = translate_type(base_format);
         glTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, type, pixels);
         
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0); // Reset state
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     }
 #else
     if (gxm::is_bcn_format(base_format) || renderer::texture::is_astc_format(base_format)) {
