@@ -542,6 +542,27 @@ GLenum translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
         return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 
+#if defined(__arm__) || defined(__aarch64__)
+    
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
+        return GL_COMPRESSED_R11_EAC;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+        return GL_COMPRESSED_SIGNED_R11_EAC;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
+        return GL_COMPRESSED_RG11_EAC;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+        return GL_COMPRESSED_SIGNED_RG11_EAC;
+
+    /* not supported
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC6H:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC6H:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC7:
+        return GL_COMPRESSED_RGBA_BPTC;
+    */
+#else
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
         return GL_COMPRESSED_RED_RGTC1;
 
@@ -554,14 +575,6 @@ GLenum translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
         return GL_COMPRESSED_SIGNED_RG_RGTC2;
 
-#if defined(__arm__) || defined(__aarch64__)
-    /* not supported
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC6H:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC6H:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC7:
-        return GL_COMPRESSED_RGBA_BPTC;
-    */
-#else
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC6H:
         return GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT;
 
