@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,11 +23,7 @@ struct Config;
 struct MemState;
 
 namespace renderer::vulkan {
-#ifdef ANDROID
-bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config, const libadreno_var &adreno);
-#else
 bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config);
-#endif
 bool create(VKState &state, std::unique_ptr<Context> &context, MemState &mem);
 bool create(VKState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);
 void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt);
