@@ -35,7 +35,7 @@ void set_uniform_buffer(VKContext &context, MemState &mem, const ShaderProgram *
 
     const uint32_t data_size_upload = std::min<uint32_t>(size, program->uniform_buffer_sizes.at(block_num) * 4);
     if (context.state.features.enable_memory_mapping) {
-        if(context.state.mapping_method == MappingMethod::DoubleBuffer){
+        if (context.state.mapping_method == MappingMethod::DoubleBuffer) {
             // we must always cover everything as some small part of the buffer may get changed only
             context.state.buffer_trapping.access_buffer(data.address(), data_size_upload, mem, false, true);
         }
@@ -48,6 +48,7 @@ void set_uniform_buffer(VKContext &context, MemState &mem, const ShaderProgram *
         }
     } else {
         const uint32_t offset_start_upload = offset * 4;
+
         if (vertex_shader) {
             if (!context.vertex_uniform_storage_allocated) {
                 // Allocate a region for it. Don't worry though, when the shader program is changed
@@ -117,9 +118,9 @@ void restride_stream(const uint8_t *&stream, uint32_t &size, uint32_t stride) {
 #endif
 
 // when needed, how many descriptor of the given size we allocate for each frame at once
-constexpr uint32_t DESCRIPTOR_PACK_SIZE = 64;
+static constexpr uint32_t DESCRIPTOR_PACK_SIZE = 64;
 
-vk::DescriptorSet retrieve_descriptor(VKContext &context, bool is_vertex, uint16_t textures_count) {
+static vk::DescriptorSet retrieve_descriptor(VKContext &context, bool is_vertex, uint16_t textures_count) {
     if (textures_count == 0)
         return context.empty_set;
 
@@ -152,7 +153,7 @@ vk::DescriptorSet retrieve_descriptor(VKContext &context, bool is_vertex, uint16
     auto descriptor_sets = state.device.allocateDescriptorSets(descr_set_info);
 
     // distribute them among all frames
-    for (uint8_t frame_idx = 0; frame_idx < MAX_FRAMES_RENDERING; frame_idx++) {
+    for (int frame_idx = 0; frame_idx < MAX_FRAMES_RENDERING; frame_idx++) {
         FrameObject &frame_object = state.frames[frame_idx];
         FrameDescriptor &frame_descr = is_vertex ? frame_object.vert_descriptors[textures_count - 1] : frame_object.frag_descriptors[textures_count - 1];
 
@@ -254,17 +255,17 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
     VertexProgram *vkvert = vertex_program.renderer_data.get();
 
-    uint32_t max_stream_idx = 0;
+    int max_stream_idx = -1;
 
     for (const SceGxmVertexAttribute &attribute : vertex_program.attributes) {
         if (!vkvert->attribute_infos.contains(attribute.regIndex))
             continue;
-        max_stream_idx = std::max<uint32_t>(max_stream_idx, attribute.streamIndex);
+        max_stream_idx = std::max<int>(max_stream_idx, attribute.streamIndex);
     }
     max_stream_idx++;
 
-    if(context.state.mapping_method == MappingMethod::DoubleBuffer){
-        for(uint32_t i = 0; i < max_stream_idx; i++)
+    if (context.state.mapping_method == MappingMethod::DoubleBuffer) {
+        for (int i = 0; i < max_stream_idx; i++)
             state.vertex_streams[i].size = 0;
 
         // same as in SceGxm.cpp
@@ -278,7 +279,7 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
             state.vertex_streams[attribute.streamIndex].size = std::max<size_t>(state.vertex_streams[attribute.streamIndex].size, data_length);
         }
 
-        for(uint32_t i = 0; i < max_stream_idx; i++){
+        for (int i = 0; i < max_stream_idx; i++) {
             if (state.vertex_streams[i].data)
                 // on the PS Vita, shader stores are used most of the time to write to a vertex buffer
                 context.state.buffer_trapping.access_buffer(state.vertex_streams[i].data.address(), static_cast<uint32_t>(state.vertex_streams[i].size), mem, context.state.has_shader_store);
@@ -288,7 +289,7 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
     if (max_stream_idx == 0)
         return;
 
-    for (uint32_t i = 0; i < max_stream_idx; i++) {
+    for (int i = 0; i < max_stream_idx; i++) {
         if (state.vertex_streams[i].data) {
             if (context.state.features.enable_memory_mapping) {
                 auto [buffer, offset] = context.state.get_matching_mapping(state.vertex_streams[i].data.cast<void>());
@@ -382,7 +383,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 
         context.visibility_max_used_idx = std::max(context.visibility_max_used_idx, context.current_query_idx);
 
-        const vk::QueryControlFlags control_flags = (context.is_query_op_increment && context.state.physical_device_features.features.occlusionQueryPrecise) ? vk::QueryControlFlagBits::ePrecise : vk::QueryControlFlags();
+        const vk::QueryControlFlags control_flags = (context.is_query_op_increment && context.state.physical_device_features.occlusionQueryPrecise) ? vk::QueryControlFlagBits::ePrecise : vk::QueryControlFlags();
         context.render_cmd.beginQuery(context.current_visibility_buffer->query_pool, context.current_query_idx, control_flags);
         context.is_in_query = true;
     }
@@ -414,8 +415,8 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         const std::string hash_text_v = hex_string(context.record.vertex_program.get(mem)->renderer_data->hash);
 
         LOG_DEBUG("\nVertex  : {}\nFragment: {}", hash_text_v, hash_text_f);
-        LOG_DEBUG(fmt::runtime("Vertex default uniform buffer: {}\n"), spdlog::to_hex(context.ubo_data[0], 16));
-        LOG_DEBUG(fmt::runtime("Fragment default uniform buffer: {}\n"), spdlog::to_hex(context.ubo_data[SCE_GXM_REAL_MAX_UNIFORM_BUFFER], 16));
+        LOG_DEBUG("Vertex default uniform buffer: {}\n", spdlog::to_hex(context.ubo_data[0], 16));
+        LOG_DEBUG("Fragment default uniform buffer: {}\n", spdlog::to_hex(context.ubo_data[SCE_GXM_REAL_MAX_UNIFORM_BUFFER], 16));
     }
 
     const bool use_memory_mapping = context.state.features.enable_memory_mapping;
@@ -477,16 +478,15 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     uint32_t max_index = 0;
     if (use_memory_mapping) {
         auto [buffer, offset] = context.state.get_matching_mapping(indices);
-
-        if(context.state.mapping_method == MappingMethod::DoubleBuffer){
-            TrappedBuffer* trapped_buffer = context.state.buffer_trapping.access_buffer(indices.address(), count * index_size, mem);
-            if(trapped_buffer->extra == ~0){
+        if (context.state.mapping_method == MappingMethod::DoubleBuffer) {
+            TrappedBuffer *trapped_buffer = context.state.buffer_trapping.access_buffer(indices.address(), count * index_size, mem);
+            if (trapped_buffer->extra == ~0) {
                 // store the max element in extra
-                if(format == SCE_GXM_INDEX_FORMAT_U16){
-                    uint16_t* data = indices.cast<uint16_t>().get(mem);
-                    trapped_buffer->extra = *std::max_element(&data[0], &data[count]) ;
+                if (format == SCE_GXM_INDEX_FORMAT_U16) {
+                    uint16_t *data = indices.cast<uint16_t>().get(mem);
+                    trapped_buffer->extra = *std::max_element(&data[0], &data[count]);
                 } else {
-                    uint32_t* data = indices.cast<uint32_t>().get(mem);
+                    uint32_t *data = indices.cast<uint32_t>().get(mem);
                     trapped_buffer->extra = *std::max_element(&data[0], &data[count]);
                 }
             }
