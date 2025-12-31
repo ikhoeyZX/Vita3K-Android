@@ -29,7 +29,7 @@
 #include <util/fs.h>
 #include <util/log.h>
 
-#include <SDL_cpuinfo.h>
+#include <SDL3/SDL_cpuinfo.h>
 
 // don't use the dispatch version, because we always hash a small amount
 // with a known size
@@ -149,7 +149,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
 
         // first vertex
         std::array<vk::DescriptorSetLayoutBinding, 16> layout_bindings;
-        for (uint8_t i = 0; i < 16; i++) {
+        for (uint32_t i = 0; i < 16; i++) {
             layout_bindings[i] = {
                 .binding = i,
                 .descriptorType = vk::DescriptorType::eCombinedImageSampler,
@@ -157,7 +157,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
                 .stageFlags = vk::ShaderStageFlagBits::eVertex
             };
         }
-        for (uint8_t i = 1; i <= 16; i++) {
+        for (uint32_t i = 1; i <= 16; i++) {
             vk::DescriptorSetLayoutCreateInfo descriptor_info{
                 .bindingCount = i,
                 .pBindings = layout_bindings.data()
@@ -166,10 +166,10 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         }
 
         // then fragment
-        for (uint8_t i = 0; i < 16; i++) {
+        for (uint32_t i = 0; i < 16; i++) {
             layout_bindings[i].stageFlags = vk::ShaderStageFlagBits::eFragment;
         }
-        for (uint8_t i = 1; i <= 16; i++) {
+        for (uint32_t i = 1; i <= 16; i++) {
             vk::DescriptorSetLayoutCreateInfo descriptor_info{
                 .bindingCount = i,
                 .pBindings = layout_bindings.data()
@@ -179,8 +179,8 @@ void PipelineCache::init(bool support_rasterized_order_access) {
     }
 
     // compute all possible pipeline layouts
-    for (uint8_t vert_texture_count = 0; vert_texture_count <= 16; vert_texture_count++) {
-        for (uint8_t frag_texture_count = 0; frag_texture_count <= 16; frag_texture_count++) {
+    for (uint32_t vert_texture_count = 0; vert_texture_count <= 16; vert_texture_count++) {
+        for (uint32_t frag_texture_count = 0; frag_texture_count <= 16; frag_texture_count++) {
             vk::PipelineLayoutCreateInfo layout_info{};
             vk::DescriptorSetLayout set_layouts[] = { uniforms_layout, attachments_layout, vertex_textures_layout[vert_texture_count], fragment_textures_layout[frag_texture_count] };
             layout_info.setSetLayouts(set_layouts);
@@ -188,7 +188,6 @@ void PipelineCache::init(bool support_rasterized_order_access) {
         }
     }
 
-#ifndef ANDROID
     {
         // look for rgb vertex attribute support
         // we need to look at each format because it is not the same for all usual 3-component formats (checked on AMD Radeon HD 7800)
@@ -220,19 +219,21 @@ void PipelineCache::init(bool support_rasterized_order_access) {
             for (auto fmt : scaled_fmt)
                 unsupported_rgb_vertex_attribute_formats.erase(fmt);
         }
+
         state.features.support_rgb_attributes = unsupported_rgb_vertex_attribute_formats.empty();
     }
-#endif
-    
+
     support_coherent_framebuffer_fetch = support_rasterized_order_access;
 
-    const int nb_logical_threads = SDL_GetCPUCount();
+    const int nb_logical_threads = SDL_GetNumLogicalCPUCores();
     // took this from RPCS3 (slightly modified)
     if (nb_logical_threads > 12)
         nb_worker_threads = 6;
     else if (nb_logical_threads > 8)
         nb_worker_threads = 4;
-    else if (nb_logical_threads >= 4)
+    else if (nb_logical_threads >= 8)
+        nb_worker_threads = 3;
+    else if (nb_logical_threads >= 6)
         nb_worker_threads = 2;
     else
         nb_worker_threads = 1;
@@ -256,7 +257,7 @@ void PipelineCache::set_async_compilation(bool enable) {
     if (enable) {
         LOG_INFO("Enabling asynchronous pipeline compilation with {} threads", nb_worker_threads);
         // launch all the threads
-        for (uint8_t i = 0; i < nb_worker_threads; i++) {
+        for (int i = 0; i < nb_worker_threads; i++) {
             std::thread thread(&PipelineCache::compiler_thread, this, std::ref(*state.mem));
             thread.detach();
         }
@@ -264,7 +265,7 @@ void PipelineCache::set_async_compilation(bool enable) {
         LOG_INFO("Asynchronous pipeline compilation is now disabled");
 
         // we assume that by the time set_async_compilation is called again with enable=true, all previous worker threads have already exited
-        for (uint8_t i = 0; i < nb_worker_threads; i++)
+        for (int i = 0; i < nb_worker_threads; i++)
             // if a thread receives nullptr, it exits
             pipeline_compile_queue.enqueue(nullptr);
     }
@@ -517,7 +518,6 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
     vk::AttachmentLoadOp load_op = force_load ? vk::AttachmentLoadOp::eLoad : vk::AttachmentLoadOp::eClear;
     vk::AttachmentStoreOp store_op = force_store ? vk::AttachmentStoreOp::eStore : vk::AttachmentStoreOp::eDontCare;
     vk::AttachmentDescription ds_attachment{
-    //    .format = vk::Format::eD24UnormS8Uint,
         .format = state.deep_stencil_use,
         .samples = vk::SampleCountFlagBits::e1,
         .loadOp = load_op,
@@ -779,7 +779,7 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
     const bool use_shader_interlock = state.features.support_shader_interlock && gxm_fragment_shader->is_frag_color_used();
 
     const vk::PipelineRasterizationStateCreateInfo rasterizer{
-        // .depthClampEnable = state.physical_device_features.depthClamp,
+        .depthClampEnable = state.physical_device_features.depthClamp,
         .polygonMode = translate_polygon_mode(record.front_polygon_mode),
         .cullMode = translate_cull_mode(record.cull_mode),
         // front face is always counter clockwise
@@ -811,10 +811,7 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
         // The write mask must be empty as the lack of a fragment shader results in undefined values
         static const vk::PipelineColorBlendAttachmentState blending = {
             .blendEnable = VK_FALSE,
-            .colorWriteMask = vk::ColorComponentFlagBits::eR
-                | vk::ColorComponentFlagBits::eG
-                | vk::ColorComponentFlagBits::eB
-                | vk::ColorComponentFlagBits::eA
+            .colorWriteMask = vk::ColorComponentFlags()
         };
         color_blending.setAttachments(blending);
     } else {
@@ -826,31 +823,19 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
 
     // all of these can be changed at any time using the vita graphics api (like opengl)
     // Because each one can take a lot of different values, it's better to set them as dynamic
-    
-    std::vector<vk::DynamicState> dynamic_states = {
-    vk::DynamicState::eViewport,
-    vk::DynamicState::eScissor,
-    vk::DynamicState::eStencilCompareMask,
-    vk::DynamicState::eStencilReference,
-    vk::DynamicState::eStencilWriteMask,
-    vk::DynamicState::eDepthBias
-
-    //need more info
-    /*  vk::DynamicState::eBlendConstants,
-        vk::DynamicState::eDepthBounds,
-        vk::DynamicState::ePrimitiveTopology,
-        vk::DynamicState::eViewportWithCount,
-        vk::DynamicState::eScissorWithCount,
-        vk::DynamicState::eStencilOp
-    */
+    const std::array dynamic_states = {
+        vk::DynamicState::eViewport,
+        vk::DynamicState::eScissor,
+        vk::DynamicState::eStencilCompareMask,
+        vk::DynamicState::eStencilReference,
+        vk::DynamicState::eStencilWriteMask,
+        vk::DynamicState::eDepthBias,
+        vk::DynamicState::eLineWidth,
     };
-
-    if (state.physical_device_features.features.wideLines) {
-       dynamic_states.push_back(vk::DynamicState::eLineWidth);
-    }
-
     vk::PipelineDynamicStateCreateInfo dynamic_info{};
     dynamic_info.setDynamicStates(dynamic_states);
+    if (!state.physical_device_features.wideLines)
+        dynamic_info.dynamicStateCount--;
 
     // we still need to specify the viewport and scissor count even though they are dynamic
     vk::PipelineViewportStateCreateInfo viewport{
