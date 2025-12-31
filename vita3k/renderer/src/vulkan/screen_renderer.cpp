@@ -17,14 +17,14 @@
 
 #include "renderer/vulkan/screen_renderer.h"
 
-#include <SDL3/SDL_vulkan.h>
+#include <SDL_vulkan.h>
 
 #include "renderer/vulkan/state.h"
 #include "util/log.h"
 #include "vkutil/vkutil.h"
 
 #ifdef __ANDROID__
-#include <SDL3/SDL.h>
+#include <SDL_system.h>
 #include <jni.h>
 
 static bool has_surface = false;
@@ -50,7 +50,7 @@ bool ScreenRenderer::create(SDL_Window *window) {
     }
 
     VkSurfaceKHR surface = VK_NULL_HANDLE;
-    bool surface_error = SDL_Vulkan_CreateSurface(window, state.instance, nullptr, &surface);
+    bool surface_error = SDL_Vulkan_CreateSurface(window, state.instance, &surface);
     if (!surface_error) {
         const char *error = SDL_GetError();
         LOG_ERROR("Failed to create vulkan surface. SDL Error: {}.", error);
@@ -62,20 +62,9 @@ bool ScreenRenderer::create(SDL_Window *window) {
     return true;
 }
 
-bool ScreenRenderer::setup() {
+bool ScreenRenderer::setup(uint8_t vk_idx) {
     const auto surface_formats = state.physical_device.getSurfaceFormatsKHR(surface);
     bool surface_format_found = false;
-
-    // check for linear filtering on depth support
-    // usefull because some device crashed if it's not supported
-    const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(vk::Format::eD24UnormS8Uint);
-    const vk::FormatProperties d32u8_support = state.physical_device.getFormatProperties(vk::Format::eD32SfloatS8Uint);
-    const vk::FormatProperties x8d24_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
-
-    bool support_d32u8 = static_cast<bool>(x8d24_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
-    support_depth_linear_filtering = static_cast<bool>(depth_linear.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
-    support_x8d24 = static_cast<bool>(x8d24_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
-
     for (const auto &format : surface_formats) {
         // actually we don't care that much because we will just be copying what the game rendered
         // rgba8 or bgra8 should be the best as it matches the format output from the vita (we don't care about the swizzle)
@@ -86,47 +75,52 @@ bool ScreenRenderer::setup() {
             break;
         }
     }
+
     if (!surface_format_found)
         surface_format = surface_formats[0];
 
-    if(support_d32u8){
-        LOG_INFO_ONCE("Your device support high deep stencil quality");
-        deep_stencil_use = vk::Format::eD32SfloatS8Uint;
-    }else if(support_depth_linear_filtering){
-        deep_stencil_use = vk::Format::eD24UnormS8Uint;
-    }else{
-        LOG_WARN_ONCE("Your device doesn't support linear filtering");
-        deep_stencil_use = vk::Format::eD16UnormS8Uint;
-    }
-
     // preferred order : mailbox > fifo_relaxed > fifo > whatever
     // the only drawback for mailbox is that it draws more power, so maybe on a portable device use something else
-    const auto present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
-    // this one should always be available
-    present_mode = vk::PresentModeKHR::eImmediate;
-    for (const auto &mode : present_modes) {
-        if (mode == vk::PresentModeKHR::eMailbox) {
-            present_mode = mode;
+    state.format_present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
+
+    //remove it for now since idk how to implement it
+    state.format_present_modes.erase(
+       std::remove_if(
+           state.format_present_modes.begin(),
+           state.format_present_modes.end(),
+           [](vk::PresentModeKHR mode) {
+               return mode == vk::PresentModeKHR::eSharedDemandRefresh ||
+                      mode == vk::PresentModeKHR::eSharedContinuousRefresh;
+           }
+       ),
+       state.format_present_modes.end()
+    );
+
+    switch(vk_idx){
+        case 1:
+            present_mode = vk::PresentModeKHR::eFifoRelaxed;
             break;
-        }
-
-        if (mode == vk::PresentModeKHR::eFifoRelaxed) {
-            present_mode = mode;
-        }
-        if (present_mode == vk::PresentModeKHR::eFifoRelaxed)
-            continue;
-
-        if (mode == vk::PresentModeKHR::eFifo) {
-            present_mode = mode;
-        }
+        case 2:
+            present_mode = vk::PresentModeKHR::eFifo;
+            break;
+        case 3:
+            present_mode = vk::PresentModeKHR::eImmediate;
+            break;
+        case 4:
+            present_mode = vk::PresentModeKHR::eFifoLatestReadyEXT;
+            break;
+        default:
+            present_mode = vk::PresentModeKHR::eMailbox;
+            break;
     }
+
     LOG_INFO("Present mode: {}", vk::to_string(present_mode));
 
     create_render_pass();
 
     create_swapchain();
 
-    // these functions do not need to be called when the swapchain is resized
+    // this function do not need to be called when the swapchain is resized
     create_surface_image();
 
     filter = std::make_unique<BilinearScreenFilter>(*this);
@@ -143,7 +137,7 @@ void ScreenRenderer::create_swapchain() {
         extent = surface_capabilities.currentExtent;
     } else {
         int width, height;
-        SDL_GetWindowSizeInPixels(window, &width, &height);
+        SDL_Vulkan_GetDrawableSize(window, &width, &height);
         extent.width = std::clamp<uint32_t>(width, surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width);
         extent.height = std::clamp<uint32_t>(height, surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height);
     }
@@ -158,12 +152,14 @@ void ScreenRenderer::create_swapchain() {
     // Create Swapchain
     {
         vk::ImageUsageFlags surface_usage = vk::ImageUsageFlagBits::eColorAttachment;
+
         vk::ImageUsageFlags fsr_flags = vk::ImageUsageFlagBits::eTransferDst;
+
         if (!state.is_adreno_turnip)
             // workaround for a Turnip driver bug: adding storage flag here breaks the swapchain
             // and fsr works fine without this flag on Adreno
             fsr_flags |= vk::ImageUsageFlagBits::eStorage;
-
+        
         if (surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage)
             // needed for FSR
             surface_usage |= fsr_flags;
@@ -298,7 +294,7 @@ bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
             state.device.waitIdle();
             destroy_swapchain();
             int width, height;
-            SDL_GetWindowSizeInPixels(window, &width, &height);
+            SDL_Vulkan_GetDrawableSize(window, &width, &height);
             // don't render anything when the window is minimized
             if (width == 0 || height == 0)
                 return false;
@@ -379,19 +375,23 @@ void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, co
 
     filter->render(false, image_view, layout, viewport);
 
-#ifdef __ANDROID__
+#ifdef ANDROID
     // stock adreno driver bug
     // if there is too much load on the GPU, it just drops any render pass with ImGui graphics in it....
     // I still don't know exactly why
     // so as a partial fix, render the gui and screen in different render passes
-    if (state.is_adreno_stock) {
+
+    // i think it make game run much faster in mali gpu so i unlock this for all gpu type
+    LOG_INFO_ONCE("Adreno gpu render hack enabled to all gpu type");
+//    if (state.is_adreno_stock) {
         current_cmd_buffer.endRenderPass();
         pass_info.renderPass = stock_adreno_pass;
         current_cmd_buffer.beginRenderPass(pass_info, vk::SubpassContents::eInline);
-    }
+//    }
 #endif
+    
 }
-
+    
 void ScreenRenderer::swap_window() {
     if (!current_cmd_buffer) {
         swapchain_image_idx = ~0;
@@ -419,11 +419,11 @@ void ScreenRenderer::swap_window() {
         .pSwapchains = &swapchain,
         .pImageIndices = &swapchain_image_idx,
     };
-
+        
     auto result = state.general_queue.presentKHR(&present_info);
     if (result == vk::Result::eSuboptimalKHR) {
         int width, height;
-        SDL_GetWindowSizeInPixels(window, &width, &height);
+        SDL_Vulkan_GetDrawableSize(window, &width, &height);
 
         if (width != extent.width || height != extent.height) {
             state.device.waitIdle();
@@ -435,12 +435,13 @@ void ScreenRenderer::swap_window() {
             create_swapchain();
             need_rebuild = true;
         }
-    } else if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eErrorSurfaceLostKHR) {
+    } else if(result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eErrorSurfaceLostKHR){
         state.device.waitIdle();
         destroy_swapchain();
 
         int width, height;
-        SDL_GetWindowSizeInPixels(window, &width, &height);
+        SDL_Vulkan_GetDrawableSize(window, &width, &height);
+
         if (width > 0 && height > 0) {
             create_swapchain();
             if (swapchain)
@@ -550,14 +551,16 @@ void ScreenRenderer::create_render_pass() {
     color_attachment
         .setLoadOp(vk::AttachmentLoadOp::eLoad)
         .setInitialLayout(vk::ImageLayout::eGeneral);
-    post_filter_render_pass = state.device.createRenderPass(pass_info);
+     post_filter_render_pass = state.device.createRenderPass(pass_info);
 
-#ifdef __ANDROID__
-    if (state.is_adreno_stock) {
+#ifdef ANDROID
+    // no issue in my mali gpu
+    LOG_INFO_ONCE("adreno hack enabled to all gpu type");
+   // if (state.is_adreno_stock) {
         // used to fix an adreno driver bug
         color_attachment.setInitialLayout(vk::ImageLayout::ePresentSrcKHR);
         stock_adreno_pass = state.device.createRenderPass(pass_info);
-    }
+  //  }
 #endif
 }
 
@@ -566,7 +569,7 @@ void ScreenRenderer::create_surface_image() {
 
     vk::BufferCreateInfo buffer_info{
         // make sure it is big enough
-        .size = 1024 * 720 * sizeof(uint32_t),
+        .size = 1200 * 680 * sizeof(uint32_t),
         .usage = vk::BufferUsageFlagBits::eTransferSrc,
         .sharingMode = vk::SharingMode::eExclusive
     };
