@@ -29,7 +29,7 @@
 #include <util/fs.h>
 #include <util/log.h>
 
-#include <SDL3/SDL_cpuinfo.h>
+#include <SDL_cpuinfo.h>
 
 // don't use the dispatch version, because we always hash a small amount
 // with a known size
@@ -225,7 +225,7 @@ void PipelineCache::init(bool support_rasterized_order_access) {
 
     support_coherent_framebuffer_fetch = support_rasterized_order_access;
 
-    const int nb_logical_threads = SDL_GetNumLogicalCPUCores();
+     const int nb_logical_threads = SDL_GetCPUCount();
     // took this from RPCS3 (slightly modified)
     if (nb_logical_threads > 12)
         nb_worker_threads = 6;
@@ -830,12 +830,14 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
         vk::DynamicState::eStencilReference,
         vk::DynamicState::eStencilWriteMask,
         vk::DynamicState::eDepthBias,
-        vk::DynamicState::eLineWidth,
     };
+
+    // Most mobile phones didn't support it
+    if (state.physical_device_features.features.wideLines) 
+       dynamic_states.push_back(vk::DynamicState::eLineWidth);
+
     vk::PipelineDynamicStateCreateInfo dynamic_info{};
     dynamic_info.setDynamicStates(dynamic_states);
-    if (!state.physical_device_features.wideLines)
-        dynamic_info.dynamicStateCount--;
 
     // we still need to specify the viewport and scissor count even though they are dynamic
     vk::PipelineViewportStateCreateInfo viewport{
