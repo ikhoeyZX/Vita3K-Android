@@ -46,8 +46,8 @@ VKContext::VKContext(VKState &state, MemState &mem)
     // for the vertex buffer, nothing should need more alignment than a vec4
     vertex_stream_ring_buffer.alignment = 4 * sizeof(float);
 
-    const uint32_t uniform_alignment = static_cast<uint32_t>(state.physical_device_properties.limits.minUniformBufferOffsetAlignment);
-    const uint32_t storage_alignment = static_cast<uint32_t>(state.physical_device_properties.limits.minStorageBufferOffsetAlignment);
+    const uint32_t uniform_alignment = static_cast<uint32_t>(state.physical_device_properties.properties.limits.minUniformBufferOffsetAlignment);
+    const uint32_t storage_alignment = static_cast<uint32_t>(state.physical_device_properties.properties.limits.minStorageBufferOffsetAlignment);
     vertex_uniform_stream_ring_buffer.alignment = storage_alignment;
     fragment_uniform_stream_ring_buffer.alignment = storage_alignment;
     vertex_info_uniform_buffer.alignment = uniform_alignment;
@@ -273,6 +273,20 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
             .dstAlphaBlendFactor = translate_blend_factor(blend->alphaDst),
             .alphaBlendOp = translate_blend_func(blend->alphaFunc),
             .colorWriteMask = color_mask
+        };
+    } else if (blend != nullptr) { 
+            fp_vk->blending = vk::PipelineColorBlendAttachmentState{
+            .blendEnable = (blend->colorFunc != SCE_GXM_BLEND_FUNC_NONE) || (blend->alphaFunc != SCE_GXM_BLEND_FUNC_NONE),
+            .srcColorBlendFactor = translate_blend_factor(blend->colorSrc),
+            .dstColorBlendFactor = translate_blend_factor(blend->colorDst),
+            .colorBlendOp = translate_blend_func(blend->colorFunc),
+            .srcAlphaBlendFactor = translate_blend_factor(blend->alphaSrc),
+            .dstAlphaBlendFactor = translate_blend_factor(blend->alphaDst),
+            .alphaBlendOp = translate_blend_func(blend->alphaFunc),
+            .colorWriteMask = vk::ColorComponentFlagBits::eR
+                | vk::ColorComponentFlagBits::eG
+                | vk::ColorComponentFlagBits::eB
+                | vk::ColorComponentFlagBits::eA
         };
     } else {
         // default values, only blendEnable and colorWriteMask are useful
