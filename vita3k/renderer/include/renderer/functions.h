@@ -25,10 +25,6 @@ struct FeatureState;
 struct Config;
 struct SDL_Window;
 
-#ifdef ANDROID // pass to android
-struct libadreno_var;
-#endif
-
 namespace renderer {
 struct Context;
 struct FragmentProgram;
