@@ -49,69 +49,7 @@
 #ifdef ANDROID
 #include <SDL.h>
 #include <boost/range/iterator_range.hpp>
-#include <jni.h>
 
-#ifndef __arm__
-auto load_custom_driver(const std::string &driver_name) {
-    libadreno_var val = {false, "", "", "", "", ""};
-    fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver_name / "/";
-
-    if (!fs::exists(driver_path)) {
-        LOG_ERROR("Could not find driver {}", driver_name);
-        return val;
-    }
-
-    std::string main_so_name;
-    {
-        fs::path driver_name_file = driver_path / "driver_name.txt";
-        if (!fs::exists(driver_name_file)) {
-            LOG_ERROR("Could not find driver driver_name.txt");
-            return val;
-        }
-
-        fs::ifstream name_file(driver_name_file, std::ios_base::in);
-        name_file >> main_so_name;
-        name_file.close();
-    }
-
-    fs::path temp_dir_path;
-    if (SDL_GetAndroidSDKVersion() < 29) {
-        temp_dir_path = driver_path / "tmp/";
-        fs::create_directory(temp_dir_path);
-    }
-
-    fs::path lib_dir;
-    // retrieve the app lib dir using jni
-    {
-        // retrieve the JNI environment.
-        JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
-        env->PushLocalFrame(10);
-        // retrieve the Java instance of the SDLActivity
-        jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
-        // the following calls activity.getApplicationInfo().nativeLibraryDir
-        jclass actibity_class = env->GetObjectClass(activity);
-        jmethodID getApplicationInfo_method = env->GetMethodID(actibity_class, "getApplicationInfo", "()Landroid/content/pm/ApplicationInfo;");
-        jobject app_info = env->CallObjectMethod(activity, getApplicationInfo_method);
-        jclass app_info_class = env->GetObjectClass(app_info);
-        jfieldID app_info_field = env->GetFieldID(app_info_class, "nativeLibraryDir", "Ljava/lang/String;");
-        jstring lib_dir_java = reinterpret_cast<jstring>(env->GetObjectField(app_info, app_info_field));
-        const char *lib_dir_ptr = env->GetStringUTFChars(lib_dir_java, nullptr);
-
-        // copy the dir path in our local object
-        lib_dir = fs::path(lib_dir_ptr) / "/";
-
-        env->ReleaseStringUTFChars(lib_dir_java, lib_dir_ptr);
-        // remove all local references
-        env->PopLocalFrame(nullptr);
-    }
-
-    fs::create_directory(driver_path / "file_redirect");
-    std::string inject_path = (driver_path / "file_redirect/").c_str();
-    val = {true, temp_dir_path.c_str(), lib_dir.c_str(), driver_path.c_str(), main_so_name.c_str(), inject_path.c_str()};
-
-    return val;
-}
-#endif // ifndef __arm__
 #endif // ifdef android
 
 namespace app {
