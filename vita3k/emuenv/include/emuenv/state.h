@@ -104,9 +104,6 @@ private:
     std::unique_ptr<SfoFile> _sfo_handle;
     std::unique_ptr<GDBState> _gdb;
     std::unique_ptr<HTTPState> _http;
-#ifdef ANDROID
-    std::unique_ptr<libadreno_var> _libadreno;
-#endif
 
 public:
     // App info contained in its `param.sfo` file
@@ -175,9 +172,6 @@ public:
     uint32_t res_height_dpi_scale = 0;
     GDBState &gdb;
     HTTPState &http;
-#ifdef ANDROID
-    libadreno_var &libadreno; 
-#endif
 
     EmuEnvState();
     // declaring a destructor is necessary to forward declare unique_ptrs
