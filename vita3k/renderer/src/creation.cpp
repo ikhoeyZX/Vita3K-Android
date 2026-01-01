@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -267,11 +267,7 @@ bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, co
     case Backend::Vulkan:
         state = std::make_unique<vulkan::VKState>(config.gpu_idx);
         state->init_paths(root_paths);
-#ifdef ANDROID
-        if (!vulkan::create(window, state, config, adreno))
-#else
         if (!vulkan::create(window, state, config))
-#endif
             return false;
         break;
 
