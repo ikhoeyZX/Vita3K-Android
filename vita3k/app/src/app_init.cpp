@@ -408,35 +408,6 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     LOG_INFO("Width dpi scale = {}", state.res_width_dpi_scale);
     LOG_INFO("Height dpi scale = {}", state.res_height_dpi_scale);
     
-#ifdef ANDROID
-    if(state.cfg.boot_fail && state.cfg.gpu_idx != 0){
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Custom driver failed!", fmt::format("GPU driver {}\nnot supported or broken\nApp will use default driver now", state.cfg.custom_driver_name).c_str(), nullptr);
-            state.cfg.gpu_idx = 0;
-            state.cfg.custom_driver_name = "";
-            state.cfg.boot_fail = false;
-            config::serialize_config(state.cfg, state.cfg.config_path);
-    }else if (state.cfg.gpu_idx != 0) {
-          // mark failed boot first because if custom driver fail it will crash app so no way mark it after load custom driver
-          if(!state.cfg.boot_fail){
-                state.cfg.boot_fail = true;
-                config::serialize_config(state.cfg, state.cfg.config_path);
-            }
-
-#ifndef __arm__
-           // LOG_INFO("Load custom driver");
-           // set path to load custom driver using libadrenotools
-            state.libadreno = load_custom_driver(state.cfg.current_config.custom_driver_name);
-            if(!state.libadreno.is_adreno){
-                error_dialog("Custom driver corrupted or you use wrong file\nApp will use default driver now", nullptr);
-                state.cfg.gpu_idx = 0;
-                state.cfg.custom_driver_name = "";
-                state.cfg.boot_fail = false;
-                config::serialize_config(state.cfg, state.cfg.config_path);
-            }
-#endif // ifndef __arm__
-    }
-#endif // ifdef android
-
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
     if (!state.window) {
         LOG_ERROR("SDL failed to create window!\n Reason:{}\n disabling some feature!", SDL_GetError());
