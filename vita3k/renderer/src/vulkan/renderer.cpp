@@ -1524,10 +1524,6 @@ int VKState::get_max_anisotropic_filtering() {
     return static_cast<int>(physical_device_properties.properties.limits.maxSamplerAnisotropy);
 }
 
-int VKState::get_max_anisotropic_filtering() {
-    return static_cast<int>(physical_device_properties.properties.limits.maxSamplerAnisotropy);
-}
-
 void VKState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
 }
