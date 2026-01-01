@@ -154,7 +154,7 @@ const static std::vector<const char *> required_device_extensions = {
 
 namespace renderer::vulkan {
 
-#ifdef __ANDROID__ && !defined(__arm__)
+#if defined(__ANDROID__) && !defined(__arm__)
 static bool detect_patch_bcn(bool *support_dxt) {
     // some Adreno GPUs support BCn textures even though they say they don't
     // and we might need to patch a function for it to work
@@ -303,7 +303,7 @@ bool VKState::init() {
 
 #ifdef __ANDROID__
 static void *load_custom_adreno_driver(const std::string &driver_name) {
-    const fs::path driver_path = fs::path(SDL_GetAndroidInternalStoragePath()) / "driver" / driver_name / "/";
+    const fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver_name / "/";
 
     if (!fs::exists(driver_path)) {
         LOG_ERROR("Could not find driver {}", driver_name);
@@ -335,10 +335,10 @@ static void *load_custom_adreno_driver(const std::string &driver_name) {
     // retrieve the app lib dir using jni
     {
         // retrieve the JNI environment.
-        JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
+        JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
         env->PushLocalFrame(10);
         // retrieve the Java instance of the SDLActivity
-        jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
+        jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
         // the following calls activity.getApplicationInfo().nativeLibraryDir
         jclass actibity_class = env->GetObjectClass(activity);
         jmethodID getApplicationInfo_method = env->GetMethodID(actibity_class, "getApplicationInfo", "()Landroid/content/pm/ApplicationInfo;");
@@ -428,13 +428,15 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         };
 
         unsigned int instance_req_ext_count;
-        auto instance_extensions_str = SDL_Vulkan_GetInstanceExtensions(&instance_req_ext_count);
-        std::vector<const char *> instance_extensions;
-        instance_extensions.reserve(instance_req_ext_count + 6);
-        for (size_t i = 0; i < instance_req_ext_count; i++) {
-            instance_extensions.push_back(instance_extensions_str[i]);
+        if (!SDL_Vulkan_GetInstanceExtensions(window, &instance_req_ext_count, nullptr)) {
+            LOG_ERROR("Could not get required extensions");
+            return false;
         }
 
+        std::vector<const char *> instance_extensions;
+        instance_extensions.resize(instance_req_ext_count);
+        SDL_Vulkan_GetInstanceExtensions(window, &instance_req_ext_count, instance_extensions.data());
+        
 #ifdef __APPLE__
         // VK_KHR_portability_enumeration is a Vulkan Loader extension automatically added by SDL_Vulkan_GetInstanceExtensions.
         // When using MoltenVK directly without the Vulkan Loader, this extension causes an instant crash on startup.
@@ -741,7 +743,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             }
         }
 
-        support_fsr &= static_cast<bool>(physical_device_features.features.shaderInt16)
+        support_fsr &= static_cast<bool>(physical_device_features.features.shaderInt16);
         if (support_fsr) {
             // double check for FP16 support
             auto props = physical_device.getFeatures2KHR<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceShaderFloat16Int8Features>();
@@ -946,7 +948,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     support_fsr &= static_cast<bool>(screen_renderer.surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage);
 
 #if defined(__linux__) // && !defined(__ANDROID__) // According to my tests (Macdu), mprotect on buffers (mapped with external memory host) only works with Nvidia drivers
-    surface_cache.can_mprotect_mapped_memory = std::string_view(physical_device_properties.deviceName).find("NVIDIA") != std::string_view::npos;
+    surface_cache.can_mprotect_mapped_memory = std::string_view(physical_device_properties.properties.deviceName).find("NVIDIA") != std::string_view::npos;
 #endif
 
     return true;
