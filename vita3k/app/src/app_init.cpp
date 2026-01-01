@@ -440,7 +440,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
 
     // initialize the renderer first because we need to know if we need a page table
     if (!state.cfg.console) {
-        if (renderer::init(state.window.get(), state.renderer, state.backend_renderer, state.cfg, root_paths, state.libadreno)) {
+        if (renderer::init(state.window.get(), state.renderer, state.backend_renderer, state.cfg, root_paths)) {
             update_viewport(state);
         } else {
             switch (state.backend_renderer) {
