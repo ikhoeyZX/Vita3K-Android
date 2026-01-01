@@ -251,11 +251,8 @@ void create(SceGxmSyncObject *sync, State &state) {
 void destroy(SceGxmSyncObject *sync, State &state) {
     // nothing to do right now
 }
-#ifdef ANDROID
-bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths, const libadreno_var &adreno) {
-#else
+
 bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths) {
-#endif
     switch (backend) {
     case Backend::OpenGL:
         state = std::make_unique<gl::GLState>();
