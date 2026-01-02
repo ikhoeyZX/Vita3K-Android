@@ -1,3 +1,4 @@
+
 // Vita3K emulator project
 // Copyright (C) 2024 Vita3K team
 //
@@ -17,10 +18,6 @@
 
 #include <audio/state.h>
 
-#ifdef TRACY_ENABLE
-#include <tracy/Tracy.hpp>
-#endif
-
 #include <audio/impl/cubeb_audio.h>
 #include <audio/impl/sdl_audio.h>
 
@@ -33,10 +30,6 @@
 #include <cstring>
 
 static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, float global_volume, AudioOutPort &port, const ResumeAudioThread &resume_thread) {
-#ifdef TRACY_ENABLE
-    ZoneScopedC(0xF6C2FF); // Tracy - Track function scope with color thistle
-#endif
-
     // How much data is available?
     std::unique_lock<std::mutex> lock(port.mutex);
     const int bytes_available = SDL_AudioStreamAvailable(port.stream.get());
@@ -66,11 +59,6 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, float g
 }
 
 void AudioAdapter::audio_callback(uint8_t *stream, int len_bytes) {
-#ifdef TRACY_ENABLE
-    tracy::SetThreadName("Host audio thread"); // Tracy - Declare belonging of this function to the audio thread
-    ZoneScopedC(0xF6C2FF); // Tracy - Track function scope with color thistle
-#endif
-
     std::vector<AudioOutPortPtr> ports;
     {
         // Read from shared state.
@@ -85,10 +73,6 @@ void AudioAdapter::audio_callback(uint8_t *stream, int len_bytes) {
     for (const AudioOutPortPtr &port : ports) {
         mix_out_port(stream, temp_buffer.data(), len_bytes, state.global_volume, *port.get(), state.resume_thread);
     }
-
-#ifdef TRACY_ENABLE
-    FrameMarkNamed("Audio"); // Tracy - End discontinuous frame for audio rendering
-#endif
 }
 
 bool AudioState::init(const ResumeAudioThread &resume_thread, const std::string &adapter_name) {
