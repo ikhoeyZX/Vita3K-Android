@@ -254,7 +254,8 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     samplers.resize(max_sampler_used);
 
     // check for linear filtering on depth support
-    const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(vk::Format::eD32UnormS8Uint);
+  //  const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(vk::Format::eD32UnormS8Uint);
+    const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(state.deep_stencil_use);
     const vk::FormatProperties x8d24_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
     support_depth_linear_filtering = static_cast<bool>(depth_linear.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
     support_x8d24 = static_cast<bool>(x8d24_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
