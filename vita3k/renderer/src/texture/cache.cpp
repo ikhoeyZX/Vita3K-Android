@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -509,7 +509,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
             // skip conversion if supported by GPU
-            if(support_depth_linear_filtering && support_x8d24){
+            if(support_x8d24){
                 LOG_INFO_ONCE("your device support SCE_GXM_TEXTURE_BASE_FORMAT_X8U24");
                 break;
             }
