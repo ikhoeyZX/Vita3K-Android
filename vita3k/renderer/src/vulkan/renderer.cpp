@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -1294,7 +1294,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                     .handleType = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd,
                     .fd = fd },
                 vk::MemoryAllocateFlagsInfo{
-                    .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
+                  //  .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
+				    .flags = vk::MemoryAllocateFlagBits::eDeviceMask }
             };
             device_memory = device.allocateMemory(alloc_info.get());
         }
