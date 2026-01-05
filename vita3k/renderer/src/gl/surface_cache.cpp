@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,9 +21,7 @@
 #include <renderer/gl/types.h>
 #include <util/log.h>
 
-#include <algorithm>
 #include <chrono>
-#include <vector>
 
 namespace renderer::gl {
 static constexpr std::uint64_t CASTED_UNUSED_TEXTURE_PURGE_SECS = 40;
@@ -33,7 +31,8 @@ GLSurfaceCache::GLSurfaceCache() = default;
 void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint source_texture, const GLenum dest_internal,
     const GLenum dest_upload_format, const GLenum dest_type, const GLenum source_format, const GLenum source_type, const int offset_x,
     const int offset_y, const int width, const int height, const int dest_width, const int dest_height, const std::size_t total_source_size) {
-    
+    static constexpr GLsizei I32_SIGNED_MAX = 0x7FFFFFFF;
+
     if (!typeless_copy_buffer[0]) {
         if (!typeless_copy_buffer.init(glGenBuffers, glDeleteBuffers)) {
             LOG_ERROR("Unable to initialize a typeless copy buffer");
@@ -43,33 +42,11 @@ void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint so
 
     if (total_source_size > typeless_copy_buffer_size) {
         glBindBuffer(GL_PIXEL_PACK_BUFFER, typeless_copy_buffer[0]);
-#if defined(__arm__) || defined(__aarch64__)
-        glBufferData(GL_PIXEL_PACK_BUFFER, total_source_size, nullptr, GL_STREAM_COPY);
-#else
         glBufferData(GL_PIXEL_PACK_BUFFER, total_source_size, nullptr, GL_STATIC_COPY);
-#endif
+
         typeless_copy_buffer_size = total_source_size;
     }
 
-#if defined(__arm__) || defined(__aarch64__)
-    GLuint temp_fbo;
-    glGenFramebuffers(1, &temp_fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, temp_fbo);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, source_texture, 0);
-    
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, typeless_copy_buffer[0]);
-    glReadBuffer(GL_COLOR_ATTACHMENT0);
-    glReadPixels(offset_x, offset_y, width, height, source_format, source_type, nullptr);
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, GL_NONE);
-
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, typeless_copy_buffer[0]);
-    glBindTexture(GL_TEXTURE_2D, dest_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, dest_internal, dest_width, dest_height, 0, dest_upload_format, dest_type, nullptr);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, GL_NONE);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glDeleteFramebuffers(1, &temp_fbo);
-#else
     glBindBuffer(GL_PIXEL_PACK_BUFFER, typeless_copy_buffer[0]);
     glGetTextureSubImage(source_texture, 0, offset_x, offset_y, 0, width, height, 1, source_format, source_type, I32_SIGNED_MAX, nullptr);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, GL_NONE);
@@ -78,7 +55,6 @@ void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint so
     glBindTexture(GL_TEXTURE_2D, dest_texture);
     glTexImage2D(GL_TEXTURE_2D, 0, dest_internal, dest_width, dest_height, 0, dest_upload_format, dest_type, nullptr);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, GL_NONE);
-#endif
 }
 
 GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state, std::uint16_t width, std::uint16_t height, const std::uint16_t pixel_stride,
@@ -154,11 +130,11 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         }
 
         if (cache_probably_freed) {
-            for (auto fbuf_ite = framebuffer_array.begin(); fbuf_ite != framebuffer_array.end();) {
-                if ((fbuf_ite->first & 0xFFFFFFFF) == key) {
-                    fbuf_ite = framebuffer_array.erase(fbuf_ite);
+            for (auto ite = framebuffer_array.begin(); ite != framebuffer_array.end();) {
+                if ((ite->first & 0xFFFFFFFF) == key) {
+                    ite = framebuffer_array.erase(ite);
                 } else {
-                    ++fbuf_ite;
+                    ++ite;
                 }
             }
             // Clear out. We will recreate later
@@ -421,6 +397,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                 }
 
                 last_use_color_surface_index.push_back(ite->first);
+                info.is_ping_pong_dirty = true;
                 return info.gl_texture[0];
             } else {
                 return 0;
@@ -442,6 +419,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
     info_added->format = base_format;
     info_added->swizzle = swizzle;
     info_added->flags = 0;
+    info_added->is_ping_pong_dirty = true;
 
     if (!info_added->gl_texture.init(glGenTextures, glDeleteTextures)) {
         LOG_ERROR("Failed to initialise color surface texture!");
@@ -517,6 +495,9 @@ GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void>
 
     GLColorSurfaceCacheInfo &info = *ite->second;
 
+    if(!info.is_ping_pong_dirty)
+        return info.gl_ping_pong_texture[0];
+
     GLenum surface_internal_format = color::translate_internal_format(info.format);
     GLenum surface_upload_format = color::translate_format(info.format);
     GLenum surface_data_type = color::translate_type(info.format);
@@ -536,6 +517,8 @@ GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void>
     }
 
     glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, info.gl_ping_pong_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, info.width, info.height, 1);
+    info.is_ping_pong_dirty = false;
+    
     return info.gl_ping_pong_texture[0];
 }
 
@@ -781,7 +764,7 @@ GLuint GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> a
     return 0;
 }
 
-std::vector<uint32_t> GLSurfaceCache::dump_frame(Ptr<const void> address, uint32_t width, uint32_t height, uint32_t pitch, float res_multiplier, bool /*support_get_texture_sub_image*/) {
+std::vector<uint32_t> GLSurfaceCache::dump_frame(Ptr<const void> address, uint32_t width, uint32_t height, uint32_t pitch, float res_multiplier, bool support_get_texture_sub_image) {
     auto ite = color_surface_textures.lower_bound(address.address());
     if (ite == color_surface_textures.end() || ite->second->pixel_stride != pitch) {
         return {};
@@ -798,31 +781,6 @@ std::vector<uint32_t> GLSurfaceCache::dump_frame(Ptr<const void> address, uint32
     if (line_delta >= info.height)
         return {};
 
-#if defined(__arm__) || defined(__aarch64__)
-
-    const uint32_t real_height = std::min(height, info.height - line_delta);
-    GLint last_fbo = 0;
-    GLuint temp_fbo = 0;
-    
-    std::vector<uint32_t> frame(width * height, 0);
-    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-    // Ensure 4-byte alignment for uint32_t
-    glPixelStorei(GL_PACK_ALIGNMENT, 4); 
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &last_fbo);
-    glGenFramebuffers(1, &temp_fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, temp_fbo);
-
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, info.gl_texture[0], 0);
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
-        glReadPixels(0, line_delta, width, real_height, GL_RGBA, GL_UNSIGNED_BYTE, frame.data());
-    }
-
-    glBindFramebuffer(GL_FRAMEBUFFER, last_fbo);
-    glDeleteFramebuffers(1, &temp_fbo);
-
-#else
-    
     if (!support_get_texture_sub_image && (line_delta != 0 || info.width != width || info.height != height)) {
         LOG_ERROR("Dumping this frame is not supported on the OpenGL renderer");
         return {};
@@ -845,10 +803,8 @@ std::vector<uint32_t> GLSurfaceCache::dump_frame(Ptr<const void> address, uint32
 
         glBindTexture(GL_TEXTURE_2D, last_texture);
     }
-#endif
-    
+
     return frame;
 }
-
 
 } // namespace renderer::gl

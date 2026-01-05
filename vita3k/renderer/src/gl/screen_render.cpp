@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ namespace renderer::gl {
 bool ScreenRenderer::init(const fs::path &static_assets) {
     glGenTextures(1, &m_screen_texture);
 
-    const auto builtin_shaders_path = static_assets / "shaders-builtin/opengl";
+    fs::path builtin_shaders_path = static_assets / "shaders-builtin/opengl";
 
     const auto render_main_path_vert = builtin_shaders_path / "render_main.vert";
     const auto render_main_path_frag = builtin_shaders_path / "render_main.frag";
@@ -78,118 +78,12 @@ bool ScreenRenderer::init(const fs::path &static_assets) {
     );
     glEnableVertexAttribArray(uvAttrib);
 
-    glClearColor(32.0f / 255.0f, 178.0f / 255.0f, 170.0f / 255.0f, 1.0f);
+    glClearColor(0.125490203f, 0.698039234f, 0.666666687f, 1.0f);
     glClearDepthf(1.0);
 
     return true;
 }
 
-#if defined(__arm__) || defined(__aarch64__)
-void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size) {
-    GLint last_framebuffer;
-    GLint last_active_texture;
-    GLint last_program;
-    GLint last_texture;
-    GLint last_sampler;
-    GLint last_array_buffer;
-    GLint last_vertex_array;
-    GLint last_viewport[4];
-    
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &last_framebuffer);
-    glGetIntegerv(GL_ACTIVE_TEXTURE, &last_active_texture);
-    
-    glActiveTexture(GL_TEXTURE0);
-    glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-    glGetIntegerv(GL_SAMPLER_BINDING, &last_sampler);
-    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
-    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
-    glGetIntegerv(GL_VIEWPORT, last_viewport);
-    
-    GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
-    GLboolean last_enable_cull_face = glIsEnabled(GL_CULL_FACE);
-    GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
-    GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
-    GLboolean last_color_mask[4];
-    glGetBooleanv(GL_COLOR_WRITEMASK, last_color_mask);
-
-    // Setup Render State
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glDisable(GL_SCISSOR_TEST);
-    glDisable(GL_BLEND);
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_CULL_FACE);
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-    glViewport(static_cast<GLint>(viewport_pos.x), static_cast<GLint>(viewport_pos.y), 
-               static_cast<GLsizei>(viewport_size.x), static_cast<GLsizei>(viewport_size.y));
-
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClearDepthf(1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    const auto &shader = enable_fxaa ? m_render_shader_fxaa : m_render_shader_nofilter;
-    glUseProgram(*shader);
-
-    // Attribute locations
-    const GLint posAttrib = glGetAttribLocation(*shader, "position_vertex");
-    const GLint uvAttrib = glGetAttribLocation(*shader, "uv_vertex");
-
-    glBindVertexArray(m_vao);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-
-    const float default_uv[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
-    if (!uvs) uvs = default_uv;
-
-    if (memcmp(uvs, last_uvs, sizeof(float) * 4) != 0) {
-        screen_vertices_t vertex_buffer_data = {
-            { { -1.f, -1.f, 0.0f }, { uvs[0], uvs[3] } },
-            { { 1.f, -1.f, 0.0f },  { uvs[2], uvs[3] } },
-            { { 1.f, 1.f, 0.0f },   { uvs[2], uvs[1] } },
-            { { -1.f, 1.f, 0.0f },  { uvs[0], uvs[1] } }
-        };
-        memcpy(last_uvs, uvs, sizeof(float) * 4);
-
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertex_buffer_data), vertex_buffer_data);
-    }
-
-    // VAO handles the attribute pointers in ES 3.0, 
-    // but we re-verify them here for compatibility with the original logic
-    glEnableVertexAttribArray(posAttrib);
-    glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, screen_vertex_size, (void*)0);
-
-    glEnableVertexAttribArray(uvAttrib);
-    glVertexAttribPointer(uvAttrib, 2, GL_FLOAT, GL_FALSE, screen_vertex_size, (void*)(3 * sizeof(GLfloat)));
-
-    if (enable_fxaa) {
-        const GLint invScreenLocation = glGetUniformLocation(*shader, "inv_frame_size");
-        glUniform2f(invScreenLocation, 1.0f / texture_size.x, 1.0f / texture_size.y);
-    }
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-    // Restore GL state
-    glUseProgram(last_program);
-    glBindFramebuffer(GL_FRAMEBUFFER, last_framebuffer);
-    glBindTexture(GL_TEXTURE_2D, last_texture);
-    glBindSampler(0, last_sampler); 
-    glActiveTexture(last_active_texture);
-    glBindVertexArray(last_vertex_array);
-    glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
-
-    if (last_enable_blend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
-    if (last_enable_cull_face) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
-    if (last_enable_depth_test) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
-    if (last_enable_scissor_test) glEnable(GL_SCISSOR_TEST); else glDisable(GL_SCISSOR_TEST);
-
-    glViewport(last_viewport[0], last_viewport[1], last_viewport[2], last_viewport[3]);
-    glColorMask(last_color_mask[0], last_color_mask[1], last_color_mask[2], last_color_mask[3]);
-}
-
-#else
 void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size) {
     // Code for backup and restore is taken from ImGui project ImGui_ImplSdlGL3_RenderDrawData
     // Backup GL state
@@ -210,8 +104,10 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_element_array_buffer);
     GLint last_vertex_array;
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
+#ifndef ANDROID
     GLint last_polygon_mode[2];
     glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
+#endif
     GLint last_viewport[4];
     glGetIntegerv(GL_VIEWPORT, last_viewport);
     GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
@@ -232,7 +128,7 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
         static_cast<GLsizei>(viewport_size.y));
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClearDepth(1.0);
+    glClearDepthf(1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // should not be needed, but just in case
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -311,7 +207,9 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     }
 
     glBindTexture(GL_TEXTURE_2D, texture);
+#ifndef ANDROID
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     // Restore modified GL state
@@ -339,11 +237,12 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
         glEnable(GL_SCISSOR_TEST);
     else
         glDisable(GL_SCISSOR_TEST);
+#ifndef ANDROID
     glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
+#endif
     glViewport(last_viewport[0], last_viewport[1], last_viewport[2], last_viewport[3]);
     glColorMask(last_color_mask[0], last_color_mask[1], last_color_mask[2], last_color_mask[3]);
 }
-#endif
 
 void ScreenRenderer::destroy() {
     glDeleteBuffers(1, &m_vbo);

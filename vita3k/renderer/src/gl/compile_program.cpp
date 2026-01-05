@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,17 +22,11 @@
 #include <renderer/gl/state.h>
 #include <renderer/gl/types.h>
 
+#include <gxm/types.h>
 #include <util/log.h>
 
 #include <shader/spirv_recompiler.h>
 
-#if defined(__arm__) || defined(__aarch64__)
-#include <glad/gles2.h>
-#else
-#include <glad/gl.h>
-#endif
-
-#include <iomanip>
 #include <vector>
 
 namespace renderer::gl {
@@ -76,12 +70,6 @@ static SharedGLObject compile_spirv(GLenum type, const std::vector<std::uint32_t
     R_PROFILE(__func__);
 
     SharedGLObject shader = std::make_shared<GLObject>();
-    
-#if defined(__arm__) || defined(__aarch64__)
-    // not supported
-    return SharedGLObject();
-#else
-    
     if (!shader->init(glCreateShader(type), glDeleteShader)) {
         return SharedGLObject();
     }
@@ -115,18 +103,16 @@ static SharedGLObject compile_spirv(GLenum type, const std::vector<std::uint32_t
     }
 
     return shader;
-#endif
 }
 
 static std::string convert_hash_to_hex(const Sha256Hash &hash) {
-    std::string str;
-    str.reserve(hash.size() * 2);
-
-    for (size_t i = 0; i < hash.size(); ++i) {
-        fmt::format_to(std::back_inserter(str), "{:02x}", hash[i]);
+    std::stringstream ss;
+    ss << std::hex << std::setfill('0');
+    for (size_t i = 0; hash.size() > i; ++i) {
+        ss << std::setw(2) << static_cast<uint32_t>(hash[i]);
     }
 
-    return str;
+    return ss.str();
 }
 
 static SharedGLObject compile_program(ProgramCache &program_cache, const SharedGLObject &frag_shader, const SharedGLObject &vert_shader, const ProgramHashes &hashes) {
@@ -163,6 +149,9 @@ static SharedGLObject compile_program(ProgramCache &program_cache, const SharedG
 
     program_cache.emplace(hashes, program);
 
+    glDeleteShader(frag_shader->get());
+    glDeleteShader(vert_shader->get());
+    
     return program;
 }
 

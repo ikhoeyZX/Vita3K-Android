@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -177,44 +177,6 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     }
 }
 
-std::vector<uint8_t> GLTextureCache::repack_compressed_data( SceGxmTextureBaseFormat base_format, uint32_t width,  uint32_t height,  const void* pixels,  uint32_t pixels_per_stride) {
-    uint32_t block_width, block_height;
-    if (gxm::is_bcn_format(base_format)) {
-        block_width = 4;
-        block_height = 4;
-    } else {
-        auto [bw, bh] = gxm::get_block_size(base_format);
-        block_width = bw;
-        block_height = bh;
-    }
-
-    // All BC formats and ASTC formats use 16 bytes per block, 
-    // EXCEPT BC1 (UBC1), BC4 (UBC4/SBC4) which use 8 bytes.
-    size_t bytes_per_block = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC1 || 
-                              base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC4 || 
-                              base_format == SCE_GXM_TEXTURE_BASE_FORMAT_SBC4) ? 8 : 16;
-
-    uint32_t blocks_x = (width + block_width - 1) / block_width;
-    uint32_t blocks_y = (height + block_height - 1) / block_height;
-    uint32_t stride_blocks_x = (pixels_per_stride + block_width - 1) / block_width;
-
-    size_t bytes_per_block_row = blocks_x * bytes_per_block;
-    size_t stride_bytes_per_row = stride_blocks_x * bytes_per_block;
-
-    std::vector<uint8_t> packed_data;
-    packed_data.reserve(bytes_per_block_row * blocks_y);
-
-    const uint8_t* src_ptr = static_cast<const uint8_t*>(pixels);
-
-    for (uint32_t y = 0; y < blocks_y; ++y) {
-        packed_data.insert(packed_data.end(), src_ptr, src_ptr + bytes_per_block_row);
-        
-        src_ptr += stride_bytes_per_row;
-    }
-
-    return packed_data;
-}
-
 void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) {
     R_PROFILE(__func__);
 
@@ -222,38 +184,8 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
     if (face > 0)
         // GXM's cube map index is same as OpenGL: right, left, top, bottom, front, back
         upload_type = GL_TEXTURE_CUBE_MAP_POSITIVE_X + (face - 1);
-    
-#if defined(__arm__) || defined(__aarch64__)
-    const GLenum format = translate_format(base_format);
-    
-    const GLenum type = translate_type(base_format);
-    if (gxm::is_bcn_format(base_format) || renderer::texture::is_astc_format(base_format)) {
-        // GLES 3.x does NOT support GL_UNPACK_ROW_LENGTH for compressed formats
-        // If data has a stride/padding, you must pack it into a temporary buffer
-        const void* upload_pixels = pixels;
-        std::vector<uint8_t> packed_buffer;
-        
-        if (pixels_per_stride > 0 && pixels_per_stride != width) {
-            // Manual re-packing: Copy the compressed data block-row by block-row
-            // to remove any padding caused by the stride.
-            packed_buffer = repack_compressed_data(base_format, width, height, pixels, pixels_per_stride);
-            upload_pixels = packed_buffer.data();
-        }
 
-        size_t compressed_size = renderer::texture::get_compressed_size(base_format, width, height);
-        glCompressedTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, static_cast<GLsizei>(compressed_size), upload_pixels);
-    } else {
-        // Supported in GLES 3.0+ for UNCOMPRESSED formats
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<GLint>(pixels_per_stride));
-        
-        glTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, type, pixels);
-        
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    }
-        
-#else
     if (gxm::is_bcn_format(base_format) || renderer::texture::is_astc_format(base_format)) {
-
         glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<GLint>(pixels_per_stride));
 
         if (gxm::is_bcn_format(base_format)) {
@@ -273,7 +205,6 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
         }
 
         const GLenum format = translate_format(base_format);
-        
         size_t compressed_size = renderer::texture::get_compressed_size(base_format, width, height);
         glCompressedTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, static_cast<GLsizei>(compressed_size), pixels);
 
@@ -290,7 +221,6 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
 
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     }
-#endif
 }
 
 void GLTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) {
