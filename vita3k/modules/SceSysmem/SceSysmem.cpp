@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -331,10 +331,32 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
-    // Set the free memory size info
-    info->size_cdram = std::max<int>(max_cdram - state->allocated_cdram, 0);
-    info->size_user = std::max<int>(max_user - state->allocated_user, 0);
-    info->size_phycont = std::max<int>(max_phycont - state->allocated_phycont, 0);
+    const int tmp = mem_available(emuenv.mem);
+    int tmp2 = tmp - max_user;
+//    LOG_TRACE("Free mem: {} MB", (tmp/MiB(1)));
+//    LOG_TRACE("Need mem: {} MB", (max_user/MiB(1)));
+
+    if (tmp2 <= 0){
+        LOG_ERROR("Out of memory!, use default settings!");
+        tmp2 = align(mem_available(emuenv.mem) / 3, 0x1000);
+        if(tmp2 < max_user){
+            tmp2 = tmp2/4;
+            info->size_user = tmp2;
+        }else{
+            info->size_user = tmp2/2;
+        }
+        info->size_cdram = tmp2/4;
+        info->size_phycont = tmp2/8;
+    }else{
+       // Set the free memory size info
+       info->size_cdram = std::max<int>(max_cdram - state->allocated_cdram, 0);
+       info->size_user = std::max<int>(max_user - state->allocated_user, 0);
+       info->size_phycont = std::max<int>(max_phycont - state->allocated_phycont, 0);
+    }
+//    LOG_TRACE("Free mem final: {} MB", (tmp2/MiB(1)));
+//    LOG_TRACE("size_cdram used: {} MB", (info->size_cdram/MiB(1)));
+//    LOG_TRACE("size_user used: {} MB", (info->size_user/MiB(1)));
+//    LOG_TRACE("size_phycont used: {} MB", (info->size_phycont/MiB(1)));
 
     return 0;
 }
