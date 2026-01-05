@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -506,7 +506,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16;
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
-            if(support_depth_linear_filtering && support_x8d24){
+            if(support_x8d24){
                 LOG_INFO_ONCE("your device support SCE_GXM_TEXTURE_BASE_FORMAT_X8U24");
                 break;
             }
@@ -698,6 +698,10 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
             else
                 // the xor 1 is to make sure it won't be the same as hash_texture_nostride
                 info->hash = hash_texture_data(gxm_texture, info->texture_size, mem) ^ 1;
+        }
+        if (info->texture_size > 0) {
+            LOG_ERROR("Texture cache still full. need fix this!");
+            LOG_ERROR("Size texture {}", info->texture_size);
         }
     } else {
         // Texture is cached.
