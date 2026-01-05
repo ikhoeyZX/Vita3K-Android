@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2026 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,9 +34,6 @@
 #else
 #define XXH_INLINE_ALL
 #include <xxhash.h>
-#endif
-#ifdef WIN32
-#include <execution>
 #endif
 
 namespace renderer {
@@ -461,12 +458,10 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
-            // ignore conversion if your gpu is powerVR and it supported
             if(support_pvrt){
                 LOG_INFO_ONCE("your device support SCE_GXM_TEXTURE_BASE_FORMAT_PVRT");
                 break;
             }
-            
             if (!is_swizzled)
                 LOG_ERROR_ONCE("Unhandled non-swizzled PVRT format, please report it to the developers");
 
@@ -492,24 +487,26 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
                 LOG_INFO_ONCE("your device support SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9");
                 break;
             }
-            
+
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 6);
             decompress_packed_float_e5m9m9m9(base_format, texture_data_decompressed.data(), pixels, width, memory_height);
             pixels = texture_data_decompressed.data();
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
             // don't change what openGL is doing (which is completely wrong)
-            if (!is_vulkan || support_a2rgb10)
+            // ignore conversion if supported
+            if (!is_vulkan || support_a2rgb10){
+                LOG_INFO_ONCE("your device support SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10");
                 break;
-            
+            }
+
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 8);
             convert_u2f10f10f10_to_f16f16f16f16(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height, fmt);
             pixels = texture_data_decompressed.data();
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16;
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
-            // skip conversion if supported by GPU
-            if(support_x8d24){
+            if(support_depth_linear_filtering && support_x8d24){
                 LOG_INFO_ONCE("your device support SCE_GXM_TEXTURE_BASE_FORMAT_X8U24");
                 break;
             }
@@ -670,10 +667,6 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
             LOG_WARN_ONCE("Texture cache is full. Starting to replace textures");
             texture_lookup.erase(std::bit_cast<TextureGxmDataRepr>(info->texture));
         }
-        if (info->texture_size > 0) {
-            LOG_ERROR("Texture cache still full. need fix this!");
-        }
-            
         texture_lookup[texture_repr] = info;
 
         configure = true;
@@ -737,8 +730,6 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
     }
 
     importing_texture = false;
-    // to restore the state, in case for whatever reason we could not load the replacement texture
-    bool previous_configure = configure;
     if (upload && import_textures) {
         auto it = available_textures_hash.find(info->hash);
         if (it != available_textures_hash.end()) {
