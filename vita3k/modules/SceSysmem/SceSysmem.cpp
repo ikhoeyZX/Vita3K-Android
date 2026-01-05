@@ -326,38 +326,16 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
         LOG_WARN_ONCE("ATTRIBUTE2 key not found in SFO data.");
 
     // Define other memory limits
-    constexpr uint32_t max_cdram = MiB(100); // Max cdram memory (112 MiB)
-    constexpr uint32_t max_phycont = MiB(25); // Max physically contiguous memory (26 MiB)
+    constexpr uint32_t max_cdram = MiB(112); // Max cdram memory (112 MiB)
+    constexpr uint32_t max_phycont = MiB(26); // Max physically contiguous memory (26 MiB)
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
-    const int tmp = mem_available(emuenv.mem);
-    int tmp2 = tmp - max_user;
-//    LOG_TRACE("Free mem: {} MB", (tmp/MiB(1)));
-//    LOG_TRACE("Need mem: {} MB", (max_user/MiB(1)));
-    
-    if (tmp2 <= 0){
-//        LOG_ERROR("Out of memory!, use default settings!");
-        tmp2 = align(mem_available(emuenv.mem) / 3, 0x1000);
-        if(tmp2 < max_user){
-            tmp2 = tmp2/4;
-            info->size_user = tmp2;
-        }else{
-            info->size_user = tmp2/2;
-        }
-        info->size_cdram = tmp2/4;
-        info->size_phycont = tmp2/8;
-    }else{
-       // Set the free memory size info
-       info->size_cdram = std::max<int>(max_cdram - state->allocated_cdram, 0);
-       info->size_user = std::max<int>(max_user - state->allocated_user, 0);
-       info->size_phycont = std::max<int>(max_phycont - state->allocated_phycont, 0);
-    }
-//    LOG_TRACE("Free mem final: {} MB", (tmp2/MiB(1)));
-//    LOG_TRACE("size_cdram used: {} MB", (info->size_cdram/MiB(1)));
-//    LOG_TRACE("size_user used: {} MB", (info->size_user/MiB(1)));
-//    LOG_TRACE("size_phycont used: {} MB", (info->size_phycont/MiB(1)));
-             
+    // Set the free memory size info
+    info->size_cdram = std::max<int>(max_cdram - state->allocated_cdram, 0);
+    info->size_user = std::max<int>(max_user - state->allocated_user, 0);
+    info->size_phycont = std::max<int>(max_phycont - state->allocated_phycont, 0);
+
     return 0;
 }
 

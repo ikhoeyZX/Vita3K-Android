@@ -173,10 +173,8 @@ EXPORT(int, sceSysmoduleIsLoaded, SceSysmoduleModuleId module_id) {
 
     if (is_module_loaded(emuenv.kernel, module_id))
         return SCE_SYSMODULE_LOADED;
-    else{
-        LOG_ERROR("Failed at Module id: {}", log_hex(module_id));
+    else
         return RET_ERROR(SCE_SYSMODULE_ERROR_UNLOADED);
-    }
 }
 
 EXPORT(int, sceSysmoduleIsLoadedInternal, SceSysmoduleInternalModuleId module_id) {

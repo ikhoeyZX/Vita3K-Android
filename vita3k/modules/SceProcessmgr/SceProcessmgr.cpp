@@ -23,7 +23,6 @@
 
 #include <util/safe_time.h>
 
-#include <util/log.h>
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceProcessmgr);
 
@@ -102,9 +101,6 @@ EXPORT(int, sceKernelCDialogSetLeaseLimit) {
 
 EXPORT(int, sceKernelCallAbortHandler, uint32_t param1, uint32_t param2) {
     TRACY_FUNC(sceKernelCallAbortHandler, param1, param2);
-    LOG_TRACE("param1 VAL = {}", param1);
-    LOG_TRACE("param2 VAL = {}", param2);
-    
     return UNIMPLEMENTED();
 }
 

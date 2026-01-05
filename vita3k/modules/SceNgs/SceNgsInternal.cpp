@@ -94,8 +94,7 @@ EXPORT(int, sceNgsSystemInitInternal) {
 }
 
 EXPORT(int, sceNgsSystemIsFixForBugzilla89940) {
-   // return UNIMPLEMENTED();
-    return 0;
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNgsSystemLockInternal) {
