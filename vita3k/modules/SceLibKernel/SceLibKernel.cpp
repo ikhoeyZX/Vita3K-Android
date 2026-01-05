@@ -623,7 +623,7 @@ EXPORT(int, sceIoMkdirAsync) {
 }
 
 
-static const char* VN_file = "root.pfs"
+static const char* VN_file = "root.pfs";
 
 EXPORT(SceUID, sceIoOpen, const char *file, const int flags, const SceMode mode) {
     TRACY_FUNC(sceIoOpen, file, flags, mode);

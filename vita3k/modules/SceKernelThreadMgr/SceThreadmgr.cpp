@@ -1049,7 +1049,7 @@ EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry
 }
 
 static int delay_thread(SceUInt delay_us) {
-    if (delay_us == 0)
+    if (delay_us <= 0 )
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
 
     std::this_thread::sleep_for(std::chrono::microseconds(delay_us));
