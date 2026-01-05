@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -152,7 +152,7 @@ EXPORT(int, sceKernelGetModuleList, int flags, SceUID *modids, int *num) {
     // for Maidump main module should be the last module
     int i = 0;
     SceUID main_module_id = 0;
-    for (auto [module_id, module] : emuenv.kernel.loaded_modules) {
+    for (auto &[module_id, module] : emuenv.kernel.loaded_modules) {
         if (module->info.path == "app0:" + emuenv.self_path) {
             main_module_id = module_id;
         } else {
