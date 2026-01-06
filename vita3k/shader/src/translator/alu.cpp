@@ -1,3 +1,4 @@
+
 // Vita3K emulator project
 // Copyright (C) 2025 Vita3K team
 //
@@ -127,7 +128,7 @@ bool USSETranslatorVisitor::vmad(
         inst.opr.src2.flags |= RegisterFlags::Negative;
     }
 
-    m_b.setLine(m_recompiler.cur_pc);
+    m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
 
     set_repeat_multiplier(2, 2, 2, 4);
 
@@ -149,10 +150,9 @@ bool USSETranslatorVisitor::vmad(
         return false;
     }
 
-    auto mul_result = m_b.createBinOp(spv::OpFMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
-    auto add_result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
+    spv::Id fma_result = m_b.createBuiltinCall(m_b.getTypeId(vsrc0), std_builtins, GLSLstd450Fma, { vsrc0, vsrc1, vsrc2 });
 
-    store(inst.opr.dest, add_result, write_mask, dest_repeat_offset);
+    store(inst.opr.dest, fma_result, write_mask, dest_repeat_offset);
     END_REPEAT()
 
     reset_repeat_multiplier();
@@ -193,7 +193,7 @@ bool USSETranslatorVisitor::vmad2(
         op = Opcode::VF16MAD;
     }
 
-    const DataType inst_dt = (dat_fmt) ? DataType::F16 : DataType::F32;
+    const DataType inst_dt = dat_fmt ? DataType::F16 : DataType::F32;
 
     // Decode mandatory info first
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, false, true, 7, m_second_program);
@@ -264,7 +264,7 @@ bool USSETranslatorVisitor::vmad2(
     LOG_DISASM("{:016x}: {}{}2 {} {} {} {}", m_instr, disasm::e_predicate_str(static_cast<ExtPredicate>(pred)), disasm::opcode_str(op), disasm::operand_to_str(inst.opr.dest, dest_mask),
         disasm::operand_to_str(inst.opr.src0, dest_mask), disasm::operand_to_str(inst.opr.src1, dest_mask), disasm::operand_to_str(inst.opr.src2, dest_mask));
 
-    m_b.setLine(m_recompiler.cur_pc);
+    m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
 
     // Translate the instruction
     spv::Id vsrc0 = load(inst.opr.src0, dest_mask, 0);
@@ -276,10 +276,9 @@ bool USSETranslatorVisitor::vmad2(
         return false;
     }
 
-    auto mul_result = m_b.createBinOp(spv::OpFMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
-    auto add_result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
+    spv::Id fma_result = m_b.createBuiltinCall(m_b.getTypeId(vsrc0), std_builtins, GLSLstd450Fma, { vsrc0, vsrc1, vsrc2 });
 
-    store(inst.opr.dest, add_result, dest_mask, 0);
+    store(inst.opr.dest, fma_result, dest_mask, 0);
 
     return true;
 }
@@ -361,7 +360,7 @@ bool USSETranslatorVisitor::vdp(
         inst.opr.src2.flags |= RegisterFlags::Absolute;
     }
 
-    m_b.setLine(m_recompiler.cur_pc);
+    m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
 
     // Decoding done
     BEGIN_REPEAT(repeat_count)
@@ -492,6 +491,7 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_ma
     case Opcode::VF16DP: {
         const spv::Op op = (m_b.getNumComponents(vsrc1) > 1) ? spv::OpDot : spv::OpFMul;
         result = m_b.createBinOp(op, m_b.makeFloatType(32), vsrc1, vsrc2);
+
         result = postprocess_dot_result_for_store(m_b, result, possible_dest_mask);
         break;
     }
@@ -607,7 +607,7 @@ bool USSETranslatorVisitor::v32nmad(
         disasm::operand_to_str(inst.opr.src1, source_mask), disasm::operand_to_str(inst.opr.src2, source_mask));
 
     // Recompile
-    m_b.setLine(m_recompiler.cur_pc);
+    m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
     spv::Id result = do_alu_op(inst, source_mask, dest_mask);
 
     if (result != spv::NoResult) {
@@ -729,7 +729,7 @@ bool USSETranslatorVisitor::vcomp(
     // (upper bound on the) number of components to set in the destination
     const uint32_t nb_components = std::bit_width(write_mask);
 
-    m_b.setLine(m_recompiler.cur_pc);
+    m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
 
     // TODO: Log
     BEGIN_REPEAT(repeat_count)
