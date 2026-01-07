@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -179,7 +179,6 @@ static spv::Function *make_fx10_unpack_func(spv::Builder &b, const SpirvUtilFunc
     spv::Function *fx10_unpack_func = b.makeFunctionEntry(
         spv::NoPrecision, type_f32_v3, "unpack3xFX10", spv::LinkageTypeMax, { type_f32 },
         decorations, &fx10_unpack_func_block);
-    b.setupFunctionDebugInfo(fx10_unpack_func, "unpack3xFX10", { type_f32 }, { "to_unpack" });
     fx10_unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
 
     spv::Id extracted = fx10_unpack_func->getParamId(0);
@@ -262,7 +261,6 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
     spv::Function *unpack_func = b.makeFunctionEntry(
         spv::NoPrecision, output_type, func_name.c_str(), spv::LinkageTypeMax, { type_f32 },
         decorations, &unpack_func_block);
-    b.setupFunctionDebugInfo(unpack_func, func_name.c_str(), { type_f32 }, { "to_unpack" });
     unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
     spv::Id extracted = unpack_func->getParamId(0);
 
@@ -340,8 +338,7 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
     spv::Function *pack_func = b.makeFunctionEntry(
         spv::NoPrecision, type_f32, func_name.c_str(), spv::LinkageTypeMax, { input_type },
         decorations, &pack_func_block);
-    b.setupFunctionDebugInfo(pack_func, func_name.c_str(), { input_type }, { "to_pack" });
-
+    
     pack_func->addParamPrecision(0, spv::DecorationRelaxedPrecision);
     spv::Id extracted = pack_func->getParamId(0);
     const int comp_bits = 32 / comp_count;
@@ -379,7 +376,6 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const SpirvUtilFunct
     spv::Function *f16_unpack_func = b.makeFunctionEntry(
         spv::NoPrecision, type_f32_v2, "unpack2xF16", spv::LinkageTypeMax, { type_f32 },
         decorations, &f16_unpack_func_block);
-    b.setupFunctionDebugInfo(f16_unpack_func, "unpack2xF16", { type_f32 }, { "to_unpack" });
     f16_unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
 
     spv::Id extracted = f16_unpack_func->getParamId(0);
@@ -406,8 +402,7 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const SpirvUtilFunctio
     spv::Function *f16_pack_func = b.makeFunctionEntry(
         spv::NoPrecision, type_f32, "pack2xF16", spv::LinkageTypeMax, { type_f32_v2 },
         decorations, &f16_pack_func_block);
-    b.setupFunctionDebugInfo(f16_pack_func, "pack2xF16", { type_f32_v2 }, { "to_pack" });
-
+    
     f16_pack_func->addParamPrecision(0, spv::DecorationRelaxedPrecision);
     spv::Id extracted = f16_pack_func->getParamId(0);
 
@@ -439,8 +434,7 @@ static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, spv::Id 
 
     spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), spv::LinkageTypeMax, { type_i32 },
         {}, &func_block);
-    b.setupFunctionDebugInfo(fetch_func, func_name.c_str(), { type_i32 }, { "addr" });
-
+    
     spv::Id sixteen_cst = b.makeIntConstant(16);
     spv::Id eight_cst = b.makeIntConstant(8);
     spv::Id four_cst = b.makeIntConstant(4);
@@ -496,8 +490,7 @@ static spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderP
 
     spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "fetchMemory", spv::LinkageTypeMax, { type_i32 },
         {}, &func_block);
-    b.setupFunctionDebugInfo(fetch_func, "fetchMemory", { type_i32 }, { "addr" });
-
+    
     spv::Id addr = fetch_func->getParamId(0);
 
     std::stack<std::unique_ptr<spv::Builder::If>> fetch_stacks;
