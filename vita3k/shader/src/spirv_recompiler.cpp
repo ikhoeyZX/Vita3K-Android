@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License along
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-#include <boost/unordered_map.hpp>
 
 #include <shader/spirv_recompiler.h>
 #include <shader/uniform_block.h>
@@ -123,7 +122,7 @@ struct VertexProgramOutputProperties {
     std::uint32_t component_count{};
     std::uint32_t location{};
 };
-using VertexProgramOutputPropertiesMap = boost::unordered_map<SceGxmVertexProgramOutputs, VertexProgramOutputProperties>;
+using VertexProgramOutputPropertiesMap = std::map<SceGxmVertexProgramOutputs, VertexProgramOutputProperties>;
 
 // ******************************
 // * Functions (implementation) *
@@ -145,21 +144,16 @@ static spv::Id get_type_basic(spv::Builder &b, const Input &input) {
     switch (input.type) {
         // clang-format off
     case DataType::F16:
-         return b.makeFloatType(16);
     case DataType::F32:
          return b.makeFloatType(32);
 
     case DataType::UINT8:
-        return b.makeUintType(8);
     case DataType::UINT16:
-        return b.makeUintType(16);
     case DataType::UINT32:
         return b.makeUintType(32);
 
     case DataType::INT8:
-        return b.makeIntType(8);
     case DataType::INT16:
-        return b.makeIntType(16);
     case DataType::INT32:
         return b.makeIntType(32);
 
@@ -216,7 +210,7 @@ static spv::Id get_param_type(spv::Builder &b, const Input &input) {
     }
 }
 
-spv::StorageClass reg_type_to_spv_storage_class(usse::RegisterBank reg_type) {
+static spv::StorageClass reg_type_to_spv_storage_class(usse::RegisterBank reg_type) {
     switch (reg_type) {
     case usse::RegisterBank::TEMP:
         return spv::StorageClassPrivate;
@@ -266,10 +260,6 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
 
     auto get_dest_mask = [&]() {
         switch (total_var_comp) {
-        case 0:
-            dest_mask = 0b0;
-            break;
-            
         case 1:
             dest_mask = 0b1;
             break;
@@ -374,7 +364,7 @@ static spv::Id create_builtin_sampler_for_raw(spv::Builder &b, const FeatureStat
 
 static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translation_state, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers,
     const SceGxmProgram &program) {
-    static const boost::unordered_map<std::uint32_t, std::pair<std::string, std::uint32_t>> name_map = {
+    static const std::unordered_map<std::uint32_t, std::pair<std::string, std::uint32_t>> name_map = {
         { 0xD000, { "v_Position", 0 } },
         { 0xC000, { "v_Fog", 3 } },
         { 0xA000, { "v_Color0", 1 } },
@@ -439,7 +429,6 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 pa_dtype = DataType::F16;
             } else if (input_type == 0x10000000) {
                 pa_type = "fixed";
-                pa_dtype = DataType::INT32;
                 // TODO: Supply data type
             } else if (input_type == 0x100000) {
                 if (input_id == 0xA000 || input_id == 0xB000) {
@@ -519,7 +508,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             }
 
             std::string tex_name = "";
-            std::string sampling_type = "2D";
+            std::string_view sampling_type = "2D";
             spv::Dim dim_type = spv::Dim2D;
             const uint32_t sampler_resource_index = descriptor->resource_index;
 
@@ -541,12 +530,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             }
 
             if (tex_name.empty()) {
-                if (!anonymous)
-                    // log only once
-                    LOG_INFO("Sample symbol stripped, using anonymous name");
+                // log only once
+                LOG_INFO_ONCE("Sample symbol stripped, using anonymous name");
 
-                if (anonymous && sampler_resource_index == 0)
-                    LOG_WARN("Fragment shader has more than one anonymous texture");
                 anonymous = true;
                 tex_name = fmt::format("anonymousTexture{}", anon_tex_count++);
             }
@@ -823,7 +809,6 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                     b.setPrecision(rgb, precision);
                     source = b.createOp(spv::OpVectorShuffle, v4, { { true, rgb }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 }, { false, 6 } });
 
-                    b.setPrecision(source, precision);
                     store_source_result();
 
                     // else (no shader gamma correction, nothing to do)
@@ -1043,10 +1028,6 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         ADD_VERT_UNIFORM_MEMBER(z_scale);
 
 #undef ADD_VERT_UNIFORM_MEMBER
-
-        // the resolution multiplier does not require a high precision
-        b.addMemberDecoration(render_buf_type, FRAG_UNIFORM_res_multiplier, spv::DecorationRelaxedPrecision);
-
 #define ADD_EXT_UNIFORM_MEMBER(name)                                                                                                                                                \
     spv_params.name##_id = curr_field_id;                                                                                                                                           \
     b.addMemberDecoration(render_buf_type, curr_field_id, spv::DecorationOffset, RenderVertUniformBlockExtended::get_##name##_offset(uniform_buffer_count, uniform_texture_count)); \
@@ -1229,12 +1210,14 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             var_to_reg.dtype = unsigned_matching_type;
         } else {
             var = b.createVariable(spv::NoPrecision, spv::StorageClassInput, param_type, name.c_str());
+
             var_to_reg.size = input.array_size * input.component_count;
             var_to_reg.dtype = input_type;
         }
+
         var_to_reg.var = var;
         translation_state.var_to_regs.push_back(var_to_reg);
-        
+
         switch (semantic) {
         case SCE_GXM_PARAMETER_SEMANTIC_INDEX:
             if (translation_state.is_vulkan)
@@ -1660,10 +1643,10 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     for (const auto vo : vertex_outputs_list) {
         if (vertex_outputs & vo) {
             const auto vo_typed = static_cast<SceGxmVertexProgramOutputs>(vo);
-            VertexProgramOutputProperties properties = vertex_properties_map.at(vo_typed);
+            const VertexProgramOutputProperties &properties = vertex_properties_map.at(vo_typed);
 
             // TODO: use real component_count, for now only force PSIZE to have a component count of 1 and other to 4
-            const uint32_t used_component_count = (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE) ? 1 : 4;
+            const int32_t used_component_count = (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE) ? 1 : 4;
             const spv::Id out_type = utils::make_vector_or_scalar_type(b, b.makeFloatType(32), used_component_count);
             const spv::Id out_var = b.createVariable(spv::NoPrecision, spv::StorageClassOutput, out_type, properties.name.c_str());
 
@@ -1760,9 +1743,6 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
                     z = b.createBinOp(spv::OpFMul, f32, z, z_scale);
                     z = b.createBinOp(spv::OpFAdd, f32, z, z_offset);
 
-                    // z values below 0 get clamped
-                    z = b.createBuiltinCall(f32, utils.std_builtins, GLSLstd450FMax, { z, zero });
-                    
                     if (!translation_state.is_vulkan) {
                         // convert [0,1] depth range (gxp, vulkan) to [-1,1] depth range (opengl)
                         z = b.createBinOp(spv::OpFMul, f32, z, b.makeFloatConstant(2.0f));
@@ -1857,8 +1837,8 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
 
     spv::SpvBuildLogger spv_logger;
     spv::Builder b(spv_version, 0x1337 << 12, &spv_logger);
-    b.setSourceFile(shader_hash);
-    b.setEmitOpLines();
+    b.setEmitSpirvDebugInfo();
+    b.setDebugMainSourceFile(shader_hash);
     b.addSourceExtension("gxp");
     if (features.enable_memory_mapping)
         b.setMemoryModel(spv::AddressingModelPhysicalStorageBuffer64, spv::MemoryModelGLSL450);
@@ -2011,15 +1991,10 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
 
     spirv_cross::CompilerGLSL::Options options;
 
-#ifdef ANDROID
+#ifdef __ANDROID__
     options.fragment.default_float_precision = options.Highp;
-//    options.fragment.default_int_precision = options.Mediump;
-    
     options.version = 320;
     options.es = true;
-    options.enable_row_major_load_workaround = false; // spirv.hpp say when true it reduce performance in some android devices
-    options.vertex.fixup_clipspace = false;
- //   options.enable_420pack_extension = false; // because opengles and default value is true
 #else
     options.version = 430;
     options.es = false;
@@ -2066,62 +2041,24 @@ void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_
 
 static spv::ImageFormat translate_color_format(const SceGxmColorBaseFormat format) {
     switch (format) {
-    case SCE_GXM_COLOR_BASE_FORMAT_S8:
-        return spv::ImageFormat::ImageFormatR8Snorm;
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
+        return spv::ImageFormat::ImageFormatRgba8;
 
-    case SCE_GXM_COLOR_BASE_FORMAT_S8S8:
-        return spv::ImageFormat::ImageFormatRg8Snorm;
-            
     case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
         return spv::ImageFormat::ImageFormatRgba8Snorm;
 
-    case SCE_GXM_COLOR_BASE_FORMAT_U8:
-        return spv::ImageFormat::ImageFormatR8;
-        
-    case SCE_GXM_COLOR_BASE_FORMAT_U8U8:
-        return spv::ImageFormat::ImageFormatRg8;
-
-    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
-        return spv::ImageFormat::ImageFormatRgba8;
-    
-    case SCE_GXM_COLOR_BASE_FORMAT_F16:
-        return spv::ImageFormat::ImageFormatR16f;
-        
-    case SCE_GXM_COLOR_BASE_FORMAT_F16F16:
-        return spv::ImageFormat::ImageFormatRg16f;
-        
     case SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16:
         return spv::ImageFormat::ImageFormatRgba16f;
 
-    case SCE_GXM_COLOR_BASE_FORMAT_S16:
-        return spv::ImageFormat::ImageFormatR16Snorm;
-        
-    case SCE_GXM_COLOR_BASE_FORMAT_S16S16:
-        return spv::ImageFormat::ImageFormatRg16Snorm;
-
-    case SCE_GXM_COLOR_BASE_FORMAT_U16:
-        return spv::ImageFormat::ImageFormatR16;
-
-    case SCE_GXM_COLOR_BASE_FORMAT_U16U16:
-        return spv::ImageFormat::ImageFormatRg16;
-            
     case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
         return spv::ImageFormat::ImageFormatRgb10A2;
 
     case SCE_GXM_COLOR_BASE_FORMAT_F11F11F10:
         return spv::ImageFormat::ImageFormatR11fG11fB10f;
 
-        case SCE_GXM_COLOR_BASE_FORMAT_F32:
-        return spv::ImageFormat::ImageFormatR32f;
-        
     case SCE_GXM_COLOR_BASE_FORMAT_F32F32:
         return spv::ImageFormat::ImageFormatRg32f;
 
-    // no known format in spirv and it's a float!
-    case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
-    case SCE_GXM_COLOR_BASE_FORMAT_SE5M9M9M9:
-        return spv::ImageFormat::ImageFormatRgba16f;
-        
     default:
         return spv::ImageFormat::ImageFormatRgba8;
     }
@@ -2169,21 +2106,16 @@ GeneratedShader convert_gxp(const SceGxmProgram &program, const std::string &sha
     return shader;
 }
 
-void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
-    const fs::path shader_filepath_str{ shader_filepath };
-    std::ifstream gxp_stream(shader_filepath, std::ifstream::binary);
-
-    if (!gxp_stream.is_open())
+void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath_utf8) {
+    std::vector<char> gxp_program(0);
+    fs::path shader_filepath_str = fs_utils::utf8_to_path(shader_filepath_utf8);
+    if (!fs_utils::read_data(shader_filepath_str, gxp_program))
         return;
 
-    const auto gxp_file_size = fs::file_size(shader_filepath_str);
-    const auto gxp_program = static_cast<SceGxmProgram *>(calloc(gxp_file_size, 1));
-
-    gxp_stream.read(reinterpret_cast<char *>(gxp_program), gxp_file_size);
-
-    FeatureState features;
-    features.direct_fragcolor = false;
-    features.support_shader_interlock = true;
+    FeatureState features{
+        .support_shader_interlock = true,
+        .direct_fragcolor = false
+    };
 
     // use some default hints because we don't have them available
     Hints hints{
@@ -2193,9 +2125,7 @@ void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
     std::fill_n(hints.vertex_textures, SCE_GXM_MAX_TEXTURE_UNITS, SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR);
     std::fill_n(hints.fragment_textures, SCE_GXM_MAX_TEXTURE_UNITS, SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR);
 
-    convert_gxp(*gxp_program, shader_filepath_str.filename().string(), features, shader::Target::GLSLOpenGL, hints, false, true);
-
-    free(gxp_program);
+    convert_gxp(*reinterpret_cast<SceGxmProgram *>(gxp_program.data()), shader_filepath_str.filename().string(), features, shader::Target::GLSLOpenGL, hints, false, true);
 }
 
 } // namespace shader
