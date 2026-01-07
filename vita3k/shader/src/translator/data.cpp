@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -151,7 +151,7 @@ bool USSETranslatorVisitor::vmov(
 
     // Recompile
 
-    m_b.setLine(m_recompiler.cur_pc);
+    m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
 
     if ((move_data_type == DataType::F16) || (move_data_type == DataType::F32)) {
         set_repeat_multiplier(2, 2, 2, 2);
@@ -463,7 +463,7 @@ bool USSETranslatorVisitor::vpck(
     }
 
     // Recompile
-    m_b.setLine(m_recompiler.cur_pc);
+    m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
 
     // Doing this extra dest type check for future change in case I'm wrong (pent0)
     if (is_integer_data_type(inst.opr.dest.type)) {
