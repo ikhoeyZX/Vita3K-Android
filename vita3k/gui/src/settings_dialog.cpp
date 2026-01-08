@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -122,6 +122,8 @@ void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) { // has stativ
         if(!fs::exists(tmp)){
             fs::ofstream( emuenv.pref_path / "tmp.txt" );
             fs::rename( emuenv.pref_path / "tmp.txt", tmp );
+            fs::ofstream( emuenv.pref_path / "tmp.txt" );
+            fs::rename( emuenv.pref_path / "tmp.txt", fs::path(emuenv.pref_path / ".nosearch") );
             LOG_INFO(".nomedia created");
         }
 
