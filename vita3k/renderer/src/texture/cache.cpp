@@ -640,12 +640,12 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
     bool upload = false;
 
     // Try to find GXM texture in cache.
-    int cached_gxm_texture_index = -1;
+    size_t cached_gxm_texture_index = -1;
     TextureGxmDataRepr texture_repr = std::bit_cast<TextureGxmDataRepr>(gxm_texture);
     if (use_sampler_cache) {
         // remove the sampler state from the representation
         const TextureGxmDataRepr &mask = (gxm_texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) ? strided_texture_mask : default_texture_mask;
-        for (int i = 0; i < 4; i++)
+        for (uint8_t i = 0; i < 4; i++)
             texture_repr[i] &= mask[i];
     }
     auto gxm_it = texture_lookup.find(texture_repr);
@@ -666,6 +666,10 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
             // Cache is full.
             LOG_WARN_ONCE("Texture cache is full. Starting to replace textures");
             texture_lookup.erase(std::bit_cast<TextureGxmDataRepr>(info->texture));
+            if (info->texture_size > 0) {
+               LOG_ERROR("Texture cache still full. need fix this!");
+               LOG_ERROR("Size texture {}", info->texture_size);
+            }
         }
         texture_lookup[texture_repr] = info;
 
@@ -698,10 +702,6 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
             else
                 // the xor 1 is to make sure it won't be the same as hash_texture_nostride
                 info->hash = hash_texture_data(gxm_texture, info->texture_size, mem) ^ 1;
-        }
-        if (info->texture_size > 0) {
-            LOG_ERROR("Texture cache still full. need fix this!");
-            LOG_ERROR("Size texture {}", info->texture_size);
         }
     } else {
         // Texture is cached.
