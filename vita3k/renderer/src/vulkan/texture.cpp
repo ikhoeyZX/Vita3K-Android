@@ -359,7 +359,7 @@ static vk::Format bcn_to_rgba8(const vk::Format format) {
 
     // BC6
     case vk::Format::eBc6HUfloatBlock:
-        return vk::Format::eR16G16Sfloat;
+        return vk::Format::eR16G16B16Sfloat;
     case vk::Format::eBc6HSfloatBlock:
         return vk::Format::eR16G16B16Sfloat;
 
@@ -367,7 +367,7 @@ static vk::Format bcn_to_rgba8(const vk::Format format) {
     case vk::Format::eBc7UnormBlock:
         return vk::Format::eR16G16B16A16Unorm;
     case vk::Format::eBc7SrgbBlock:
-        return vk::Format::eR16G16B16A16Unorm;
+        return vk::Format::eR16G16B16A16Snorm;
 
     default:{
         LOG_ERROR("Linear: Trying to convert BCN format with non-compatible format: {}", vk::to_string(format));
