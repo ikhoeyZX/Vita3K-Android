@@ -617,7 +617,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         // use these features (because they are used by the vita GPU) if they are available
         vk::PhysicalDeviceFeatures enabled_features{
-            .depthClamp = physical_device_features.features.depthClamp,
+        //    .depthClamp = physical_device_features.features.depthClamp,
             .fillModeNonSolid = physical_device_features.features.fillModeNonSolid,
             .wideLines = physical_device_features.features.wideLines,
             .samplerAnisotropy = physical_device_features.features.samplerAnisotropy,
@@ -947,7 +947,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
     support_fsr &= static_cast<bool>(screen_renderer.surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage);
 
-#if defined(__linux__) // && !defined(__ANDROID__) // According to my tests (Macdu), mprotect on buffers (mapped with external memory host) only works with Nvidia drivers
+#if defined(__linux__)
+	// && !defined(__ANDROID__) // According to my tests (Macdu), mprotect on buffers (mapped with external memory host) only works with Nvidia drivers
     surface_cache.can_mprotect_mapped_memory = std::string_view(physical_device_properties.properties.deviceName).find("NVIDIA") != std::string_view::npos;
 #endif
 
