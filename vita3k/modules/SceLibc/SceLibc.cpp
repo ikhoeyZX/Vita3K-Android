@@ -1286,7 +1286,7 @@ EXPORT(Ptr<char>, strncpy, Ptr<char> destination, Ptr<char> source, SceSize size
 }
 
 EXPORT(Ptr<char>, strncpy_s, Ptr<char> destination, SceSize dst_size, Ptr<char> source, SceSize src_size) {
-    TRACY_FUNC(strncpy_s, destination, source, size);
+    TRACY_FUNC(strncpy_s, destination, dst_size, source, src_size);
 
     auto dst = destination.get(emuenv.mem);
     auto src = source.get(emuenv.mem);
@@ -1296,12 +1296,12 @@ EXPORT(Ptr<char>, strncpy_s, Ptr<char> destination, SceSize dst_size, Ptr<char> 
         return '\0';
     }
     
-    SceSize limit = (count < dst_size) ? count : (dst_size - 1);
+    SceSize limit = (src_size < dst_size) ? src_size : (dst_size - 1);
 
     strncpy(dst, src, limit);
     dst[limit] = '\0';
 
-    if (count != (size_t)-1 && strlen(src) >= dst_size) {
+    if (src_size != (size_t)-1 && strlen(src) >= dst_size) {
          dst[0] = '\0'; 
          LOG_ERROR("strncpy_s: overflow!");
          return '\0';
