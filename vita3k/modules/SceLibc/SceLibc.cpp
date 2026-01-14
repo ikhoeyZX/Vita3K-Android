@@ -1293,7 +1293,7 @@ EXPORT(Ptr<char>, strncpy_s, Ptr<char> destination, SceSize dst_size, Ptr<char> 
     
     if (dst == NULL || src == NULL || dst_size == 0){
         LOG_ERROR("strncpy_s : invalid input or output!");
-        return nullptr;
+        return Ptr<char>();
     }
     
     SceSize limit = (src_size < dst_size) ? src_size : (dst_size - 1);
@@ -1304,7 +1304,7 @@ EXPORT(Ptr<char>, strncpy_s, Ptr<char> destination, SceSize dst_size, Ptr<char> 
     if (src_size != (SceSize)-1 && strlen(src) >= dst_size) {
          dst[0] = '\0'; 
          LOG_ERROR("strncpy_s: overflow!");
-         return nullptr;
+         return Ptr<char>();
     }
     return destination;
 }
