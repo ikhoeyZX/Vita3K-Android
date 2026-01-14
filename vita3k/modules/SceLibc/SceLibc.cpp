@@ -1287,13 +1287,25 @@ EXPORT(Ptr<char>, strncpy, Ptr<char> destination, Ptr<char> source, SceSize size
 
 EXPORT(Ptr<char>, strncpy_s, Ptr<char> destination, SceSize dst_size, Ptr<char> source, SceSize src_size) {
     TRACY_FUNC(strncpy_s, destination, source, size);
+
+    auto dst = destination.get(emuenv.mem);
+    auto src = source.get(emuenv.mem);
     
-    if (destination.get(emuenv.mem) == NULL || source.get(emuenv.mem) == NULL || dst_size == 0){
+    if (dst == NULL || src == NULL || dst_size == 0){
         LOG_ERROR("strncpy_s : invalid input or output!");
-        return '';
+        return '\0';
     }
     
-    strncpy_s(destination.get(emuenv.mem), dst_size, source.get(emuenv.mem), src_size);
+    SceSize limit = (count < dst_size) ? count : (dst_size - 1);
+
+    strncpy(dst, src, limit);
+    dst[limit] = '\0';
+
+    if (count != (size_t)-1 && strlen(src) >= dst_size) {
+         dst[0] = '\0'; 
+         LOG_ERROR("strncpy_s: overflow!");
+         return '\0';
+    }
     return destination;
 }
 
