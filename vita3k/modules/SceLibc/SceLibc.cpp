@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 
 TRACY_MODULE_NAME(SceLibc);
 
-static Ptr<void> g_dso;
+Ptr<void> g_dso;
 
 EXPORT(int, _Assert) {
     TRACY_FUNC(_Assert);
@@ -853,9 +853,9 @@ EXPORT(int, memchr) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, memcmp) {
-    TRACY_FUNC(memcmp);
-    return UNIMPLEMENTED();
+EXPORT(int, memcmp, const void *source1, const void *source2, size_t num) {
+    TRACY_FUNC(memcmp, source1, source2, num);
+    memcmp(source1, source2, num);
 }
 
 EXPORT(void, memcpy, void *destination, const void *source, uint32_t num) {
@@ -863,9 +863,14 @@ EXPORT(void, memcpy, void *destination, const void *source, uint32_t num) {
     memcpy(destination, source, num);
 }
 
-EXPORT(int, memcpy_s) {
-    TRACY_FUNC(memcpy_s);
-    return UNIMPLEMENTED();
+EXPORT(void, memcpy_s, void *destination, const void *source, uint32_t num) {
+    TRACY_FUNC(memcpy_s, destination, source, num);
+    if (destination == nullptr || source == nullptr) {
+        LOG_ERROR("memcpy_s NULLPTR handler not supported yet");
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    }else if (num > 0) {
+        memcpy(destination, source, num);
+    }
 }
 
 EXPORT(void, memmove, void *destination, const void *source, uint32_t num) {
@@ -873,9 +878,14 @@ EXPORT(void, memmove, void *destination, const void *source, uint32_t num) {
     memmove(destination, source, num);
 }
 
-EXPORT(int, memmove_s) {
-    TRACY_FUNC(memmove_s);
-    return UNIMPLEMENTED();
+EXPORT(void, memmove_s, void *destination, const void *source, uint32_t num) {
+    TRACY_FUNC(memmove_s, destination, source, num);
+    if (destination == nullptr || source == nullptr) {
+        LOG_ERROR("memmove_s NULLPTR handler not supported yet");
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    }else if (num > 0) {
+        memmove(destination, source, num);
+    }
 }
 
 EXPORT(void, memset, Ptr<void> str, int c, uint32_t n) {
@@ -1030,9 +1040,9 @@ EXPORT(int, quick_exit) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, rand) {
+EXPORT(uint32_t, rand) {
     TRACY_FUNC(rand);
-    return UNIMPLEMENTED();
+    return static_cast<uint32_t>(rand());
 }
 
 EXPORT(int, rand_r) {
@@ -1277,14 +1287,24 @@ EXPORT(Ptr<char>, strncpy, Ptr<char> destination, Ptr<char> source, SceSize size
     return destination;
 }
 
-EXPORT(int, strncpy_s) {
-    TRACY_FUNC(strncpy_s);
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, strncpy_s, Ptr<char> destination, SceSize dst_size, Ptr<char> source, SceSize src_size) {
+    TRACY_FUNC(strncpy_s, destination, source, size);
+    
+    if (destination.get(emuenv.mem) == NULL || source.get(emuenv.mem) == NULL || dst_size == 0)
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    
+    strncpy_s(destination.get(emuenv.mem), dst_size, source.get(emuenv.mem), size);
+    return destination;
 }
 
-EXPORT(int, strnlen_s) {
-    TRACY_FUNC(strnlen_s);
-    return UNIMPLEMENTED();
+EXPORT(int, strnlen_s, char *str, SceSize strz) {
+    TRACY_FUNC(strnlen_s, str, strz);
+    if(str == nullptr || str == NULL)
+        return SCE_KERNEL_OK;
+    else if (sizeof(str) > strz)
+        return static_cast<int>(sizeof(strz) - strlen(str));
+    else
+        return static_cast<int>(strlen(str));
 }
 
 EXPORT(int, strpbrk) {
@@ -1307,14 +1327,14 @@ EXPORT(Ptr<char>, strrchr, Ptr<char> str, char ch) {
     return res;
 }
 
-EXPORT(int, strspn) {
-    TRACY_FUNC(strspn);
-    return UNIMPLEMENTED();
+EXPORT(SceSize, strspn, const char *source1, const char *source2) {
+    TRACY_FUNC(strspn, source1, source2);
+    return static_cast<SceSize>(strspn(source1, source2));
 }
 
-EXPORT(int, strstr) {
-    TRACY_FUNC(strstr);
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, strstr, const char *source1, const char *source2) {
+    TRACY_FUNC(strstr, source1, source2);
+    return strstr(source1, source2);
 }
 
 EXPORT(int, strtod) {
