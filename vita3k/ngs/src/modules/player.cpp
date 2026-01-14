@@ -53,14 +53,14 @@ void PlayerModule::on_param_change(const MemState &mem, ModuleData &data) {
 
     // check for invalid playback values
     const auto is_invalid_playback_value = [](const float playback_value, const float max_value) {
-        return isnan(playback_value) || (playback_value <= 0.f) || (playback_value > max_value);
+        return isnan(playback_value) || (playback_value < 0.f) || (playback_value > max_value);
     };
 
     if (is_invalid_playback_value(new_params->playback_scalar, 10.f)) {
         new_params->playback_scalar = old_params->playback_scalar;
         LOG_ERROR_ONCE("Invalid playback rate scaling.");
         if (is_invalid_playback_value(new_params->playback_scalar, 10.f)) {
-            new_params->playback_scalar = 1.f;
+            new_params->playback_scalar = 1.0;
         }
     }
 
@@ -79,6 +79,12 @@ void PlayerModule::on_param_change(const MemState &mem, ModuleData &data) {
 
         state->reset_swr = true;
     }
+}
+
+void PlayerModule::set_default_preset(const MemState &mem, ModuleData &data) {
+    SceNgsPlayerStates *state = data.get_state<SceNgsPlayerStates>();
+    LOG_WARN_ONCE("Player reset state");
+    *state = {};
 }
 
 bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
@@ -196,8 +202,63 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                 // makes the value 4 bits aligned so we have no issue with decoding, adpcm or not and whether the sound is mono or stereo
                 bytes_to_send = std::min<uint32_t>(bytes_to_send, params->buffer_params[state->current_buffer].bytes_count - state->current_byte_position_in_buffer);
 
-                // Send buffered audio data to decoder
-                decoder->send(input + state->current_byte_position_in_buffer, bytes_to_send);
+                const uint8_t *chunk = input + state->current_byte_position_in_buffer;
+
+                // HE-ADPCM requires full frames (0x10 bytes per channel).
+                // We accumulate leftover bytes from previous chunks until we have enough to form one or more complete frames, then send them in a single block.
+                if (decoder->he_adpcm) {
+                    // Number of bytes carried over from the previous iteration (partial frame)
+                    uint32_t remaining_bytes = state->adpcm_buffer.size();
+
+                    // Preserve the original chunk size (needed later to compute leftover correctly)
+                    const auto init_bytes_to_send = bytes_to_send;
+
+                    // One HE-ADPCM frame = 0x10 bytes per channel
+                    const uint32_t frame_size = 0x10 * params->channels;
+
+                    // Total bytes available for this iteration (leftover + current chunk)
+                    const auto combined_bytes = remaining_bytes + bytes_to_send;
+
+                    // Number of complete frames we can output from combined_bytes
+                    const uint32_t full_frames = combined_bytes / frame_size;
+                    const uint32_t bytes_to_send_adpcm = full_frames * frame_size;
+
+                    // Number of bytes required from the current chunk to complete the frames
+                    const auto chunk_bytes_needed = bytes_to_send_adpcm - remaining_bytes;
+
+                    // Case 1: No leftover -> frames can be sent directly from the input chunk
+                    if (remaining_bytes == 0) {
+                        decoder->send(chunk, bytes_to_send_adpcm);
+                    } else { // Case 2: We have leftover -> complete the partial frame first
+
+                        // Resize buffer to hold exactly the full frames we will output
+                        state->adpcm_buffer.resize(bytes_to_send_adpcm);
+
+                        // Copy only the bytes needed to complete the pending frame(s)
+                        memcpy(state->adpcm_buffer.data() + remaining_bytes, chunk, chunk_bytes_needed);
+
+                        // Send the completed frames from the temporary buffer
+                        if (full_frames > 0)
+                            decoder->send(state->adpcm_buffer.data(), bytes_to_send_adpcm);
+
+                        // Update bytes_to_send to reflect only what was consumed from the current chunk
+                        bytes_to_send = chunk_bytes_needed;
+
+                        // Clear temporary buffer for next iteration
+                        state->adpcm_buffer.clear();
+                    }
+
+                    // Compute leftover bytes that do not form a complete frame (typically end-of-buffer)
+                    remaining_bytes = init_bytes_to_send - bytes_to_send_adpcm;
+                    state->adpcm_buffer.resize(remaining_bytes);
+
+                    // Store leftover bytes for the next iteration
+                    if (remaining_bytes > 0)
+                        memcpy(state->adpcm_buffer.data(), chunk + bytes_to_send_adpcm, remaining_bytes);
+                } else {
+                    // PCM case, send directly
+                    decoder->send(chunk, bytes_to_send);
+                }
 
                 state->current_byte_position_in_buffer += bytes_to_send;
                 state->bytes_consumed_since_key_on += bytes_to_send;
@@ -210,8 +271,8 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                 decoder->receive(nullptr, &samples_count);
 
                 // Playback rate scaling
-                float src_sample_rate = std::ceil(params->playback_frequency);
-                if ((params->playback_scalar != 1.f) || (static_cast<int>(src_sample_rate) != sample_rate)) {
+                float src_sample_rate = params->playback_frequency;
+                if ((src_sample_rate >= 1.f) && ((params->playback_scalar != 1.f) || (static_cast<int>(src_sample_rate) != sample_rate))) {
                     LOG_INFO_ONCE("The currently running game requests playback rate scaling when decoding audio. Audio might crackle.");
 
                     // Received decoded samples from decoder
@@ -264,7 +325,7 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                     data.extra_storage.resize(current_count + samples_count.samples * sizeof(float) * 2);
 
                     // Receive the samples processed by the decoder and append them to the buffer of already processed samples
-                    decoder->receive(current_count + data.extra_storage.data(), nullptr);
+                    decoder->receive(data.extra_storage.data() + current_count, nullptr);
                 }
             }
 
