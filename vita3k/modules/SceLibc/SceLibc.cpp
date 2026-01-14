@@ -854,8 +854,8 @@ EXPORT(int, memchr) {
 }
 
 EXPORT(int, memcmp, const void *source1, const void *source2, size_t num) {
-    TRACY_FUNC(memcmp, source1, source2, num);
-    memcmp(source1, source2, num);
+    TRACY_FUNC(memcmp, source1, source2, num);    
+    return memcmp(source1, source2, num);
 }
 
 EXPORT(void, memcpy, void *destination, const void *source, uint32_t num) {
@@ -867,7 +867,6 @@ EXPORT(void, memcpy_s, void *destination, const void *source, uint32_t num) {
     TRACY_FUNC(memcpy_s, destination, source, num);
     if (destination == nullptr || source == nullptr) {
         LOG_ERROR("memcpy_s NULLPTR handler not supported yet");
-        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
     }else if (num > 0) {
         memcpy(destination, source, num);
     }
@@ -882,7 +881,6 @@ EXPORT(void, memmove_s, void *destination, const void *source, uint32_t num) {
     TRACY_FUNC(memmove_s, destination, source, num);
     if (destination == nullptr || source == nullptr) {
         LOG_ERROR("memmove_s NULLPTR handler not supported yet");
-        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
     }else if (num > 0) {
         memmove(destination, source, num);
     }
@@ -1290,10 +1288,12 @@ EXPORT(Ptr<char>, strncpy, Ptr<char> destination, Ptr<char> source, SceSize size
 EXPORT(Ptr<char>, strncpy_s, Ptr<char> destination, SceSize dst_size, Ptr<char> source, SceSize src_size) {
     TRACY_FUNC(strncpy_s, destination, source, size);
     
-    if (destination.get(emuenv.mem) == NULL || source.get(emuenv.mem) == NULL || dst_size == 0)
-        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    if (destination.get(emuenv.mem) == NULL || source.get(emuenv.mem) == NULL || dst_size == 0){
+        LOG_ERROR("strncpy_s : invalid input or output!");
+        return '';
+    }
     
-    strncpy_s(destination.get(emuenv.mem), dst_size, source.get(emuenv.mem), size);
+    strncpy_s(destination.get(emuenv.mem), dst_size, source.get(emuenv.mem), src_size);
     return destination;
 }
 
@@ -1334,7 +1334,7 @@ EXPORT(SceSize, strspn, const char *source1, const char *source2) {
 
 EXPORT(Ptr<char>, strstr, const char *source1, const char *source2) {
     TRACY_FUNC(strstr, source1, source2);
-    return strstr(source1, source2);
+    return Ptr<char>(strstr(source1, source2));
 }
 
 EXPORT(int, strtod) {
