@@ -28,7 +28,7 @@
 
 TRACY_MODULE_NAME(SceLibc);
 
-Ptr<void> g_dso;
+static Ptr<void> g_dso;
 
 EXPORT(int, _Assert) {
     TRACY_FUNC(_Assert);
@@ -500,6 +500,9 @@ EXPORT(int, fscanf_s) {
     return UNIMPLEMENTED();
 }
 
+#ifdef fseek
+#undef fseek
+#endif
 EXPORT(int, fseek) {
     TRACY_FUNC(fseek);
     return UNIMPLEMENTED();
@@ -510,6 +513,9 @@ EXPORT(int, fsetpos) {
     return UNIMPLEMENTED();
 }
 
+#ifdef ftell
+#undef ftell
+#endif
 EXPORT(int, ftell) {
     TRACY_FUNC(ftell);
     return UNIMPLEMENTED();
@@ -857,13 +863,9 @@ EXPORT(void, memcpy, void *destination, const void *source, uint32_t num) {
     memcpy(destination, source, num);
 }
 
-EXPORT(void, memcpy_s, void *destination, const void *source, uint32_t num) {
-    TRACY_FUNC(memcpy_s, destination, source, num);
-    if (destination == nullptr || source == nullptr) {
-        LOG_ERROR("memcpy_s NULLPTR handler not supported yet");
-    }else if (num > 0) {
-        memcpy(destination, source, num);
-    }
+EXPORT(int, memcpy_s) {
+    TRACY_FUNC(memcpy_s);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(void, memmove, void *destination, const void *source, uint32_t num) {
@@ -871,13 +873,9 @@ EXPORT(void, memmove, void *destination, const void *source, uint32_t num) {
     memmove(destination, source, num);
 }
 
-EXPORT(void, memmove_s, void *destination, const void *source, uint32_t num) {
-    TRACY_FUNC(memmove_s, destination, source, num);
-    if (destination == nullptr || source == nullptr) {
-        LOG_ERROR("memmove_s NULLPTR handler not supported yet");
-    }else if (num > 0) {
-        memmove(destination, source, num);
-    }
+EXPORT(int, memmove_s) {
+    TRACY_FUNC(memmove_s);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(void, memset, Ptr<void> str, int c, uint32_t n) {
@@ -970,7 +968,7 @@ EXPORT(int, printf, const char *format, module::vargs args) {
     // TODO: add args to tracy func
     std::vector<char> buffer(1024);
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
     if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
@@ -1032,9 +1030,8 @@ EXPORT(int, quick_exit) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, rand, int value) {
+EXPORT(int, rand) {
     TRACY_FUNC(rand);
-    value = rand();
     return UNIMPLEMENTED();
 }
 
@@ -1285,14 +1282,9 @@ EXPORT(int, strncpy_s) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, strnlen_s, char *str, SceSize strz) {
-    TRACY_FUNC(strnlen_s, str, strz);
-    if(str == nullptr || str == NULL)
-        return 0;
-    else if (sizeof(str) > strz)
-        return static_cast<int>(sizeof(strz) - strlen(str));
-    else
-    return static_cast<int>(strlen(str));
+EXPORT(int, strnlen_s) {
+    TRACY_FUNC(strnlen_s);
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, strpbrk) {
