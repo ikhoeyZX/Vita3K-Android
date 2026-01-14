@@ -1301,7 +1301,7 @@ EXPORT(Ptr<char>, strncpy_s, Ptr<char> destination, SceSize dst_size, Ptr<char> 
     strncpy(dst, src, limit);
     dst[limit] = '\0';
 
-    if (src_size != (size_t)-1 && strlen(src) >= dst_size) {
+    if (src_size != (SceSize)-1 && strlen(src) >= dst_size) {
          dst[0] = '\0'; 
          LOG_ERROR("strncpy_s: overflow!");
          return "";
