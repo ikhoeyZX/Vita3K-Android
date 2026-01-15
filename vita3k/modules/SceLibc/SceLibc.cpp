@@ -1347,21 +1347,17 @@ EXPORT(SceSize, strspn, const char *source1, const char *source2) {
 EXPORT(Ptr<char>, strstr, const char *source1, const char *source2) {
     TRACY_FUNC(strstr, source1, source2);
     Ptr<char> res = Ptr<char>();
-    char *_str = strstr(source1.get(emuenv.mem), source2.get(emuenv.mem));
-    for (int i = static_cast<int>(strlen(_str) - 1); i >= 0; i--) {
-        const char ch1 = _str[i];
-        if (ch1 == ch) {
-            res = str + i * sizeof(char);
-            break;
-        }
-    }
+    char *_str = strstr(source1, source2);
+
+    if (_str != nullptr)
+        res = Ptr<char>(_str);
 
     return res;
 }
 
 EXPORT(double, strtod, const char *str, char **endptr) {
     TRACY_FUNC(strtod);
-    const char *s = str.get(emuenv.mem);
+    const char *s = str;
     double val = 0.0;
     double sign = 1.0;
     double diff = 0.0;
@@ -1417,7 +1413,7 @@ EXPORT(double, strtod, const char *str, char **endptr) {
     }
 
     if (endptr) {
-        *endptr = (char *)(has_digits ? s : str.get(emuenv.mem));
+        *endptr = (char *)(has_digits ? s : str);
     }
 
     return sign * val;
