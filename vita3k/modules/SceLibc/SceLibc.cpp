@@ -1347,7 +1347,7 @@ EXPORT(SceSize, strspn, const char *source1, const char *source2) {
 EXPORT(Ptr<char>, strstr, Ptr<char> *source1, Ptr<char> *source2) {
     TRACY_FUNC(strstr, source1, source2);
     Ptr<char> res = Ptr<char>();
-    char *_str = strstr(source1.get(emuenv.mem), source2.get(emuenv.mem));
+    const char *_str = strstr(source1.get(emuenv.mem), source2.get(emuenv.mem));
 
     if (_str != nullptr)
         res = Ptr<char>(_str.get(emuenv.mem);
