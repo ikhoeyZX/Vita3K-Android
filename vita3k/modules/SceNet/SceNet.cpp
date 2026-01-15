@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,6 +27,11 @@
 #include <chrono>
 #include <cstdio>
 #include <thread>
+
+#ifdef __APPLE__
+#include "macos_net_helper.h"
+#include <net/if.h>
+#endif
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceNet);
@@ -362,8 +367,22 @@ EXPORT(int, sceNetGetMacAddress, SceNetEtherAddr *addr, int flags) {
         };
         memcpy(addr->data, magicMac, 6);
     }
+#elif defined(__APPLE__)
+    char hint[IFNAMSIZ] = {};
+    get_primary_interface_name(hint, sizeof(hint));
+
+    if (!get_mac_address(hint, addr->data)) {
+        uint8_t magicMac[6] = {
+            0x02, // LAA
+            0x41, // 'A'
+            0x50, // 'P'
+            0x50, // 'P'
+            0x4C, // 'L'
+            0x45, // 'E'
+        };
+        memcpy(addr->data, magicMac, 6);
+    }
 #else
-    // TODO: Implement the function for macOS
     return UNIMPLEMENTED();
 #endif
     return 0;
@@ -559,9 +578,31 @@ EXPORT(int, sceNetSend, int sid, const void *msg, unsigned int len, int flags) {
     RET_NET_ERRNO(sock ? sock->send_packet(msg, len, flags, nullptr, 0) : SCE_NET_ERROR_EBADF);
 }
 
-EXPORT(int, sceNetSendmsg) {
-    TRACY_FUNC(sceNetSendmsg);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetSendmsg, int sid, const SceNetMsghdr *msg, int flags) {
+    TRACY_FUNC(sceNetSendmsg, sid, msg, flags);
+
+    auto sock = lock_and_find(sid, emuenv.net.socks, emuenv.kernel.mutex);
+    if (!sock)
+        RET_NET_ERRNO(SCE_NET_ERROR_EBADF);
+
+    const SceNetSockaddr *dest_addr = static_cast<const SceNetSockaddr *>(msg->msg_name.get(emuenv.mem));
+
+    size_t total_len = 0;
+    for (int i = 0; i < msg->msg_iovlen; ++i) {
+        const SceNetIovec &iov = msg->msg_iov.get(emuenv.mem)[i];
+        total_len += iov.iov_len;
+    }
+
+    std::vector<char> buf;
+    buf.reserve(total_len);
+
+    for (int i = 0; i < msg->msg_iovlen; ++i) {
+        const SceNetIovec &iov = msg->msg_iov.get(emuenv.mem)[i];
+        const char *data = reinterpret_cast<const char *>(iov.iov_base.get(emuenv.mem));
+        buf.insert(buf.end(), data, data + iov.iov_len);
+    }
+
+    RET_NET_ERRNO(sock->send_packet(buf.data(), total_len, flags, dest_addr, msg->msg_namelen));
 }
 
 EXPORT(int, sceNetSendto, int sid, const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) {
