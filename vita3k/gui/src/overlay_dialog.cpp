@@ -216,7 +216,7 @@ void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     ImGui::Separator();
 
-    if(emuenv.cfg.enable_gamepad_overlay && ImGui::Checkbox("Show front/back touchscreen switch button.", &emuenv.cfg.overlay_show_touch_switch)){
+    if(ImGui::Checkbox("Show front/back touchscreen switch button.", &emuenv.cfg.overlay_show_touch_switch)){
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), overlay_editing);
     }
@@ -227,7 +227,7 @@ void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE)){
         overlay_editing = false;
         set_controller_overlay_state(0);
-        gui.controls_menu.controls_dialog = false;
+        gui.controls_menu.overlay_dialog = false;
     }
 
     ImGui::ScrollWhenDragging();
