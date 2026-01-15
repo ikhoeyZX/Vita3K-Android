@@ -256,7 +256,7 @@ struct LangState {
     ContentManager content_manager;
     std::map<std::string, std::string> controllers = {
         { "title", "Controllers" },
-        { "overlay", "Virtual Controllers" },
+        { "overlay", "Virtual Controller" },
         { "connected", "{} controllers connected" },
         { "name", "Name" },
         { "num", "Num" },
