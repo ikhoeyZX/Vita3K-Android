@@ -1346,12 +1346,81 @@ EXPORT(SceSize, strspn, const char *source1, const char *source2) {
 
 EXPORT(Ptr<char>, strstr, const char *source1, const char *source2) {
     TRACY_FUNC(strstr, source1, source2);
-    return Ptr<char>(strstr(source1, source2));
+    Ptr<char> res = Ptr<char>();
+    char *_str = strstr(source1.get(emuenv.mem), source2.get(emuenv.mem));
+    for (int i = static_cast<int>(strlen(_str) - 1); i >= 0; i--) {
+        const char ch1 = _str[i];
+        if (ch1 == ch) {
+            res = str + i * sizeof(char);
+            break;
+        }
+    }
+
+    return res;
 }
 
-EXPORT(int, strtod) {
+EXPORT(double, strtod, const char *str, char **endptr) {
     TRACY_FUNC(strtod);
-    return UNIMPLEMENTED();
+    const char *s = str.get(emuenv.mem);
+    double val = 0.0;
+    double sign = 1.0;
+    double diff = 0.0;
+    int has_digits = 0;
+
+    while (isspace(*s)) s++;
+
+    // +-
+    if (*s == '-') {
+        sign = -1.0;
+        s++;
+    } else if (*s == '+') {
+        s++;
+    }
+
+    // int
+    while (isdigit(*s)) {
+        val = val * 10.0 + (*s - '0');
+        s++;
+        has_digits = 1;
+    }
+
+    // float
+    if (*s == '.') {
+        s++;
+        double power = 1.0;
+        while (isdigit(*s)) {
+            val = val * 10.0 + (*s - '0');
+            power *= 10.0;
+            s++;
+            has_digits = 1;
+        }
+        val /= power;
+    }
+
+    // exponent
+    if (has_digits && (*s == 'e' || *s == 'E')) {
+        s++;
+        double exp_sign = 1.0;
+        if (*s == '-') {
+            exp_sign = -1.0;
+            s++;
+        } else if (*s == '+') {
+            s++;
+        }
+
+        double exponent = 0.0;
+        while (isdigit(*s)) {
+            exponent = exponent * 10.0 + (*s - '0');
+            s++;
+        }
+        val *= pow(10.0, exp_sign * exponent);
+    }
+
+    if (endptr) {
+        *endptr = (char *)(has_digits ? s : str.get(emuenv.mem));
+    }
+
+    return sign * val;
 }
 
 EXPORT(int, strtof) {
