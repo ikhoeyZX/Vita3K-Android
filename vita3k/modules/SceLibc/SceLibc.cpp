@@ -1349,68 +1349,9 @@ EXPORT(int, strstr, Ptr<char> *source1, Ptr<char> *source2) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(double, strtod, const char *str, char **endptr) {
+EXPORT(int, strtod) {
     TRACY_FUNC(strtod);
-    const char *s = str;
-    double val = 0.0;
-    double sign = 1.0;
-    double diff = 0.0;
-    int has_digits = 0;
-
-    while (isspace(*s)) s++;
-
-    // +-
-    if (*s == '-') {
-        sign = -1.0;
-        s++;
-    } else if (*s == '+') {
-        s++;
-    }
-
-    // int
-    while (isdigit(*s)) {
-        val = val * 10.0 + (*s - '0');
-        s++;
-        has_digits = 1;
-    }
-
-    // float
-    if (*s == '.') {
-        s++;
-        double power = 1.0;
-        while (isdigit(*s)) {
-            val = val * 10.0 + (*s - '0');
-            power *= 10.0;
-            s++;
-            has_digits = 1;
-        }
-        val /= power;
-    }
-
-    // exponent
-    if (has_digits && (*s == 'e' || *s == 'E')) {
-        s++;
-        double exp_sign = 1.0;
-        if (*s == '-') {
-            exp_sign = -1.0;
-            s++;
-        } else if (*s == '+') {
-            s++;
-        }
-
-        double exponent = 0.0;
-        while (isdigit(*s)) {
-            exponent = exponent * 10.0 + (*s - '0');
-            s++;
-        }
-        val *= pow(10.0, exp_sign * exponent);
-    }
-
-    if (endptr) {
-        *endptr = (char *)(has_digits ? s : str);
-    }
-
-    return sign * val;
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, strtof) {
