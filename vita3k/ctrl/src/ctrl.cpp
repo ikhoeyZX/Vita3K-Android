@@ -145,6 +145,8 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
             }else{
                 if(!emuenv.cfg.enable_gamepad_overlay && emuenv.cfg.overlay_show_touch_switch)
                    virtual_touch_only = true;
+                else
+                   virtual_touch_only = false;
                 
                 state.is_virtual_joystick = true;
             }
