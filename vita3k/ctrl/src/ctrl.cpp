@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,12 +35,16 @@
 
 static int virtual_joystick_id = -1;
 static SDL_Joystick *virtual_joystick = nullptr;
-
+static bool virtual_touch_only = false;
 extern "C" {
 
 JNIEXPORT void JNICALL
 Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobject thiz) {
-    virtual_joystick_id = SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_GAMECONTROLLER, 6, 18, 0);
+    if(virtual_touch_only)
+        virtual_joystick_id = SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_GAMECONTROLLER, 0, 1, 0);
+    else
+       virtual_joystick_id = SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_GAMECONTROLLER, 6, 18, 0);
+    
     if (virtual_joystick_id == -1) {
         LOG_CRITICAL("Could not create overlay virtual controller");
         return;
@@ -139,6 +143,9 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 }
                 state.is_virtual_joystick = false;
             }else{
+                if(!emuenv.cfg.enable_gamepad_overlay && emuenv.cfg.overlay_show_touch_switch)
+                   virtual_touch_only = true;
+                
                 state.is_virtual_joystick = true;
             }
 #endif
