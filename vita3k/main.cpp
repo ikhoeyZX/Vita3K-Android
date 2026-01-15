@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -531,7 +531,7 @@ int main(int argc, char *argv[]) {
     SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
 
     
-    if (emuenv.cfg.enable_gamepad_overlay)
+  //  if (emuenv.cfg.enable_gamepad_overlay)
         gui::set_controller_overlay_state(gui::get_overlay_display_mask(emuenv.cfg));
 
     while (handle_events(emuenv, gui) && (emuenv.frame_count == 0) && !emuenv.load_exec) {
