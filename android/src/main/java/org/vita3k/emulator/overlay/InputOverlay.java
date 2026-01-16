@@ -198,14 +198,16 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       button.draw(canvas);
     }
 
-    for (InputOverlayDrawableDpad dpad : overlayDpads)
-    {
-      dpad.draw(canvas);
-    }
+    if (mOverlayMask != 4) {
+       for (InputOverlayDrawableDpad dpad : overlayDpads)
+       {
+         dpad.draw(canvas);
+       }
 
-    for (InputOverlayDrawableJoystick joystick : overlayJoysticks)
-    {
-      joystick.draw(canvas);
+       for (InputOverlayDrawableJoystick joystick : overlayJoysticks)
+       {
+         joystick.draw(canvas);
+       }
     }
   }
 
@@ -268,37 +270,37 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       }
     }
 
-    if(mOverlayMask != 4){
+    if (mOverlayMask != 4) {
         
-    for (InputOverlayDrawableDpad dpad : overlayDpads)
-    {
-      // Determine the button state to apply based on the MotionEvent action flag.
-      switch (event.getAction() & MotionEvent.ACTION_MASK)
-      {
-        case MotionEvent.ACTION_DOWN:
-        case MotionEvent.ACTION_POINTER_DOWN:
-          // If a pointer enters the bounds of a button, press that button.
-          if (dpad.getBounds()
-                  .contains((int) event.getX(pointerIndex), (int) event.getY(pointerIndex)))
-          {
-            dpad.setTrackId(event.getPointerId(pointerIndex));
-            concerned = true;
-          }
-        case MotionEvent.ACTION_MOVE:
-          if (dpad.getTrackId() == event.getPointerId(pointerIndex))
-          {
-            concerned = true;
-            // Up, Down, Left, Right
-            boolean[] dpadPressed = {false, false, false, false};
+       for (InputOverlayDrawableDpad dpad : overlayDpads)
+       {
+         // Determine the button state to apply based on the MotionEvent action flag.
+         switch (event.getAction() & MotionEvent.ACTION_MASK)
+         {
+           case MotionEvent.ACTION_DOWN:
+           case MotionEvent.ACTION_POINTER_DOWN:
+             // If a pointer enters the bounds of a button, press that button.
+             if (dpad.getBounds()
+                     .contains((int) event.getX(pointerIndex), (int) event.getY(pointerIndex)))
+             {
+               dpad.setTrackId(event.getPointerId(pointerIndex));
+               concerned = true;
+             }
+           case MotionEvent.ACTION_MOVE:
+             if (dpad.getTrackId() == event.getPointerId(pointerIndex))
+             {
+               concerned = true;
+               // Up, Down, Left, Right
+               boolean[] dpadPressed = {false, false, false, false};
 
-            if (dpad.getBounds().top + (dpad.getHeight() / 3) > (int) event.getY(pointerIndex))
-              dpadPressed[0] = true;
-            if (dpad.getBounds().bottom - (dpad.getHeight() / 3) < (int) event.getY(pointerIndex))
-              dpadPressed[1] = true;
-            if (dpad.getBounds().left + (dpad.getWidth() / 3) > (int) event.getX(pointerIndex))
-              dpadPressed[2] = true;
-            if (dpad.getBounds().right - (dpad.getWidth() / 3) < (int) event.getX(pointerIndex))
-              dpadPressed[3] = true;
+               if (dpad.getBounds().top + (dpad.getHeight() / 3) > (int) event.getY(pointerIndex))
+                 dpadPressed[0] = true;
+               if (dpad.getBounds().bottom - (dpad.getHeight() / 3) < (int) event.getY(pointerIndex))
+                 dpadPressed[1] = true;
+               if (dpad.getBounds().left + (dpad.getWidth() / 3) > (int) event.getX(pointerIndex))
+                 dpadPressed[2] = true;
+               if (dpad.getBounds().right - (dpad.getWidth() / 3) < (int) event.getX(pointerIndex))
+                 dpadPressed[3] = true;
 
             // Release the buttons first, then press
             /*for (int i = 0; i < dpadPressed.length; i++)
@@ -308,50 +310,52 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
                 setButton(dpad.getControl(i), false);
               }
             }*/
-            // Press buttons
-            for (int i = 0; i < dpadPressed.length; i++)
-            {
-              if (dpadPressed[i])
-              {
-                setButton(dpad.getControl(i), true);
-              }
-            }
-            setDpadState(dpad, dpadPressed[0], dpadPressed[1], dpadPressed[2], dpadPressed[3]);
-          }
-          break;
-        case MotionEvent.ACTION_UP:
-        case MotionEvent.ACTION_POINTER_UP:
-          // If a pointer ends, release the buttons.
-          if (dpad.getTrackId() == event.getPointerId(pointerIndex))
-          {
-            concerned = true;
-            for (int i = 0; i < 4; i++)
-            {
-              dpad.setState(InputOverlayDrawableDpad.STATE_DEFAULT);
-              setButton(dpad.getControl(i), false);
-            }
-            dpad.setTrackId(-1);
-          }
-          break;
-      }
-    }
+               
+               // Press buttons
+               for (int i = 0; i < dpadPressed.length; i++)
+               {
+                 if (dpadPressed[i])
+                 {
+                   setButton(dpad.getControl(i), true);
+                 }
+               }
+               setDpadState(dpad, dpadPressed[0], dpadPressed[1], dpadPressed[2], dpadPressed[3]);
+             }
+             break;
+           case MotionEvent.ACTION_UP:
+           case MotionEvent.ACTION_POINTER_UP:
+             // If a pointer ends, release the buttons.
+             if (dpad.getTrackId() == event.getPointerId(pointerIndex))
+             {
+               concerned = true;
+               for (int i = 0; i < 4; i++)
+               {
+                 dpad.setState(InputOverlayDrawableDpad.STATE_DEFAULT);
+                 setButton(dpad.getControl(i), false);
+               }
+               dpad.setTrackId(-1);
+             }
+             break;
+         }
+       }
 
-    for (InputOverlayDrawableJoystick joystick : overlayJoysticks)
-    {
-      if (joystick.TrackEvent(event))
-      {
-        concerned = true;
+       for (InputOverlayDrawableJoystick joystick : overlayJoysticks)
+       {
+         if (joystick.TrackEvent(event))
+         {
+           concerned = true;
         
-        int joyX = Math.round(joystick.getX() * (1 << 15));
-        joyX = Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, joyX));
-        int joyY = Math.round(joystick.getY() * (1 << 15));
-        joyY = Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, joyY));
-        setAxis(joystick.getXControl(), (short)joyX);
-        setAxis(joystick.getYControl(), (short)joyY);
-      }
-    }
+           int joyX = Math.round(joystick.getX() * (1 << 15));
+           joyX = Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, joyX));
+           int joyY = Math.round(joystick.getY() * (1 << 15));
+           joyY = Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, joyY));
+           setAxis(joystick.getXControl(), (short)joyX);
+           setAxis(joystick.getYControl(), (short)joyY);
+         }
+       }
 
     }
+    
     if(concerned)
       invalidate();
 
