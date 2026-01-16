@@ -268,6 +268,8 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       }
     }
 
+    if(!mOverlayMask == 4){
+        
     for (InputOverlayDrawableDpad dpad : overlayDpads)
     {
       // Determine the button state to apply based on the MotionEvent action flag.
@@ -349,6 +351,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       }
     }
 
+    }
     if(concerned)
       invalidate();
 
