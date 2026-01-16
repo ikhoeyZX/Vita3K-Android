@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ EXPORT(SceInt32, sceImeClose) {
     emuenv.ime.state = false;
 
 #ifdef __ANDROID__
-    if (emuenv.cfg.enable_gamepad_overlay)
+    if (emuenv.cfg.enable_gamepad_overlay || emuenv.cfg.overlay_show_touch_switch)
         gui::set_controller_overlay_state(gui::get_overlay_display_mask(emuenv.cfg));
 #endif
 
