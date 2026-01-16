@@ -250,6 +250,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(BIG_BUTTON_POS);
         if (ImGui::Button(common["ok"].c_str(), BIG_BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
             emuenv.cfg.initial_setup = true;
+            gui::set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true, true, false);
             config::serialize_config(emuenv.cfg, emuenv.config_path);
         }
         break;
