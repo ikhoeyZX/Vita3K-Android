@@ -35,7 +35,6 @@
 
 static int virtual_joystick_id = -1;
 static SDL_Joystick *virtual_joystick = nullptr;
-static bool virtual_touch_only = false;
 extern "C" {
 
 JNIEXPORT void JNICALL
@@ -132,22 +131,17 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 || std::string_view(controller_name).starts_with("sensor"))) // maybe other sensor are detected as controller
                 continue;
             
-            if(!SDL_JoystickIsVirtual(joystick_index)){
+            if (!SDL_JoystickIsVirtual(joystick_index)) {
                 if (virtual_joystick_id == -1) {
 
-                }else{
+                } else {
                     SDL_JoystickClose(virtual_joystick);
                     SDL_JoystickDetachVirtual(virtual_joystick_id);
                     virtual_joystick = nullptr;
                     virtual_joystick_id = -1;
                 }
                 state.is_virtual_joystick = false;
-            }else{
-                if(!emuenv.cfg.enable_gamepad_overlay && emuenv.cfg.overlay_show_touch_switch)
-                   virtual_touch_only = true;
-                else
-                   virtual_touch_only = false;
-                
+            } else {
                 state.is_virtual_joystick = true;
             }
 #endif
