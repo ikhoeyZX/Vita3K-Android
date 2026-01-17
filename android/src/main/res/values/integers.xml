@@ -32,8 +32,8 @@
     <integer name="TRIGGER_R3_Y">-35</integer>
     <integer name="BUTTON_TOUCH_SWITCH_X">460</integer>
     <integer name="BUTTON_TOUCH_SWITCH_Y">-45</integer>
-    <integer name="BUTTON_HIDE_X">460</integer>
-    <integer name="BUTTON_HIDE_Y">245</integer>
+    <integer name="BUTTON_TOUCH_HIDE_X">460</integer>
+    <integer name="BUTTON_TOUCH_HIDE_Y">245</integer>
 
     <integer name="BUTTON_CROSS_X_PORTRAIT">720</integer>
     <integer name="BUTTON_CROSS_Y_PORTRAIT">1320</integer>
@@ -67,6 +67,6 @@
     <integer name="TRIGGER_R3_Y_PORTRAIT">1730</integer>
     <integer name="BUTTON_TOUCH_SWITCH_X_PORTRAIT">445</integer>
     <integer name="BUTTON_TOUCH_SWITCH_Y_PORTRAIT">1960</integer>
-    <integer name="BUTTON_HIDE_X_PORTRAIT">10</integer>
-    <integer name="BUTTON_HIDE_Y_PORTRAIT">1900</integer>
+    <integer name="BUTTON_TOUCH_HIDE_X_PORTRAIT">10</integer>
+    <integer name="BUTTON_TOUCH_HIDE_Y_PORTRAIT">1900</integer>
 </resources>
