@@ -43,7 +43,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   public final static int OVERLAY_MASK_BASIC = 1;
   public final static int OVERLAY_MASK_L2R2 = 2;
   public final static int OVERLAY_MASK_TOUCH_SCREEN_SWITCH = 4;
-
+  
   // wait 10 seconds without inputs before hiding
   private final static int OVERLAY_TIME_BEFORE_HIDE = 10;
 
@@ -61,6 +61,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   private static float mGlobalScale = 1.0f;
   private static float mJoyScale = 1.0f;
   private static int mGlobalOpacity = 100;
+  private static bool hide_overlay = false;
 
   private Timer mTimer;
 
@@ -198,7 +199,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       button.draw(canvas);
     }
 
-    if (mOverlayMask != 4) {
+    if (mOverlayMask != 4 || !hide_overlay) {
        for (InputOverlayDrawableDpad dpad : overlayDpads)
        {
          dpad.draw(canvas);
@@ -250,7 +251,10 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
             concerned = true;
             if(button.getRole() == OVERLAY_MASK_TOUCH_SCREEN_SWITCH)
               setTouchState(button.getPressed());
-            else
+            else if(button.getLegacyId() == BUTTON_TOUCH_HIDE) {
+              button.getPressed();
+              hide_overlay = !hide_overlay;
+            } else
               setButton(button.getControl(), true);
           }
           break;
@@ -270,7 +274,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       }
     }
 
-    if (mOverlayMask != 4) {
+    if (mOverlayMask != 4 || !hide_overlay) {
         
        for (InputOverlayDrawableDpad dpad : overlayDpads)
        {
@@ -582,6 +586,11 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_touch_f,
               R.drawable.button_touch_b, ButtonType.BUTTON_TOUCH_SWITCH,
               ControlId.touch, orientation, OVERLAY_MASK_TOUCH_SCREEN_SWITCH));
+
+      // show hide button
+      overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_hide,
+              R.drawable.button_hide_pressed, ButtonType.BUTTON_TOUCH_HIDE,
+              ControlId.touch, orientation, OVERLAY_MASK_BASIC));
     
       overlayDpads.add(initializeOverlayDpad(getContext(), R.drawable.dpad_idle,
               R.drawable.dpad_up,
@@ -710,7 +719,8 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
             || legacyId == ButtonType.BUTTON_START
             || legacyId == ButtonType.BUTTON_SELECT)
       scale = 0.25f;
-    else if(legacyId == ButtonType.BUTTON_TOUCH_SWITCH)
+    else if(legacyId == ButtonType.BUTTON_TOUCH_SWITCH
+            || legacyId == ButtonType.BUTTON_TOUCH_HIDE)
       scale = 0.11f;
     
     scale *= mGlobalScale;
@@ -987,8 +997,10 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
         sPrefsEditor.putFloat(ButtonType.BUTTON_TOUCH_SWITCH + "-Y",
                 (((float) res.getInteger(R.integer.BUTTON_TOUCH_SWITCH_Y_PORTRAIT) / 1000) * maxY));
 
-        // We want to commit right away, otherwise the overlay could load before this is saved.
-        sPrefsEditor.commit();
+        sPrefsEditor.putFloat(ButtonType.BUTTON_TOUCH_HIDE + "-X",
+                (((float) res.getInteger(R.integer.BUTTON_TOUCH_HIDE_X_PORTRAIT) / 1000) * maxX));
+        sPrefsEditor.putFloat(ButtonType.BUTTON_TOUCH_HIDE + "-Y",
+                (((float) res.getInteger(R.integer.BUTTON_TOUCH_HIDE_Y_PORTRAIT) / 1000) * maxY));
 
     }else{
 
@@ -1059,9 +1071,15 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
         sPrefsEditor.putFloat(ButtonType.BUTTON_TOUCH_SWITCH + "-Y",
                 (((float) res.getInteger(R.integer.BUTTON_TOUCH_SWITCH_Y) / 1000) * maxY));
 
+        sPrefsEditor.putFloat(ButtonType.BUTTON_TOUCH_HIDE + "-X",
+                (((float) res.getInteger(R.integer.BUTTON_TOUCH_HIDE_X) / 1000) * maxX));
+        sPrefsEditor.putFloat(ButtonType.BUTTON_TOUCH_HIDE + "-Y",
+                (((float) res.getInteger(R.integer.BUTTON_TOUCH_HIDE_Y) / 1000) * maxY));
+      
+        }
+    
         // We want to commit right away, otherwise the overlay could load before this is saved.
         sPrefsEditor.commit();
-        }
   }
 
   public native void attachController();
@@ -1087,6 +1105,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     public static final int TRIGGER_R2 = 23;
     public static final int TRIGGER_L3 = 24;
     public static final int TRIGGER_R3 = 25;
+    public static final int BUTTON_TOUCH_HIDE = 50;
     public static final int BUTTON_TOUCH_SWITCH = 1024;
   }
 
@@ -1114,6 +1133,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     public static final int r2 = -5;
 
     // button to switch between front and back touch
+    public static final int hide = 50;
     public static final int touch = 1024;
 
     public static final int axis_left_x = 0;
