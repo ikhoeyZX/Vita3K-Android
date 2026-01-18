@@ -62,6 +62,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   private static float mJoyScale = 1.0f;
   private static int mGlobalOpacity = 100;
   private static boolean hide_overlay = false;
+  private static int mlast_state = 0;
 
   private Timer mTimer;
 
@@ -107,6 +108,9 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     if (!mPreferences.getBoolean("OverlayInit", false))
       defaultOverlay();
 
+    if (!hide_overlay && mOverlayMask != 4)
+       mlast_state = mOverlayMask;
+    
     // Set the on touch listener.
     // Do not register the overlay as a touch listener
     // Instead let EmuSurface forward touch events
@@ -169,6 +173,11 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     if(is_showing == was_showing)
       return;
 
+    if(hide_overlay)
+      mOverlayMask = 4;
+    else
+      mOverlayMask = mlast_state;
+    
     if(is_showing){
       attachController();
     } else {
@@ -199,7 +208,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       button.draw(canvas);
     }
 
-    if (mOverlayMask != 4 || !hide_overlay) {
+    if (mOverlayMask != 4 || hide_overlay) {
        for (InputOverlayDrawableDpad dpad : overlayDpads)
        {
          dpad.draw(canvas);
@@ -266,7 +275,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
             button.setPressedState(false);
             if(button.getRole() != OVERLAY_MASK_TOUCH_SCREEN_SWITCH)
               setButton(button.getControl(), false);
-
+              
             button.setTrackId(-1);
             concerned = true;
           }
@@ -274,7 +283,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       }
     }
 
-    if (mOverlayMask != 4 || !hide_overlay) {
+    if (mOverlayMask != 4 || hide_overlay) {
         
        for (InputOverlayDrawableDpad dpad : overlayDpads)
        {
