@@ -211,6 +211,8 @@ void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
+
+        ImGui::Text("L2/R2 triggers will be displayed only if PSTV mode is enabled.");
     }
 
     ImGui::Spacing();
@@ -218,10 +220,8 @@ void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     if(ImGui::Checkbox("Show front/back touchscreen switch button.", &emuenv.cfg.overlay_show_touch_switch)){
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-        set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), overlay_editing);
     }
-    ImGui::Text("L2/R2 triggers will be displayed only if PSTV mode is enabled.");
-
+    
     auto &common = emuenv.common_dialog.lang.common;
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
     if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE)){
