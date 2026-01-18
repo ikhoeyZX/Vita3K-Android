@@ -62,8 +62,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   private static float mJoyScale = 1.0f;
   private static int mGlobalOpacity = 100;
   private static boolean hide_overlay = false;
-  private static int mlast_state = 0;
-
+  
   private Timer mTimer;
 
   // last Time the screen was touched
@@ -163,20 +162,21 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       mOverlayMask = overlay_mask;
       invalidate();
     }
-
+    
     resetHideTimer();
 
     boolean is_showing = overlay_mask != 0;
     if(is_showing == was_showing)
       return;
 
-    if (!hide_overlay && mOverlayMask != 4)
-       mlast_state = mOverlayMask;
-    
-    if(hide_overlay)
+    if (hide_overlay && mOverlayMask == 4)
+    else if(hide_overlay) {
       mOverlayMask = 4;
-    else
-      mOverlayMask = mlast_state;
+      detachController();
+      attachController();
+      invalidate();
+    } else
+      mOverlayMask = overlay_mask;
     
     if(is_showing){
       attachController();
