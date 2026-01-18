@@ -108,9 +108,6 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     if (!mPreferences.getBoolean("OverlayInit", false))
       defaultOverlay();
 
-    if (!hide_overlay && mOverlayMask != 4)
-       mlast_state = mOverlayMask;
-    
     // Set the on touch listener.
     // Do not register the overlay as a touch listener
     // Instead let EmuSurface forward touch events
@@ -173,6 +170,9 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     if(is_showing == was_showing)
       return;
 
+    if (!hide_overlay && mOverlayMask != 4)
+       mlast_state = mOverlayMask;
+    
     if(hide_overlay)
       mOverlayMask = 4;
     else
