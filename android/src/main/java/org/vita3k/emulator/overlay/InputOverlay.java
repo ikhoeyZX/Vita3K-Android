@@ -61,7 +61,6 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   private static float mGlobalScale = 1.0f;
   private static float mJoyScale = 1.0f;
   private static int mGlobalOpacity = 100;
-  private boolean hide_overlay = false;
   
   private Timer mTimer;
 
@@ -69,6 +68,8 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   private long mlastTouchTime;
   // is the overlay hidden because we didn't used it for long enough ?
   private boolean mShowingOverlay = true;
+  // hide overlay manually
+  private boolean hide_overlay = false;
 
   private final SharedPreferences mPreferences;
 
@@ -158,7 +159,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
   public void setState(int overlay_mask){
     boolean was_showing = mOverlayMask != 0;
-    if(mOverlayMask != overlay_mask){
+    if(mOverlayMask != overlay_mask && !hide_overlay){
       mOverlayMask = overlay_mask;
       invalidate();
     }
@@ -170,13 +171,15 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       return;
 
     if (hide_overlay && mOverlayMask == 4) {
-    // skip
+    // ignored
     } else if(hide_overlay) {
        mOverlayMask = 4;
       
        // reset controller
        detachController();
+       invalidate();
        attachController();
+       invalidate();
     } else {
        mOverlayMask = overlay_mask;
     }
@@ -263,8 +266,8 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
             concerned = true;
             if(button.getRole() == OVERLAY_MASK_TOUCH_SCREEN_SWITCH)
               setTouchState(button.getPressed());
-            else if(button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE)
-              setHideState(button.getPressed());
+            else if(button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE && button.getPressed())
+                hide_overlay = !hide_overlay:
             else
               setButton(button.getControl(), true);
           }
