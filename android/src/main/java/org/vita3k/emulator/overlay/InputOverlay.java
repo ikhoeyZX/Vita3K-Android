@@ -210,7 +210,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       button.draw(canvas);
     }
 
-    if (mOverlayMask != 4 || hide_overlay) {
+    if (mOverlayMask != 4 || !hide_overlay) {
        for (InputOverlayDrawableDpad dpad : overlayDpads)
        {
          dpad.draw(canvas);
@@ -285,7 +285,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       }
     }
 
-    if (mOverlayMask != 4 || hide_overlay) {
+    if (mOverlayMask != 4 || !hide_overlay) {
         
        for (InputOverlayDrawableDpad dpad : overlayDpads)
        {
@@ -601,7 +601,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       // show hide button
       overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_hide,
               R.drawable.button_hide_pressed, ButtonType.BUTTON_TOUCH_HIDE,
-              ControlId.touch, orientation, OVERLAY_MASK_BASIC));
+              ControlId.touch, orientation, OVERLAY_MASK_TOUCH_SCREEN_SWITCH));
     
       overlayDpads.add(initializeOverlayDpad(getContext(), R.drawable.dpad_idle,
               R.drawable.dpad_up,
