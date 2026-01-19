@@ -61,7 +61,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   private static float mGlobalScale = 1.0f;
   private static float mJoyScale = 1.0f;
   private static int mGlobalOpacity = 100;
-  private static boolean hide_overlay = false;
+  private boolean hide_overlay = false;
   
   private Timer mTimer;
 
@@ -173,9 +173,10 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     // skip
     } else if(hide_overlay) {
        mOverlayMask = 4;
+      
+       // reset controller
        detachController();
        attachController();
-       invalidate();
     } else {
        mOverlayMask = overlay_mask;
     }
@@ -261,11 +262,10 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
             button.setTrackId(event.getPointerId(pointerIndex));
             concerned = true;
             if(button.getRole() == OVERLAY_MASK_TOUCH_SCREEN_SWITCH)
-              setTouchState(button.getPressed());
-            else if(button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE) {
-              button.getPressed();
-              hide_overlay = !hide_overlay;
-            } else
+              setTouchState(button.getPressed(), false);
+            else if(button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE)
+              setTouchState(button.getPressed(), true);
+            else
               setButton(button.getControl(), true);
           }
           break;
@@ -1097,7 +1097,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   public native void detachController();
   public native void setAxis(int axis, short value);
   public native void setButton(int button, boolean value);
-  public native void setTouchState(boolean is_back);
+  public native void setTouchState(boolean condition, boolean is_hide);
 
   public static final class ButtonType
   {
