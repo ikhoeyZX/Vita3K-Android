@@ -132,12 +132,6 @@ void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("Overlay", &gui.controls_menu.controls_dialog, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(RES_SCALE.x);
-
-    if (!gui.controls_menu.controls_dialog) {
-        set_controller_overlay_state(0);
-        overlay_editing = false;
-    }
-
     ImGui::Spacing();
 
     const auto gmpd = ImGui::CalcTextSize("Gamepad Overlay").x;
