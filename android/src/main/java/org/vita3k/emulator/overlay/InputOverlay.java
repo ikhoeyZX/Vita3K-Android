@@ -172,14 +172,6 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     if (hide_overlay && mOverlayMask == 4) {
     // ignored
-    } else if(hide_overlay) {
-       mOverlayMask = 4;
-      
-       // reset controller
-       detachController();
-       invalidate();
-       attachController();
-       invalidate();
     } else {
        mOverlayMask = overlay_mask;
     }
@@ -265,10 +257,10 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
             button.setTrackId(event.getPointerId(pointerIndex));
             concerned = true;
        //     if(button.getRole() == OVERLAY_MASK_TOUCH_SCREEN_SWITCH)
-            if(button.getLegacyId() == ButtonType.BUTTON_TOUCH_SWITCH)
+            if(button.getLegacyId() == ButtonType.BUTTON_TOUCH_SWITCH) 
               setTouchState(button.getPressed());
-            else if(button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE)
-                hide_overlay = !hide_overlay;
+            else if(button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE) 
+              hide_overlay = !hide_overlay;
             else
               setButton(button.getControl(), true);
           }
@@ -281,9 +273,18 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
             button.setPressedState(false);
             if(button.getRole() != OVERLAY_MASK_TOUCH_SCREEN_SWITCH)
               setButton(button.getControl(), false);
-            else if(button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE)
+            else if(button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE) {
               setButton(button.getControl(), false);
-            
+              if (hide_overlay != hide_overlay) {
+                mOverlayMask = 4;
+      
+                // reset controller
+                detachController();
+                invalidate();
+                attachController();
+                invalidate();
+              }
+            }
             button.setTrackId(-1);
             concerned = true;
           }
