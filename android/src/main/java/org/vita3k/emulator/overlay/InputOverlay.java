@@ -159,9 +159,11 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
   public void setState(int overlay_mask){
     boolean was_showing = mOverlayMask != 0;
-    if(mOverlayMask != overlay_mask && !hide_overlay){
-      mOverlayMask = overlay_mask;
-      invalidate();
+    if(!hide_overlay)
+      if(mOverlayMask != overlay_mask){
+         mOverlayMask = overlay_mask;
+         invalidate();
+      }
     }
     
     resetHideTimer();
@@ -206,7 +208,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       button.draw(canvas);
     }
 
-    if (mOverlayMask != 4 || !hide_overlay) {
+    if (mOverlayMask < 3 || !hide_overlay) {
        for (InputOverlayDrawableDpad dpad : overlayDpads)
        {
          dpad.draw(canvas);
@@ -256,7 +258,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
             button.setPressedState(true);
             button.setTrackId(event.getPointerId(pointerIndex));
             concerned = true;
-       //     if(button.getRole() == OVERLAY_MASK_TOUCH_SCREEN_SWITCH)
+       
             if(button.getLegacyId() == ButtonType.BUTTON_TOUCH_SWITCH) 
               setTouchState(button.getPressed());
             else if(button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE) 
@@ -271,10 +273,9 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
           if (button.getTrackId() == event.getPointerId(pointerIndex))
           {
             button.setPressedState(false);
-            if(button.getRole() != OVERLAY_MASK_TOUCH_SCREEN_SWITCH)
+            ifif(button.getLegacyId() != ButtonType.BUTTON_TOUCH_SWITCH) 
               setButton(button.getControl(), false);
             else if(button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE) {
-              setButton(button.getControl(), false);
               if (hide_overlay != hide_overlay) {
                 mOverlayMask = 4;
       
@@ -292,7 +293,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       }
     }
 
-    if (mOverlayMask != 4 || !hide_overlay) {
+    if (mOverlayMask < 3 || !hide_overlay) {
         
        for (InputOverlayDrawableDpad dpad : overlayDpads)
        {
