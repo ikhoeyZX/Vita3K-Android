@@ -164,8 +164,6 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
           mOverlayMask = overlay_mask;
          invalidate();
        }
-    } else {
-      mOverlayMask = 4;
     }
     
     resetHideTimer();
@@ -202,6 +200,8 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     if(mOverlayMask == 0 || !mShowingOverlay)
       return;
 
+    if (mOverlayMask < 4 || !hide_overlay) {
+      
     for (InputOverlayDrawableButton button : overlayButtons)
     {
       
@@ -211,7 +211,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       button.draw(canvas);
     }
 
-    if (mOverlayMask < 4 || !hide_overlay) {
+    
        for (InputOverlayDrawableDpad dpad : overlayDpads)
        {
          dpad.draw(canvas);
