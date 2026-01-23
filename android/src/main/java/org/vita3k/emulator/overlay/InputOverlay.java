@@ -202,9 +202,15 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     for (InputOverlayDrawableButton button : overlayButtons)
     {
-      
-      if((button.getRole() & mOverlayMask) == 0)
-         continue;
+      if (button.getLegacyId() == ButtonType.BUTTON_TOUCH_SWITCH && hide_overlay) {
+        continue;
+      } else if (button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE && hide_overlay) {
+        continue;
+      } else if ((button.getRole() & mOverlayMask) == 0){
+        continue;
+      } else {
+        break;
+      }
 
       button.draw(canvas);
     }
@@ -244,8 +250,16 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     for (InputOverlayDrawableButton button : overlayButtons)
     {
-      if((button.getRole() & mOverlayMask) == 0)
+
+      if (button.getLegacyId() == ButtonType.BUTTON_TOUCH_SWITCH && hide_overlay) {
         continue;
+      } else if (button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE && hide_overlay) {
+        continue;
+      } else if ((button.getRole() & mOverlayMask) == 0){
+        continue;
+      } else {
+        break;
+      }
 
       // Determine the button state to apply based on the MotionEvent action flag.
       switch (action)
