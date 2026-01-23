@@ -55,13 +55,13 @@ int get_overlay_display_mask(const Config& cfg){
 
 #ifdef __ANDROID__
 
-extern "C" JNIEXPORT void JNICALL
-JNIEXPORT void JNICALL
+extern "C" JNIEXPORT void JNICALL {
 Java_org_vita3k_emulator_overlay_InputOverlay_setHideState(JNIEnv *env, jobject thiz, jboolean is_hide) {
     if(is_hide)
         set_controller_overlay_state(4);
     else
         set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg));
+}
 }
 
 void set_controller_overlay_state(int overlay_mask, bool edit, bool reset, bool portrait) {
