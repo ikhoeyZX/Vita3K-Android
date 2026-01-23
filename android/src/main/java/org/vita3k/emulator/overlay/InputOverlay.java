@@ -174,6 +174,8 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     if (hide_overlay && mOverlayMask == 4) {
     // ignored
+    } else if (hide_overlay) {
+      mOverlayMask = 4;
     } else {
        mOverlayMask = overlay_mask;
     }
