@@ -111,7 +111,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     // Set the on touch listener.
     // Do not register the overlay as a touch listener
     // Instead let EmuSurface forward touch events
-     setOnTouchListener(this);
+    setOnTouchListener(this);
 
     // Force draw
     setWillNotDraw(false);
@@ -200,8 +200,6 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     if(mOverlayMask == 0 || !mShowingOverlay)
       return;
 
-    if (mOverlayMask < 4 || !hide_overlay) {
-      
     for (InputOverlayDrawableButton button : overlayButtons)
     {
       
@@ -211,7 +209,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       button.draw(canvas);
     }
 
-    
+    if (mOverlayMask < 4 || !hide_overlay) {
        for (InputOverlayDrawableDpad dpad : overlayDpads)
        {
          dpad.draw(canvas);
@@ -284,9 +282,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
                 mOverlayMask = 4;
       
                 // reset controller
-                detachController();
-                invalidate();
-                attachController();
+                refreshControls();
                 invalidate();
               }
             }
