@@ -73,11 +73,6 @@ Java_org_vita3k_emulator_overlay_InputOverlay_setButton(JNIEnv *env, jobject thi
         SDL_JoystickSetVirtualButton(virtual_joystick, button, value);
 }
 
-JNIEXPORT void JNICALL
-Java_org_vita3k_emulator_overlay_InputOverlay_setHideState(JNIEnv *env, jobject thiz, jboolean is_hide) {
-    gui::set_controller_overlay_state(4);
-}
-
 }
 #endif
 
