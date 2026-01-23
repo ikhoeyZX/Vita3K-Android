@@ -57,7 +57,7 @@ int get_overlay_display_mask(const Config& cfg){
 
 extern "C" JNIEXPORT void JNICALL {
 Java_org_vita3k_emulator_overlay_InputOverlay_setHideState(JNIEnv *env, jobject thiz, jboolean is_hide) {
-    static is_set;
+    static bool is_set;
     if (is_hide) {
         set_controller_overlay_state(4);
         is_set = false
