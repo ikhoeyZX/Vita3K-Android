@@ -197,20 +197,13 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   {
     super.draw(canvas);
 
-    if(mOverlayMask == 0 || !mShowingOverlay)
+    if (mOverlayMask == 0 || !mShowingOverlay)
       return;
 
     for (InputOverlayDrawableButton button : overlayButtons)
     {
-      if (button.getLegacyId() == ButtonType.BUTTON_TOUCH_SWITCH && hide_overlay) {
+      if ((button.getRole() & mOverlayMask) == 0)
         continue;
-      } else if (button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE && hide_overlay) {
-        continue;
-      } else if ((button.getRole() & mOverlayMask) == 0){
-        continue;
-      } else {
-        break;
-      }
 
       button.draw(canvas);
     }
@@ -251,15 +244,8 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     for (InputOverlayDrawableButton button : overlayButtons)
     {
 
-      if (button.getLegacyId() == ButtonType.BUTTON_TOUCH_SWITCH && hide_overlay) {
+      if ((button.getRole() & mOverlayMask) == 0)
         continue;
-      } else if (button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE && hide_overlay) {
-        continue;
-      } else if ((button.getRole() & mOverlayMask) == 0){
-        continue;
-      } else {
-        break;
-      }
 
       // Determine the button state to apply based on the MotionEvent action flag.
       switch (action)
@@ -292,7 +278,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
             if(button.getLegacyId() != ButtonType.BUTTON_TOUCH_SWITCH) {
               setButton(button.getControl(), false);
             } else if(button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE) {
-              if (hide_overlay != hide_overlay) {
+              if (hide_overlay == true) {
                 mOverlayMask = 4;
       
                 // reset controller
