@@ -38,23 +38,23 @@ enum struct OverlayShowMask : int {
     TouchScreenSwitch = 4, // Button to switch between the front and back touchscreen
 };
 
+// idk where best to put this outside cpp
 static bool overlay_hide = false;
 
 int get_overlay_display_mask(const Config& cfg){
     int mask = 0;
-    if (!overlay_hide){
-    if (cfg.enable_gamepad_overlay){
+    if (cfg.enable_gamepad_overlay) {
         mask = (int)OverlayShowMask::Basic;
         if(cfg.pstv_mode)
             mask |= (int)OverlayShowMask::L2R2;
+        
+    } else if (cfg.enable_gamepad_overlay && overlay_hide){
+        mask |= (int)OverlayShowMask::TouchScreenSwitch;
     }
 
-    // just show front and back button
+    // only show front back button
     if (cfg.overlay_show_touch_switch)
         mask |= (int)OverlayShowMask::TouchScreenSwitch;
-    }else{
-        mask |= (int)OverlayShowMask::TouchScreenSwitch;
-    }
     
     return mask;
 }
