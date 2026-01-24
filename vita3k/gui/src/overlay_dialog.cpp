@@ -38,9 +38,6 @@ enum struct OverlayShowMask : int {
     TouchScreenSwitch = 4, // Button to switch between the front and back touchscreen
 };
 
-// idk where best to put this outside cpp
-static bool overlay_hide;
-
 int get_overlay_display_mask(const Config& cfg){
     int mask = 0;
     if (cfg.enable_gamepad_overlay) {
@@ -56,16 +53,6 @@ int get_overlay_display_mask(const Config& cfg){
 }
 
 #ifdef __ANDROID__
-
-extern "C" {
-
-JNIEXPORT void JNICALL
-Java_org_vita3k_emulator_overlay_InputOverlay_setHideState(JNIEnv *env, jobject thiz, jboolean is_hide) {
-    overlay_hide = is_hide;
-}
-
-}
-
 void set_controller_overlay_state(int overlay_mask, bool edit, bool reset, bool portrait) {
     // retrieve the JNI environment.
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
@@ -78,10 +65,6 @@ void set_controller_overlay_state(int overlay_mask, bool edit, bool reset, bool 
 
     // find the identifier of the method to call
     jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayState", "(IZZZ)V");
-
-    // overide config temporary, ignored when disabled
-    if (overlay_hide && !edit && !reset && overlay_mask != 0)
-        overlay_mask = 4;
     
     // effectively call the Java method
     env->CallVoidMethod(activity, method_id, overlay_mask, edit, reset, portrait);
