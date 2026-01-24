@@ -62,7 +62,7 @@ Java_org_vita3k_emulator_overlay_InputOverlay_setHideState(JNIEnv *env, jobject 
     static bool is_set;
     if (is_hide) {
         set_controller_overlay_state(4);
-        is_set = false
+        is_set = false;
     } else if (!is_set) {
         // just call this once, to reduce call
         set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg));
