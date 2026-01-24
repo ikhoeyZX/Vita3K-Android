@@ -1656,7 +1656,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     o_op.bank = RegisterBank::OUTPUT;
     o_op.num = 0;
     o_op.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-    
+
     for (const auto vo : vertex_outputs_list) {
         if (vertex_outputs & vo) {
             const auto vo_typed = static_cast<SceGxmVertexProgramOutputs>(vo);
@@ -2012,13 +2012,13 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
     spirv_cross::CompilerGLSL::Options options;
 
 #ifdef ANDROID
-    options.fragment.default_float_precision = options.Highp;
-//    options.fragment.default_int_precision = options.Mediump;
+    // options.fragment.default_float_precision = options.Highp;
+    options.fragment.default_int_precision = options.Mediump;
     
     options.version = 320;
     options.es = true;
     options.enable_row_major_load_workaround = false; // spirv.hpp say when true it reduce performance in some android devices
-    options.vertex.fixup_clipspace = false;
+    options.vertex.fixup_clipspace = true;
  //   options.enable_420pack_extension = false; // because opengles and default value is true
 #else
     options.version = 430;
