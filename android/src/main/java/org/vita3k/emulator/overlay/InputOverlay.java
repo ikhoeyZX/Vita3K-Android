@@ -161,7 +161,8 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     boolean was_showing = mOverlayMask != 0;
 
     if (hide_overlay) {
-      mOverlayMask = 4;
+        mOverlayMask = 4;
+        invalidate();
     } else if (mOverlayMask != overlay_mask){
         mOverlayMask = overlay_mask;
         invalidate();
@@ -197,19 +198,15 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
       for (InputOverlayDrawableButton button : overlayButtons)
       {
-
          if(hide_overlay){
-            int id = button.getLegacyId();
-            if (id == ButtonType.BUTTON_TOUCH_HIDE || id == ButtonType.BUTTON_TOUCH_SWITCH) {
+            if (button.getRole() == OVERLAY_MASK_TOUCH_SCREEN_SWITCH) {
                button.draw(canvas);
-               continue;
             }
-         
          } else if ((button.getRole() & mOverlayMask) == 0){
-           continue;
+            continue;
+         } else {
+            button.draw(canvas);
          }
-
-         button.draw(canvas);
       }
     
       for (InputOverlayDrawableDpad dpad : overlayDpads)
@@ -246,15 +243,8 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     for (InputOverlayDrawableButton button : overlayButtons)
     {
 
-      if(hide_overlay){
-            int id = button.getLegacyId();
-            if (id == ButtonType.BUTTON_TOUCH_HIDE || id == ButtonType.BUTTON_TOUCH_SWITCH) {
-               continue;
-            }
-         
-      } else if ((button.getRole() & mOverlayMask) == 0) {
+      if ((button.getRole() & mOverlayMask) == 0) 
         continue;
-      }
 
       // Determine the button state to apply based on the MotionEvent action flag.
       switch (action)
@@ -294,7 +284,6 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
                 detachController();
                 refreshControls();
                 attachController();
-                invalidate();
               }
             }
             
