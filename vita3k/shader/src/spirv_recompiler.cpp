@@ -1652,6 +1652,11 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6, "v_Clip6", 1);
     // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, "v_Clip7", 1);
 
+    Operand o_op;
+    o_op.bank = RegisterBank::OUTPUT;
+    o_op.num = 0;
+    o_op.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+    
     // unsafe
     const spv::Id float_type = b.makeFloatType(32);
     const spv::Id array_size = b.makeUintConstant(8);
@@ -1659,7 +1664,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     const spv::Id clip_dist_var = b.createVariable(spv::NoPrecision, spv::StorageClassOutput, clip_dist_type, "gl_ClipDistance");
     b.addDecoration(clip_dist_var, spv::DecorationBuiltIn, spv::BuiltInClipDistance);
     translation_state.interfaces.push_back(clip_dist_var);
-
+  
     const auto store_clip = [&](SceGxmVertexProgramOutputs clip_enum, uint32_t index) {
     if (vertex_outputs & clip_enum) {
         
@@ -1683,11 +1688,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, 7), "v_Clip7", 1);
     // end unsafe
 
-    Operand o_op;
-    o_op.bank = RegisterBank::OUTPUT;
-    o_op.num = 0;
-    o_op.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-
+    
     for (const auto vo : vertex_outputs_list) {
         if (vertex_outputs & vo) {
             const auto vo_typed = static_cast<SceGxmVertexProgramOutputs>(vo);
