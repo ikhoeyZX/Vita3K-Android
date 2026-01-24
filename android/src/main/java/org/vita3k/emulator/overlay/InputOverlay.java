@@ -258,7 +258,6 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
         }
       } else if ((button.getRole() & mOverlayMask) == 0){
             continue;
-         } 
       }
 
       // Determine the button state to apply based on the MotionEvent action flag.
