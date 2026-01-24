@@ -172,7 +172,6 @@ public:
     uint32_t res_height_dpi_scale = 0;
     GDBState &gdb;
     HTTPState &http;
-    int overlay = 0;
 
     EmuEnvState();
     // declaring a destructor is necessary to forward declare unique_ptrs
