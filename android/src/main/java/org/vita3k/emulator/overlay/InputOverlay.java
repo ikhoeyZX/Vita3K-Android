@@ -1121,7 +1121,6 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   public native void setAxis(int axis, short value);
   public native void setButton(int button, boolean value);
   public native void setTouchState(boolean is_back);
-  public native void setHideState(boolean is_hide);
 
   public static final class ButtonType
   {
