@@ -1665,7 +1665,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     b.addDecoration(clip_dist_var, spv::DecorationBuiltIn, spv::BuiltInClipDistance);
     translation_state.interfaces.push_back(clip_dist_var);
   
-    const auto store_clip = [&](SceGxmVertexProgramOutputs clip_enum, uint32_t index) {
+    auto store_clip = [&](SceGxmVertexProgramOutputs clip_enum, uint32_t index) {
     if (vertex_outputs & clip_enum) {
         
         spv::Id val = utils::load(b, parameters, utils, features, o_op, 0b1, 0);
