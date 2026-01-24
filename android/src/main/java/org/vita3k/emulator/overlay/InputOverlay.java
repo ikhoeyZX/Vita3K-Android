@@ -160,8 +160,11 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   public void setState(int overlay_mask){
     boolean was_showing = mOverlayMask != 0;
 
-    if (hide_overlay) {
+    if(hide_overlay && mOverlayMask = 4) {
+      // skipped
+    } else if (hide_overlay) {
         mOverlayMask = 4;
+        refreshControls();
         invalidate();
     } else if (mOverlayMask != overlay_mask){
         mOverlayMask = overlay_mask;
@@ -198,6 +201,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
       for (InputOverlayDrawableButton button : overlayButtons)
       {
+        // kinda dirty but should be work
          if(hide_overlay){
             if (button.getRole() == OVERLAY_MASK_TOUCH_SCREEN_SWITCH) {
                button.draw(canvas);
@@ -208,7 +212,8 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
             button.draw(canvas);
          }
       }
-    
+
+    if (!hide_overlay){
       for (InputOverlayDrawableDpad dpad : overlayDpads)
       {
          dpad.draw(canvas);
@@ -218,6 +223,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       {
          joystick.draw(canvas);
       }
+    }
   }
 
   @Override
@@ -243,8 +249,17 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     for (InputOverlayDrawableButton button : overlayButtons)
     {
 
-      if ((button.getRole() & mOverlayMask) == 0) 
-        continue;
+      // kinda dirty but should be work
+      if(hide_overlay){
+        if (button.getRole() == OVERLAY_MASK_TOUCH_SCREEN_SWITCH) {
+              
+        }else{
+            continue;
+        }
+      } else if ((button.getRole() & mOverlayMask) == 0){
+            continue;
+         } 
+      }
 
       // Determine the button state to apply based on the MotionEvent action flag.
       switch (action)
@@ -294,7 +309,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
       }
     }
 
-    if (mOverlayMask != 4) {
+    if (!hide_overlay) {
         
        for (InputOverlayDrawableDpad dpad : overlayDpads)
        {
