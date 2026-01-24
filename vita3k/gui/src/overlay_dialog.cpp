@@ -38,6 +38,8 @@ enum struct OverlayShowMask : int {
     TouchScreenSwitch = 4, // Button to switch between the front and back touchscreen
 };
 
+static bool overlay_hide = false;
+
 int get_overlay_display_mask(const Config& cfg){
     int mask = 0;
     if (!overlay_hide){
