@@ -40,7 +40,7 @@ enum struct OverlayShowMask : int {
 
 int get_overlay_display_mask(const Config& cfg){
     int mask = 0;
-    if (!gui.overlay_hide){
+    if (!overlay_hide){
     if (cfg.enable_gamepad_overlay){
         mask = (int)OverlayShowMask::Basic;
         if(cfg.pstv_mode)
@@ -63,7 +63,7 @@ extern "C" {
 
 JNIEXPORT void JNICALL
 Java_org_vita3k_emulator_overlay_InputOverlay_setHideState(JNIEnv *env, jobject thiz, jboolean is_hide) {
-    gui.overlay_hide = is_hide;
+    overlay_hide = is_hide;
 }
 
 }
