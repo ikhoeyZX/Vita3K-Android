@@ -1652,6 +1652,37 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6, "v_Clip6", 1);
     // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, "v_Clip7", 1);
 
+    // unsafe
+    const spv::Id float_type = b.makeFloatType(32);
+    const spv::Id array_size = b.makeUintConstant(8);
+    const spv::Id clip_dist_type = b.makeArrayType(float_type, array_size, 0);
+    const spv::Id clip_dist_var = b.createVariable(spv::NoPrecision, spv::StorageClassOutput, clip_dist_type, "gl_ClipDistance");
+    b.addDecoration(clip_dist_var, spv::DecorationBuiltIn, spv::BuiltInClipDistance);
+    translation_state.interfaces.push_back(clip_dist_var);
+
+    const auto store_clip = [&](SceGxmVertexProgramOutputs clip_enum, uint32_t index) {
+    if (vertex_outputs & clip_enum) {
+        
+        spv::Id val = utils::load(b, parameters, utils, features, o_op, 0b1, 0);
+        
+        
+        spv::Id index_const = b.makeUintConstant(index);
+        spv::Id ptr = b.createAccessChain(spv::StorageClassOutput, clip_dist_var, { index_const });
+        b.createStore(val, ptr);
+        
+        o_op.num++; 
+    }
+
+    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP0, 0), "v_Clip0", 1);
+    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP1, 1), "v_Clip1", 1);
+    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP2, 2), "v_Clip2", 1);
+    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP3, 3), "v_Clip3", 1);
+    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP4, 4), "v_Clip4", 1);
+    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP5, 5), "v_Clip5", 1);
+    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6, 6), "v_Clip6", 1);
+    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, 7), "v_Clip7", 1);
+    // end unsafe
+
     Operand o_op;
     o_op.bank = RegisterBank::OUTPUT;
     o_op.num = 0;
@@ -2012,13 +2043,13 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
     spirv_cross::CompilerGLSL::Options options;
 
 #ifdef ANDROID
-    // options.fragment.default_float_precision = options.Highp;
-    options.fragment.default_int_precision = options.Mediump;
+    options.fragment.default_float_precision = options.Highp;
+//    options.fragment.default_int_precision = options.Mediump;
     
     options.version = 320;
     options.es = true;
     options.enable_row_major_load_workaround = false; // spirv.hpp say when true it reduce performance in some android devices
-    options.vertex.fixup_clipspace = true;
+    options.vertex.fixup_clipspace = false;
  //   options.enable_420pack_extension = false; // because opengles and default value is true
 #else
     options.version = 430;
