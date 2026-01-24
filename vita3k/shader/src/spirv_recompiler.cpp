@@ -1657,38 +1657,6 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     o_op.num = 0;
     o_op.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
     
-    // unsafe
-    const spv::Id float_type = b.makeFloatType(32);
-    const spv::Id array_size = b.makeUintConstant(8);
-    const spv::Id clip_dist_type = b.makeArrayType(float_type, array_size, 0);
-    const spv::Id clip_dist_var = b.createVariable(spv::NoPrecision, spv::StorageClassOutput, clip_dist_type, "gl_ClipDistance");
-    b.addDecoration(clip_dist_var, spv::DecorationBuiltIn, spv::BuiltInClipDistance);
-    translation_state.interfaces.push_back(clip_dist_var);
-  
-    auto store_clip = [&](SceGxmVertexProgramOutputs clip_enum, uint32_t index) {
-    if (vertex_outputs & clip_enum) {
-        
-        spv::Id val = utils::load(b, parameters, utils, features, o_op, 0b1, 0);
-        
-        
-        spv::Id index_const = b.makeUintConstant(index);
-        spv::Id ptr = b.createAccessChain(spv::StorageClassOutput, clip_dist_var, { index_const });
-        b.createStore(val, ptr);
-        
-        o_op.num++; 
-    }
-
-    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP0, 0), "v_Clip0", 1);
-    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP1, 1), "v_Clip1", 1);
-    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP2, 2), "v_Clip2", 1);
-    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP3, 3), "v_Clip3", 1);
-    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP4, 4), "v_Clip4", 1);
-    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP5, 5), "v_Clip5", 1);
-    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6, 6), "v_Clip6", 1);
-    add_vertex_output_info(store_clip(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, 7), "v_Clip7", 1);
-    // end unsafe
-
-    
     for (const auto vo : vertex_outputs_list) {
         if (vertex_outputs & vo) {
             const auto vo_typed = static_cast<SceGxmVertexProgramOutputs>(vo);
