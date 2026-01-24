@@ -369,4 +369,7 @@ struct GuiState {
     ImFont *vita_font{};
     ImFont *large_font{};
     bool fw_font = false;
+
+    // overlay
+    bool overlay_hide = false;
 };
