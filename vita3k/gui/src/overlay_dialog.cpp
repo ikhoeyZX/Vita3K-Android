@@ -39,7 +39,7 @@ enum struct OverlayShowMask : int {
 };
 
 // idk where best to put this outside cpp
-static bool overlay_hide = false;
+static bool overlay_hide;
 
 int get_overlay_display_mask(const Config& cfg){
     int mask = 0;
@@ -48,10 +48,6 @@ int get_overlay_display_mask(const Config& cfg){
         if(cfg.pstv_mode)
             mask |= (int)OverlayShowMask::L2R2;
         
-    } else if (cfg.enable_gamepad_overlay && overlay_hide){
-        mask |= (int)OverlayShowMask::TouchScreenSwitch;
-    }
-
     // only show front back button
     if (cfg.overlay_show_touch_switch)
         mask |= (int)OverlayShowMask::TouchScreenSwitch;
@@ -83,6 +79,9 @@ void set_controller_overlay_state(int overlay_mask, bool edit, bool reset, bool 
     // find the identifier of the method to call
     jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayState", "(IZZZ)V");
 
+    if (overlay_hide)
+        overlay_mask = 4;
+    
     // effectively call the Java method
     env->CallVoidMethod(activity, method_id, overlay_mask, edit, reset, portrait);
 
