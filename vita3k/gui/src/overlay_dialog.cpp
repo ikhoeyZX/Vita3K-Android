@@ -47,10 +47,10 @@ int get_overlay_display_mask(const Config& cfg){
         mask = (int)OverlayShowMask::Basic;
         if(cfg.pstv_mode)
             mask |= (int)OverlayShowMask::L2R2;
-        
-    // only show front back button
-    if (cfg.overlay_show_touch_switch)
-        mask |= (int)OverlayShowMask::TouchScreenSwitch;
+    
+        if (cfg.overlay_show_touch_switch)
+           mask |= (int)OverlayShowMask::TouchScreenSwitch;
+    }
     
     return mask;
 }
@@ -79,7 +79,8 @@ void set_controller_overlay_state(int overlay_mask, bool edit, bool reset, bool 
     // find the identifier of the method to call
     jmethodID method_id = env->GetMethodID(clazz, "setControllerOverlayState", "(IZZZ)V");
 
-    if (overlay_hide)
+    // overide config temporary, ignored when disabled
+    if (overlay_hide && !edit && !reset && overlay_mask != 0)
         overlay_mask = 4;
     
     // effectively call the Java method
