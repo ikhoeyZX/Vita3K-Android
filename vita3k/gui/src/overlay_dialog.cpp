@@ -40,16 +40,20 @@ enum struct OverlayShowMask : int {
 
 int get_overlay_display_mask(const Config& cfg){
     int mask = 0;
-    if(cfg.enable_gamepad_overlay){
+    if (!gui.overlay_hide){
+    if (cfg.enable_gamepad_overlay){
         mask = (int)OverlayShowMask::Basic;
         if(cfg.pstv_mode)
             mask |= (int)OverlayShowMask::L2R2;
     }
 
     // just show front and back button
-    if(cfg.overlay_show_touch_switch)
+    if (cfg.overlay_show_touch_switch)
         mask |= (int)OverlayShowMask::TouchScreenSwitch;
-
+    }else{
+        mask |= (int)OverlayShowMask::TouchScreenSwitch;
+    }
+    
     return mask;
 }
 
@@ -59,17 +63,7 @@ extern "C" {
 
 JNIEXPORT void JNICALL
 Java_org_vita3k_emulator_overlay_InputOverlay_setHideState(JNIEnv *env, jobject thiz, jboolean is_hide) {
-    static bool is_set;
-    if (is_hide) {
-        set_controller_overlay_state(4);
-        is_set = false;
-    } else if (!is_set) {
-        // just call this once, to reduce call
-        set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg));
-        is_set = true;
-    } else {
-        is_set = true;
-    }
+    gui.overlay_hide = is_hide;
 }
 
 }
