@@ -72,10 +72,8 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
             && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
             surface_format = format;
             surface_format_found = true;
-           // break;
+            break;
         }
-        if(format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear)
-        LOG_TRACE("supported surface formats : {}", vk::to_string(format.format));
     }
 
     if (!surface_format_found) {
