@@ -280,9 +280,9 @@ public class Emulator extends SDLActivity
 
     @Keep
     public void setControllerOverlayState(int overlay_mask, boolean edit, boolean reset, boolean portrait){
-        // skip overlay if not activated, reduce java call
-        if(overlay_mask > 0) {
+        if (overlay_mask == 0) {
            getmOverlay().setState(overlay_mask);
+        } else {
            getmOverlay().setIsInEditMode(edit);
 
            if(reset)
