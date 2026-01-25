@@ -211,10 +211,12 @@ void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
         ImGui::Separator();
         ImGui::Spacing();
-
-        ImGui::Text("L2/R2 triggers will be displayed only if PSTV mode is enabled.");
-
+        ImGui::Text("Show/hide overlay will be displayed when touchscreen switch button is enabled.");
+    
     }
+    ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::Text("L2/R2 triggers will be displayed only if PSTV mode is enabled.");
     
     auto &common = emuenv.common_dialog.lang.common;
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
