@@ -206,9 +206,11 @@ int main(int argc, char *argv[]) {
         adminPriv = true;
 #endif
 
+#ifndef(ANDROID)
     if (adminPriv) {
         LOG_CRITICAL("PLEASE. DO NOT RUN VITA3K AS ADMIN OR WITH ADMIN PRIVILEGES.");
     }
+#endif
 
     EmuEnvState emuenv{};
     Config &cfg = emuenv.cfg;
@@ -385,7 +387,7 @@ int main(int argc, char *argv[]) {
 
     std::chrono::system_clock::time_point present = std::chrono::system_clock::now();
     std::chrono::system_clock::time_point later = std::chrono::system_clock::now();
-    constexpr float frame_time = 16.667f; // 1000.0 / 60.0;
+    constexpr float frame_time =  1000.0f / 60.0f; // 16.667f;
 
     auto wait_for_frame_done = [&]() {
         // get the current time & get the time we worked for
