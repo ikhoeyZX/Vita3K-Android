@@ -383,11 +383,13 @@ void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, co
     // I still don't know exactly why
     // so as a partial fix, render the gui and screen in different render passes
 
-    if (state.is_adreno_stock) {
+    // i think it make game run much faster in mali gpu so i unlock this for all gpu type
+    LOG_INFO_ONCE("Adreno gpu render hack enabled to all gpu type");
+//    if (state.is_adreno_stock) {
         current_cmd_buffer.endRenderPass();
         pass_info.renderPass = stock_adreno_pass;
         current_cmd_buffer.beginRenderPass(pass_info, vk::SubpassContents::eInline);
-    }
+//    }
 #endif
     
 }
@@ -554,11 +556,13 @@ void ScreenRenderer::create_render_pass() {
      post_filter_render_pass = state.device.createRenderPass(pass_info);
 
 #ifdef ANDROID
-     if (state.is_adreno_stock) {
+    // no issue in my mali gpu
+    LOG_INFO_ONCE("adreno hack enabled to all gpu type");
+   // if (state.is_adreno_stock) {
         // used to fix an adreno driver bug
         color_attachment.setInitialLayout(vk::ImageLayout::ePresentSrcKHR);
         stock_adreno_pass = state.device.createRenderPass(pass_info);
-    }
+  //  }
 #endif
 }
 
