@@ -206,7 +206,7 @@ int main(int argc, char *argv[]) {
         adminPriv = true;
 #endif
 
-#ifndef(ANDROID)
+#ifndef _ANDROID_
     if (adminPriv) {
         LOG_CRITICAL("PLEASE. DO NOT RUN VITA3K AS ADMIN OR WITH ADMIN PRIVILEGES.");
     }
