@@ -202,17 +202,18 @@ void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
             config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         SetTooltipEx("Analog multipiler can be used to change the sensitivity of your stick movements.");
         ImGui::Spacing();
+        
+        ImGui::Spacing();
+        ImGui::Separator();
+
+        if (ImGui::Checkbox("Show front/back touchscreen switch button.", &emuenv.cfg.overlay_show_touch_switch)){
+           config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        }
         ImGui::Separator();
         ImGui::Spacing();
 
         ImGui::Text("L2/R2 triggers will be displayed only if PSTV mode is enabled.");
-    }
 
-    ImGui::Spacing();
-    ImGui::Separator();
-
-    if(ImGui::Checkbox("Show front/back touchscreen switch button.", &emuenv.cfg.overlay_show_touch_switch)){
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
     
     auto &common = emuenv.common_dialog.lang.common;
