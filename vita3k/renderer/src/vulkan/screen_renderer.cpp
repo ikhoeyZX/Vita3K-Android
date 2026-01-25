@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -72,12 +72,15 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
             && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
             surface_format = format;
             surface_format_found = true;
-            break;
+           // break;
         }
+        LOG_TRACE("supported surface formats : {}", vk::to_string(format));
     }
 
-    if (!surface_format_found)
+    if (!surface_format_found) {
+        LOG_WARN("surface_format not found!");
         surface_format = surface_formats[0];
+    }
 
     // preferred order : mailbox > fifo_relaxed > fifo > whatever
     // the only drawback for mailbox is that it draws more power, so maybe on a portable device use something else
