@@ -283,6 +283,7 @@ public class Emulator extends SDLActivity
         if (overlay_mask == 0) {
            getmOverlay().setState(overlay_mask);
         } else {
+           getmOverlay().setState(overlay_mask);
            getmOverlay().setIsInEditMode(edit);
 
            if(reset)
