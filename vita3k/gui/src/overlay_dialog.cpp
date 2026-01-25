@@ -198,6 +198,7 @@ void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, "Analog Stick Multiplier");
         ImGui::Spacing();
         auto &mult = emuenv.cfg.controller_analog_multiplier;
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (gmpd / 2.f));
         if (ImGui::SliderFloat("##analog_multiplier", &mult, 0.1f, 2.f, "%.1fx", ImGuiSliderFlags_AlwaysClamp))
             config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         SetTooltipEx("Analog multipiler can be used to change the sensitivity of your stick movements.");
