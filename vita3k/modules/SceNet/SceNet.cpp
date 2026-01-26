@@ -585,8 +585,6 @@ EXPORT(int, sceNetSendmsg, int sid, const SceNetMsghdr *msg, int flags) {
     if (!sock)
         RET_NET_ERRNO(SCE_NET_ERROR_EBADF);
 
-    const SceNetSockaddr *dest_addr = static_cast<const SceNetSockaddr *>(msg->msg_name.get(emuenv.mem));
-
     size_t total_len = 0;
     for (int i = 0; i < msg->msg_iovlen; ++i) {
         const SceNetIovec &iov = msg->msg_iov.get(emuenv.mem)[i];
@@ -602,7 +600,7 @@ EXPORT(int, sceNetSendmsg, int sid, const SceNetMsghdr *msg, int flags) {
         buf.insert(buf.end(), data, data + iov.iov_len);
     }
 
-    RET_NET_ERRNO(sock->send_packet(buf.data(), total_len, flags, dest_addr, msg->msg_namelen));
+    RET_NET_ERRNO(sock->send_packet(buf.data(), total_len, flags, msg->msg_name.get(emuenv.mem), msg->msg_namelen));
 }
 
 EXPORT(int, sceNetSendto, int sid, const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) {
