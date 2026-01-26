@@ -332,21 +332,6 @@ enum SceNetEpollEventType {
     SCE_NET_EPOLLERR = 8
 };
 
-struct SceNetIovec {
-    Ptr<void> iov_base;
-    SceSize iov_len;
-};
-
-struct SceNetMsghdr {
-    Ptr<void> msg_name;
-    SceNetSocklen_t msg_namelen;
-    Ptr<SceNetIovec> msg_iov;
-    int msg_iovlen;
-    Ptr<void> msg_control;
-    SceNetSocklen_t msg_controllen;
-    int msg_flags;
-};
-
 struct SceNetEtherAddr {
     unsigned char data[6];
 };
@@ -380,6 +365,21 @@ struct SceNetSockaddr {
     char sa_data[14];
 };
 static_assert(sizeof(SceNetSockaddr) == 16, "SceNetSockaddr has incorrect size");
+
+struct SceNetIovec {
+    Ptr<void> iov_base; // Base address (pointer)
+    SceSize iov_len; // Size of area (in bytes) indicated by iov_base
+};
+
+struct SceNetMsghdr {
+    Ptr<SceNetSockaddr> msg_name; // Pointer to address structure
+    SceNetSocklen_t msg_namelen; // Size of address structure
+    Ptr<SceNetIovec> msg_iov; // Pointer to scatter/gather array
+    int msg_iovlen; // Number of elements in msg_iov array
+    Ptr<void> msg_control; // (unsupported)
+    SceNetSocklen_t msg_controllen; // (unsupported)
+    int msg_flags; // (unsupported)
+};
 
 struct SceNetInitParam {
     Ptr<void> memory;
