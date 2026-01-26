@@ -28,7 +28,7 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
-#include <SDL3/SDL_mutex.h>
+#include <SDL_mutex.h>
 
 int CorenumAllocator::new_corenum() {
     const std::lock_guard<std::mutex> guard(lock);
@@ -82,14 +82,17 @@ KernelState::KernelState()
     : debugger(*this) {
 }
 
-bool KernelState::init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt) {
+bool KernelState::init(MemState &mem, const CallImportFunc &call_import, CPUBackend cpu_backend, bool cpu_opt) {
     constexpr std::size_t MAX_CORE_COUNT = 150;
 
     corenum_allocator.set_max_core_count(MAX_CORE_COUNT);
+#ifdef USE_DYNARMIC
     exclusive_monitor = new_exclusive_monitor(MAX_CORE_COUNT);
+#endif
     start_tick = rtc_get_ticks(rtc_base_ticks());
     base_tick = { rtc_base_ticks() };
     cpu_protocol = std::make_unique<CPUProtocol>(*this, mem, call_import);
+    this->cpu_backend = cpu_backend;
     this->cpu_opt = cpu_opt;
 
     return true;
