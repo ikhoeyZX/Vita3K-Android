@@ -640,7 +640,7 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
     bool upload = false;
 
     // Try to find GXM texture in cache.
-    size_t cached_gxm_texture_index = -1;
+    int cached_gxm_texture_index = -1;
     TextureGxmDataRepr texture_repr = std::bit_cast<TextureGxmDataRepr>(gxm_texture);
     if (use_sampler_cache) {
         // remove the sampler state from the representation
@@ -666,10 +666,6 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
             // Cache is full.
             LOG_WARN_ONCE("Texture cache is full. Starting to replace textures");
             texture_lookup.erase(std::bit_cast<TextureGxmDataRepr>(info->texture));
-            if (info->texture_size > 0) {
-               LOG_ERROR("Texture cache still full. need fix this!");
-               LOG_ERROR("Size texture {}", info->texture_size);
-            }
         }
         texture_lookup[texture_repr] = info;
 
