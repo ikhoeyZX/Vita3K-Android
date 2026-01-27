@@ -28,6 +28,7 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
+#include <SDL_thread.h>
 #include <SDL_mutex.h>
 
 int CorenumAllocator::new_corenum() {
