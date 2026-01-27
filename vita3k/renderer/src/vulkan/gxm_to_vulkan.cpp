@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <renderer/vulkan/gxm_to_vulkan.h>
+#include <renderer/texture_cache.h>
 
 #include <gxm/functions.h>
 #include <util/log.h>
@@ -733,6 +734,13 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
         return vk::Format::eR32Sint;
     case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
+        {
+            if (support_x8d24)
+                return vk::Format::eX8D24UnormPack32;
+            else
+                return vk::Format::eR32Sfloat;
+        }
+        
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
         return vk::Format::eR32Sfloat;
@@ -770,23 +778,38 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
         return vk::Format::eE5B9G9R9UfloatPack32;
 
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
+        return vk::Format::eR8G8B8Unorm;
     // the following formats are all decompressed to u8u8u8u8
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
     case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
     case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
         return vk::Format::eR8G8B8A8Unorm;
 
+    if (support_pvrt) {
+       case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
+           return vk::Format::ePvrtc12BppUnormBlockIMG;
+       case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
+           return vk::Format::ePvrtc14BppUnormBlockIMG;
+       case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
+           return vk::Format::ePvrtc22BppUnormBlockIMG;
+       case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+           return vk::Format::ePvrtc24BppUnormBlockIMG
+    } else {
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+            return vk::Format::eR8G8B8A8Unorm;
+    }
+
     // Because of the lack of support of s8s8s8, an alpha channel is added to this texture
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
-        return vk::Format::eR8G8B8A8Snorm;
+        // return vk::Format::eR8G8B8A8Snorm;
+        return vk::Format::eR8G8B8Snorm;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
         return vk::Format::eR4G4B4A4UnormPack16;
@@ -797,8 +820,13 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
         // TODO: same as for the color format
         return vk::Format::eA2R10G10B10UnormPack32;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
-        // not supported by modern GPUs
-        return vk::Format::eR16G16B16A16Sfloat;
+        {
+           if (support_a2rgb10)
+               return vk::Format::eA2R10G10B10UnormPack32;
+           else
+              // not supported by modern GPUs
+              return vk::Format::eR16G16B16A16Sfloat;
+        }
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
         return vk::Format::eBc1RgbaUnormBlock;
