@@ -51,13 +51,13 @@ void CorenumAllocator::set_max_core_count(const std::size_t max) {
 struct ThreadParams {
     KernelState *kernel = nullptr;
     SceUID thid = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
-    SDL_Semaphore *host_may_destroy_params = nullptr;
+    SDL_semaphore *host_may_destroy_params = nullptr;
 };
 
 static int SDLCALL thread_function(void *data) {
     assert(data != nullptr);
     const ThreadParams params = *static_cast<const ThreadParams *>(data);
-    SDL_SignalSemaphore(params.host_may_destroy_params);
+    SDL_SemPost(params.host_may_destroy_params);
     const ThreadStatePtr thread = params.kernel->get_thread(params.thid);
 #ifdef TRACY_ENABLE
     if (!thread->name.empty()) {
