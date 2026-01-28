@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,12 +37,12 @@ vk::CompareOp translate_stencil_func(SceGxmStencilFunc stencil_func);
 vk::StencilOp translate_stencil_op(SceGxmStencilOp stencil_op);
 
 namespace color {
-vk::Format translate_format(SceGxmColorBaseFormat base_format);
+vk::Format translate_format(SceGxmColorBaseFormat base_format, bool support_a2rgb10);
 vk::ComponentMapping translate_swizzle(SceGxmColorFormat format);
 } // namespace color
 
 namespace texture {
-vk::Format translate_format(SceGxmTextureBaseFormat base_format);
+vk::Format translate_format(SceGxmTextureBaseFormat base_format, bool support_pvrt, bool support_a2rgb10, bool support_x8d24);
 vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format);
 vk::SamplerAddressMode translate_address_mode(SceGxmTextureAddrMode src);
 vk::Filter translate_filter(SceGxmTextureFilter src);
