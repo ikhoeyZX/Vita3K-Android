@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <renderer/vulkan/gxm_to_vulkan.h>
-#include <renderer/texture_cache.h>
 
 #include <gxm/functions.h>
 #include <util/log.h>
