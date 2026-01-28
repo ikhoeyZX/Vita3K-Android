@@ -406,7 +406,7 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
 
     const uint16_t mip_count = renderer::texture::get_upload_mip(gxm_texture.true_mip_count(), width, height);
 
-    vk::Format vk_format = texture::translate_format(base_format);
+    vk::Format vk_format = texture::translate_format(base_format, support_pvrt, support_a2rgb10, support_x8d24);
         
     if (gxm::is_bcn_format(base_format) && !support_dxt)
         // texture will be decompressed
@@ -652,7 +652,8 @@ void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
     if (image.image)
         state.frame().destroy_queue.add_image(image);
 
-    vk::Format vk_format = texture::translate_format(base_format);
+    vk::Format vk_format = texture::translate_format(base_format, support_pvrt, support_a2rgb10, support_x8d24);
+    
     if (!support_dxt)
         vk_format = bcn_to_rgba8(vk_format); // for mali users
 
