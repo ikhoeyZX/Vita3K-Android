@@ -723,6 +723,12 @@ vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format) {
 
 vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
     TextureCache *texture_cache;
+
+    LOG_INFO_ONCE("IS TEXTURE CALL WORK?");
+    LOG_INFO_ONCE("texture_cache->support_pvrt =  {}", texture_cache->support_pvrt);
+    LOG_INFO_ONCE("texture_cache->support_a2rgb10 = {}", texture_cache->support_a2rgb10);
+    LOG_INFO_ONCE("texture_cache->support_x8d24 = {}", texture_cache->support_x8d24);
+
     switch (base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
         return vk::Format::eR8Unorm;
@@ -739,12 +745,10 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
         return vk::Format::eR32Sint;
     case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
-        {
-            if (texture_cache->support_x8d24)
-                return vk::Format::eX8D24UnormPack32;
-            else
-                return vk::Format::eR32Sfloat;
-        }
+        if (texture_cache->support_x8d24)
+            return vk::Format::eX8D24UnormPack32;
+        else
+            return vk::Format::eR32Sfloat;
         
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
@@ -811,7 +815,7 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
            return vk::Format::eR8G8B8A8Unorm;
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
         if (texture_cache->support_pvrt) 
-           return vk::Format::ePvrtc24BppUnormBlockIMG
+           return vk::Format::ePvrtc24BppUnormBlockIMG;
         else
            return vk::Format::eR8G8B8A8Unorm;
 
