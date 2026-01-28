@@ -411,7 +411,8 @@ vk::ComponentMapping translate_swizzle(SceGxmColorFormat format) {
     }
 }
 
-vk::Format translate_format(SceGxmColorBaseFormat format, TextureCache texture_cache) {
+vk::Format translate_format(SceGxmColorBaseFormat format) {
+    TextureCache *texture_cache;
     // TODO: look if all these formats are available on the GPU
     switch (format) {
     // classic unpacked formats
@@ -720,7 +721,8 @@ vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format) {
     }
 }
 
-vk::Format translate_format(SceGxmTextureBaseFormat base_format, TextureCache texture_cache) {
+vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
+    TextureCache *texture_cache;
     switch (base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
         return vk::Format::eR8Unorm;
