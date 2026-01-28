@@ -412,7 +412,8 @@ vk::ComponentMapping translate_swizzle(SceGxmColorFormat format) {
 }
 
 vk::Format translate_format(SceGxmColorBaseFormat format) {
-    backend = Backend::Vulkan;
+    renderer::TextureCache texture_cache;
+
     // TODO: look if all these formats are available on the GPU
     switch (format) {
     // classic unpacked formats
@@ -470,7 +471,7 @@ vk::Format translate_format(SceGxmColorBaseFormat format) {
         // TODO: only ABGR or ARGB swizzle is supported with this format
         return vk::Format::eA2R10G10B10UnormPack32;
     case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
-        if (support_a2rgb10)
+        if (texture_cache.support_a2rgb10)
             return vk::Format::eA2R10G10B10UnormPack32;
         else
             // not supported by modern GPUs
@@ -722,12 +723,12 @@ vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format) {
 }
 
 vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
-    backend = Backend::Vulkan;
-
+    renderer::TextureCache texture_cache;
+    
     LOG_INFO_ONCE("IS TEXTURE CALL WORK?");
-    LOG_INFO_ONCE("texture_cache->support_pvrt =  {}", support_pvrt);
-    LOG_INFO_ONCE("texture_cache->support_a2rgb10 = {}", support_a2rgb10);
-    LOG_INFO_ONCE("texture_cache->support_x8d24 = {}", support_x8d24);
+    LOG_INFO_ONCE("texture_cache->support_pvrt =  {}", texture_cache.support_pvrt);
+    LOG_INFO_ONCE("texture_cache->support_a2rgb10 = {}", texture_cache.support_a2rgb10);
+    LOG_INFO_ONCE("texture_cache->support_x8d24 = {}", texture_cache.support_x8d24);
     
     switch (base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
@@ -745,7 +746,7 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
         return vk::Format::eR32Sint;
     case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
-        if (support_x8d24)
+        if (texture_cache.support_x8d24)
             return vk::Format::eX8D24UnormPack32;
         else
             return vk::Format::eR32Sfloat;
@@ -799,22 +800,22 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
         return vk::Format::eR8G8B8A8Unorm;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
-        if (support_pvrt) 
+        if (texture_cache.support_pvrt) 
            return vk::Format::ePvrtc12BppUnormBlockIMG;
         else
            return vk::Format::eR8G8B8A8Unorm;
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
-        if (support_pvrt) 
+        if (texture_cache.support_pvrt) 
            return vk::Format::ePvrtc14BppUnormBlockIMG;
         else
            return vk::Format::eR8G8B8A8Unorm;
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
-        if (support_pvrt) 
+        if (texture_cache.support_pvrt) 
            return vk::Format::ePvrtc22BppUnormBlockIMG;
         else
            return vk::Format::eR8G8B8A8Unorm;
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
-        if (support_pvrt) 
+        if (texture_cache.support_pvrt) 
            return vk::Format::ePvrtc24BppUnormBlockIMG;
         else
            return vk::Format::eR8G8B8A8Unorm;
@@ -833,7 +834,7 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
         // TODO: same as for the color format
         return vk::Format::eA2R10G10B10UnormPack32;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
-        if (support_a2rgb10)
+        if (texture_cache.support_a2rgb10)
             return vk::Format::eA2R10G10B10UnormPack32;
         else
             // not supported by modern GPUs
