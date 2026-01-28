@@ -202,8 +202,7 @@ Mp3DecoderState::Mp3DecoderState(uint32_t channels) {
 }
 
 Mp3DecoderState::~Mp3DecoderState() {
-    avcodec_close(context);
-    av_free(context);
+    avcodec_free_context(&context);
 
     context = nullptr;
 }
