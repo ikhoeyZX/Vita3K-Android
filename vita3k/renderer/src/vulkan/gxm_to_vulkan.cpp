@@ -795,22 +795,22 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
         return vk::Format::eR8G8B8A8Unorm;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
-        if (texture_cache->support_pvrt) {
+        if (texture_cache->support_pvrt) 
            return vk::Format::ePvrtc12BppUnormBlockIMG;
         else
            return vk::Format::eR8G8B8A8Unorm;
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
-        if (texture_cache->support_pvrt) {
+        if (texture_cache->support_pvrt) 
            return vk::Format::ePvrtc14BppUnormBlockIMG;
         else
            return vk::Format::eR8G8B8A8Unorm;
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
-        if (texture_cache->support_pvrt) {
+        if (texture_cache->support_pvrt) 
            return vk::Format::ePvrtc22BppUnormBlockIMG;
         else
            return vk::Format::eR8G8B8A8Unorm;
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
-        if (texture_cache->support_pvrt) {
+        if (texture_cache->support_pvrt) 
            return vk::Format::ePvrtc24BppUnormBlockIMG
         else
            return vk::Format::eR8G8B8A8Unorm;
