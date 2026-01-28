@@ -412,7 +412,7 @@ vk::ComponentMapping translate_swizzle(SceGxmColorFormat format) {
 }
 
 vk::Format translate_format(SceGxmColorBaseFormat format) {
-    renderer.TextureCache &texture_cache;
+    renderer::TextureCache &texture_cache;
     // TODO: look if all these formats are available on the GPU
     switch (format) {
     // classic unpacked formats
@@ -722,7 +722,7 @@ vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format) {
 }
 
 vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
-    renderer.TextureCache &texture_cache;
+    renderer::TextureCache &texture_cache;
 
     LOG_INFO_ONCE("IS TEXTURE CALL WORK?");
     LOG_INFO_ONCE("texture_cache->support_pvrt =  {}", texture_cache->support_pvrt);
