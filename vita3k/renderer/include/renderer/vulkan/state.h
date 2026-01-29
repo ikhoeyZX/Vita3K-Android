@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -106,6 +106,8 @@ struct VKState : public renderer::State {
     // support for the VK_KHR_uniform_buffer_standard_layout extension, needed for memory mapping and texture viewport
     bool support_standard_layout = false;
     bool support_rasterized_order_access = false;
+
+    bool support_a2rgb10 = false;
 
 #ifdef ANDROID
 // SDK > 26
