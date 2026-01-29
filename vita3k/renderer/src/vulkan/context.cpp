@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -123,7 +123,14 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     // set these values for the pipeline cache
     context.record.color_base_format = gxm::get_base_format(color_surface_fin->colorFormat);
     context.record.is_gamma_corrected = static_cast<bool>(color_surface_fin->gamma);
-    vk::Format vk_format = color::translate_format(context.record.color_base_format);
+
+    bool support_a2rgb10 = false;
+    if (context.record.color_base_format == SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10){
+       const vk::FormatProperties a2rgb10_support = state.physical_device.getFormatProperties(vk::Format::eA2R10G10B10UnormPack32);
+       support_a2rgb10 = static_cast<bool>(a2rgb10_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+    }
+    
+    vk::Format vk_format = color::translate_format(context.record.color_base_format, support_a2rgb10);
 
     if (color_surface_fin->gamma && vk_format == vk::Format::eR8G8B8A8Unorm) {
         vk_format = vk::Format::eR8G8B8A8Srgb;
