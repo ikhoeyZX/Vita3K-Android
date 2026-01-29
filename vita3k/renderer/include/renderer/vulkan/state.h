@@ -107,8 +107,6 @@ struct VKState : public renderer::State {
     bool support_standard_layout = false;
     bool support_rasterized_order_access = false;
 
-    bool support_a2rgb10_color = false;
-
 #ifdef ANDROID
 // SDK > 26
     bool support_android_buffer_import = false;
