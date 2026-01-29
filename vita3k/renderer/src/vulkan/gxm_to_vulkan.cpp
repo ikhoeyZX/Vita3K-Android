@@ -741,7 +741,7 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format, bool support_pv
     case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
         return vk::Format::eR32Sint;
     case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
-        if (texture_cache.support_x8d24)
+        if (support_x8d24)
             return vk::Format::eX8D24UnormPack32;
         else
             return vk::Format::eR32Sfloat;
