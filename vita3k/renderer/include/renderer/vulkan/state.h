@@ -106,6 +106,7 @@ struct VKState : public renderer::State {
     // support for the VK_KHR_uniform_buffer_standard_layout extension, needed for memory mapping and texture viewport
     bool support_standard_layout = false;
     bool support_rasterized_order_access = false;
+    bool support_color_a2rgb10 = false;
 
 #ifdef ANDROID
 // SDK > 26
