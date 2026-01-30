@@ -441,8 +441,7 @@ vk::Format translate_format(SceGxmColorBaseFormat format, bool support_a2rgb10) 
         return vk::Format::eR32G32Sfloat;
 
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
-        // return vk::Format::eR8G8B8A8Unorm;
-        return vk::Format::eB8G8R8A8Unorm;
+         return vk::Format::eR8G8B8A8Unorm;
     case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
         return vk::Format::eR8G8B8A8Snorm;
     case SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16:
