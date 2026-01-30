@@ -302,9 +302,9 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
     config.callbacks = cb.get();
     // disable it because it make memory mapping crash
-    if (parent->mem->use_page_table && !log_mem && cpu_opt) {
+    if (parent->mem->use_page_table) {
         config.page_table = (log_mem || !cpu_opt) ? nullptr : std::bit_cast<decltype(config.page_table)>(parent->mem->page_table.get());
-        config.absolute_offset_page_table = true;
+        config.absolute_offset_page_table = false;
         config.detect_misaligned_access_via_page_table = 4;
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
     }
