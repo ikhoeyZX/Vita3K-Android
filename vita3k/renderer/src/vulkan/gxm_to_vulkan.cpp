@@ -466,13 +466,14 @@ vk::Format translate_format(SceGxmColorBaseFormat format, bool support_a2rgb10) 
         return vk::Format::eR4G4B4A4UnormPack16;
     case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
         // TODO: only ABGR or ARGB swizzle is supported with this format
-        return vk::Format::eA2R10G10B10UnormPack32;
-    case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
         if (support_a2rgb10)
+            // some old device not support this
             return vk::Format::eA2R10G10B10UnormPack32;
         else
-            // not supported by modern GPUs
-            return vk::Format::eR16G16B16A16Sfloat;// This format is not supported on modern GPUs, give something bigger
+            return vk::Format::eR16G16B16A16Uint;
+    case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
+        // not supported by modern GPUs
+        return vk::Format::eR16G16B16A16Sfloat;// This format is not supported on modern GPUs, give something bigger
         
     default:
         LOG_ERROR("Unknown format {}", log_hex(format));
@@ -720,11 +721,6 @@ vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format) {
 }
 
 vk::Format translate_format(SceGxmTextureBaseFormat base_format, bool support_pvrt, bool support_a2rgb10, bool support_x8d24) {
-    LOG_INFO_ONCE("IS TEXTURE CALL WORK?");
-    LOG_INFO_ONCE("texture_cache->support_pvrt =  {}", support_pvrt);
-    LOG_INFO_ONCE("texture_cache->support_a2rgb10 = {}", support_a2rgb10);
-    LOG_INFO_ONCE("texture_cache->support_x8d24 = {}", support_x8d24);
-    
     switch (base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
         return vk::Format::eR8Unorm;
@@ -785,6 +781,7 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format, bool support_pv
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
         return vk::Format::eR8G8B8Unorm;
+        
     // the following formats are all decompressed to u8u8u8u8
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
@@ -827,13 +824,14 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format, bool support_pv
         return vk::Format::eA1R5G5B5UnormPack16;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
         // TODO: same as for the color format
-        return vk::Format::eA2R10G10B10UnormPack32;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
         if (support_a2rgb10)
             return vk::Format::eA2R10G10B10UnormPack32;
         else
-            // not supported by modern GPUs
-            return vk::Format::eR16G16B16A16Sfloat;
+            return vk::Format::eR16G16B16A16Uint;
+        
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
+        // not supported by modern GPUs
+        return vk::Format::eR16G16B16A16Sfloat;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
         return vk::Format::eBc1RgbaUnormBlock;
