@@ -441,7 +441,8 @@ vk::Format translate_format(SceGxmColorBaseFormat format, bool support_a2rgb10) 
         return vk::Format::eR32G32Sfloat;
 
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
-        return vk::Format::eR8G8B8A8Unorm;
+        // return vk::Format::eR8G8B8A8Unorm;
+        return vk::Format::eB8G8R8A8Unorm;
     case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
         return vk::Format::eR8G8B8A8Snorm;
     case SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16:
@@ -456,8 +457,7 @@ vk::Format translate_format(SceGxmColorBaseFormat format, bool support_a2rgb10) 
         return vk::Format::eE5B9G9R9UfloatPack32;
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8:
         // 24 bit packed RGB is not supported (on many GPUs), use rgba8 instead
-        //return vk::Format::eR8G8B8A8Unorm;
-        return vk::Format::eR8G8B8Unorm;
+        return vk::Format::eR8G8B8A8Unorm;
 
     case SCE_GXM_COLOR_BASE_FORMAT_U1U5U5U5:
         // TODO: we must use either eR5G5B5A1UnormPack16 or eA1R5G5B5UnormPack16 depending on the swizzle
