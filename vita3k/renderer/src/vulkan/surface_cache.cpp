@@ -139,12 +139,8 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     overlap = (overlap && (ite->first + ite->second->total_bytes) > address);
 
     const SceGxmColorBaseFormat base_format = gxm::get_base_format(color->colorFormat);
-    bool support_a2rgb10 = false;
-    if (base_format == SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10){
-       const vk::FormatProperties a2rgb10_support = state.physical_device.getFormatProperties(vk::Format::eA2R10G10B10UnormPack32);
-       support_a2rgb10 = static_cast<bool>(a2rgb10_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
-    }
-    vk::Format vk_format = color::translate_format(base_format, support_a2rgb10);
+    vk::Format vk_format = color::translate_format(base_format, state.support_a2rgb10);
+    LOG_TRACE("COLOR FORMAT 1: {}", vk::to_string(vk_format));
 
     SurfaceTiling tiling;
     if (color->surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR)
@@ -337,6 +333,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
 
     const vk::ComponentMapping swizzle = texture::translate_swizzle(gxm::get_format(texture));
     vk::Format vk_format = color::translate_format(base_format, state.support_color_a2rgb10);
+    LOG_TRACE("COLOR FORMAT 2: {}", vk::to_string(vk_format));
 
     const bool is_srgb = texture.gamma_mode != 0;
     if (is_srgb) {
