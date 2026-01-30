@@ -336,7 +336,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         return std::nullopt;
 
     const vk::ComponentMapping swizzle = texture::translate_swizzle(gxm::get_format(texture));
-    vk::Format vk_format = color::translate_format(base_format);
+    vk::Format vk_format = color::translate_format(base_format, state.support_color_a2rgb10);
 
     const bool is_srgb = texture.gamma_mode != 0;
     if (is_srgb) {
