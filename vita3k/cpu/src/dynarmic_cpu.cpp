@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2026 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -302,13 +302,14 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
     config.callbacks = cb.get();
     // disable it because it make memory mapping crash
-    if (parent->mem->use_page_table) {
+/*    if (parent->mem->use_page_table) {
         config.page_table = (log_mem || !cpu_opt) ? nullptr : std::bit_cast<decltype(config.page_table)>(parent->mem->page_table.get());
-        config.absolute_offset_page_table = false;
+        config.absolute_offset_page_table = true;
         config.detect_misaligned_access_via_page_table = 4;
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
     }
-    
+*/
+
     if (!log_mem && cpu_opt) {
          config.fastmem_exclusive_access = true; 
          config.recompile_on_exclusive_fastmem_failure = true;
@@ -316,8 +317,8 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
        // config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
     }else{
          config.fastmem_pointer = std::optional<uintptr_t>(std::nullopt);
-         config.fastmem_exclusive_access = false; 
-         config.recompile_on_exclusive_fastmem_failure = false;
+         config.fastmem_exclusive_access = false; // if this and below set true native buffer works but only 1-3 fps, weird
+         config.recompile_on_exclusive_fastmem_failure = false; // this one
     }
     
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;  
