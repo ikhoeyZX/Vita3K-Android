@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -257,7 +257,6 @@ void sync_visibility_index(VKContext &context, bool enable, uint32_t index, bool
         context.is_in_query = false;
     }
     context.current_query_idx = index;
-    last_index = index;
     context.is_query_op_increment = is_increment;
     
 }
