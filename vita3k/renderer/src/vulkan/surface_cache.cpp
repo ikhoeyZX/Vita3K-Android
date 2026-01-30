@@ -140,8 +140,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
 
     const SceGxmColorBaseFormat base_format = gxm::get_base_format(color->colorFormat);
     vk::Format vk_format = color::translate_format(base_format, state.support_color_a2rgb10);
-    LOG_TRACE("COLOR FORMAT 1: {}", vk::to_string(vk_format));
-
+    
     SurfaceTiling tiling;
     if (color->surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR)
         tiling = SurfaceTiling::Linear;
@@ -333,8 +332,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
 
     const vk::ComponentMapping swizzle = texture::translate_swizzle(gxm::get_format(texture));
     vk::Format vk_format = color::translate_format(base_format, state.support_color_a2rgb10);
-    LOG_TRACE("COLOR FORMAT 2: {}", vk::to_string(vk_format));
-
+    
     const bool is_srgb = texture.gamma_mode != 0;
     if (is_srgb) {
         if (vk_format == vk::Format::eR8G8B8A8Unorm) {
