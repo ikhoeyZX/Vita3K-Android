@@ -139,7 +139,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     overlap = (overlap && (ite->first + ite->second->total_bytes) > address);
 
     const SceGxmColorBaseFormat base_format = gxm::get_base_format(color->colorFormat);
-    vk::Format vk_format = color::translate_format(base_format, state.support_a2rgb10);
+    vk::Format vk_format = color::translate_format(base_format, state.support_color_a2rgb10);
     LOG_TRACE("COLOR FORMAT 1: {}", vk::to_string(vk_format));
 
     SurfaceTiling tiling;
