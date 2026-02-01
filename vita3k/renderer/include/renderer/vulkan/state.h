@@ -62,6 +62,7 @@ struct VKState : public renderer::State {
     std::vector<vk::PresentModeKHR> format_present_modes;
     
     vk::Format deep_stencil_use;
+    VkBool32 is_have_deep = VK_FALSE;
     
     vma::Allocator allocator;
 
