@@ -380,20 +380,25 @@ static void *load_custom_adreno_driver(const std::string &driver_name) {
 bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config) {
     // Create Instance
     {
-        if(config.deep_stencil == "D32Sfloat")
+        if (config.deep_stencil == "D32Sfloat") {
 		   deep_stencil_use = vk::Format::eD32Sfloat;
-		else if(config.deep_stencil == "D32SfloatS8Uint")
+		} else if (config.deep_stencil == "D32SfloatS8Uint") {
 		   deep_stencil_use = vk::Format::eD32SfloatS8Uint;
-        else if(config.deep_stencil == "D16UnormS8Uint")
+		   is_have_deep = VK_TRUE;
+		} else if (config.deep_stencil == "D16UnormS8Uint") {
 		   deep_stencil_use = vk::Format::eD16UnormS8Uint;
-        else if(config.deep_stencil == "D16Unorm")
+			is_have_deep = VK_TRUE;
+		} else if (config.deep_stencil == "D16Unorm") {
 		   deep_stencil_use = vk::Format::eD16Unorm;
-        else if(config.deep_stencil == "S8Uint")
+	    } else if (config.deep_stencil == "S8Uint") {
 		   deep_stencil_use = vk::Format::eS8Uint;
-		else if(config.deep_stencil == "X8D24UnormPack32")
+        } else if (config.deep_stencil == "X8D24UnormPack32") {
 		   deep_stencil_use = vk::Format::eX8D24UnormPack32;
-        else 
+			is_have_deep = VK_TRUE;
+		} else {
 		   deep_stencil_use = vk::Format::eD24UnormS8Uint;
+		   is_have_deep = VK_TRUE;
+		}
 
 		LOG_INFO("deep_stencil_use = {}", vk::to_string(deep_stencil_use));
         
