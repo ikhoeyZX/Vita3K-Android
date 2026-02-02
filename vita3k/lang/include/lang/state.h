@@ -244,7 +244,7 @@ struct LangState {
         };
         std::map<std::string, std::string> application = {
             { "title", "Application" },
-            { "delete", "The selected applications and all related data, including saved data, will be deleted." },
+            { "delete", "The selected applications and all related data, EXCEPT saved data, will be deleted." },
             { "no_item", "There are no content items." }
         };
         std::map<std::string, std::string> saved_data = {
