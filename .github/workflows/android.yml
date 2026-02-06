@@ -78,16 +78,22 @@ jobs:
           cp -r lang android/assets
           cp -r vita3k/shaders-builtin android/assets
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
-          ./gradlew --stacktrace --info --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease
+          ./gradlew --stacktrace --info --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease assembleReldebug
 
       - name: Rename APK
         run: |
           mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-release.apk
+          mv  android/build/outputs/apk/Reldebug/android-Reldebug.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-Reldebug.apk
           
       - uses: actions/upload-artifact@v4
         with:
           name: vita3k-${{ env.git_short_sha }}-release_arm64.zip
           path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-release.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vita3k-${{ env.git_short_sha }}-Reldebug_arm64.zip
+          path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-Reldebug.apk
 
 #      - name: Gradle build 32bit
 #        env:
