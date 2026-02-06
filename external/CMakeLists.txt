@@ -276,7 +276,7 @@ elseif(ANDROID AND NOT (CMAKE_BUILD_TYPE STREQUAL "Release"))
 		# download it if not already done
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/validation_layers.zip")
 			message(STATUS "Downloading validation layer...")
-			file(DOWNLOAD https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download/sdk-1.3.250.0/android-binaries-1.3.250.0.zip
+			file(DOWNLOAD https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download/vulkan-sdk-1.4.341.0/android-binaries-1.4.341.0.zip
 				"${CMAKE_BINARY_DIR}/external/validation_layers.zip" SHOW_PROGRESS)
 		endif()
 
