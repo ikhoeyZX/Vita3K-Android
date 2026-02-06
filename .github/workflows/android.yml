@@ -83,7 +83,7 @@ jobs:
       - name: Rename APK
         run: |
           mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-release.apk
-          mv  android/build/outputs/apk/Reldebug/android-Reldebug.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-Reldebug.apk
+          mv  android/build/outputs/apk/Reldebug/android-reldebug.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-reldebug.apk
           
       - uses: actions/upload-artifact@v4
         with:
@@ -92,8 +92,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: vita3k-${{ env.git_short_sha }}-Reldebug_arm64.zip
-          path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-Reldebug.apk
+          name: vita3k-${{ env.git_short_sha }}-reldebug_arm64.zip
+          path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-reldebug.apk
 
 #      - name: Gradle build 32bit
 #        env:
