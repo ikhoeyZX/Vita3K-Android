@@ -161,7 +161,7 @@ static bool detect_patch_bcn(bool *support_dxt) {
 
 	// check vulkan version
 	uint32_t vk_api_version = 0;
-	VkResult res = vkEnumerateInstanceVersion(&vk_api_version);
+	VkResult res = VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion(&vk_api_version);
 	if (res != VK_SUCCESS)
 	   loaderVersion = VK_API_VERSION_1_0;
 	
@@ -870,7 +870,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
 		// check vulkan version
 	    uint32_t vk_api_version = 0;
-	    VkResult res = vkEnumerateInstanceVersion(&vk_api_version);
+	    VkResult res = VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion(&vk_api_version);
 	    if (res != VK_SUCCESS)
 	       loaderVersion = VK_API_VERSION_1_0;
 		
