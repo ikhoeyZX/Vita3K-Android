@@ -167,7 +167,7 @@ static bool detect_patch_bcn(bool *support_dxt) {
 	
     // create an instance to get the patch address
     vk::ApplicationInfo application_info{
-        .apiVersion = vk_api_version;
+        .apiVersion = vk_api_version
     };
     vk::InstanceCreateInfo instance_info{
         .pApplicationInfo = &application_info
