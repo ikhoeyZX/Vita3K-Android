@@ -64,7 +64,7 @@ jobs:
         with:
           gradle-home-cache-cleanup: true
           
-      - name: Gradle build 64bit
+      - name: Gradle build 64bit release
         env:
           SIGNING_STORE_PATH: "/home/runner/keystore.jks"
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
@@ -72,13 +72,29 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
           bash -c "yes || Yes || true" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
-          
           mkdir android/assets/data
           cp -r data/image android/assets/data/image
           cp -r lang android/assets
           cp -r vita3k/shaders-builtin android/assets
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
-          ./gradlew --stacktrace --info --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease assembleReldebug
+          ./gradlew --stacktrace --info --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease
+          
+      - name: Gradle build 64bit reldebug
+        env:
+          SIGNING_STORE_PATH: "/home/runner/keystore.jks"
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          mkdir android/src/main/jniLibs
+          mkdir android/build/intermediates/merged_native_libs/reldebug
+          mkdir android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs
+          mkdir android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out
+          mkdir android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out/lib
+          export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
+          cp -r android/prebuilt/ android/src/main/jniLibs
+          cp -r android/prebuilt/ android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out/lib/
+          ./gradlew --configuration-cache --build-cache --parallel --configure-on-demand assembleReldebug
 
       - name: Rename APK
         run: |
