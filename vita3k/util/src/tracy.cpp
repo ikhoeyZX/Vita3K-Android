@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 
 namespace tracy_module_utils {
 
-constexpr int max_modules = 64; // If not enough increase to 64*n
+constexpr int max_modules = 255; // If not enough increase to 64*n
 typedef std::bitset<max_modules> tracy_module_flags;
 typedef std::vector<std::string> tracy_module_names;
 
