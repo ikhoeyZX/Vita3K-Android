@@ -159,9 +159,15 @@ static bool detect_patch_bcn(bool *support_dxt) {
     // some Adreno GPUs support BCn textures even though they say they don't
     // and we might need to patch a function for it to work
 
+	// check vulkan version
+	uint32_t vk_api_version = 0;
+	VkResult res = vkEnumerateInstanceVersion(&vk_api_version);
+	if (res != VK_SUCCESS)
+	   loaderVersion = VK_API_VERSION_1_0;
+	
     // create an instance to get the patch address
     vk::ApplicationInfo application_info{
-        .apiVersion = VK_API_VERSION_1_0
+        .apiVersion = vk_api_version;
     };
     vk::InstanceCreateInfo instance_info{
         .pApplicationInfo = &application_info
@@ -862,6 +868,12 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             .vkGetDeviceProcAddr = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr
         };
 
+		// check vulkan version
+	    uint32_t vk_api_version = 0;
+	    VkResult res = vkEnumerateInstanceVersion(&vk_api_version);
+	    if (res != VK_SUCCESS)
+	       loaderVersion = VK_API_VERSION_1_0;
+		
         vma::AllocatorCreateInfo allocator_info = {
             // everything vma-related is done on one thread, no need for thread safety
             .flags = vma::AllocatorCreateFlagBits::eExternallySynchronized,
@@ -869,7 +881,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             .device = device,
             .pVulkanFunctions = &vulkan_functions,
             .instance = instance,
-            .vulkanApiVersion = VK_API_VERSION_1_0,
+            .vulkanApiVersion = vk_api_version,
         };
 
         if (support_dedicated_allocations)
