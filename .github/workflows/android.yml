@@ -94,12 +94,12 @@ jobs:
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
           cp -r android/prebuilt/ android/src/main/jniLibs
           cp -r android/prebuilt/ android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out/lib/
+          ls -l android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out/lib/*/*
           ./gradlew --configuration-cache --build-cache --parallel --configure-on-demand assembleReldebug
 
       - name: Rename APK
         run: |
-          ls android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out/lib/*
-          ls android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out/lib/*/*
+          ls -l android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out/lib/*/*
           mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-release.apk
           mv  android/build/outputs/apk/reldebug/android-reldebug.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-reldebug.apk
           
