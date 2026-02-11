@@ -159,22 +159,9 @@ static bool detect_patch_bcn(bool *support_dxt) {
     // some Adreno GPUs support BCn textures even though they say they don't
     // and we might need to patch a function for it to work
 
-	// check vulkan version
-	uint32_t vk_api = 0;
-    if (VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion(&vk_api) != VK_SUCCESS)
-       vk_api = VK_API_VERSION_1_0;
-
-    uint32_t minor = VK_API_VERSION_MINOR(vk_api);
-
-    if (minor > 4)
-		minor = 4; 
-
-	// VK_API_VERSION_1_(minor)
-    uint32_t vk_api_version = VK_MAKE_API_VERSION(0, 1, minor, 0);
-
     // create an instance to get the patch address
     vk::ApplicationInfo application_info{
-        .apiVersion = vk_api_version
+        .apiVersion = VK_API_VERSION_1_1
     };
     vk::InstanceCreateInfo instance_info{
         .pApplicationInfo = &application_info
@@ -437,12 +424,26 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         }
 #endif
 
+        // check vulkan version
+	    uint32_t vk_api = 0;
+        if (VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion(&vk_api) != VK_SUCCESS)
+            vk_api = VK_API_VERSION_1_0;
+
+        uint32_t minor = VK_API_VERSION_MINOR(vk_api);
+
+        if (minor > 4)
+		    minor = 4; 
+
+	    // VK_API_VERSION_1_(minor)
+        uint32_t vk_api_version = VK_MAKE_API_VERSION(0, 1, minor, 0);
+		LOG_INFO("vk_api_version set to 1.{}.0", minor);
+
         vk::ApplicationInfo app_info{
             .pApplicationName = app_name, // App Name
             .applicationVersion = VK_MAKE_API_VERSION(0, 0, 0, 1), // App Version
             .pEngineName = org_name, // Engine Name, using org instead.
             .engineVersion = VK_MAKE_API_VERSION(0, 0, 0, 1), // Engine Version
-            .apiVersion = VK_API_VERSION_1_0
+            .apiVersion = vk_api_version
         };
 
         unsigned int instance_req_ext_count;
@@ -875,19 +876,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             .vkGetDeviceProcAddr = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr
         };
 
-		// check vulkan version
-	    uint32_t vk_api = 0;
-        if (VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion(&vk_api) != VK_SUCCESS)
-            vk_api = VK_API_VERSION_1_0;
-
-        uint32_t minor = VK_API_VERSION_MINOR(vk_api);
-
-        if (minor > 4)
-		    minor = 4; 
-
-	    // VK_API_VERSION_1_(minor)
-        uint32_t vk_api_version = VK_MAKE_API_VERSION(0, 1, minor, 0);
-
+		LOG_TRACE("SET ALLOC INFO BUFFER IMG MEM");
         vma::AllocatorCreateInfo allocator_info = {
             // everything vma-related is done on one thread, no need for thread safety
             .flags = vma::AllocatorCreateFlagBits::eExternallySynchronized,
@@ -898,6 +887,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             .vulkanApiVersion = vk_api_version,
         };
 
+		LOG_TRACE("SET ALLOC INFO BUFFER IMG MEM OK");
+		
         if (support_dedicated_allocations)
             allocator_info.flags |= vma::AllocatorCreateFlagBits::eKhrDedicatedAllocation;
 
