@@ -92,6 +92,8 @@ jobs:
           mkdir android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out
           mkdir android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out/lib
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
+          ls -l ../external/validation_layers/
+          cp -r ../external/validation_layers/ android/prebuilt/
           cp -r android/prebuilt/ android/src/main/jniLibs
           cp -r android/prebuilt/ android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out/lib/
           ls -l android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out/lib/*/*
