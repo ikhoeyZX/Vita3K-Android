@@ -160,11 +160,18 @@ static bool detect_patch_bcn(bool *support_dxt) {
     // and we might need to patch a function for it to work
 
 	// check vulkan version
-	uint32_t vk_api_version = 0;
-	VkResult res = VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion(&vk_api_version);
-	if (res != VK_SUCCESS)
-	   vk_api_version = VK_API_VERSION_1_0;
-	
+	uint32_t vk_api = 0;
+    if (VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion(&vk_api) != VK_SUCCESS)
+       vk_api = VK_API_VERSION_1_0;
+
+    uint32_t minor = VK_API_VERSION_MINOR(vk_api);
+
+    if (minor > 4)
+		minor = 4; 
+
+	// VK_API_VERSION_1_(minor)
+    uint32_t vk_api_version = VK_MAKE_API_VERSION(0, 1, minor, 0);
+
     // create an instance to get the patch address
     vk::ApplicationInfo application_info{
         .apiVersion = vk_api_version
@@ -869,11 +876,18 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         };
 
 		// check vulkan version
-	    uint32_t vk_api_version = 0;
-	    VkResult res = VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion(&vk_api_version);
-	    if (res != VK_SUCCESS)
-	       vk_api_version = VK_API_VERSION_1_0;
-		
+	    uint32_t vk_api = 0;
+        if (VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion(&vk_api) != VK_SUCCESS)
+            vk_api = VK_API_VERSION_1_0;
+
+        uint32_t minor = VK_API_VERSION_MINOR(vk_api);
+
+        if (minor > 4)
+		    minor = 4; 
+
+	    // VK_API_VERSION_1_(minor)
+        uint32_t vk_api_version = VK_MAKE_API_VERSION(0, 1, minor, 0);
+
         vma::AllocatorCreateInfo allocator_info = {
             // everything vma-related is done on one thread, no need for thread safety
             .flags = vma::AllocatorCreateFlagBits::eExternallySynchronized,
