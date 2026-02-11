@@ -287,10 +287,8 @@ elseif(ANDROID)
 			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${CMAKE_BINARY_DIR}/external/validation_layers.zip"
 				WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/validation_layers")
 		endif()
-
-        if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-		    file(COPY "${CMAKE_BINARY_DIR}/external/validation_layers/${VALIDATION_BINARY}/${ANDROID_ABI}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt")
-		endif()
+		
+		file(COPY "${CMAKE_BINARY_DIR}/external/validation_layers/${VALIDATION_BINARY}/${ANDROID_ABI}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt")
 	endif()
 endif()
 
