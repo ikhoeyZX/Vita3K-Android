@@ -435,7 +435,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 		    minor = 4; 
 
 	    // VK_API_VERSION_1_(minor)
-        uint32_t vk_api_version = VK_MAKE_API_VERSION(0, 1, minor, 0);
+        vk_api_version = VK_MAKE_API_VERSION(0, 1, minor, 0);
 		LOG_INFO("vk_api_version set to 1.{}.0", minor);
 
         vk::ApplicationInfo app_info{
