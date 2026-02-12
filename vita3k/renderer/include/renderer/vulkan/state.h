@@ -103,6 +103,8 @@ struct VKState : public renderer::State {
     vkutil::Image default_image;
     vkutil::Buffer default_buffer;
 
+    uint32_t vk_api_version = 0;
+
     bool support_fsr = false;
     // support for the VK_KHR_uniform_buffer_standard_layout extension, needed for memory mapping and texture viewport
     bool support_standard_layout = false;
