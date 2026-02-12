@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -99,7 +99,8 @@ VKContext::VKContext(VKState &state, MemState &mem)
             // one for the global buffer descriptor, one for the empty descriptor
             .maxSets = 2,
             .poolSizeCount = nb_descriptor / 2,
-            .pPoolSizes = pool_sizes.data()
+            .pPoolSizes = pool_sizes.data(),
+            .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT
         };
 
         global_descriptor_pool = state.device.createDescriptorPool(descriptor_pool_info);
