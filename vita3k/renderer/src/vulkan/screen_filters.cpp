@@ -72,8 +72,8 @@ void SinglePassScreenFilter::create_layout_sync() {
         .descriptorCount = screen.swapchain_size
     };
     vk::DescriptorPoolCreateInfo pool_info{
-        .maxSets = screen.swapchain_size,
         .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+        .maxSets = screen.swapchain_size,
     };
     pool_info.setPoolSizes(pool_size);
     descriptor_pool = device.createDescriptorPool(pool_info);
@@ -457,9 +457,9 @@ void FSRScreenFilter::init() {
         vk::DescriptorPoolSize{
             .type = vk::DescriptorType::eSampler,
             .descriptorCount = screen.swapchain_size * 2 },
-            .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
     };
     vk::DescriptorPoolCreateInfo pool_info{
+        .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
         .maxSets = screen.swapchain_size * 2,
     };
     pool_info.setPoolSizes(pool_sizes);
