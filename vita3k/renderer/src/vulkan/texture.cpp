@@ -227,7 +227,6 @@ void VKTextureCache::prepare_staging_buffer(bool is_configure) {
     }
 
     // now the transition
-    LOG_TRACE("vk::ImageSubresourceRange range 1");
     vk::ImageSubresourceRange range{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
         .baseMipLevel = 0,
@@ -255,7 +254,6 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     samplers.resize(max_sampler_used);
 
     // check for linear filtering on depth support
-  //  const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(vk::Format::eD32UnormS8Uint);
     const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(state.deep_stencil_use);
     const vk::FormatProperties x8d24_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
     support_depth_linear_filtering = static_cast<bool>(depth_linear.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
@@ -266,6 +264,7 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     const vk::FormatProperties a2rgb10_support = state.physical_device.getFormatProperties(vk::Format::eA2R10G10B10UnormPack32);
     support_e5rgb9 = static_cast<bool>(e5rgb9_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
     support_a2rgb10 = static_cast<bool>(a2rgb10_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+    
     // this value will passing for gxm to vulkan
     state.support_color_a2rgb10 = support_a2rgb10;
     
@@ -282,14 +281,13 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     const vk::FormatProperties astc_support = state.physical_device.getFormatProperties(vk::Format::eAstc4x4SrgbBlock);
     support_astc = static_cast<bool>(astc_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
 
-    LOG_INFO("max_sampler_used : {}", max_sampler_used);
     LOG_INFO("support_depth_linear_filtering : {}", support_depth_linear_filtering);
-    LOG_INFO("support_x8d24    : {}", support_x8d24);
-    LOG_INFO("support_e5rgb9   : {}", support_e5rgb9);
-    LOG_INFO("support_a2rgb10  : {}", support_a2rgb10);
-    LOG_INFO("support_dxt      : {}", support_dxt);
-    LOG_INFO("support_astc     : {}", support_astc);
-    LOG_INFO("support_pvrt     : {}", support_pvrt);
+    LOG_INFO("support_x8d24\t: {}", support_x8d24);
+    LOG_INFO("support_e5rgb9\t: {}", support_e5rgb9);
+    LOG_INFO("support_a2rgb10\t: {}", support_a2rgb10);
+    LOG_INFO("support_dxt\t: {}", support_dxt);
+    LOG_INFO("support_astc\t: {}", support_astc);
+    LOG_INFO("support_pvrt\t: {}", support_pvrt);
     
     return true;
 }
@@ -461,7 +459,6 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     std::tie(image.image, image.allocation) = state.allocator.createImage(image_info, vkutil::vma_auto_alloc);
 
     // create image view
-    LOG_TRACE("vk::ImageSubresourceRange range 2");
     vk::ImageSubresourceRange range{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
         .baseMipLevel = 0,
@@ -552,7 +549,6 @@ void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
 
     memcpy(static_cast<uint8_t *>(staging_buffer.buffer.mapped_data) + staging_buffer.used_so_far, text_data, upload_size);
 
-    LOG_TRACE("vk::ImageSubresourceLayers layer 1");
     vk::ImageSubresourceLayers layer{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
         .mipLevel = mip_index,
@@ -573,7 +569,6 @@ void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
 
 void VKTextureCache::upload_done() {
     // transition the texture back to read only
-    LOG_TRACE("vk::ImageSubresourceRange range 3");
     vk::ImageSubresourceRange range{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
         .baseMipLevel = 0,
@@ -692,7 +687,6 @@ void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
     std::tie(image.image, image.allocation) = state.allocator.createImage(image_info, vkutil::vma_auto_alloc);
 
     // create image view
-    LOG_TRACE("vk::ImageSubresourceRange range 4");
     vk::ImageSubresourceRange range{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
         .baseMipLevel = 0,
