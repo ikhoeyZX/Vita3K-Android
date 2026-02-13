@@ -278,7 +278,8 @@ static vk::DescriptorSet retrieve_color_descriptor(VKState &state, FrameDescript
     };
 
     vk::DescriptorPoolCreateInfo descriptor_pool_info{
-        .maxSets = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING
+        .maxSets = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING,
+        .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
     };
     descriptor_pool_info.setPoolSizes(pool_size);
 
