@@ -100,8 +100,8 @@ VKContext::VKContext(VKState &state, MemState &mem)
             .maxSets = 2,
             .poolSizeCount = nb_descriptor / 2,
             .pPoolSizes = pool_sizes.data(),
-            .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT
-        };
+            .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
+         };
 
         global_descriptor_pool = state.device.createDescriptorPool(descriptor_pool_info);
 
