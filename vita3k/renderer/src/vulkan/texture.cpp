@@ -227,6 +227,7 @@ void VKTextureCache::prepare_staging_buffer(bool is_configure) {
     }
 
     // now the transition
+    LOG_TRACE("vk::ImageSubresourceRange range 1");
     vk::ImageSubresourceRange range{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
         .baseMipLevel = 0,
@@ -460,6 +461,7 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     std::tie(image.image, image.allocation) = state.allocator.createImage(image_info, vkutil::vma_auto_alloc);
 
     // create image view
+    LOG_TRACE("vk::ImageSubresourceRange range 2");
     vk::ImageSubresourceRange range{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
         .baseMipLevel = 0,
@@ -550,6 +552,7 @@ void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
 
     memcpy(static_cast<uint8_t *>(staging_buffer.buffer.mapped_data) + staging_buffer.used_so_far, text_data, upload_size);
 
+    LOG_TRACE("vk::ImageSubresourceLayers layer 1");
     vk::ImageSubresourceLayers layer{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
         .mipLevel = mip_index,
@@ -570,6 +573,7 @@ void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
 
 void VKTextureCache::upload_done() {
     // transition the texture back to read only
+    LOG_TRACE("vk::ImageSubresourceRange range 3");
     vk::ImageSubresourceRange range{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
         .baseMipLevel = 0,
@@ -688,6 +692,7 @@ void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
     std::tie(image.image, image.allocation) = state.allocator.createImage(image_info, vkutil::vma_auto_alloc);
 
     // create image view
+    LOG_TRACE("vk::ImageSubresourceRange range 4");
     vk::ImageSubresourceRange range{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
         .baseMipLevel = 0,
