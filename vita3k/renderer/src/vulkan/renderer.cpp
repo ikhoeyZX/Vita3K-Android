@@ -429,14 +429,18 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         if (VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion(&vk_api) != VK_SUCCESS)
             vk_api = VK_API_VERSION_1_0;
 
+		// since only minor version are changed, just dynamically set it
         uint32_t minor = VK_API_VERSION_MINOR(vk_api);
 
+		LOG_INFO("vk_api_version get: 1.{}.0", minor);
+
+		// for now vulkan only support version max 1.4
         if (minor > 4)
 		    minor = 4; 
 
 	    // VK_API_VERSION_1_(minor)
         vk_api_version = VK_MAKE_API_VERSION(0, 1, minor, 0);
-		LOG_INFO("vk_api_version set to 1.{}.0", minor);
+		LOG_INFO("vk_api_version set: 1.{}.0", minor);
 
         vk::ApplicationInfo app_info{
             .pApplicationName = app_name, // App Name
@@ -876,8 +880,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             .vkGetDeviceProcAddr = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr
         };
 
-		LOG_TRACE("SET ALLOC INFO BUFFER IMG MEM");
-        vma::AllocatorCreateInfo allocator_info = {
+		vma::AllocatorCreateInfo allocator_info = {
             // everything vma-related is done on one thread, no need for thread safety
             .flags = vma::AllocatorCreateFlagBits::eExternallySynchronized,
             .physicalDevice = physical_device,
@@ -887,8 +890,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             .vulkanApiVersion = vk_api_version,
         };
 
-		LOG_TRACE("SET ALLOC INFO BUFFER IMG MEM OK");
-		
         if (support_dedicated_allocations)
             allocator_info.flags |= vma::AllocatorCreateFlagBits::eKhrDedicatedAllocation;
 
@@ -928,7 +929,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             .addressModeV = vk::SamplerAddressMode::eRepeat,
             .addressModeW = vk::SamplerAddressMode::eRepeat,
             .minLod = 0.0f,
-            .maxLod = 0.0f,
+            .maxLod = VK_LOD_CLAMP_NONE,
         };
         default_image.sampler = device.createSampler(sampler_info);
     }
@@ -1208,55 +1209,36 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     };
 
     auto find_suitable_mapped_type = [&](uint32_t hardware_types) {
-        // first try to find a memory that is both coherent and cached
-        int mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
+    std::vector<vk::MemoryPropertyFlags> candidates = {
+        vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostCached,
+        vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCached | vk::MemoryPropertyFlagBits::eHostCoherent,
+        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCached | vk::MemoryPropertyFlagBits::eHostCoherent,
+        vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+        vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCached,
+        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCached,
+        vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eLazilyAllocated,
+        vk::MemoryPropertyFlagBits::eDeviceLocal,
+        vk::MemoryPropertyFlagBits::eHostCoherent // fallback
+    };
 
-		if (mapped_memory_type == -1){ // 4 val
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCached | vk::MemoryPropertyFlagBits::eHostCoherent, hardware_types);
-		}
-		
-		if (mapped_memory_type == -1){ // 3 val
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCached | vk::MemoryPropertyFlagBits::eHostCoherent, hardware_types);
-		}
-		
-		if (mapped_memory_type == -1){ // 3 val
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, hardware_types);
-		}
-		
-		if (mapped_memory_type == -1){ // 3 val
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
-		}
-		
-	    if (mapped_memory_type == -1){
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, hardware_types);
-	    }
-		
-		if (mapped_memory_type == -1){
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCached, hardware_types);
-		}
-		
-		if (mapped_memory_type == -1){
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eLazilyAllocated, hardware_types);
-		}
-		
-		if (mapped_memory_type == -1){
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eDeviceLocal, hardware_types);
-		}
-		
-	    if (mapped_memory_type == -1){
-            // then only coherent (lower performance)
-            mapped_memory_type = find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent, hardware_types);
-            LOG_WARN_ONCE("Call mapped_memory_type : eHostCoherent");
+    int mapped_memory_type = -1;
+    for (auto flags : candidates) {
+        mapped_memory_type = find_mem_type_with_flag(flags, hardware_types);
+        if (mapped_memory_type != -1) {
+            if (flags == vk::MemoryPropertyFlagBits::eHostCoherent) {
+                LOG_WARN_ONCE("No supported memory flag, using Call mapped_memory_type : eHostCoherent");
+            }
+            return static_cast<uint32_t>(mapped_memory_type);
         }
+    }
 
-	    if (mapped_memory_type == -1) {
-            static bool has_happened = false;
-            LOG_CRITICAL_IF(!has_happened, "No coherent memory available for memory mapping!");
-            has_happened = true;
-            mapped_memory_type = std::countr_zero(hardware_types);
-	    }
-	    return static_cast<uint32_t>(mapped_memory_type);
+    static bool has_happened = false;
+    LOG_CRITICAL_IF(!has_happened, "No coherent memory available for memory mapping!");
+    has_happened = true;
 		
+    return static_cast<uint32_t>(std::countr_zero(hardware_types));
+
     };
     
     switch (mapping_method) {
