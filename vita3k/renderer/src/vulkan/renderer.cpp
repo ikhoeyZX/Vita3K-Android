@@ -969,11 +969,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
     support_fsr &= static_cast<bool>(screen_renderer.surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage);
 
-#if defined(__linux__)
-	// && !defined(__ANDROID__) // According to my tests (Macdu), mprotect on buffers (mapped with external memory host) only works with Nvidia drivers
-    surface_cache.can_mprotect_mapped_memory = std::string_view(physical_device_properties.properties.deviceName).find("NVIDIA") != std::string_view::npos;
-#endif
-
     return true;
 }
 
@@ -1038,6 +1033,11 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
 
     LOG_INFO("Using the following memory mapping method: {}", mapping_string[static_cast<int>(mapping_method)]);
 
+#if defined(__linux__)
+	// && !defined(__ANDROID__) // According to my tests (Macdu), mprotect on buffers (mapped with external memory host) only works with Nvidia drivers
+    surface_cache.can_mprotect_mapped_memory = std::string_view(physical_device_properties.properties.deviceName).find("NVIDIA") != std::string_view::npos;
+#endif
+	
     pipeline_cache.init(support_rasterized_order_access);
 
     texture_cache.init(true, texture_folder(), game_id);
