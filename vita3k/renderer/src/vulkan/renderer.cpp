@@ -1273,7 +1273,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             uint32_t mapped_memory_type = find_suitable_mapped_type(hardware_props.memoryTypeBits);
             vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportAndroidHardwareBufferInfoANDROID, vk::MemoryAllocateFlagsInfo> alloc_info{
                 vk::MemoryAllocateInfo{
-                    .allocationSize = size + KiB(4),
+                //    .allocationSize = size + KiB(4),
+				    .allocationSize = size,
                     .memoryTypeIndex = mapped_memory_type },
                 vk::ImportAndroidHardwareBufferInfoANDROID{
                     .buffer = buffer },
