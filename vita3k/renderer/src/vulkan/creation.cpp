@@ -22,6 +22,8 @@
 #include <renderer/vulkan/gxm_to_vulkan.h>
 #include <renderer/vulkan/state.h>
 
+#include <util/log.h>
+
 #include <gxm/types.h>
 
 #include <vkutil/vkutil.h>
@@ -156,24 +158,29 @@ VKContext::~VKContext() {
 }
 
 VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &params)
-    : color(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eR8G8B8A8Unorm)
+   // : color(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eR8G8B8A8Unorm)
+    : color(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eR16G16B16A16Unorm)
     , depthstencil(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), state.deep_stencil_use) {
     width = static_cast<uint32_t>(params.width * state.res_multiplier);
     height = static_cast<uint32_t>(params.height * state.res_multiplier);
 
-    vk::ImageUsageFlags color_usage = vk::ImageUsageFlagBits::eColorAttachment;
+    vk::ImageUsageFlags image_flag;
     if (state.features.support_shader_interlock)
-        color_usage |= vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage;
+        image_flag |= vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage;
     else
-        color_usage |= vk::ImageUsageFlagBits::eInputAttachment | vk::ImageUsageFlagBits::eTransientAttachment;
-    color.init_image(color_usage);
+        image_flag |= vk::ImageUsageFlagBits::eInputAttachment | vk::ImageUsageFlagBits::eTransientAttachment;
+
+    color.init_image(image_flag | vk::ImageUsageFlagBits::eColorAttachment);
     if (params.multisampleMode == SCE_GXM_MULTISAMPLE_4X) {
         // the depth buffer may need to be 4x bigger if we use a texture without downscale
         depthstencil.width *= 2;
         depthstencil.height *= 2;
     }
 
-    depthstencil.init_image(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment);
+    // Need fix this error from vk validation
+    // LOG_TRACE("DEEPTH STENCIL INIT");
+    image_flag |= vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment;
+    depthstencil.init_image(image_flag);
 
     // transition images to their right state
     vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
@@ -275,7 +282,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
             .alphaBlendOp = translate_blend_func(blend->alphaFunc),
             .colorWriteMask = color_mask
         };
-    } else {
+    } else if (blend != nullptr) {
         // default values, only blendEnable and colorWriteMask are useful
         fp_vk->blending = vk::PipelineColorBlendAttachmentState{
             .blendEnable = VK_FALSE,
@@ -290,6 +297,9 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
                 | vk::ColorComponentFlagBits::eB
                 | vk::ColorComponentFlagBits::eA
         };
+    } else {
+        LOG_ERROR("Blending is null!");
+        return false;
     }
 
     // compute blending hash, as it will be used for the pipeline hash
