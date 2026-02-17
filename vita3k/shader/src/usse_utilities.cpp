@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -215,6 +215,14 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
     spv::Block *unpack_func_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
+    spv::Id type_f8 = b.makeFloatType(8);
+    spv::Id type_i8 = b.makeIntType(8);
+    spv::Id type_ui8 = b.makeUintType(8);
+
+    spv::Id type_f16 = b.makeFloatType(16);
+    spv::Id type_i16 = b.makeIntType(16);
+    spv::Id type_ui16 = b.makeUintType(16);
+
     spv::Id type_f32 = b.makeFloatType(32);
     spv::Id type_i32 = b.makeIntType(32);
     spv::Id type_ui32 = b.makeUintType(32);
@@ -227,28 +235,28 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
     switch (source_type) {
     case DataType::UINT16: {
         func_name = "unpack2xU16";
-        output_type = b.makeVectorType(type_ui32, 2);
+        output_type = b.makeVectorType(type_ui16, 2);
         comp_count = 2;
         is_signed = false;
         break;
     }
     case DataType::INT16: {
         func_name = "unpack2xS16";
-        output_type = b.makeVectorType(type_i32, 2);
+        output_type = b.makeVectorType(type_i16, 2);
         comp_count = 2;
         is_signed = true;
         break;
     }
     case DataType::UINT8: {
         func_name = "unpack4xU8";
-        output_type = b.makeVectorType(type_ui32, 4);
+        output_type = b.makeVectorType(type_ui8, 4);
         comp_count = 4;
         is_signed = false;
         break;
     }
     case DataType::INT8: {
         func_name = "unpack4xS8";
-        output_type = b.makeVectorType(type_i32, 4);
+        output_type = b.makeVectorType(type_i8, 4);
         comp_count = 4;
         is_signed = true;
         break;
@@ -292,6 +300,14 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
     spv::Block *pack_func_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
+    spv::Id type_f8 = b.makeFloatType(8);
+    spv::Id type_i8 = b.makeIntType(8);
+    spv::Id type_ui8 = b.makeUintType(8);
+
+    spv::Id type_f16 = b.makeFloatType(16);
+    spv::Id type_i16 = b.makeIntType(16);
+    spv::Id type_ui16 = b.makeUintType(16);
+
     spv::Id type_ui32 = b.makeUintType(32);
     spv::Id type_i32 = b.makeIntType(32);
     spv::Id type_f32 = b.makeFloatType(32);
@@ -304,28 +320,28 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
     switch (source_type) {
     case DataType::UINT16: {
         func_name = "pack2xU16";
-        input_type = b.makeVectorType(type_ui32, 2);
+        input_type = b.makeVectorType(type_ui16, 2);
         comp_count = 2;
         is_signed = false;
         break;
     }
     case DataType::INT16: {
         func_name = "pack2xS16";
-        input_type = b.makeVectorType(type_i32, 2);
+        input_type = b.makeVectorType(type_i16, 2);
         comp_count = 2;
         is_signed = true;
         break;
     }
     case DataType::UINT8: {
         func_name = "pack4xU8";
-        input_type = b.makeVectorType(type_ui32, 4);
+        input_type = b.makeVectorType(type_ui8, 4);
         comp_count = 4;
         is_signed = false;
         break;
     }
     case DataType::INT8: {
         func_name = "pack4xS8";
-        input_type = b.makeVectorType(type_i32, 4);
+        input_type = b.makeVectorType(type_i8, 4);
         comp_count = 4;
         is_signed = true;
         break;
@@ -368,19 +384,20 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const SpirvUtilFunct
     spv::Block *f16_unpack_func_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
-    spv::Id type_ui32 = b.makeUintType(32);
-    spv::Id type_f32 = b.makeFloatType(32);
-    spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
+    spv::Id type_f16 = b.makeFloatType(16);
+    spv::Id type_i16 = b.makeIntType(16);
+    spv::Id type_ui16 = b.makeUintType(16);
+    spv::Id type_f16_v2 = b.makeVectorType(type_f16, 2);
 
     spv::Function *f16_unpack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32_v2, "unpack2xF16", { type_f32 }, { "to_unpack" },
+        spv::NoPrecision, type_f16_v2, "unpack2xF16", { type_f16 }, { "to_unpack" },
         decorations, &f16_unpack_func_block);
     f16_unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
 
     spv::Id extracted = f16_unpack_func->getParamId(0);
 
-    extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
-    extracted = b.createBuiltinCall(type_f32_v2, utils.std_builtins, GLSLstd450UnpackHalf2x16, { extracted });
+    extracted = b.createUnaryOp(spv::OpBitcast, type_ui16, extracted);
+    extracted = b.createBuiltinCall(type_f16_v2, utils.std_builtins, GLSLstd450UnpackHalf2x16, { extracted });
 
     b.makeReturn(false, extracted);
     b.setBuildPoint(last_build_point);
