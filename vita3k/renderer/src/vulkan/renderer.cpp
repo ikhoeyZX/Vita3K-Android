@@ -1274,13 +1274,13 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportAndroidHardwareBufferInfoANDROID, vk::MemoryAllocateFlagsInfo> alloc_info{
                 vk::MemoryAllocateInfo{
                 //    .allocationSize = size + KiB(4),
-				    .allocationSize = size,
+				    .allocationSize = hardware_props.allocationSize,
                     .memoryTypeIndex = mapped_memory_type },
                 vk::ImportAndroidHardwareBufferInfoANDROID{
                     .buffer = buffer },
                 vk::MemoryAllocateFlagsInfo{
-                //    .flags = vk::MemoryAllocateFlagBits::eDeviceMask,
-				    .flags = vk::MemoryAllocateFlagBits::eDeviceAddress,
+                    .flags = vk::MemoryAllocateFlagBits::eDeviceMask,
+				 //   .flags = vk::MemoryAllocateFlagBits::eDeviceAddress,
 				    .deviceMask = 1
 				}
             };
@@ -1303,8 +1303,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                     .handleType = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd,
                     .fd = fd },
                 vk::MemoryAllocateFlagsInfo{
-                    .flags = vk::MemoryAllocateFlagBits::eDeviceAddress,
-				//   .flags = vk::MemoryAllocateFlagBits::eDeviceMask,
+                //    .flags = vk::MemoryAllocateFlagBits::eDeviceAddress,
+				    .flags = vk::MemoryAllocateFlagBits::eDeviceMask,
 					.deviceMask = 1 }
 				 
             };
