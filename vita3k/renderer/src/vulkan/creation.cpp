@@ -282,7 +282,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
             .alphaBlendOp = translate_blend_func(blend->alphaFunc),
             .colorWriteMask = color_mask
         };
-    } else if (blend != nullptr) {
+    } else {
         // default values, only blendEnable and colorWriteMask are useful
         fp_vk->blending = vk::PipelineColorBlendAttachmentState{
             .blendEnable = VK_FALSE,
@@ -297,9 +297,6 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
                 | vk::ColorComponentFlagBits::eB
                 | vk::ColorComponentFlagBits::eA
         };
-    } else {
-        LOG_ERROR("Blending is null!");
-        return false;
     }
 
     // compute blending hash, as it will be used for the pipeline hash
