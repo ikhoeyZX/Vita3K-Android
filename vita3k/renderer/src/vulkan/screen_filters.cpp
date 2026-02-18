@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -72,6 +72,7 @@ void SinglePassScreenFilter::create_layout_sync() {
         .descriptorCount = screen.swapchain_size
     };
     vk::DescriptorPoolCreateInfo pool_info{
+        .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
         .maxSets = screen.swapchain_size,
     };
     pool_info.setPoolSizes(pool_size);
@@ -458,6 +459,7 @@ void FSRScreenFilter::init() {
             .descriptorCount = screen.swapchain_size * 2 },
     };
     vk::DescriptorPoolCreateInfo pool_info{
+        .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
         .maxSets = screen.swapchain_size * 2,
     };
     pool_info.setPoolSizes(pool_sizes);

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -116,8 +116,8 @@ bool init(MemState &state, const bool use_page_table) {
     const BOOL ret = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
 #else
-    const int ret = mprotect(state.memory.get(), state.page_size, PROT_NONE);
-    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+//    const int ret = mprotect(state.memory.get(), state.page_size, PROT_NONE);
+//    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
 #endif
 
     state.use_page_table = use_page_table;
@@ -341,6 +341,8 @@ bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPe
         addr = start;
         protect.blocks.merge(it->second.blocks); // transfer blocks to the new protect
 
+        protect.perm = most_restrictive_perm(protect.perm, it->second.perm);
+        
         if (it == state.protect_tree.begin()) {
             state.protect_tree.erase(it);
             break;
@@ -350,7 +352,7 @@ bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPe
         state.protect_tree.erase(it--);
     }
 
-    protect_inner(state, addr, protect.size, perm);
+    protect_inner(state, addr, protect.size, protect.perm);
 
     state.protect_tree.emplace(addr, std::move(protect));
     return true;
@@ -368,6 +370,40 @@ bool is_protecting(MemState &state, Address addr, MemPerm *perm) {
     }
 
     return false;
+}
+
+void open_access_parent_protect_segment(MemState &state, Address addr) {
+    const std::lock_guard<std::mutex> lock(state.protect_mutex);
+    auto ite = state.protect_tree.lower_bound(addr);
+
+    if (ite != state.protect_tree.end() && addr < ite->first + ite->second.size) {
+        ite->second.ref_count++;
+    } else {
+        ProtectSegmentInfo protect(0, MemPerm::ReadWrite);
+        protect.ref_count = 1;
+
+        state.protect_tree.emplace(align_down(addr, state.page_size), std::move(protect));
+    }
+}
+
+void close_access_parent_protect_segment(MemState &state, Address addr) {
+    const std::lock_guard<std::mutex> lock(state.protect_mutex);
+    auto ite = state.protect_tree.lower_bound(addr);
+
+    if (ite != state.protect_tree.end()) {
+        ProtectSegmentInfo &info = ite->second;
+        if (info.ref_count > 0) {
+            info.ref_count--;
+        }
+
+        if (info.ref_count == 0) {
+            if (info.blocks.empty() || info.size == 0) {
+                state.protect_tree.erase(ite);
+            } else {
+                protect_inner(state, ite->first, info.size, info.perm);
+            }
+        }
+    }
 }
 
 void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *addr_ptr) {

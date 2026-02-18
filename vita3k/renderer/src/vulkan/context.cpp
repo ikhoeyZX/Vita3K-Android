@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -62,12 +62,11 @@ void VKContext::wait_thread_function(const MemState &mem) {
 
                                // same as in handle_sync_surface_data
                                std::unique_lock<std::mutex> lock(state.notification_mutex);
+
                                if (request.notifications[0].address)
-                                   *request.notifications[0].address.get(
-                                           mem) = request.notifications[0].value;
+                                   *request.notifications[0].address.get(mem) = request.notifications[0].value;
                                if (request.notifications[1].address)
-                                   *request.notifications[1].address.get(
-                                           mem) = request.notifications[1].value;
+                                   *request.notifications[1].address.get(mem) = request.notifications[1].value;
 
                                // unlocking before a notify should be faster
                                lock.unlock();
@@ -84,14 +83,14 @@ void VKContext::wait_thread_function(const MemState &mem) {
                            lock.unlock();
                            new_frame_condv.notify_one();
                        },
-                       [&](BufferSyncRequest& request) {
+                       [&](BufferSyncRequest &request) {
                            wait_for_fences();
                            auto mem_it = state.mapped_memories.lower_bound(request.location);
-                           if(mem_it == state.mapped_memories.end() || mem_it->first + mem_it->second.size < request.location + request.size){
-                                LOG_ERROR("Buffer Sync request for {}-{} is not fully mapped", log_hex(request.location), log_hex(request.location + request.size));
-                                return;
+                           if (mem_it == state.mapped_memories.end() || mem_it->first + mem_it->second.size < request.location + request.size) {
+                               LOG_ERROR("Buffer Sync request for {}-{} is not fully mapped", log_hex(request.location), log_hex(request.location + request.size));
+                               return;
                            }
-                           uint8_t* src = reinterpret_cast<uint8_t *>(std::get<vkutil::Buffer>(mem_it->second.buffer_impl).mapped_data);
+                           uint8_t *src = reinterpret_cast<uint8_t *>(std::get<vkutil::Buffer>(mem_it->second.buffer_impl).mapped_data);
                            src += request.location - mem_it->first;
                            memcpy(Ptr<void>(request.location).get(mem), src, request.size);
                        },
@@ -124,7 +123,7 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     // set these values for the pipeline cache
     context.record.color_base_format = gxm::get_base_format(color_surface_fin->colorFormat);
     context.record.is_gamma_corrected = static_cast<bool>(color_surface_fin->gamma);
-    vk::Format vk_format = color::translate_format(context.record.color_base_format);
+    vk::Format vk_format = color::translate_format(context.record.color_base_format, context.state.support_color_a2rgb10);
 
     if (color_surface_fin->gamma && vk_format == vk::Format::eR8G8B8A8Unorm) {
         vk_format = vk::Format::eR8G8B8A8Srgb;
@@ -154,7 +153,7 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
         || (!ds_surface_fin->force_load && !ds_surface_fin->force_store)) {
         ds_surface_fin = nullptr;
     }
-    
+
     VKState &state = context.state;
     state.surface_cache.set_render_target(rt);
 
@@ -230,9 +229,8 @@ void VKContext::start_recording(bool first_in_scene) {
         vk::FenceCreateInfo fence_info{};
         // make sure the next fence used is the one we created (but only if this is the first recording of the scene)
         auto fence_insert_it = render_target->fences.begin() + render_target->fence_idx;
-        if(!first_in_scene)
+        if (!first_in_scene)
             fence_insert_it++;
-        
         render_target->fences.insert(fence_insert_it, state.device.createFence(fence_info));
     }
 
@@ -280,7 +278,8 @@ static vk::DescriptorSet retrieve_color_descriptor(VKState &state, FrameDescript
     };
 
     vk::DescriptorPoolCreateInfo descriptor_pool_info{
-        .maxSets = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING
+        .maxSets = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING,
+        .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
     };
     descriptor_pool_info.setPoolSizes(pool_size);
 
@@ -317,21 +316,21 @@ void VKContext::start_render_pass(bool create_descriptor_set) {
     if (!is_recording)
         start_recording();
 
-    curr_renderpass_info = {
+    curr_renderpass_info = vk::RenderPassBeginInfo{
         .renderPass = current_render_pass,
         .framebuffer = current_framebuffer
     };
 
     if (render_target->has_macroblock_sync && !ignore_macroblock) {
         // set the render area to the correct macroblock
-        curr_renderpass_info.renderArea = {
+        curr_renderpass_info.renderArea = vk::Rect2D{
             .offset = {
                 last_macroblock_x * render_target->macroblock_width,
                 last_macroblock_y * render_target->macroblock_height },
             .extent = { render_target->macroblock_width, render_target->macroblock_height }
         };
     } else {
-        curr_renderpass_info.renderArea = {
+        curr_renderpass_info.renderArea = vk::Rect2D{
             .offset = { 0, 0 },
             .extent = { render_target->width, render_target->height }
         };
@@ -401,14 +400,13 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
         return;
     }
 
+    if (in_renderpass)
+        stop_render_pass();
+
     struct VisibilityRange {
         uint32_t offset;
         uint32_t size;
     };
-    
-    if (in_renderpass)
-        stop_render_pass();
-
     std::vector<VisibilityRange> occlusion_ranges;
     if (visibility_max_used_idx != -1) {
         // get all the entry ranges that were used
@@ -479,27 +477,28 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
         // send it to the wait queue
         state.request_queue.push(FenceWaitRequest{ fence });
 
-        if(state.mapping_method == MappingMethod::DoubleBuffer){
+        if (state.mapping_method == MappingMethod::DoubleBuffer) {
             // sync all the visibility buffers
-            for(auto& range : occlusion_ranges){
+            for (auto &range : occlusion_ranges) {
                 state.request_queue.push(BufferSyncRequest{ current_visibility_buffer->address + range.offset * 4, range.size * 4 });
             }
 
             // we must sync the two buffers
-            if(surface_info && surface_info->need_buffer_sync)
-                state.request_queue.push(BufferSyncRequest{surface_info->data.address(), static_cast<uint32_t>(surface_info->total_bytes)});
+            if (surface_info && surface_info->need_buffer_sync)
+                state.request_queue.push(BufferSyncRequest{ surface_info->data.address(), static_cast<uint32_t>(surface_info->total_bytes) });
         }
 
         if (surface_info && surface_info->need_post_surface_sync) {
             state.request_queue.push(PostSurfaceSyncRequest{ surface_info });
         }
 
-        // the notification must be the last thing sent
-        NotificationRequest request = {
-            .notifications = { notif1, notif2 },
-        };
-
-        state.request_queue.push(request);
+        if (notif1.address || notif2.address) {
+            // notifications last
+            NotificationRequest request = {
+                .notifications = { notif1, notif2 },
+            };
+            state.request_queue.push(request);
+        }
     }
 }
 

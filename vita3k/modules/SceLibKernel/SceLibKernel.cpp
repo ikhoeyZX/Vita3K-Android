@@ -622,14 +622,21 @@ EXPORT(int, sceIoMkdirAsync) {
     return UNIMPLEMENTED();
 }
 
+
+static const char* VN_file = "root.pfs";
+
 EXPORT(SceUID, sceIoOpen, const char *file, const int flags, const SceMode mode) {
     TRACY_FUNC(sceIoOpen, file, flags, mode);
     if (file == nullptr) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
 
-    // emmc 4.p lowest respond time around 22.8 ms, 25ms should be okay
-    std::this_thread::sleep_for(std::chrono::milliseconds(25)); 
+    // emmc 4.0 lowest respond time around 22.8 ms, 25ms should be okay
+    if (strstr(file, VN_file)) {
+       // VN files are too much to read so no delay because it slow!
+    }else{
+        std::this_thread::sleep_for(std::chrono::milliseconds(25));
+    }
 
     LOG_INFO("Opening file: {}", file);
     return open_file(emuenv.io, file, flags, emuenv.pref_path, export_name);
@@ -1796,9 +1803,6 @@ EXPORT(int, sceKernelUnloadModule, SceUID uid, SceUInt32 flags, const void *pOpt
 
 EXPORT(int, sceKernelUnlockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int unlock_count) {
     TRACY_FUNC(sceKernelUnlockLwMutex, workarea, unlock_count);
-    if (!workarea)
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
-    
     const auto lwmutexid = workarea.get(emuenv.mem)->uid;
     return mutex_unlock(emuenv.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
 }

@@ -140,7 +140,7 @@ public:
         std::string memory_mapping = "double-buffer";
         std::string vk_mapping = "Mailbox";
         std::string deep_stencil = "D32Sfloat";
-        bool v_sync = true;
+        bool v_sync = false;
         int anisotropic_filtering = 1;
         bool async_pipeline_compilation = true;
         bool import_textures = false;

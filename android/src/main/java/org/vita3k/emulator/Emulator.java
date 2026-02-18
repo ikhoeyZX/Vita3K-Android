@@ -8,12 +8,14 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.provider.Settings;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.view.Surface;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Keep;
@@ -107,6 +109,26 @@ public class Emulator extends SDLActivity
             String game_id = intent.getAction().substring(7);
             if(!game_id.equals(currentGameId))
                 ProcessPhoenix.triggerRebirth(getContext(), intent);
+        }
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        hideSystemBars();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        hideSystemBars();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            hideSystemBars();
         }
     }
 
@@ -258,11 +280,15 @@ public class Emulator extends SDLActivity
 
     @Keep
     public void setControllerOverlayState(int overlay_mask, boolean edit, boolean reset, boolean portrait){
-        getmOverlay().setState(overlay_mask);
-        getmOverlay().setIsInEditMode(edit);
+        if (overlay_mask == 0) {
+           getmOverlay().setState(overlay_mask);
+        } else {
+           getmOverlay().setState(overlay_mask);
+           getmOverlay().setIsInEditMode(edit);
 
-        if(reset)
-            getmOverlay().resetButtonPlacement(portrait);
+           if(reset)
+              getmOverlay().resetButtonPlacement(portrait);
+        }
     }
 
     @Keep
@@ -317,4 +343,14 @@ public class Emulator extends SDLActivity
     }
 
     public native void filedialogReturn(String result_path, int result_fd);
+    private void hideSystemBars() {
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        );
+    }
 }

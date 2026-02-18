@@ -29,8 +29,8 @@ Vita3K is an experimental PlayStation Vita emulator for Windows, Linux, macOS an
 
 ## Android
 
-This repository contains the source code for the Android version before it gets merged to the main repository.
-Pull requests are welcomed and accepted if they target some Android-specific part of the code. Otherwise please do your pull requests directly to the [main repository](https://github.com/Vita3K/Vita3K). Please be aware that this repository can be force pushed.
+This repository contains the source code for the Android version and different from main repository.
+Pull requests are welcomed and accepted if they target some Android-specific part of the code. Otherwise please do your pull requests directly to the [main repository](https://github.com/Vita3K/Vita3K). Please be aware that this repository is not same as vita3k main repo since this repo still using SDL2 while Vita3k main repo using SDL3
 
 Build instruction for the Android version are specified in [`building.md`](./building.md).
 
@@ -98,5 +98,7 @@ Thank you to the supporters and to all those who support us on our [ko-fi](https
 The purpose of this emulator is not to enable illegal activity. You can dump games from a Vita by using [NoNpDrm](https://github.com/TheOfficialFloW/NoNpDrm) or [FAGDec](https://github.com/CelesteBlue-dev/PSVita-RE-tools/tree/master/FAGDec/build). You can get homebrew programs from [VitaDB](https://vitadb.rinnegatamante.it/).
 
 PlayStation, PlayStation Vita and PlayStation Network are all registered trademarks of Sony Interactive Entertainment Inc. This emulator is not related to or endorsed by Sony, or derived from confidential materials belonging to Sony.
+
+
 
 

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,6 +27,11 @@
 #include <chrono>
 #include <cstdio>
 #include <thread>
+
+#ifdef __APPLE__
+#include "macos_net_helper.h"
+#include <net/if.h>
+#endif
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceNet);
@@ -300,8 +305,84 @@ EXPORT(int, sceNetGetMacAddress, SceNetEtherAddr *addr, int flags) {
         RET_NET_ERRNO(SCE_NET_ERROR_EINVAL);
     else
         memcpy(addr->data, AdapterInfo[0].Address, 6);
+#elif defined(__unix__)
+    struct ifreq ifr;
+    struct ifconf ifc;
+    bool success = false;
+
+    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+    if (sock == -1) {
+        LOG_ERROR("Failed to open socket");
+        assert(false);
+        return RET_ERROR(SCE_NET_ERROR_ENOTSOCK);
+    };
+
+    char buf[1024];
+    ifc.ifc_len = sizeof(buf);
+    ifc.ifc_buf = buf;
+    if (ioctl(sock, SIOCGIFCONF, &ifc) == -1) {
+        LOG_ERROR("Failed to fetch infconf from socket {}", sock);
+        assert(false);
+        return RET_ERROR(SCE_NET_ERROR_EINTERNAL);
+    }
+
+    struct ifreq *it = ifc.ifc_req;
+    const struct ifreq *const end = it + (ifc.ifc_len / sizeof(struct ifreq));
+
+    // TODO: If multiple adapters, which one to choose?
+    // Only getting the first one that isn't loopback
+    // Meaning if you use WIFI it will probably get the ethernet addr instead
+    for (; it != end; ++it) {
+        strcpy(ifr.ifr_name, it->ifr_name);
+        if (ioctl(sock, SIOCGIFFLAGS, &ifr) == 0) {
+            if (!(ifr.ifr_flags & IFF_LOOPBACK)) { // don't count loopback
+                if (ioctl(sock, SIOCGIFHWADDR, &ifr) == 0) {
+                    success = true;
+                    break;
+                }
+            }
+        } else {
+            LOG_ERROR("Failed to fetch flags from socket {}, name={}", sock, ifr.ifr_name);
+            assert(false);
+            return RET_ERROR(SCE_NET_ERROR_EINTERNAL);
+        }
+    }
+
+    if (success)
+        memcpy(addr->data, ifr.ifr_hwaddr.sa_data, 6);
+    else {
+        // If there are no adapters connected (why?), use a predefiend one
+
+        // MAC addresses consists of 6 octets, the first half is the organization while the other half
+        // is the NIC (Network Interface Controller)
+        uint8_t magicMac[6] = {
+            // Organization
+            0xEE,
+            0xEE, // EE as in ExtremeExploit (why not?)
+            0xEE,
+            // NIC
+            0xBA,
+            0xDA, // Badass (sounds cool ig)
+            0x55,
+        };
+        memcpy(addr->data, magicMac, 6);
+    }
+#elif defined(__APPLE__)
+    char hint[IFNAMSIZ] = {};
+    get_primary_interface_name(hint, sizeof(hint));
+
+    if (!get_mac_address(hint, addr->data)) {
+        uint8_t magicMac[6] = {
+            0x02, // LAA
+            0x41, // 'A'
+            0x50, // 'P'
+            0x50, // 'P'
+            0x4C, // 'L'
+            0x45, // 'E'
+        };
+        memcpy(addr->data, magicMac, 6);
+    }
 #else
-    // TODO: Implement the function for non Windows OS
     return UNIMPLEMENTED();
 #endif
     return 0;
@@ -497,9 +578,29 @@ EXPORT(int, sceNetSend, int sid, const void *msg, unsigned int len, int flags) {
     RET_NET_ERRNO(sock ? sock->send_packet(msg, len, flags, nullptr, 0) : SCE_NET_ERROR_EBADF);
 }
 
-EXPORT(int, sceNetSendmsg) {
-    TRACY_FUNC(sceNetSendmsg);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetSendmsg, int sid, const SceNetMsghdr *msg, int flags) {
+    TRACY_FUNC(sceNetSendmsg, sid, msg, flags);
+
+    auto sock = lock_and_find(sid, emuenv.net.socks, emuenv.kernel.mutex);
+    if (!sock)
+        RET_NET_ERRNO(SCE_NET_ERROR_EBADF);
+
+    size_t total_len = 0;
+    for (int i = 0; i < msg->msg_iovlen; ++i) {
+        const SceNetIovec &iov = msg->msg_iov.get(emuenv.mem)[i];
+        total_len += iov.iov_len;
+    }
+
+    std::vector<char> buf;
+    buf.reserve(total_len);
+
+    for (int i = 0; i < msg->msg_iovlen; ++i) {
+        const SceNetIovec &iov = msg->msg_iov.get(emuenv.mem)[i];
+        const char *data = reinterpret_cast<const char *>(iov.iov_base.get(emuenv.mem));
+        buf.insert(buf.end(), data, data + iov.iov_len);
+    }
+
+    RET_NET_ERRNO(sock->send_packet(buf.data(), total_len, flags, msg->msg_name.get(emuenv.mem), msg->msg_namelen));
 }
 
 EXPORT(int, sceNetSendto, int sid, const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) {

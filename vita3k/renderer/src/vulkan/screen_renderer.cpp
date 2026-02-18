@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -76,8 +76,10 @@ bool ScreenRenderer::setup(uint8_t vk_idx) {
         }
     }
 
-    if (!surface_format_found)
+    if (!surface_format_found) {
+        LOG_WARN("surface_format not found!");
         surface_format = surface_formats[0];
+    }
 
     // preferred order : mailbox > fifo_relaxed > fifo > whatever
     // the only drawback for mailbox is that it draws more power, so maybe on a portable device use something else
@@ -382,12 +384,11 @@ void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, co
     // so as a partial fix, render the gui and screen in different render passes
 
     // i think it make game run much faster in mali gpu so i unlock this for all gpu type
-    LOG_INFO_ONCE("Adreno gpu render hack enabled to all gpu type");
-//    if (state.is_adreno_stock) {
+    if (state.is_adreno_stock) {
         current_cmd_buffer.endRenderPass();
         pass_info.renderPass = stock_adreno_pass;
         current_cmd_buffer.beginRenderPass(pass_info, vk::SubpassContents::eInline);
-//    }
+    }
 #endif
     
 }
@@ -554,13 +555,11 @@ void ScreenRenderer::create_render_pass() {
      post_filter_render_pass = state.device.createRenderPass(pass_info);
 
 #ifdef ANDROID
-    // no issue in my mali gpu
-    LOG_INFO_ONCE("adreno hack enabled to all gpu type");
-   // if (state.is_adreno_stock) {
+    if (state.is_adreno_stock) {
         // used to fix an adreno driver bug
         color_attachment.setInitialLayout(vk::ImageLayout::ePresentSrcKHR);
         stock_adreno_pass = state.device.createRenderPass(pass_info);
-  //  }
+    }
 #endif
 }
 

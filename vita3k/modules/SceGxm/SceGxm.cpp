@@ -1,4 +1,3 @@
-
 // Vita3K emulator project
 // Copyright (C) 2025 Vita3K team
 //

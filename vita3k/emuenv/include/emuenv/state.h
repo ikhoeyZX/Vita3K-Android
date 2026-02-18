@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,17 +60,6 @@ struct SfoFile;
 struct GDBState;
 struct HTTPState;
 
-#ifdef ANDROID
-struct libadreno_var {
-    bool is_adreno = false;
-    std::string adreno_temp_dir;
-    std::string adreno_lib_dir;
-    std::string adreno_driver_path;
-    std::string adreno_main_so_name;
-    std::string adreno_inject_dir;
-};
-#endif
-
 typedef int32_t SceInt;
 struct IVector2 {
     SceInt x;
@@ -115,9 +104,6 @@ private:
     std::unique_ptr<SfoFile> _sfo_handle;
     std::unique_ptr<GDBState> _gdb;
     std::unique_ptr<HTTPState> _http;
-#ifdef ANDROID
-    std::unique_ptr<libadreno_var> _libadreno;
-#endif
 
 public:
     // App info contained in its `param.sfo` file
@@ -186,9 +172,6 @@ public:
     uint32_t res_height_dpi_scale = 0;
     GDBState &gdb;
     HTTPState &http;
-#ifdef ANDROID
-    libadreno_var &libadreno; 
-#endif
 
     EmuEnvState();
     // declaring a destructor is necessary to forward declare unique_ptrs

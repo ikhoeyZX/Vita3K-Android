@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -424,6 +424,7 @@ enum SceGxmTextureBaseFormat : uint32_t {
     SCE_GXM_TEXTURE_BASE_FORMAT_ASTC10x10 = 0xFF00000F,
     SCE_GXM_TEXTURE_BASE_FORMAT_ASTC12x10 = 0xFF000010,
     SCE_GXM_TEXTURE_BASE_FORMAT_ASTC12x12 = 0xFF000011,
+    SCE_GXM_TEXTURE_BASE_FORMAT_INVALID = 0xFFFFFFFF,
 };
 
 template <typename T>
@@ -1205,7 +1206,7 @@ struct SceGxmTexture {
         };
     };
     // Control Word 2
-    uint32_t lod_min0 : 1; // original 2
+    uint32_t lod_min0 : 2;
     uint32_t data_addr : 30;
     // Control Word 3
     uint32_t palette_addr : 26;

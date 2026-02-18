@@ -520,10 +520,10 @@ Check work.bin/rif file or zRIF key.</failed_install_license>
 
 	<message>
 		<load_app_failed>Failed to load {}.
-Check vita3k.log to see console output for details.
-1. Do you have installed firmware?
+Check vita3k.log in \"pref-path/logs/\" to see console output for details.
+1. Do you have installed firmware and fonts?
 2. Dump your own app(s)/game(s) and install it on Vita3K.
-3. If you want to install or boot Vitamin, it is not supported.</load_app_failed>
+3. Not all Vitamin dump are supported.</load_app_failed>
 	</message>
 
 	<performance_overlay>

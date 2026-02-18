@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -141,8 +141,7 @@ COMMAND(handle_sync_surface_data) {
         return;
     }
 
-#ifndef ANDROID
-
+// #ifndef ANDROID
     const size_t width = surface->width;
     const size_t height = surface->height;
     const size_t stride_in_pixels = surface->strideInPixels;
@@ -152,6 +151,9 @@ COMMAND(handle_sync_surface_data) {
     // We protect the data to track syncing. If this is called then the data is definitely protected somehow.
     // We just unprotect and reprotect again :D
     const std::size_t total_size = height * gxm::get_stride_in_bytes(surface->colorFormat, stride_in_pixels);
+
+    open_access_parent_protect_segment(mem, data);
+    unprotect_inner(mem, data, total_size);
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
@@ -181,9 +183,18 @@ COMMAND(handle_sync_surface_data) {
             LOG_TRACE("Fail to save color surface 0x{:X}", data);
         }
     }
-#endif
-#endif
+#endif // DEBUG_FRAMEBUFFER
 
+    // Need to reprotect. In the case of explicit get, 100% chance it will be unlock later anyway.
+    // No need to bother. Assumption of course.
+    if (!helper.cmd->status && is_protecting(mem, data)) {
+        protect_inner(mem, data, total_size, MemPerm::None);
+    }
+
+    close_access_parent_protect_segment(mem, data);
+    
+// #endif // ANDROID
+    
     if (helper.cmd->status) {
         complete_command(renderer, helper, 0);
     }

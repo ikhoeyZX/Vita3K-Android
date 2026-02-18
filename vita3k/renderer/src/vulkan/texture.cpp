@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -254,16 +254,19 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     samplers.resize(max_sampler_used);
 
     // check for linear filtering on depth support
-    const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(vk::Format::eD24UnormS8Uint);
+    const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(state.deep_stencil_use);
     const vk::FormatProperties x8d24_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
     support_depth_linear_filtering = static_cast<bool>(depth_linear.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
-    support_x8d24 = static_cast<bool>(x8d24_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
+    support_x8d24 = static_cast<bool>(x8d24_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment);
 
     // other format
     const vk::FormatProperties e5rgb9_support = state.physical_device.getFormatProperties(vk::Format::eE5B9G9R9UfloatPack32);
     const vk::FormatProperties a2rgb10_support = state.physical_device.getFormatProperties(vk::Format::eA2R10G10B10UnormPack32);
     support_e5rgb9 = static_cast<bool>(e5rgb9_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
     support_a2rgb10 = static_cast<bool>(a2rgb10_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+    
+    // this value will passing for gxm to vulkan
+    state.support_color_a2rgb10 = support_a2rgb10;
     
     // powerVR only
     const vk::FormatProperties pvrt_support = state.physical_device.getFormatProperties(vk::Format::ePvrtc12BppUnormBlockIMG);
@@ -278,14 +281,13 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     const vk::FormatProperties astc_support = state.physical_device.getFormatProperties(vk::Format::eAstc4x4SrgbBlock);
     support_astc = static_cast<bool>(astc_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
 
-    LOG_INFO("max_sampler_used : {}", max_sampler_used);
-    LOG_INFO("support_d24u8_depth_linear_filtering : {}", support_depth_linear_filtering);
-    LOG_INFO("support_x8d24    : {}", support_x8d24);
-    LOG_INFO("support_e5rgb9   : {}", support_e5rgb9);
-    LOG_INFO("support_a2rgb10  : {}", support_a2rgb10);
-    LOG_INFO("support_dxt      : {}", support_dxt);
-    LOG_INFO("support_astc     : {}", support_astc);
-    LOG_INFO("support_pvrt     : {}", support_pvrt);
+    LOG_INFO("support_depth_linear_filtering : {}", support_depth_linear_filtering);
+    LOG_INFO("support_x8d24\t: {}", support_x8d24);
+    LOG_INFO("support_e5rgb9\t: {}", support_e5rgb9);
+    LOG_INFO("support_a2rgb10\t: {}", support_a2rgb10);
+    LOG_INFO("support_dxt\t: {}", support_dxt);
+    LOG_INFO("support_astc\t: {}", support_astc);
+    LOG_INFO("support_pvrt\t: {}", support_pvrt);
     
     return true;
 }
@@ -358,7 +360,7 @@ static vk::Format bcn_to_rgba8(const vk::Format format) {
 
     // BC6
     case vk::Format::eBc6HUfloatBlock:
-        return vk::Format::eR16G16Sfloat;
+        return vk::Format::eR16G16B16Sfloat;
     case vk::Format::eBc6HSfloatBlock:
         return vk::Format::eR16G16B16Sfloat;
 
@@ -366,7 +368,7 @@ static vk::Format bcn_to_rgba8(const vk::Format format) {
     case vk::Format::eBc7UnormBlock:
         return vk::Format::eR16G16B16A16Unorm;
     case vk::Format::eBc7SrgbBlock:
-        return vk::Format::eR16G16B16A16Unorm;
+        return vk::Format::eR16G16B16A16Snorm;
 
     default:{
         LOG_ERROR("Linear: Trying to convert BCN format with non-compatible format: {}", vk::to_string(format));
@@ -405,7 +407,7 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
 
     const uint16_t mip_count = renderer::texture::get_upload_mip(gxm_texture.true_mip_count(), width, height);
 
-    vk::Format vk_format = texture::translate_format(base_format);
+    vk::Format vk_format = texture::translate_format(base_format, support_pvrt, support_a2rgb10, support_x8d24);
         
     if (gxm::is_bcn_format(base_format) && !support_dxt)
         // texture will be decompressed
@@ -615,7 +617,7 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
         .mipLodBias = (static_cast<float>(texture.lod_bias) - 31.f) / 8.f,
         .maxAnisotropy = static_cast<float>(anisotropic_filtering),
         .compareEnable = VK_FALSE,
-        .minLod = static_cast<float>(texture.lod_min0 | (texture.lod_min1 << 2)),
+   //     .minLod = static_cast<float>(texture.lod_min0 | (texture.lod_min1 << 2)),
         .maxLod = VK_LOD_CLAMP_NONE,
         .unnormalizedCoordinates = VK_FALSE,
     };
@@ -651,7 +653,8 @@ void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
     if (image.image)
         state.frame().destroy_queue.add_image(image);
 
-    vk::Format vk_format = texture::translate_format(base_format);
+    vk::Format vk_format = texture::translate_format(base_format, support_pvrt, support_a2rgb10, support_x8d24);
+    
     if (!support_dxt)
         vk_format = bcn_to_rgba8(vk_format); // for mali users
 

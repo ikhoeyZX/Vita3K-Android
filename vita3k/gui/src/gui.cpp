@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -873,6 +873,11 @@ void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.configuration_menu.custom_settings_dialog || gui.configuration_menu.settings_dialog)
         draw_settings_dialog(gui, emuenv);
 
+#ifdef __ANDROID__
+    if (gui.controls_menu.overlay_dialog)
+        draw_overlay_dialog(gui, emuenv);
+#endif
+    
     if (gui.controls_menu.controls_dialog)
         draw_controls_dialog(gui, emuenv);
     if (gui.controls_menu.controllers_dialog)

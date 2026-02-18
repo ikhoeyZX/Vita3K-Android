@@ -113,6 +113,47 @@ Ptr<void> create_vtable(const std::vector<uint32_t> &nids, MemState &mem) {
     return vtable;
 }
 
+Ptr<void> get_client_vtable(MemState &mem) {
+    static Ptr<void> client_vtable = create_vtable({
+
+                                                       0x101C93F8, // destroy
+
+                                                       0xA22C3E01, // connect
+
+                                                       0xEC73331C, // disconnect
+
+                                                       0xD484D36D, // terminateConnection
+
+                                                       0x28BD5F19, // invokeSyncMethod
+
+                                                       0x73C72FBB, // invokeSyncMethod
+
+                                                       0xAFD10F3B, // invokeAsyncMethod
+
+                                                       0x387AFA3F, // invokeAsyncMethod
+
+                                                       0xF8C2B8BA, // tryGetResult
+
+                                                       0x4EBB01A2, // tryGetResult
+
+                                                       0x8FF23C3C, // pollEventFlag
+
+                                                       0x45C32034, // waitEventFlag
+
+                                                       0x004F48ED, // getUserData
+
+                                                       0xA3E650B0, // getMsg
+
+                                                       0x60EFADE7, // tryGetMsg
+
+                                                       0xA5AA193C, // ~Client
+
+                                                   },
+        mem);
+
+    return client_vtable;
+}
+
 static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id, const std::unordered_set<uint32_t> &nid_blacklist, Address lr) {
     if (!nid_blacklist.contains(nid)) {
         const char *const name = import_name(nid);
@@ -206,8 +247,7 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         return SCE_ERROR_ERRNO_ENOENT;
     }
 
-    // Only load patches for eboot.bin modules
-    const std::vector<Patch> patches = module_path.find("eboot.bin") != std::string::npos ? get_patches(emuenv.patch_path, emuenv.io.title_id) : std::vector<Patch>();
+    const std::vector<Patch> patches = get_patches(emuenv.patch_path, emuenv.io.title_id, module_path);
 
     SceUID module_id = load_self(emuenv.kernel, emuenv.mem, module_buffer.data(), module_path, emuenv.log_path, patches);
 

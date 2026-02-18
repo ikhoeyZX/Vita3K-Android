@@ -270,13 +270,15 @@ add_library(vulkan INTERFACE)
 target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Vulkan-Headers/include")
 if(APPLE)
 	target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/MoltenVK")
-elseif(ANDROID AND NOT (CMAKE_BUILD_TYPE STREQUAL "Release"))
+elseif(ANDROID)
 	# add validation layer
 	if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt/${ANDROID_ABI}/libVkLayer_khronos_validation.so")
+		set(VALIDATION_BINARY "android-binaries-1.4.341.0")
+
 		# download it if not already done
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/validation_layers.zip")
 			message(STATUS "Downloading validation layer...")
-			file(DOWNLOAD https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download/sdk-1.3.250.0/android-binaries-1.3.250.0.zip
+			file(DOWNLOAD https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download/vulkan-sdk-1.4.341.0/${VALIDATION_BINARY}.zip
 				"${CMAKE_BINARY_DIR}/external/validation_layers.zip" SHOW_PROGRESS)
 		endif()
 
@@ -285,8 +287,8 @@ elseif(ANDROID AND NOT (CMAKE_BUILD_TYPE STREQUAL "Release"))
 			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${CMAKE_BINARY_DIR}/external/validation_layers.zip"
 				WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/validation_layers")
 		endif()
-
-		file(COPY "${CMAKE_BINARY_DIR}/external/validation_layers/${ANDROID_ABI}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt")
+		
+		file(COPY "${CMAKE_BINARY_DIR}/external/validation_layers/${VALIDATION_BINARY}/${ANDROID_ABI}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt")
 	endif()
 endif()
 
@@ -297,7 +299,7 @@ target_include_directories(vma INTERFACE
 
 if(ANDROID)
 	set(USE_STATIC_ANDROID_FFMPEG ON)
-        set(ENABLE_MEDIACODEC OFF)
+        set(ENABLE_MEDIACODEC ON)
 	# if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt/${ANDROID_ABI}/libavcodec.so")
 	# 	file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg/shared/android/${ANDROID_ABI}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt")
 	# endif()

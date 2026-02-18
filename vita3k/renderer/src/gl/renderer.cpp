@@ -250,13 +250,6 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
         }
     }
     
-    if(!gpu_name.find("dreno")){
-       gl_state.features.direct_fragcolor = false;
-       gl_state.features.use_mask_bit = true;
-    }else{
-       gl_state.features.use_mask_bit = false;
-    }
-    
     if (gl_state.features.direct_fragcolor) {
         LOG_INFO("Your GPU supports direct access to last fragment color. Your performance with programmable blending games will be optimized.");
     } else if (gl_state.features.support_shader_interlock) {
@@ -269,13 +262,13 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
     }
 
-    /*
+
 #ifdef ANDROID
     gl_state.features.use_mask_bit = false;
 #else
     gl_state.features.use_mask_bit = true;
 #endif
-*/
+
     return gl_state.init();
 }
 

@@ -1,5 +1,6 @@
+
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 // Copyright (c) 2002-2011 The ANGLE Project Authors.
 //
 // This program is free software; you can redistribute it and/or modify
@@ -439,7 +440,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 pa_dtype = DataType::F16;
             } else if (input_type == 0x10000000) {
                 pa_type = "fixed";
-                pa_dtype = DataType::INT32;
+                pa_dtype = DataType::UINT32;
                 // TODO: Supply data type
             } else if (input_type == 0x100000) {
                 if (input_id == 0xA000 || input_id == 0xB000) {
@@ -1651,6 +1652,16 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP5, "v_Clip5", 1);
     // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6, "v_Clip6", 1);
     // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, "v_Clip7", 1);
+    
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP0, "gl_ClipDistance[0]", 1, 0);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP1, "gl_ClipDistance[1]", 1, 1);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP2, "gl_ClipDistance[2]", 1, 2);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP3, "gl_ClipDistance[3]", 1, 3);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP4, "gl_ClipDistance[4]", 1, 4);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP5, "gl_ClipDistance[5]", 1, 5);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6, "gl_ClipDistance[6]", 1, 6);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, "gl_ClipDistance[7]", 1, 7);
+
 
     Operand o_op;
     o_op.bank = RegisterBank::OUTPUT;
@@ -2012,14 +2023,14 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
     spirv_cross::CompilerGLSL::Options options;
 
 #ifdef ANDROID
-    options.fragment.default_float_precision = options.Highp;
-//    options.fragment.default_int_precision = options.Mediump;
+    // options.fragment.default_float_precision = options.Highp;
+    options.fragment.default_int_precision = options.Mediump;
     
     options.version = 320;
     options.es = true;
     options.enable_row_major_load_workaround = false; // spirv.hpp say when true it reduce performance in some android devices
-    options.vertex.fixup_clipspace = false;
- //   options.enable_420pack_extension = false; // because opengles and default value is true
+//    options.vertex.fixup_clipspace = true;
+//    options.enable_420pack_extension = false; 
 #else
     options.version = 430;
     options.es = false;

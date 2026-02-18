@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -213,8 +213,6 @@ static Ptr<uint8_t> get_buffer(const PlayerPtr &player, MediaType media_type,
         for (uint32_t a = 0; a < PlayerInfoState::RING_BUFFER_COUNT; a++) {
             if (buffers[a])
                 free(mem, buffers[a]);
-        }
-        for (uint32_t a = 0; a < PlayerInfoState::RING_BUFFER_COUNT; a++) {
             std::string alloc_name = fmt::format("AvPlayer {} Media Ring {}",
                 media_type == MediaType::VIDEO ? "Video" : "Audio", a);
 
@@ -250,7 +248,6 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
 
         // Create temp media file
         const auto temp_file_path = emuenv.cache_path / "temp_vita_media.mp4";
-        LOG_TRACE("temp media created at : {}", temp_file_path);
         fs::ofstream temp_file(temp_file_path, std::ios::out | std::ios::binary);
 
         const Address buf = alloc(emuenv.mem, KiB(512), "AvPlayer buffer");
@@ -306,7 +303,6 @@ EXPORT(int, sceAvPlayerDisableStream) {
 }
 
 EXPORT(int32_t, sceAvPlayerStreamCount, SceUID player_handle) {
-    LOG_TRACE("player_handle : {}", player_handle);
     STUBBED("ALWAYS RETURN 2 (VIDEO AND AUDIO)");
     return 2;
 }
@@ -382,7 +378,6 @@ EXPORT(uint32_t, sceAvPlayerGetStreamInfo, SceUID player_handle, SceUInt32 strea
         stream_info->stream_details.audio.size = player_info->player.last_channels * player_info->player.last_sample_count * sizeof(int16_t);
         strcpy(stream_info->stream_details.audio.language, "ENG");
     } else {
-        LOG_TRACE("sceAvPlayerGetStreamInfo number: {}", stream_no);
         return SCE_AVPLAYER_ERROR_INVALID_ARGUMENT;
     }
     return 0;
@@ -417,7 +412,7 @@ EXPORT(bool, sceAvPlayerGetVideoData, SceUID player_handle, SceAvPlayerFrameInfo
             buffer = get_buffer(player_info, MediaType::VIDEO, emuenv.mem, H264DecoderState::buffer_size(size), true);
 
             std::vector<uint8_t> data = player_info->player.receive_video();
-            std::memmove(buffer.get(emuenv.mem), data.data(), data.size());
+            std::memcpy(buffer.get(emuenv.mem), data.data(), data.size());
         }
     } else {
         buffer = get_buffer(player_info, MediaType::VIDEO, emuenv.mem, H264DecoderState::buffer_size(size), false);
@@ -467,12 +462,8 @@ EXPORT(bool, sceAvPlayerIsActive, SceUID player_handle) {
     return !player_info->player.video_playing.empty();
 }
 
-EXPORT(uint64_t, sceAvPlayerJumpToTime, SceUID player_handle, uint32_t times) {
-    LOG_TRACE("sceAvPlayerJumpToTime IS CALLED");
-    const auto state = emuenv.kernel.obj_store.get<AvPlayerState>();
-    const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
-
-    return player_info->player.last_timestamp = times;
+EXPORT(int, sceAvPlayerJumpToTime) {
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvPlayerPause, SceUID player_handle) {

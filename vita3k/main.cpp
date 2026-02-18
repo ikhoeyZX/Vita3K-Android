@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -206,9 +206,11 @@ int main(int argc, char *argv[]) {
         adminPriv = true;
 #endif
 
+#ifndef _ANDROID_
     if (adminPriv) {
         LOG_CRITICAL("PLEASE. DO NOT RUN VITA3K AS ADMIN OR WITH ADMIN PRIVILEGES.");
     }
+#endif
 
     EmuEnvState emuenv{};
     Config &cfg = emuenv.cfg;
@@ -385,7 +387,7 @@ int main(int argc, char *argv[]) {
 
     std::chrono::system_clock::time_point present = std::chrono::system_clock::now();
     std::chrono::system_clock::time_point later = std::chrono::system_clock::now();
-    constexpr float frame_time = 16.667f; // 1000.0 / 60.0;
+    constexpr float frame_time =  1000.0f / 60.0f; // 16.667f;
 
     auto wait_for_frame_done = [&]() {
         // get the current time & get the time we worked for
@@ -531,7 +533,7 @@ int main(int argc, char *argv[]) {
     SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
 
     
-    if (emuenv.cfg.enable_gamepad_overlay)
+    if (emuenv.cfg.enable_gamepad_overlay || emuenv.cfg.overlay_show_touch_switch)
         gui::set_controller_overlay_state(gui::get_overlay_display_mask(emuenv.cfg));
 
     while (handle_events(emuenv, gui) && (emuenv.frame_count == 0) && !emuenv.load_exec) {

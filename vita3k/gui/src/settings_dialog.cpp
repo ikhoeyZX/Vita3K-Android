@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -122,6 +122,8 @@ void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) { // has stativ
         if(!fs::exists(tmp)){
             fs::ofstream( emuenv.pref_path / "tmp.txt" );
             fs::rename( emuenv.pref_path / "tmp.txt", tmp );
+            fs::ofstream( emuenv.pref_path / "tmp.txt" );
+            fs::rename( emuenv.pref_path / "tmp.txt", fs::path(emuenv.pref_path / ".nosearch") );
             LOG_INFO(".nomedia created");
         }
 
@@ -1442,13 +1444,16 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, "Adhoc");
         ImGui::Spacing();
+        const auto addrs = net_utils::get_all_assigned_addrs();
         std::vector<std::string> addrsStrings;
         std::vector<const char *> addrsSelect;
         std::vector<const char *> nMaskSelect;
-        const auto addrs = net_utils::get_all_assigned_addrs();
+        addrsStrings.reserve(addrs.size());
+        addrsSelect.reserve(addrs.size());
+        nMaskSelect.reserve(addrs.size());
 
         for (const auto &addr : addrs) {
-            addrsStrings.emplace_back(fmt::format("{} ({})", addr.addr, addr.name).c_str());
+            addrsStrings.emplace_back(fmt::format("{} ({})", addr.addr, addr.name));
             addrsSelect.emplace_back(addrsStrings.back().c_str());
             nMaskSelect.emplace_back(addr.netMask.c_str());
         }

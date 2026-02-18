@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 #include <renderer/vulkan/gxm_to_vulkan.h>
 #include <renderer/vulkan/state.h>
 
+#include <util/log.h>
+
 #include <gxm/types.h>
 
 #include <vkutil/vkutil.h>
@@ -31,12 +33,12 @@ namespace renderer::vulkan {
 VKContext::VKContext(VKState &state, MemState &mem)
     : state(state)
     , mem(mem)
-    , vertex_stream_ring_buffer(vk::BufferUsageFlagBits::eVertexBuffer, MiB(/*128*/ 32))
-    , index_stream_ring_buffer(vk::BufferUsageFlagBits::eIndexBuffer, MiB(32))
-    , vertex_uniform_stream_ring_buffer(vk::BufferUsageFlagBits::eStorageBuffer, MiB(/*256*/ 32))
-    , fragment_uniform_stream_ring_buffer(vk::BufferUsageFlagBits::eStorageBuffer, MiB(/*256*/ 32))
-    , vertex_info_uniform_buffer(vk::BufferUsageFlagBits::eUniformBuffer, MiB(8))
-    , fragment_info_uniform_buffer(vk::BufferUsageFlagBits::eUniformBuffer, MiB(16)) {
+    , vertex_stream_ring_buffer(vk::BufferUsageFlagBits::eVertexBuffer, MiB(/*128*/ 64))
+    , index_stream_ring_buffer(vk::BufferUsageFlagBits::eIndexBuffer, MiB(64))
+    , vertex_uniform_stream_ring_buffer(vk::BufferUsageFlagBits::eStorageBuffer, MiB(/*256*/ 64))
+    , fragment_uniform_stream_ring_buffer(vk::BufferUsageFlagBits::eStorageBuffer, MiB(/*256*/ 64))
+    , vertex_info_uniform_buffer(vk::BufferUsageFlagBits::eUniformBuffer, MiB(16))
+    , fragment_info_uniform_buffer(vk::BufferUsageFlagBits::eUniformBuffer, MiB(32)) {
     memset(&prev_vert_ublock, 0, sizeof(shader::RenderVertUniformBlock));
     memset(&prev_frag_ublock, 0, sizeof(shader::RenderFragUniformBlock));
 
@@ -99,8 +101,9 @@ VKContext::VKContext(VKState &state, MemState &mem)
             // one for the global buffer descriptor, one for the empty descriptor
             .maxSets = 2,
             .poolSizeCount = nb_descriptor / 2,
-            .pPoolSizes = pool_sizes.data()
-        };
+            .pPoolSizes = pool_sizes.data(),
+            .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
+         };
 
         global_descriptor_pool = state.device.createDescriptorPool(descriptor_pool_info);
 
@@ -152,49 +155,38 @@ VKContext::VKContext(VKState &state, MemState &mem)
 VKContext::~VKContext() {
     if (gpu_request_wait_thread.joinable())
         gpu_request_wait_thread.join();
-    
 }
 
 VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &params)
     : color(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eR8G8B8A8Unorm)
     , depthstencil(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), state.deep_stencil_use) {
-    // , depthstencil(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eD24UnormS8Uint) {
-    
     width = static_cast<uint32_t>(params.width * state.res_multiplier);
     height = static_cast<uint32_t>(params.height * state.res_multiplier);
 
-    vk::ImageUsageFlags color_usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment;
+    vk::ImageUsageFlags image_flag;
     if (state.features.support_shader_interlock)
-        color_usage |= vk::ImageUsageFlagBits::eStorage;
-    color.init_image(color_usage);
+        image_flag |= vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage;
+    else
+        image_flag |= vk::ImageUsageFlagBits::eInputAttachment | vk::ImageUsageFlagBits::eTransientAttachment;
+
+    color.init_image(image_flag | vk::ImageUsageFlagBits::eColorAttachment);
     if (params.multisampleMode == SCE_GXM_MULTISAMPLE_4X) {
         // the depth buffer may need to be 4x bigger if we use a texture without downscale
         depthstencil.width *= 2;
         depthstencil.height *= 2;
     }
 
-    depthstencil.init_image(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
+    // Need fix this error from vk validation
+    // LOG_TRACE("DEEPTH STENCIL INIT");
+    image_flag |= vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment;
+    depthstencil.init_image(image_flag);
 
     // transition images to their right state
     vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
     // color
-    {
-        color.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
-
-        vk::ClearColorValue clear_color{ std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 0.0f }) };
-        cmd_buffer.clearColorImage(color.image, vk::ImageLayout::eTransferDstOptimal, clear_color, vkutil::color_subresource_range);
-        color.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
-    }
+    color.transition_to_discard(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
     // depth stencil
-    {
-        depthstencil.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst, vkutil::ds_subresource_range);
-        vk::ClearDepthStencilValue clear_value{
-            .depth = 1.0,
-            .stencil = 0
-        };
-        cmd_buffer.clearDepthStencilImage(depthstencil.image, vk::ImageLayout::eTransferDstOptimal, clear_value, vkutil::ds_subresource_range);
-        depthstencil.transition_to(cmd_buffer, vkutil::ImageLayout::DepthStencilAttachment, vkutil::ds_subresource_range);
-    }
+    depthstencil.transition_to_discard(cmd_buffer, vkutil::ImageLayout::DepthStencilAttachment, vkutil::ds_subresource_range);
     vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
 
     constexpr uint16_t SCE_GXM_MAX_SCENES_PER_RENDERTARGET = 8;
@@ -227,7 +219,6 @@ bool create(VKState &state, std::unique_ptr<Context> &context, MemState &mem) {
 
 bool create(VKState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features) {
     rt = std::make_unique<VKRenderTarget>(state, params);
-    
     return true;
 }
 
@@ -290,21 +281,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
             .alphaBlendOp = translate_blend_func(blend->alphaFunc),
             .colorWriteMask = color_mask
         };
-    } else if (blend != nullptr) { 
-            fp_vk->blending = vk::PipelineColorBlendAttachmentState{
-            .blendEnable = (blend->colorFunc != SCE_GXM_BLEND_FUNC_NONE) || (blend->alphaFunc != SCE_GXM_BLEND_FUNC_NONE),
-            .srcColorBlendFactor = translate_blend_factor(blend->colorSrc),
-            .dstColorBlendFactor = translate_blend_factor(blend->colorDst),
-            .colorBlendOp = translate_blend_func(blend->colorFunc),
-            .srcAlphaBlendFactor = translate_blend_factor(blend->alphaSrc),
-            .dstAlphaBlendFactor = translate_blend_factor(blend->alphaDst),
-            .alphaBlendOp = translate_blend_func(blend->alphaFunc),
-            .colorWriteMask = vk::ColorComponentFlagBits::eR
-                | vk::ColorComponentFlagBits::eG
-                | vk::ColorComponentFlagBits::eB
-                | vk::ColorComponentFlagBits::eA
-        };
-    }else {
+    } else {
         // default values, only blendEnable and colorWriteMask are useful
         fp_vk->blending = vk::PipelineColorBlendAttachmentState{
             .blendEnable = VK_FALSE,

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 
 #include <climits>
 
-#define LOW_BATTERY_PERCENT 10
+#define LOW_BATTERY_PERCENT 15
 
 TRACY_MODULE_NAME(ScePower);
 
@@ -69,7 +69,6 @@ EXPORT(int, scePowerGetBatteryCycleCount) {
     TRACY_FUNC(scePowerGetBatteryCycleCount);
     LOG_TRACE_ONCE("scePowerGetBatteryCycleCount always 0");
     return 0;
-    // return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBatteryElec) {
@@ -106,7 +105,6 @@ EXPORT(int, scePowerGetBatteryRemainCapacity) {
     TRACY_FUNC(scePowerGetBatteryRemainCapacity);
     LOG_TRACE_ONCE("scePowerGetBatteryRemainCapacity always 2000mAh");
     return 2000;
-    //return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBatteryRemainLevel) {
@@ -139,14 +137,12 @@ EXPORT(int, scePowerGetBatteryTemp) {
     TRACY_FUNC(scePowerGetBatteryTemp);
     LOG_TRACE_ONCE("scePowerGetBatteryTemp set to 25 celcius");
     return 25;
-    // return UNIMPLEMENTED();
 }
 
 EXPORT(float, scePowerGetBatteryVolt) {
     TRACY_FUNC(scePowerGetBatteryVolt);
     LOG_TRACE_ONCE("scePowerGetBatteryVolt ALWAYS 4.2v");
     return 4.2f; // 100%
-   // return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBusClockFrequency) {
@@ -159,14 +155,11 @@ EXPORT(int, scePowerGetCaseTemp) {
     TRACY_FUNC(scePowerGetCaseTemp);
     LOG_TRACE_ONCE("scePowerGetCaseTemp set 25 celcius");
     return 25;
-    // return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetGpuClockFrequency) {
     TRACY_FUNC(scePowerGetGpuClockFrequency);
-   // return 222;
-    LOG_TRACE_ONCE("scePowerGetGpuClockFrequency set to 333Mhz");
-    return 333; // always overclock mode
+    return 222;
 }
 
 EXPORT(int, scePowerGetGpuXbarClockFrequency) {

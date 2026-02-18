@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ struct DialogLangState {
         { "submit", "Submit" },
         { "yes", "Yes" }
     };
-    std::map<std::string, std::string> message = { { "load_app_failed", "Failed to load \"{}\".\nCheck vita3k.log to see console output for details.\n1. Do you have installed firmware?\n2. Dump your own app(s)/game(s) and install it on Vita3K.\n3. If you want to install or boot Vitamin, it is not supported." } };
+    std::map<std::string, std::string> message = { { "load_app_failed", "Failed to load \"{}\".\nCheck vita3k.log to see console output for details.\n1. Do you have installed firmware?\n2. Dump your own app(s)/game(s) and install it on Vita3K." } };
     std::map<std::string, std::string> trophy = { { "preparing_start_app", "Preparing to start the application..." } };
     struct SaveData {
         std::map<std::string, std::string> deleting = {
@@ -176,7 +176,7 @@ struct LangState {
             { "information", "Information" }
         };
         std::map<std::string, std::string> deleting = {
-            { "app_delete", "This application and all related data, including saved data, will be deleted." },
+            { "app_delete", "Delete this application, save files not touched or removed." },
             { "app_delete_description", "Deleting an application may take a while,\ndepending on its size and your hardware." },
             { "addcont_delete", "Do you want to delete this add-on data?" },
             { "license_delete", "Do you want to delete this license?" },
@@ -244,7 +244,7 @@ struct LangState {
         };
         std::map<std::string, std::string> application = {
             { "title", "Application" },
-            { "delete", "The selected applications and all related data, including saved data, will be deleted." },
+            { "delete", "The selected applications and all related data, EXCEPT saved data, will be deleted." },
             { "no_item", "There are no content items." }
         };
         std::map<std::string, std::string> saved_data = {
@@ -256,6 +256,7 @@ struct LangState {
     ContentManager content_manager;
     std::map<std::string, std::string> controllers = {
         { "title", "Controllers" },
+        { "overlay", "Virtual Controller" },
         { "connected", "{} controllers connected" },
         { "name", "Name" },
         { "num", "Num" },

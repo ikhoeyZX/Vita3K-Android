@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,14 +32,16 @@ uint32_t DecoderState::get_es_size() {
 }
 
 void DecoderState::flush() {
-    avcodec_flush_buffers(context);
+    std::lock_guard<std::mutex> lock(codec_mutex);
+    if (context)
+        avcodec_flush_buffers(context);
 }
 
 DecoderState::~DecoderState() {
     avcodec_free_context(&context);
 }
 
-// Handy to have this in logs, some debuggers dont seem to be able to evaluate there error macros properly.
+// Handy to have this in logs, some debuggers don't seem to be able to evaluate there error macros properly.
 std::string codec_error_name(int error) {
     switch (error) {
     case AVERROR(EAGAIN):

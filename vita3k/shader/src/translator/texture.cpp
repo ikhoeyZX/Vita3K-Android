@@ -1,6 +1,6 @@
 
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -488,7 +488,6 @@ bool USSETranslatorVisitor::smp(
                 m_b.setPrecision(comp2, spv::DecorationRelaxedPrecision);
                 // (1-u)v uv u(1-v) (1-u)(1-v) in reversed order
                 const spv::Id coeffs = m_b.createOp(spv::OpVectorShuffle, type_f32_v[4], { { true, comp1 }, { true, comp2 }, { false, 2 }, { false, 3 }, { false, 1 }, { false, 0 } });
-                m_b.setPrecision(coeffs, spv::DecorationRelaxedPrecision);
 
                 // bilinear coeffs are stored as float16
                 inst.opr.dest.type = DataType::F16;

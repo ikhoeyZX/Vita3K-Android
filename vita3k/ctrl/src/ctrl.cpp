@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,12 +35,12 @@
 
 static int virtual_joystick_id = -1;
 static SDL_Joystick *virtual_joystick = nullptr;
-
 extern "C" {
 
 JNIEXPORT void JNICALL
 Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobject thiz) {
     virtual_joystick_id = SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_GAMECONTROLLER, 6, 18, 0);
+    
     if (virtual_joystick_id == -1) {
         LOG_CRITICAL("Could not create overlay virtual controller");
         return;
@@ -72,6 +72,7 @@ Java_org_vita3k_emulator_overlay_InputOverlay_setButton(JNIEnv *env, jobject thi
     else
         SDL_JoystickSetVirtualButton(virtual_joystick, button, value);
 }
+
 }
 #endif
 
@@ -128,17 +129,17 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 || std::string_view(controller_name).starts_with("sensor"))) // maybe other sensor are detected as controller
                 continue;
             
-            if(!SDL_JoystickIsVirtual(joystick_index)){
+            if (!SDL_JoystickIsVirtual(joystick_index)) {
                 if (virtual_joystick_id == -1) {
 
-                }else{
+                } else {
                     SDL_JoystickClose(virtual_joystick);
                     SDL_JoystickDetachVirtual(virtual_joystick_id);
                     virtual_joystick = nullptr;
                     virtual_joystick_id = -1;
                 }
                 state.is_virtual_joystick = false;
-            }else{
+            } else {
                 state.is_virtual_joystick = true;
             }
 #endif

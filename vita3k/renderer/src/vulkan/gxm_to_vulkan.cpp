@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -410,7 +410,7 @@ vk::ComponentMapping translate_swizzle(SceGxmColorFormat format) {
     }
 }
 
-vk::Format translate_format(SceGxmColorBaseFormat format) {
+vk::Format translate_format(SceGxmColorBaseFormat format, bool support_a2rgb10) {
     // TODO: look if all these formats are available on the GPU
     switch (format) {
     // classic unpacked formats
@@ -441,7 +441,7 @@ vk::Format translate_format(SceGxmColorBaseFormat format) {
         return vk::Format::eR32G32Sfloat;
 
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
-        return vk::Format::eR8G8B8A8Unorm;
+         return vk::Format::eR8G8B8A8Unorm;
     case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
         return vk::Format::eR8G8B8A8Snorm;
     case SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16:
@@ -466,11 +466,15 @@ vk::Format translate_format(SceGxmColorBaseFormat format) {
         return vk::Format::eR4G4B4A4UnormPack16;
     case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
         // TODO: only ABGR or ARGB swizzle is supported with this format
-        return vk::Format::eA2R10G10B10UnormPack32;
+        if (support_a2rgb10)
+            // some old device not support this
+            return vk::Format::eA2R10G10B10UnormPack32;
+        else
+            return vk::Format::eR16G16B16A16Uint;
     case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
-        // This format is not supported on modern GPUs, give something bigger
-        return vk::Format::eR16G16B16A16Sfloat;
-
+        // not supported by modern GPUs
+        return vk::Format::eR16G16B16A16Sfloat;// This format is not supported on modern GPUs, give something bigger
+        
     default:
         LOG_ERROR("Unknown format {}", log_hex(format));
         return {};
@@ -716,7 +720,7 @@ vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format) {
     }
 }
 
-vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
+vk::Format translate_format(SceGxmTextureBaseFormat base_format, bool support_pvrt, bool support_a2rgb10, bool support_x8d24) {
     switch (base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
         return vk::Format::eR8Unorm;
@@ -733,6 +737,11 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
         return vk::Format::eR32Sint;
     case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
+        if (support_x8d24)
+            return vk::Format::eX8D24UnormPack32;
+        else
+            return vk::Format::eR32Sfloat;
+        
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
         return vk::Format::eR32Sfloat;
@@ -769,24 +778,42 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
         return vk::Format::eB10G11R11UfloatPack32;
     case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
         return vk::Format::eE5B9G9R9UfloatPack32;
-
+        
     // the following formats are all decompressed to u8u8u8u8
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
     case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
     case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
         return vk::Format::eR8G8B8A8Unorm;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
+        if (support_pvrt) 
+           return vk::Format::ePvrtc12BppUnormBlockIMG;
+        else
+           return vk::Format::eR8G8B8A8Unorm;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
+        if (support_pvrt) 
+           return vk::Format::ePvrtc14BppUnormBlockIMG;
+        else
+           return vk::Format::eR8G8B8A8Unorm;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
+        if (support_pvrt) 
+           return vk::Format::ePvrtc22BppUnormBlockIMG;
+        else
+           return vk::Format::eR8G8B8A8Unorm;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+        if (support_pvrt) 
+           return vk::Format::ePvrtc24BppUnormBlockIMG;
+        else
+           return vk::Format::eR8G8B8A8Unorm;
 
     // Because of the lack of support of s8s8s8, an alpha channel is added to this texture
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
-        return vk::Format::eR8G8B8A8Snorm;
+        // return vk::Format::eR8G8B8A8Snorm;
+        return vk::Format::eR8G8B8Snorm;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
         return vk::Format::eR4G4B4A4UnormPack16;
@@ -795,7 +822,11 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
         return vk::Format::eA1R5G5B5UnormPack16;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
         // TODO: same as for the color format
-        return vk::Format::eA2R10G10B10UnormPack32;
+        if (support_a2rgb10)
+            return vk::Format::eA2R10G10B10UnormPack32;
+        else
+            return vk::Format::eR16G16B16A16Uint;
+        
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
         // not supported by modern GPUs
         return vk::Format::eR16G16B16A16Sfloat;

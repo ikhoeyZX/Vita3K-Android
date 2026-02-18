@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -500,6 +500,9 @@ EXPORT(int, fscanf_s) {
     return UNIMPLEMENTED();
 }
 
+#ifdef fseek
+#undef fseek
+#endif
 EXPORT(int, fseek) {
     TRACY_FUNC(fseek);
     return UNIMPLEMENTED();
@@ -510,6 +513,9 @@ EXPORT(int, fsetpos) {
     return UNIMPLEMENTED();
 }
 
+#ifdef ftell
+#undef ftell
+#endif
 EXPORT(int, ftell) {
     TRACY_FUNC(ftell);
     return UNIMPLEMENTED();
@@ -847,9 +853,9 @@ EXPORT(int, memchr) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, memcmp) {
-    TRACY_FUNC(memcmp);
-    return UNIMPLEMENTED();
+EXPORT(int, memcmp, const void *source1, const void *source2, size_t num) {
+    TRACY_FUNC(memcmp, source1, source2, num);    
+    return memcmp(source1, source2, num);
 }
 
 EXPORT(void, memcpy, void *destination, const void *source, uint32_t num) {
@@ -970,7 +976,7 @@ EXPORT(int, printf, const char *format, module::vargs args) {
     // TODO: add args to tracy func
     std::vector<char> buffer(1024);
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
     if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
@@ -1032,10 +1038,9 @@ EXPORT(int, quick_exit) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, rand, int value) {
+EXPORT(uint32_t, rand) {
     TRACY_FUNC(rand);
-    value = rand();
-    return UNIMPLEMENTED();
+    return static_cast<uint32_t>(rand());
 }
 
 EXPORT(int, rand_r) {
@@ -1280,19 +1285,38 @@ EXPORT(Ptr<char>, strncpy, Ptr<char> destination, Ptr<char> source, SceSize size
     return destination;
 }
 
-EXPORT(int, strncpy_s) {
-    TRACY_FUNC(strncpy_s);
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, strncpy_s, Ptr<char> destination, SceSize dst_size, Ptr<char> source, SceSize src_size) {
+    TRACY_FUNC(strncpy_s, destination, dst_size, source, src_size);
+
+    auto dst = destination.get(emuenv.mem);
+    auto src = source.get(emuenv.mem);
+    
+    if (dst == NULL || src == NULL || dst_size == 0){
+        LOG_ERROR("strncpy_s : invalid input or output!");
+        return Ptr<char>();
+    }
+    
+    SceSize limit = (src_size < dst_size) ? src_size : (dst_size - 1);
+
+    strncpy(dst, src, limit);
+    dst[limit] = '\0';
+
+    if (src_size != (SceSize)-1 && strlen(src) >= dst_size) {
+         dst[0] = '\0'; 
+         LOG_ERROR("strncpy_s: overflow!");
+         return Ptr<char>();
+    }
+    return destination;
 }
 
 EXPORT(int, strnlen_s, char *str, SceSize strz) {
     TRACY_FUNC(strnlen_s, str, strz);
     if(str == nullptr || str == NULL)
-        return 0;
+        return SCE_KERNEL_OK;
     else if (sizeof(str) > strz)
         return static_cast<int>(sizeof(strz) - strlen(str));
     else
-    return static_cast<int>(strlen(str));
+        return static_cast<int>(strlen(str));
 }
 
 EXPORT(int, strpbrk) {
@@ -1315,13 +1339,13 @@ EXPORT(Ptr<char>, strrchr, Ptr<char> str, char ch) {
     return res;
 }
 
-EXPORT(int, strspn) {
-    TRACY_FUNC(strspn);
-    return UNIMPLEMENTED();
+EXPORT(SceSize, strspn, const char *source1, const char *source2) {
+    TRACY_FUNC(strspn, source1, source2);
+    return static_cast<SceSize>(strspn(source1, source2));
 }
 
-EXPORT(int, strstr) {
-    TRACY_FUNC(strstr);
+EXPORT(int, strstr, Ptr<char> *source1, Ptr<char> *source2) {
+    TRACY_FUNC(strstr, source1, source2);
     return UNIMPLEMENTED();
 }
 

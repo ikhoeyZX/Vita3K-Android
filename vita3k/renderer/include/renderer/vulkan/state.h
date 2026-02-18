@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,9 +26,6 @@
 #include <renderer/vulkan/types.h>
 
 struct Config;
-#ifdef ANDROID
-struct libadreno_var;
-#endif
 
 namespace renderer::vulkan {
 
@@ -65,6 +62,7 @@ struct VKState : public renderer::State {
     std::vector<vk::PresentModeKHR> format_present_modes;
     
     vk::Format deep_stencil_use;
+    VkBool32 is_have_deep = VK_FALSE;
     
     vma::Allocator allocator;
 
@@ -105,10 +103,13 @@ struct VKState : public renderer::State {
     vkutil::Image default_image;
     vkutil::Buffer default_buffer;
 
+    uint32_t vk_api_version = 0;
+
     bool support_fsr = false;
     // support for the VK_KHR_uniform_buffer_standard_layout extension, needed for memory mapping and texture viewport
     bool support_standard_layout = false;
     bool support_rasterized_order_access = false;
+    bool support_color_a2rgb10 = false;
 
 #ifdef ANDROID
 // SDK > 26
@@ -119,11 +120,7 @@ struct VKState : public renderer::State {
     VKState(int gpu_idx);
 
     bool init() override;
-#ifdef ANDROID
-    bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config, const libadreno_var &adreno);
-#else
     bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config);
-#endif
     void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) override;
     void cleanup();
 

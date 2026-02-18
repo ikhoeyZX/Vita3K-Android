@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -49,69 +49,7 @@
 #ifdef ANDROID
 #include <SDL.h>
 #include <boost/range/iterator_range.hpp>
-#include <jni.h>
 
-#ifndef __arm__
-auto load_custom_driver(const std::string &driver_name) {
-    libadreno_var val = {false, "", "", "", "", ""};
-    fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver_name / "/";
-
-    if (!fs::exists(driver_path)) {
-        LOG_ERROR("Could not find driver {}", driver_name);
-        return val;
-    }
-
-    std::string main_so_name;
-    {
-        fs::path driver_name_file = driver_path / "driver_name.txt";
-        if (!fs::exists(driver_name_file)) {
-            LOG_ERROR("Could not find driver driver_name.txt");
-            return val;
-        }
-
-        fs::ifstream name_file(driver_name_file, std::ios_base::in);
-        name_file >> main_so_name;
-        name_file.close();
-    }
-
-    fs::path temp_dir_path;
-    if (SDL_GetAndroidSDKVersion() < 29) {
-        temp_dir_path = driver_path / "tmp/";
-        fs::create_directory(temp_dir_path);
-    }
-
-    fs::path lib_dir;
-    // retrieve the app lib dir using jni
-    {
-        // retrieve the JNI environment.
-        JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
-        env->PushLocalFrame(10);
-        // retrieve the Java instance of the SDLActivity
-        jobject activity = reinterpret_cast<jobject>(SDL_AndroidGetActivity());
-        // the following calls activity.getApplicationInfo().nativeLibraryDir
-        jclass actibity_class = env->GetObjectClass(activity);
-        jmethodID getApplicationInfo_method = env->GetMethodID(actibity_class, "getApplicationInfo", "()Landroid/content/pm/ApplicationInfo;");
-        jobject app_info = env->CallObjectMethod(activity, getApplicationInfo_method);
-        jclass app_info_class = env->GetObjectClass(app_info);
-        jfieldID app_info_field = env->GetFieldID(app_info_class, "nativeLibraryDir", "Ljava/lang/String;");
-        jstring lib_dir_java = reinterpret_cast<jstring>(env->GetObjectField(app_info, app_info_field));
-        const char *lib_dir_ptr = env->GetStringUTFChars(lib_dir_java, nullptr);
-
-        // copy the dir path in our local object
-        lib_dir = fs::path(lib_dir_ptr) / "/";
-
-        env->ReleaseStringUTFChars(lib_dir_java, lib_dir_ptr);
-        // remove all local references
-        env->PopLocalFrame(nullptr);
-    }
-
-    fs::create_directory(driver_path / "file_redirect");
-    std::string inject_path = (driver_path / "file_redirect/").c_str();
-    val = {true, temp_dir_path.c_str(), lib_dir.c_str(), driver_path.c_str(), main_so_name.c_str(), inject_path.c_str()};
-
-    return val;
-}
-#endif // ifndef __arm__
 #endif // ifdef android
 
 namespace app {
@@ -470,35 +408,6 @@ bool init(EmuEnvState &state, const Root &root_paths) {
     LOG_INFO("Width dpi scale = {}", state.res_width_dpi_scale);
     LOG_INFO("Height dpi scale = {}", state.res_height_dpi_scale);
     
-#ifdef ANDROID
-    if(state.cfg.boot_fail && state.cfg.gpu_idx != 0){
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Custom driver failed!", fmt::format("GPU driver {}\nnot supported or broken\nApp will use default driver now", state.cfg.custom_driver_name).c_str(), nullptr);
-            state.cfg.gpu_idx = 0;
-            state.cfg.custom_driver_name = "";
-            state.cfg.boot_fail = false;
-            config::serialize_config(state.cfg, state.cfg.config_path);
-    }else if (state.cfg.gpu_idx != 0) {
-          // mark failed boot first because if custom driver fail it will crash app so no way mark it after load custom driver
-          if(!state.cfg.boot_fail){
-                state.cfg.boot_fail = true;
-                config::serialize_config(state.cfg, state.cfg.config_path);
-            }
-
-#ifndef __arm__
-           // LOG_INFO("Load custom driver");
-           // set path to load custom driver using libadrenotools
-            state.libadreno = load_custom_driver(state.cfg.current_config.custom_driver_name);
-            if(!state.libadreno.is_adreno){
-                error_dialog("Custom driver corrupted or you use wrong file\nApp will use default driver now", nullptr);
-                state.cfg.gpu_idx = 0;
-                state.cfg.custom_driver_name = "";
-                state.cfg.boot_fail = false;
-                config::serialize_config(state.cfg, state.cfg.config_path);
-            }
-#endif // ifndef __arm__
-    }
-#endif // ifdef android
-
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
     if (!state.window) {
         LOG_ERROR("SDL failed to create window!\n Reason:{}\n disabling some feature!", SDL_GetError());
@@ -531,7 +440,7 @@ bool init(EmuEnvState &state, const Root &root_paths) {
 
     // initialize the renderer first because we need to know if we need a page table
     if (!state.cfg.console) {
-        if (renderer::init(state.window.get(), state.renderer, state.backend_renderer, state.cfg, root_paths, state.libadreno)) {
+        if (renderer::init(state.window.get(), state.renderer, state.backend_renderer, state.cfg, root_paths)) {
             update_viewport(state);
         } else {
             switch (state.backend_renderer) {
@@ -640,7 +549,7 @@ void switch_state(EmuEnvState &emuenv, const bool pause) {
     else {
 #ifdef ANDROID
         emuenv.display.imgui_render = false;
-        if (emuenv.cfg.enable_gamepad_overlay)
+        if (emuenv.cfg.enable_gamepad_overlay || emuenv.cfg.overlay_show_touch_switch)
             gui::set_controller_overlay_state(gui::get_overlay_display_mask(emuenv.cfg));
 #endif
 
