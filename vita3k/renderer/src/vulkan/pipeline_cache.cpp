@@ -484,14 +484,14 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
         return it->second;
 
     // create a new render pass for this format
-
     vk::AttachmentReference color_ref{
         .attachment = 0,
         .layout = vk::ImageLayout::eGeneral
     };
     vk::AttachmentReference ds_ref{
         .attachment = no_color ? 0U : 1U,
-        .layout = vk::ImageLayout::eDepthStencilAttachmentOptimal
+   //     .layout = vk::ImageLayout::eDepthStencilAttachmentOptimal
+        .layout = vk::ImageLayout::eDepthStencilReadOnlyOptimal
     };
     vk::SubpassDescription subpass{
         .pipelineBindPoint = vk::PipelineBindPoint::eGraphics
