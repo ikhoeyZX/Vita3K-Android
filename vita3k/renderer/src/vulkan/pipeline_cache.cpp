@@ -491,7 +491,7 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
     vk::AttachmentReference ds_ref{
         .attachment = no_color ? 0U : 1U,
    //     .layout = vk::ImageLayout::eDepthStencilAttachmentOptimal
-        .layout = vk::ImageLayout::eDepthStencilReadOnlyOptimal
+        .layout = vk::ImageLayout::eDepthStencilAttachmentOptimal | vk::ImageLayout::eDepthStencilReadOnlyOptimal
     };
     vk::SubpassDescription subpass{
         .pipelineBindPoint = vk::PipelineBindPoint::eGraphics
