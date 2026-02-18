@@ -1,4 +1,3 @@
-
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
 //
@@ -474,21 +473,18 @@ bool USSETranslatorVisitor::smp(
                 const spv::Id v = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, uv, m_b.makeIntConstant(1));
 
                 const spv::Id onemu = m_b.createBinOp(spv::OpFSub, type_f32, one, u);
-                m_b.setPrecision(onemu, spv::DecorationRelaxedPrecision);
                 const spv::Id onemv = m_b.createBinOp(spv::OpFSub, type_f32, one, v);
-                m_b.setPrecision(onemv, spv::DecorationRelaxedPrecision);
-
+                
                 // (1-u) u
                 const spv::Id x_coeffs = m_b.createCompositeConstruct(type_f32_v[2], { onemu, u });
                 // (1-u)v uv
                 const spv::Id comp1 = m_b.createBinOp(spv::OpVectorTimesScalar, type_f32_v[2], x_coeffs, v);
-                m_b.setPrecision(comp1, spv::DecorationRelaxedPrecision);
                 // (1-u)(1-v) u(1-v)
                 const spv::Id comp2 = m_b.createBinOp(spv::OpVectorTimesScalar, type_f32_v[2], x_coeffs, onemv);
-                m_b.setPrecision(comp2, spv::DecorationRelaxedPrecision);
                 // (1-u)v uv u(1-v) (1-u)(1-v) in reversed order
                 const spv::Id coeffs = m_b.createOp(spv::OpVectorShuffle, type_f32_v[4], { { true, comp1 }, { true, comp2 }, { false, 2 }, { false, 3 }, { false, 1 }, { false, 0 } });
-
+                m_b.setPrecision(coeffs, spv::DecorationRelaxedPrecision);
+                
                 // bilinear coeffs are stored as float16
                 inst.opr.dest.type = DataType::F16;
                 store(inst.opr.dest, coeffs, 0b1111);
