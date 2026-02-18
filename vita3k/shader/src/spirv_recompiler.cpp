@@ -1,4 +1,3 @@
-
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
 // Copyright (c) 2002-2011 The ANGLE Project Authors.
@@ -146,21 +145,16 @@ static spv::Id get_type_basic(spv::Builder &b, const Input &input) {
     switch (input.type) {
         // clang-format off
     case DataType::F16:
-         return b.makeFloatType(16);
     case DataType::F32:
          return b.makeFloatType(32);
 
     case DataType::UINT8:
-        return b.makeUintType(8);
     case DataType::UINT16:
-        return b.makeUintType(16);
     case DataType::UINT32:
         return b.makeUintType(32);
 
     case DataType::INT8:
-        return b.makeIntType(8);
     case DataType::INT16:
-        return b.makeIntType(16);
     case DataType::INT32:
         return b.makeIntType(32);
 
