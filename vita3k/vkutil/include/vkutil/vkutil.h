@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -53,6 +53,14 @@ static constexpr vk::ImageSubresourceRange color_subresource_range = {
 
 static constexpr vk::ImageSubresourceRange ds_subresource_range = {
     .aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil,
+    .baseMipLevel = 0,
+    .levelCount = 1,
+    .baseArrayLayer = 0,
+    .layerCount = 1
+};
+
+static constexpr vk::ImageSubresourceRange d_subresource_range = {
+    .aspectMask = vk::ImageAspectFlagBits::eDepth,
     .baseMipLevel = 0,
     .levelCount = 1,
     .baseArrayLayer = 0,
