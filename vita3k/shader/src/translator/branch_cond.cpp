@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -279,7 +279,7 @@ spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, in
 
     const char *used_comp_str = tb_comp_str[compare_include_equal][sign_test];
 
-    m_b.setLine(m_recompiler.cur_pc);
+    m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
 
     if (is_sub_opcode(inst.opcode)) {
         if (mask) {
