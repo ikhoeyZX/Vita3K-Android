@@ -47,9 +47,8 @@ Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobj
     desc.nbuttons = 16;
     desc.nhats = 1;
     // force detect as DS4
-    desc.vendor_id = 0x054c;
-    desc.product_id = 0x09cc; // 0x054c (1st gen) or 0x09cc (2nd gen)
-    desc.name = "DS4 Virtual Controller";
+    desc.vendor_id = 0x054C;
+    desc.product_id = 0x05C4; // 0x054c (1st gen) or 0x09cc (2nd gen)
     
     // virtual_joystick_id = SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_GAMECONTROLLER, 6, 20, 0);
 
