@@ -300,8 +300,8 @@ EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
 EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     TRACY_FUNC(sceKernelGetFreeMemorySize, info);
 
-    // Default memory configuration
-    uint32_t max_user = MiB(256);
+    // Default memory configuration is 256MB
+    uint32_t max_user = MiB(128);
 
     // if DevKit then max_user = MB(512); else check sfo file for memory expansion mode
     // Fetch the "ATTRIBUTE2" key from the SFO file to check for memory expansion mode
@@ -333,8 +333,8 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
 
     const int tmp = mem_available(emuenv.mem);
     int tmp2 = tmp - max_user;
-//    LOG_TRACE("Free mem: {} MB", (tmp/MiB(1)));
-//    LOG_TRACE("Need mem: {} MB", (max_user/MiB(1)));
+    LOG_INFO_ONCE("Free mem: {} MB", (tmp/MiB(1)));
+    LOG_INFO_ONCE("Need mem: {} MB", (max_user/MiB(1)));
 
     if (tmp2 <= 0){
         LOG_ERROR("Out of memory!, use default settings!");
