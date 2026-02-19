@@ -39,7 +39,19 @@ extern "C" {
 
 JNIEXPORT void JNICALL
 Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobject thiz) {
-    virtual_joystick_id = SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_GAMECONTROLLER, 6, 18, 0);
+    SDL_VirtualJoystickDesc desc;
+    desc.version = 1.0;
+    desc.type = SDL_JOYSTICK_TYPE_GAMECONTROLLER;
+    desc.naxes = 6;
+    desc.nbuttons = 20;
+    // force detect as DS4
+    desc.vendor_id = 0x054c;
+    desc.product_id = 0x09cc; // 0x054c (1st gen) or 0x09cc (2nd gen)
+    desc.name = "DS4 Virtual Controller";
+    
+    // virtual_joystick_id = SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_GAMECONTROLLER, 6, 20, 0);
+
+    virtual_joystick_id = SDL_JoystickAttachVirtualEx(&desc);
     
     if (virtual_joystick_id == -1) {
         LOG_CRITICAL("Could not create overlay virtual controller");
