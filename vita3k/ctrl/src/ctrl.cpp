@@ -40,10 +40,12 @@ extern "C" {
 JNIEXPORT void JNICALL
 Java_org_vita3k_emulator_overlay_InputOverlay_attachController(JNIEnv *env, jobject thiz) {
     SDL_VirtualJoystickDesc desc;
-    desc.version = 1.0;
+    SDL_zero(desc);
+    desc.version = SDL_VIRTUAL_JOYSTICK_DESC_VERSION;
     desc.type = SDL_JOYSTICK_TYPE_GAMECONTROLLER;
     desc.naxes = 6;
-    desc.nbuttons = 20;
+    desc.nbuttons = 16;
+    desc.nhats = 1;
     // force detect as DS4
     desc.vendor_id = 0x054c;
     desc.product_id = 0x09cc; // 0x054c (1st gen) or 0x09cc (2nd gen)
