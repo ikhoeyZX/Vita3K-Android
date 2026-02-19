@@ -1159,8 +1159,8 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     public static final int dleft = 13;
     public static final int dright = 14;
 
-    public static final int l3 = 15;
-    public static final int r3 = 16;
+    public static final int l3 = 7;
+    public static final int r3 = 8;
 
     // they are axis for sdl but buttons for the ps vita
     public static final int l2 = -4;
