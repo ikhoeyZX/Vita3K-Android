@@ -155,13 +155,14 @@ const static std::vector<const char *> required_device_extensions = {
 namespace renderer::vulkan {
 
 #if defined(__ANDROID__) && !defined(__arm__)
-static bool detect_patch_bcn(bool *support_dxt) {
+static bool detect_patch_bcn(bool *support_dxt, uint32_t vk_api) {
     // some Adreno GPUs support BCn textures even though they say they don't
     // and we might need to patch a function for it to work
 
     // create an instance to get the patch address
     vk::ApplicationInfo application_info{
-        .apiVersion = VK_API_VERSION_1_1
+       // .apiVersion = VK_API_VERSION_1_1
+	    .apiVersion = vk_api
     };
     vk::InstanceCreateInfo instance_info{
         .pApplicationInfo = &application_info
@@ -405,26 +406,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
-#ifdef __ANDROID__
-        if (!config.current_config.custom_driver_name.empty()) {
-            void *vulkan_handle = load_custom_adreno_driver(config.current_config.custom_driver_name);
-            if (vulkan_handle) {
-                vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(dlsym(vulkan_handle, "vkGetInstanceProcAddr"));
-                VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
-                LOG_INFO("Custom Adreno driver {} injected successfully", config.current_config.custom_driver_name);
-            }
-
-            if(config.use_astc){
-	          LOG_INFO("DXT (BCn) support disabled");
-		      texture_cache.support_dxt = false;
-		    }else{
-			  if (!detect_patch_bcn(&texture_cache.support_dxt))
-	             LOG_ERROR("Failed to enable DXT (BCn) support!, system will use ASTC instead");
-            }
-        }
-#endif
-
-        // check vulkan version
+		// check vulkan version
 	    uint32_t vk_api = 0;
         if (VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion(&vk_api) != VK_SUCCESS)
             vk_api = VK_API_VERSION_1_0;
@@ -440,8 +422,25 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
 	    // VK_API_VERSION_1_(minor)
         vk_api_version = VK_MAKE_API_VERSION(0, 1, minor, 0);
-		LOG_INFO("vk_api_version set: 1.{}.0", minor);
-
+		
+#ifdef __ANDROID__
+        if (!config.current_config.custom_driver_name.empty()) {
+            void *vulkan_handle = load_custom_adreno_driver(config.current_config.custom_driver_name);
+            if (vulkan_handle) {
+                vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(dlsym(vulkan_handle, "vkGetInstanceProcAddr"));
+                VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
+                LOG_INFO("Custom Adreno driver {} injected successfully", config.current_config.custom_driver_name);
+            }
+        }
+		if(config.use_astc){
+	          LOG_INFO("DXT (BCn) support disabled");
+		      texture_cache.support_dxt = false;
+		}else{
+			  if (!detect_patch_bcn(&texture_cache.support_dxt, vk_api_version))
+	             LOG_ERROR("Failed to enable DXT (BCn) support!, system will use ASTC instead");
+		}
+#endif
+		
         vk::ApplicationInfo app_info{
             .pApplicationName = app_name, // App Name
             .applicationVersion = VK_MAKE_API_VERSION(0, 0, 0, 1), // App Version
