@@ -370,6 +370,7 @@ static void *load_custom_adreno_driver(const std::string &driver_name) {
         nullptr);
 
     if (!vulkan_handle) {
+        SDL_AndroidShowToast(fmt::format("Failed to load custom driver\n {}",driver_name).c_str(), 1, -1, 0, 0);
         LOG_ERROR("Could not open handle for custom driver {}", driver_name);
         return nullptr;
     }
