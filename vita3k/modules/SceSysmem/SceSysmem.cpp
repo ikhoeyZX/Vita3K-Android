@@ -301,7 +301,7 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     TRACY_FUNC(sceKernelGetFreeMemorySize, info);
 
     // Default memory configuration is 256MB
-    uint32_t max_user = MiB(128);
+    uint32_t max_user = MiB(64);
 
     // if DevKit then max_user = MB(512); else check sfo file for memory expansion mode
     // Fetch the "ATTRIBUTE2" key from the SFO file to check for memory expansion mode
@@ -331,7 +331,7 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
-    const int tmp = mem_available(emuenv.mem);
+    int tmp = mem_available(emuenv.mem);
     int tmp2 = tmp - max_user;
     LOG_INFO_ONCE("Free mem: {} MB", (tmp/MiB(1)));
     LOG_INFO_ONCE("Need mem: {} MB", (max_user/MiB(1)));
