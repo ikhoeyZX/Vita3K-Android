@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -263,7 +263,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::PushID(i);
                 ImGui::SetNextItemWidth(50.f * emuenv.dpi_scale);
                 if (ImGui::Combo("##swap_port", &selected_port, port_names, SCE_CTRL_MAX_WIRELESS_NUM))
-                    swap_controller_ports(ctrl, i + 1, selected_port + 1);
+                    swap_controller_ports(ctrl, i, selected_port);
                 ImGui::PopID();
                 ImGui::TableSetColumnIndex(1);
                 ImGui::TableSetColumnIndex(1);
