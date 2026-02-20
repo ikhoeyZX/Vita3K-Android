@@ -26,8 +26,6 @@
 #include <util/string_utils.h>
 
 #include <util/tracy.h>
-
-#include <sys/sysinfo.h>
 TRACY_MODULE_NAME(SceSysmem);
 
 template <>
@@ -332,16 +330,9 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     constexpr uint32_t max_phycont = MiB(26); // Max physically contiguous memory (26 MiB)
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
-
-    struct sysinfo memInfo;
-    int tmp = 0;
-    if (sysinfo(&memInfo) == 0) {
-        // Multiply by mem_unit to handle systems with more than 4GB RAM
-        tmp = static_cast<size_t>(memInfo.freeram) * memInfo.mem_unit;
-    }
     
-  // int tmp = mem_available(emuenv.mem);
-    int tmp2 = tmp - max_user;
+    uint32_t tmp = mem_available(emuenv.mem);
+    int tmp2 = static_cast<int>(tmp) - max_user;
     LOG_INFO_ONCE("Free mem: {} MB", (tmp/MiB(1)));
     LOG_INFO_ONCE("Need mem: {} MB", (max_user/MiB(1)));
 
