@@ -387,7 +387,8 @@ int main(int argc, char *argv[]) {
 
     std::chrono::system_clock::time_point present = std::chrono::system_clock::now();
     std::chrono::system_clock::time_point later = std::chrono::system_clock::now();
-    constexpr float frame_time =  1000.0f / 60.0f; // 16.667f;
+   // constexpr float frame_time =  1000.0f / 60.0f; // 16.667f;
+    constexpr float frame_time =  1000.0f / 50.0f; // 50fps should be enough to reduce power usage
 
     auto wait_for_frame_done = [&]() {
         // get the current time & get the time we worked for
@@ -512,7 +513,9 @@ int main(int argc, char *argv[]) {
     // Pre-Compile Shaders
     emuenv.renderer->set_app(emuenv.io.title_id.c_str(), emuenv.self_name.c_str());
     if (renderer::get_shaders_cache_hashs(*emuenv.renderer) && cfg.shader_cache) {
+#ifndef ANDROID
         SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, compiling shaders...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
+#endif
         for (const auto &hash : emuenv.renderer->shaders_cache_hashs) {
             handle_events(emuenv, gui);
             gui::draw_begin(gui, emuenv);
