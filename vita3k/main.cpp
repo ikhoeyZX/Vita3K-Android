@@ -530,12 +530,12 @@ int main(int argc, char *argv[]) {
         if (err != Success)
             return err;
     }
+#ifdef ANDROID
+    SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{}", emuenv.io.title_id).c_str());
+#else
     SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
-
+#endif
     
-    if (emuenv.cfg.enable_gamepad_overlay || emuenv.cfg.overlay_show_touch_switch)
-        gui::set_controller_overlay_state(gui::get_overlay_display_mask(emuenv.cfg));
-
     while (handle_events(emuenv, gui) && (emuenv.frame_count == 0) && !emuenv.load_exec) {
 #ifdef TRACY_ENABLE
         ZoneScopedN("Game loading"); // Tracy - Track game loading loop scope
@@ -560,6 +560,9 @@ int main(int argc, char *argv[]) {
         FrameMark; // Tracy - Frame end mark for game loading loop
 #endif
     }
+
+    if (emuenv.cfg.enable_gamepad_overlay || emuenv.cfg.overlay_show_touch_switch)
+        gui::set_controller_overlay_state(gui::get_overlay_display_mask(emuenv.cfg));
 
     while (handle_events(emuenv, gui) && !emuenv.load_exec) {
 #ifdef TRACY_ENABLE
