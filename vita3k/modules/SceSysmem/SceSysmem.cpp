@@ -332,11 +332,11 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
     
     uint32_t tmp = mem_available(emuenv.mem);
-    int tmp2 = static_cast<int>(tmp) - max_user;
+    uint32_t tmp2 = tmp - max_user;
     LOG_INFO_ONCE("Free mem: {} MB", (tmp/MiB(1)));
     LOG_INFO_ONCE("Need mem: {} MB", (max_user/MiB(1)));
 
-    if (tmp2 <= 0){
+    if (tmp2 <= max_user){
         LOG_ERROR("Out of memory!, use default settings!");
         tmp2 = align(mem_available(emuenv.mem) / 3, 0x1000);
         if(tmp2 < max_user){
