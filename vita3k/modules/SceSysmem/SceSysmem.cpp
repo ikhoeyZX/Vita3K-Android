@@ -26,6 +26,8 @@
 #include <util/string_utils.h>
 
 #include <util/tracy.h>
+
+#include <sys/sysinfo.h>
 TRACY_MODULE_NAME(SceSysmem);
 
 template <>
@@ -299,7 +301,7 @@ EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
 
 EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     TRACY_FUNC(sceKernelGetFreeMemorySize, info);
-
+    
     // Default memory configuration is 256MB
     uint32_t max_user = MiB(256);
 
@@ -331,16 +333,21 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
- //   int tmp = mem_available(emuenv.mem);
-    int tmp = mem_available(emuenv.mem.memory.get());
+    struct sysinfo memInfo;
+    int tmp = 0;
+    if (sysinfo(&memInfo) == 0) {
+        // Multiply by mem_unit to handle systems with more than 4GB RAM
+        tmp = static_cast<size_t>(memInfo.freeram) * memInfo.mem_unit;
+    }
+    
+  // int tmp = mem_available(emuenv.mem);
     int tmp2 = tmp - max_user;
     LOG_INFO_ONCE("Free mem: {} MB", (tmp/MiB(1)));
     LOG_INFO_ONCE("Need mem: {} MB", (max_user/MiB(1)));
 
     if (tmp2 <= 0){
         LOG_ERROR("Out of memory!, use default settings!");
-     //   tmp2 = align(mem_available(emuenv.mem) / 3, 0x1000);
-        tmp2 = align(mem_available(emuenv.mem.memory.get()) / 3);
+        tmp2 = align(mem_available(emuenv.mem) / 3, 0x1000);
         if(tmp2 < max_user){
             tmp2 = tmp2/4;
             info->size_user = tmp2;
