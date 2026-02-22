@@ -402,7 +402,7 @@ option(XXH_X86DISPATCH_ALLOW_AVX "Allow building XXH3 with AVX even if it crashe
 if((NOT APPLE) AND (ARCHITECTURE STREQUAL "x86_64"))
 	set(DISPATCH 1)
 endif()
-add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)
+# add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)
 if(XXH_X86DISPATCH_ALLOW_AVX)
 	target_compile_definitions(xxhash PRIVATE XXH_X86DISPATCH_ALLOW_AVX)
 endif()
