@@ -781,8 +781,8 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(ImGui_VulkanState &state)
             .descriptorCount = TextureState::nb_descriptor_sets + 1
         };
         vk::DescriptorPoolCreateInfo pool_info{
-            .maxSets = TextureState::nb_descriptor_sets + 1,
             .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+            .maxSets = TextureState::nb_descriptor_sets + 1,
         };
         pool_info.setPoolSizes(pool_size);
         state.DescriptorPool = vk_state.device.createDescriptorPool(pool_info);
