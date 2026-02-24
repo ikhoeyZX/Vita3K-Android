@@ -870,8 +870,8 @@ static std::optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
 // Decoder/translator usage
 //
 
-USSERecompiler::USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters,
-    utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries, const spv::Id render_info_id)
+USSERecompiler::USSERecompiler(sspv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters,
+    utils::SpirvUtilFunctions &utils, sspv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries, const sspv::Id render_info_id)
     : inst(nullptr)
     , count(0)
     , b(b)
@@ -889,7 +889,7 @@ void USSERecompiler::reset(const std::uint64_t *_inst, const std::size_t _count)
         [&](usse::USSEOffset off) -> std::uint64_t { return inst[off]; });
 }
 
-spv::Id USSERecompiler::get_condition_value(const std::uint8_t pred, const bool neg) {
+sspv::Id USSERecompiler::get_condition_value(const std::uint8_t pred, const bool neg) {
     const ExtPredicate predicator = static_cast<ExtPredicate>(pred);
 
     Operand pred_opr{};
@@ -904,10 +904,10 @@ spv::Id USSERecompiler::get_condition_value(const std::uint8_t pred, const bool 
         do_neg = !do_neg;
     }
 
-    spv::Id pred_v = visitor.load(pred_opr, 0b0001);
+    sspv::Id pred_v = visitor.load(pred_opr, 0b0001);
     if (do_neg) {
-        std::vector<spv::Id> ops{ pred_v };
-        pred_v = b.createOp(spv::OpLogicalNot, b.makeBoolType(), ops);
+        std::vector<sspv::Id> ops{ pred_v };
+        pred_v = b.createOp(sspv::OpLogicalNot, b.makeBoolType(), ops);
     }
 
     return pred_v;
@@ -917,7 +917,7 @@ void USSERecompiler::compile_code_node(const usse::USSECodeNode &code) {
     if (code.size == 0)
         return;
 
-    std::unique_ptr<spv::Builder::If> cond_builder;
+    std::unique_ptr<sspv::Builder::If> cond_builder;
 
     if (code.condition != 0) {
         // Construct the IF
@@ -926,8 +926,8 @@ void USSERecompiler::compile_code_node(const usse::USSECodeNode &code) {
         // TODO: remove this hack and solve this properly
         constexpr uint64_t sop3_opcode = 0b10001;
         if (code.size > 1 || (inst[code.offset] >> 59) != sop3_opcode) {
-            spv::Id pred_v = get_condition_value(code.condition);
-            cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
+            sspv::Id pred_v = get_condition_value(code.condition);
+            cond_builder = std::make_unique<sspv::Builder::If>(pred_v, sspv::SelectionControlMaskNone, b);
         }
     }
 
@@ -952,11 +952,11 @@ void USSERecompiler::compile_code_node(const usse::USSECodeNode &code) {
 }
 
 void USSERecompiler::compile_break_node(const usse::USSEBreakNode &node) {
-    std::unique_ptr<spv::Builder::If> cond_builder;
+    std::unique_ptr<sspv::Builder::If> cond_builder;
 
     if (node.get_condition() != 0) {
-        spv::Id pred_v = get_condition_value(node.get_condition());
-        cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
+        sspv::Id pred_v = get_condition_value(node.get_condition());
+        cond_builder = std::make_unique<sspv::Builder::If>(pred_v, sspv::SelectionControlMaskNone, b);
     }
 
     b.createLoopExit();
@@ -966,11 +966,11 @@ void USSERecompiler::compile_break_node(const usse::USSEBreakNode &node) {
 }
 
 void USSERecompiler::compile_continue_node(const usse::USSEContinueNode &node) {
-    std::unique_ptr<spv::Builder::If> cond_builder;
+    std::unique_ptr<sspv::Builder::If> cond_builder;
 
     if (node.get_condition() != 0) {
-        spv::Id pred_v = get_condition_value(node.get_condition());
-        cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
+        sspv::Id pred_v = get_condition_value(node.get_condition());
+        cond_builder = std::make_unique<sspv::Builder::If>(pred_v, sspv::SelectionControlMaskNone, b);
     }
 
     b.createLoopContinue();
@@ -980,7 +980,7 @@ void USSERecompiler::compile_continue_node(const usse::USSEContinueNode &node) {
 }
 
 void USSERecompiler::compile_conditional_node(const usse::USSEConditionalNode &cond) {
-    spv::Builder::If if_builder(get_condition_value(cond.negif_condition(), true), spv::SelectionControlMaskNone, b);
+    sspv::Builder::If if_builder(get_condition_value(cond.negif_condition(), true), sspv::SelectionControlMaskNone, b);
     compile_block(*cond.if_block());
 
     if (cond.else_block()) {
@@ -992,7 +992,7 @@ void USSERecompiler::compile_conditional_node(const usse::USSEConditionalNode &c
 }
 
 void USSERecompiler::compile_loop_node(const usse::USSELoopNode &loop) {
-    spv::Builder::LoopBlocks loops = b.makeNewLoop();
+    sspv::Builder::LoopBlocks loops = b.makeNewLoop();
 
     b.createBranch(&loops.head);
     b.setBuildPoint(&loops.head);
@@ -1051,14 +1051,14 @@ void USSERecompiler::compile_block(const usse::USSEBlockNode &block) {
     }
 }
 
-spv::Function *USSERecompiler::compile_program_function() {
+sspv::Function *USSERecompiler::compile_program_function() {
     // Make a new function (subroutine)
-    spv::Block *last_build_point = b.getBuildPoint();
-    spv::Block *new_sub_block = nullptr;
+    sspv::Block *last_build_point = b.getBuildPoint();
+    sspv::Block *new_sub_block = nullptr;
 
     const auto sub_name = fmt::format("{}_program", visitor.is_translating_secondary_program() ? "secondary" : "primary");
 
-    spv::Function *ret_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), sub_name.c_str(), {}, {}, {},
+    sspv::Function *ret_func = b.makeFunctionEntry(sspv::NoPrecision, b.makeVoidType(), sub_name.c_str(), {}, {}, {},
         &new_sub_block);
 
     compile_block(tree_block_node);
@@ -1069,8 +1069,8 @@ spv::Function *USSERecompiler::compile_program_function() {
     return ret_func;
 }
 
-void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils,
-    spv::Function *begin_hook_func, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries, const spv::Id render_info_id, spv::Function *spv_func_main, std::vector<spv::Id> &interfaces) {
+void convert_gxp_usse_to_spirv(sspv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils,
+    sspv::Function *begin_hook_func, sspv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries, const sspv::Id render_info_id, sspv::Function *spv_func_main, std::vector<sspv::Id> &interfaces) {
     const uint64_t *primary_program = program.primary_program_start();
     const uint64_t primary_program_instr_count = program.primary_program_instr_count;
 
@@ -1112,11 +1112,11 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
     b.createFunctionCall(end_hook_func, {});
 
     if (features.should_use_shader_interlock() && program.is_fragment() && program.is_frag_color_used())
-        b.createNoResultOp(spv::OpEndInvocationInterlockEXT);
+        b.createNoResultOp(sspv::OpEndInvocationInterlockEXT);
 
     if (recomp.visitor.frag_depth_id != 0) {
         interfaces.push_back(recomp.visitor.frag_depth_id);
-        b.addExecutionMode(spv_func_main, spv::ExecutionModeDepthReplacing);
+        b.addExecutionMode(spv_func_main, sspv::ExecutionModeDepthReplacing);
     }
 }
 
