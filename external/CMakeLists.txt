@@ -237,7 +237,7 @@ if(USE_DISCORD_RICH_PRESENCE)
 	target_include_directories(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp")
 endif()
 
-set(SPIRV_CROSS_SPV_HEADER_NAMESPACE_OVERRIDE spvs)
+set(SPIRV_CROSS_SPV_HEADER_NAMESPACE_OVERRIDE sspv)
 option(SPIRV_CROSS_CLI "Build the CLI binary. Requires SPIRV_CROSS_STATIC." OFF)
 option(SPIRV_CROSS_ENABLE_TESTS "Enable SPIRV-Cross tests." OFF)
 option(SPIRV_CROSS_ENABLE_HLSL "Enable HLSL target support." OFF)
