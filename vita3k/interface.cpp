@@ -457,6 +457,14 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     init_device_paths(emuenv.io);
     init_savedata_app_path(emuenv.io, emuenv.pref_path);
 
+    // for now enable by default for this game
+    if (emuenv.io.title_id.find("Silent Hill") != std::string::npos) 
+        emuenv.file_open_need_delay = true;
+    else if(emuenv.cfg.file_open_delay)
+        emuenv.file_open_need_delay = true;
+    else
+        emuenv.file_open_need_delay = false;
+    
     // Load param.sfo
     vfs::FileBuffer param_sfo;
     if (vfs::read_app_file(param_sfo, emuenv.pref_path, emuenv.io.app_path, "sce_sys/param.sfo"))
