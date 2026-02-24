@@ -92,7 +92,7 @@ bool USSETranslatorVisitor::vmov(
 
     // TODO: adjust dest mask if needed
     CompareMethod compare_method = CompareMethod::NE_ZERO;
-    spv::Op compare_op = spv::OpAny;
+    sspv::Op compare_op = sspv::OpAny;
 
     const DataType test_type = is_u8_conditional ? DataType::UINT8 : move_data_type;
     const bool is_test_signed = is_signed_integer_data_type(test_type);
@@ -115,31 +115,31 @@ bool USSETranslatorVisitor::vmov(
         switch (compare_method) {
         case CompareMethod::LT_ZERO:
             if (is_test_unsigned)
-                compare_op = spv::Op::OpULessThan;
+                compare_op = sspv::Op::OpULessThan;
             else if (is_test_signed)
-                compare_op = spv::Op::OpSLessThan;
+                compare_op = sspv::Op::OpSLessThan;
             else
-                compare_op = spv::Op::OpFOrdLessThan;
+                compare_op = sspv::Op::OpFOrdLessThan;
             break;
         case CompareMethod::LTE_ZERO:
             if (is_test_unsigned)
-                compare_op = spv::Op::OpULessThanEqual;
+                compare_op = sspv::Op::OpULessThanEqual;
             else if (is_test_signed)
-                compare_op = spv::Op::OpSLessThanEqual;
+                compare_op = sspv::Op::OpSLessThanEqual;
             else
-                compare_op = spv::Op::OpFOrdLessThanEqual;
+                compare_op = sspv::Op::OpFOrdLessThanEqual;
             break;
         case CompareMethod::NE_ZERO:
             if (is_test_integer)
-                compare_op = spv::Op::OpINotEqual;
+                compare_op = sspv::Op::OpINotEqual;
             else
-                compare_op = spv::Op::OpFOrdNotEqual;
+                compare_op = sspv::Op::OpFOrdNotEqual;
             break;
         case CompareMethod::EQ_ZERO:
             if (is_test_integer)
-                compare_op = spv::Op::OpIEqual;
+                compare_op = sspv::Op::OpIEqual;
             else
-                compare_op = spv::Op::OpFOrdEqual;
+                compare_op = sspv::Op::OpFOrdEqual;
             break;
         }
     }
@@ -188,12 +188,12 @@ bool USSETranslatorVisitor::vmov(
 
     LOG_DISASM("{}", disasm_str);
 
-    spv::Id source_to_compare_with_0 = spv::NoResult;
-    spv::Id source_1 = load(inst.opr.src1, dest_mask, src1_repeat_offset);
-    spv::Id source_2 = spv::NoResult;
-    spv::Id result = spv::NoResult;
+    sspv::Id source_to_compare_with_0 = sspv::NoResult;
+    sspv::Id source_1 = load(inst.opr.src1, dest_mask, src1_repeat_offset);
+    sspv::Id source_2 = sspv::NoResult;
+    sspv::Id result = sspv::NoResult;
 
-    if (source_1 == spv::NoResult) {
+    if (source_1 == sspv::NoResult) {
         LOG_ERROR("Source not Loaded");
         return false;
     }
@@ -201,23 +201,23 @@ bool USSETranslatorVisitor::vmov(
     if (is_conditional) {
         source_to_compare_with_0 = load(inst.opr.src0, dest_mask, src0_repeat_offset);
         source_2 = load(inst.opr.src2, dest_mask, src2_repeat_offset);
-        spv::Id result_type = m_b.getTypeId(source_2);
-        spv::Id v0_comp_type = is_test_unsigned ? m_b.makeUintType(32) : (is_test_signed ? m_b.makeIntType(32) : m_b.makeFloatType(32));
-        spv::Id v0_type = utils::make_vector_or_scalar_type(m_b, v0_comp_type, m_b.getNumComponents(source_2));
-        spv::Id v0 = utils::make_uniform_vector_from_type(m_b, v0_type, 0);
+        sspv::Id result_type = m_b.getTypeId(source_2);
+        sspv::Id v0_comp_type = is_test_unsigned ? m_b.makeUintType(32) : (is_test_signed ? m_b.makeIntType(32) : m_b.makeFloatType(32));
+        sspv::Id v0_type = utils::make_vector_or_scalar_type(m_b, v0_comp_type, m_b.getNumComponents(source_2));
+        sspv::Id v0 = utils::make_uniform_vector_from_type(m_b, v0_type, 0);
 
         bool source_2_first = false;
 
-        if (compare_op != spv::OpAny) {
+        if (compare_op != sspv::OpAny) {
             // Merely do what the instruction does
             // First compare source0 with vector 0
-            spv::Id cond_result = m_b.createOp(compare_op, utils::make_vector_or_scalar_type(m_b, m_b.makeBoolType(), m_b.getNumComponents(source_to_compare_with_0)),
+            sspv::Id cond_result = m_b.createOp(compare_op, utils::make_vector_or_scalar_type(m_b, m_b.makeBoolType(), m_b.getNumComponents(source_to_compare_with_0)),
                 { source_to_compare_with_0, v0 });
 
             // For each component, if the compare result is true, move the equivalent component from source1 to dest,
             // else the same thing with source2
             // This behavior matches with OpSelect, so use it. Since IMix doesn't exist (really)
-            result = m_b.createOp(spv::OpSelect, result_type, { cond_result, source_1, source_2 });
+            result = m_b.createOp(sspv::OpSelect, result_type, { cond_result, source_1, source_2 });
         } else {
             // We optimize the float case. We can make the GPU use native float instructions without touching bool or integers
             // Taking advantage of the mix function: if we use absolute 0 and 1 as the lerp, we got the equivalent of:
@@ -493,9 +493,9 @@ bool USSETranslatorVisitor::vpck(
             disasm::operand_to_str(inst.opr.src1, dest_mask, src1_repeat_offset), scale ? "scale" : "noscale");
     }
 
-    spv::Id source = load(inst.opr.src1, dest_mask, src1_repeat_offset);
+    sspv::Id source = load(inst.opr.src1, dest_mask, src1_repeat_offset);
 
-    if (source == spv::NoResult) {
+    if (source == sspv::NoResult) {
         LOG_ERROR("Source not loaded");
         return false;
     }
@@ -505,8 +505,8 @@ bool USSETranslatorVisitor::vpck(
         Operand src2 = inst.opr.src2;
         src1.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
         src2.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-        spv::Id source1 = load(src1, 0b11, src1_repeat_offset);
-        spv::Id source2 = load(src2, 0b11, src2_repeat_offset);
+        sspv::Id source1 = load(src1, 0b11, src1_repeat_offset);
+        sspv::Id source2 = load(src2, 0b11, src2_repeat_offset);
         source = utils::finalize(m_b, source1, source2, inst.opr.src1.swizzle, m_b.makeIntConstant(0), dest_mask);
     }
 
@@ -696,8 +696,8 @@ bool USSETranslatorVisitor::vldst(
         continue;
     }
 
-    spv::Id source_0 = load(inst.opr.src0, 0b1, src0_offset);
-    spv::Id source_1 = load(inst.opr.src1, 0b1, src1_offset);
+    sspv::Id source_0 = load(inst.opr.src0, 0b1, src0_offset);
+    sspv::Id source_1 = load(inst.opr.src1, 0b1, src1_offset);
 
     // are we using the sa register containing the thread buffer address ?
     const bool is_thread_buffer_access = inst.opr.src0.bank == RegisterBank::SECATTR && inst.opr.src0.num == m_spirv_params.thread_buffer_sa_offset;
@@ -708,20 +708,20 @@ bool USSETranslatorVisitor::vldst(
     // Maybe moe expand means it's not fetching after all? Dunno
     // also for the thread buffer, this value is 128 times bigger
     uint32_t REG_INDEX_BASE = is_thread_buffer_access ? 0x1000000 : 0x10000;
-    spv::Id reg_index_base_cst = m_b.makeIntConstant(REG_INDEX_BASE);
-    spv::Id i32_type = m_b.makeIntType(32);
+    sspv::Id reg_index_base_cst = m_b.makeIntConstant(REG_INDEX_BASE);
+    sspv::Id i32_type = m_b.makeIntType(32);
 
     if (inst.opr.src1.bank != shader::usse::RegisterBank::IMMEDIATE) {
-        source_1 = m_b.createBinOp(spv::OpISub, m_b.getTypeId(source_1), source_1, reg_index_base_cst);
+        source_1 = m_b.createBinOp(sspv::OpISub, m_b.getTypeId(source_1), source_1, reg_index_base_cst);
     }
 
     if (!moe_expand) {
-        source_1 = m_b.createBinOp(spv::OpIAdd, i32_type, source_1, m_b.makeIntConstant(4));
+        source_1 = m_b.createBinOp(sspv::OpIAdd, i32_type, source_1, m_b.makeIntConstant(4));
     }
 
     if (!is_store) {
-        spv::Id source_2 = load(inst.opr.src2, 0b1, src2_offset);
-        source_1 = m_b.createBinOp(spv::OpIAdd, i32_type, source_1, source_2);
+        sspv::Id source_2 = load(inst.opr.src2, 0b1, src2_offset);
+        source_1 = m_b.createBinOp(sspv::OpIAdd, i32_type, source_1, source_2);
     }
 
     if (is_thread_buffer_access) {
@@ -738,22 +738,22 @@ bool USSETranslatorVisitor::vldst(
         }
 
         if (m_spirv_params.thread_buffer_base != 0)
-            source_1 = m_b.createBinOp(spv::OpIAdd, i32_type, source_1, m_spirv_params.thread_buffer_base);
+            source_1 = m_b.createBinOp(sspv::OpIAdd, i32_type, source_1, m_spirv_params.thread_buffer_base);
 
         // get the index in the float array
-        spv::Id index = m_b.createBinOp(spv::OpShiftRightLogical, i32_type, source_1, m_b.makeUintConstant(2));
-        spv::Id float_ptr = utils::create_access_chain(m_b, spv::StorageClassPrivate, m_spirv_params.thread_buffer, { index });
+        sspv::Id index = m_b.createBinOp(sspv::OpShiftRightLogical, i32_type, source_1, m_b.makeUintConstant(2));
+        sspv::Id float_ptr = utils::create_access_chain(m_b, sspv::StorageClassPrivate, m_spirv_params.thread_buffer, { index });
         if (is_store) {
-            spv::Id value = load(to_store, 0b1);
+            sspv::Id value = load(to_store, 0b1);
             m_b.createStore(value, float_ptr);
         } else {
-            spv::Id value = m_b.createLoad(float_ptr, spv::NoPrecision);
+            sspv::Id value = m_b.createLoad(float_ptr, sspv::NoPrecision);
             store(to_store, value, 0b1);
         }
         continue;
     }
 
-    spv::Id base = m_b.createBinOp(spv::OpIAdd, i32_type, source_0, source_1);
+    sspv::Id base = m_b.createBinOp(sspv::OpIAdd, i32_type, source_0, source_1);
 
     if (m_features.enable_memory_mapping) {
         utils::buffer_address_access(m_b, m_spirv_params, m_util_funcs, m_features, to_store, to_store_offset, base, get_data_type_size(type_to_ldst), current_number_to_fetch, -1, is_store);
@@ -764,8 +764,8 @@ bool USSETranslatorVisitor::vldst(
         }
 
         for (int i = 0; i < total_bytes_fo_fetch / 4; ++i) {
-            spv::Id offset = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(4 * i));
-            spv::Id src = utils::fetch_memory(m_b, m_spirv_params, m_util_funcs, offset);
+            sspv::Id offset = m_b.createBinOp(sspv::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(4 * i));
+            sspv::Id src = utils::fetch_memory(m_b, m_spirv_params, m_util_funcs, offset);
             store(to_store, src, 0b1);
             to_store.num += 1;
         }
@@ -792,7 +792,7 @@ bool USSETranslatorVisitor::limm(
     inst.opcode = Opcode::MOV;
 
     std::uint32_t imm_value = imm_value_first_21bits | (imm_value_bits21to25 << 21) | (imm_value_bits26to31 << 26);
-    spv::Id const_imm_id = m_b.makeUintConstant(imm_value);
+    sspv::Id const_imm_id = m_b.makeUintConstant(imm_value);
 
     inst.dest_mask = 0b1;
     inst.opr.dest = decode_dest(inst.opr.dest, dest_num, dest_bank, dest_bank_ext, false, 7, m_second_program);

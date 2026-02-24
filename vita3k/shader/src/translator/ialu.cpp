@@ -78,7 +78,7 @@ bool USSETranslatorVisitor::vbw(
     bool immediate = src2_ext && inst.opr.src2.bank == RegisterBank::IMMEDIATE;
     uint32_t value = 0;
 
-    spv::Id src2 = 0;
+    sspv::Id src2 = 0;
     if (immediate) {
         value = src2_n | (static_cast<uint32_t>(src2_sel) << 7) | (static_cast<uint32_t>(src2_exth) << 14);
         // rotate left by src2_rot
@@ -107,61 +107,61 @@ bool USSETranslatorVisitor::vbw(
             const uint32_t right_shift = type == DataType::UINT16 ? (16 - src2_rot) : (32 - src2_rot);
 
             // src2 = (src2 << src2_rot) | (src2 >> (bit_size - src2_rot))
-            spv::Id left = m_b.createBinOp(spv::OpShiftLeftLogical, type_ui32, src2, m_b.makeUintConstant(src2_rot));
-            spv::Id right = m_b.createBinOp(spv::OpShiftRightLogical, type_ui32, src2, m_b.makeUintConstant(right_shift));
-            src2 = m_b.createBinOp(spv::OpBitwiseOr, type_ui32, left, right);
+            sspv::Id left = m_b.createBinOp(sspv::OpShiftLeftLogical, type_ui32, src2, m_b.makeUintConstant(src2_rot));
+            sspv::Id right = m_b.createBinOp(sspv::OpShiftRightLogical, type_ui32, src2, m_b.makeUintConstant(right_shift));
+            src2 = m_b.createBinOp(sspv::OpBitwiseOr, type_ui32, left, right);
 
             if (type == DataType::UINT16)
-                src2 = m_b.createBinOp(spv::OpBitwiseAnd, type_ui32, src2, m_b.makeUintConstant(0xFFFF));
+                src2 = m_b.createBinOp(sspv::OpBitwiseAnd, type_ui32, src2, m_b.makeUintConstant(0xFFFF));
         }
 
-        if (src2 == spv::NoResult) {
+        if (src2 == sspv::NoResult) {
             LOG_ERROR("Source 2 not loaded");
             return false;
         }
 
         if (src2_invert) {
-            src2 = m_b.createUnaryOp(spv::Op::OpNot, type_ui32, src2);
+            src2 = m_b.createUnaryOp(sspv::Op::OpNot, type_ui32, src2);
 
             if (type == DataType::UINT16)
-                src2 = m_b.createBinOp(spv::OpBitwiseAnd, type_ui32, src2, m_b.makeUintConstant(0xFFFF));
+                src2 = m_b.createBinOp(sspv::OpBitwiseAnd, type_ui32, src2, m_b.makeUintConstant(0xFFFF));
         }
     }
 
-    spv::Id result;
+    sspv::Id result;
 
-    spv::Op operation;
+    sspv::Op operation;
     switch (inst.opcode) {
-    case Opcode::OR: operation = spv::Op::OpBitwiseOr; break;
-    case Opcode::AND: operation = spv::Op::OpBitwiseAnd; break;
-    case Opcode::XOR: operation = spv::Op::OpBitwiseXor; break;
+    case Opcode::OR: operation = sspv::Op::OpBitwiseOr; break;
+    case Opcode::AND: operation = sspv::Op::OpBitwiseAnd; break;
+    case Opcode::XOR: operation = sspv::Op::OpBitwiseXor; break;
     case Opcode::ROL:
         LOG_WARN("Bitwise Rotate Left operation unsupported.");
         return false; // TODO: SPIRV doesn't seem to have a rotate left operation!
-    case Opcode::ASR: operation = spv::Op::OpShiftRightArithmetic; break;
-    case Opcode::SHL: operation = spv::Op::OpShiftLeftLogical; break;
-    case Opcode::SHR: operation = spv::Op::OpShiftRightLogical; break;
+    case Opcode::ASR: operation = sspv::Op::OpShiftRightArithmetic; break;
+    case Opcode::SHL: operation = sspv::Op::OpShiftLeftLogical; break;
+    case Opcode::SHR: operation = sspv::Op::OpShiftRightLogical; break;
     default: return false;
     }
     // optimisation. (any OR 0 || any XOR 0 || any AND 0xFFFFFFFF) -> assign
-    bool is_const = m_b.getOpCode(src2) == spv::Op::OpConstant;
+    bool is_const = m_b.getOpCode(src2) == sspv::Op::OpConstant;
     auto const_val = is_const ? m_b.getConstantScalar(src2) : 1; // default value is intentionally non zero
-    if (((operation == spv::Op::OpBitwiseOr || operation == spv::Op::OpBitwiseXor) && is_const && const_val == 0)
-        || (operation == spv::Op::OpBitwiseAnd && is_const && const_val == std::numeric_limits<decltype(const_val)>::max())) {
+    if (((operation == sspv::Op::OpBitwiseOr || operation == sspv::Op::OpBitwiseXor) && is_const && const_val == 0)
+        || (operation == sspv::Op::OpBitwiseAnd && is_const && const_val == std::numeric_limits<decltype(const_val)>::max())) {
         result = load(inst.opr.src1, 0b0001, src1_repeat_offset);
-        if (result == spv::NoResult) {
+        if (result == sspv::NoResult) {
             LOG_ERROR("Source not loaded");
             return false;
         }
     } else {
-        spv::Id src1 = load(inst.opr.src1, 0b0001, src1_repeat_offset);
-        if (src1 == spv::NoResult) {
+        sspv::Id src1 = load(inst.opr.src1, 0b0001, src1_repeat_offset);
+        if (src1 == sspv::NoResult) {
             LOG_ERROR("Source not loaded");
             return false;
         }
         result = m_b.createBinOp(operation, type_ui32, src1, src2);
         if (m_b.isFloatType(m_b.getTypeId(src2))) {
-            result = m_b.createUnaryOp(spv::Op::OpBitcast, type_f32, src2);
+            result = m_b.createUnaryOp(sspv::Op::OpBitcast, type_f32, src2);
         }
     }
 
@@ -250,11 +250,11 @@ bool USSETranslatorVisitor::i8mad(
 
     inst.opr.src0.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
 
-    spv::Id src1_mul = load(inst.opr.src1, 0b1111, src1_repeat_offset);
-    spv::Id src2_mul = load(inst.opr.src2, 0b1111, src2_repeat_offset);
-    spv::Id src0_add = load(inst.opr.src0, 0b1111, src0_repeat_offset);
+    sspv::Id src1_mul = load(inst.opr.src1, 0b1111, src1_repeat_offset);
+    sspv::Id src2_mul = load(inst.opr.src2, 0b1111, src2_repeat_offset);
+    sspv::Id src0_add = load(inst.opr.src0, 0b1111, src0_repeat_offset);
 
-    spv::Id final_add = src0_add;
+    sspv::Id final_add = src0_add;
 
     usse::Swizzle3 add_swizz_rgb = SWIZZLE_CHANNEL_3_DEFAULT;
     bool add_swizz_rgb_src0 = true;
@@ -262,7 +262,7 @@ bool USSETranslatorVisitor::i8mad(
     if ((csel0 != 0) || (asel0 != 0)) {
         // We build source0 (the add component in this loop)
         // Using OpVectorShuffle to construct the final one.
-        std::vector<spv::Id> shuffle_ops = { src0_add, src1_mul };
+        std::vector<sspv::Id> shuffle_ops = { src0_add, src1_mul };
 
         switch (csel0) {
         case 0:
@@ -312,11 +312,11 @@ bool USSETranslatorVisitor::i8mad(
             break;
         }
 
-        final_add = m_b.createOp(spv::OpVectorShuffle, m_b.getTypeId(src0_add), shuffle_ops);
+        final_add = m_b.createOp(sspv::OpVectorShuffle, m_b.getTypeId(src0_add), shuffle_ops);
     }
 
-    spv::Id result = m_b.createBinOp(spv::OpIMul, m_b.getTypeId(src1_mul), src1_mul, src2_mul);
-    result = m_b.createBinOp(src0_neg ? spv::OpISub : spv::OpIAdd, m_b.getTypeId(src1_mul), result, src0_add);
+    sspv::Id result = m_b.createBinOp(sspv::OpIMul, m_b.getTypeId(src1_mul), src1_mul, src2_mul);
+    result = m_b.createBinOp(src0_neg ? sspv::OpISub : sspv::OpIAdd, m_b.getTypeId(src1_mul), result, src0_add);
 
     store(inst.opr.dest, result, 0b1111, dest_repeat_offset);
 
@@ -415,16 +415,16 @@ bool USSETranslatorVisitor::i16mad(
         disasm::operand_to_str(inst.opr.src2, mask_src2) + ((src2_format != 0) ? "-8bits" : ""));
 
     inst.opr.src0.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-    spv::Id source0 = load(inst.opr.src0, 0b1, src0_repeat_offset);
-    spv::Id source1 = load(inst.opr.src1, mask_src1, src1_repeat_offset);
-    spv::Id source2 = load(inst.opr.src2, mask_src2, src2_repeat_offset);
+    sspv::Id source0 = load(inst.opr.src0, 0b1, src0_repeat_offset);
+    sspv::Id source1 = load(inst.opr.src1, mask_src1, src1_repeat_offset);
+    sspv::Id source2 = load(inst.opr.src2, mask_src2, src2_repeat_offset);
 
-    spv::Id source0_type = m_b.getTypeId(source0);
+    sspv::Id source0_type = m_b.getTypeId(source0);
 
-    auto mul_result = m_b.createBinOp(spv::OpIMul, source0_type, source0, source1);
-    auto add_result = m_b.createBinOp(spv::OpIAdd, source0_type, mul_result, source2);
+    auto mul_result = m_b.createBinOp(sspv::OpIMul, source0_type, source0, source1);
+    auto add_result = m_b.createBinOp(sspv::OpIAdd, source0_type, mul_result, source2);
 
-    if (add_result != spv::NoResult) {
+    if (add_result != sspv::NoResult) {
         store(inst.opr.dest, add_result, 0b1, dest_repeat_offset);
     }
 
@@ -502,12 +502,12 @@ bool USSETranslatorVisitor::i32mad(
     LOG_DISASM("{:016x}: {}{} {} {} {} {}", m_instr, disasm::s_predicate_str(pred), "IMAD2", disasm::operand_to_str(inst.opr.dest, 0b1, dest_repeat_offset),
         disasm::operand_to_str(inst.opr.src0, 0b1, src0_repeat_offset), disasm::operand_to_str(inst.opr.src1, 0b1, src1_repeat_offset), disasm::operand_to_str(inst.opr.src2, 0b1, src2_repeat_offset));
 
-    spv::Id vsrc0 = load(inst.opr.src0, src0_mask, src0_repeat_offset);
-    spv::Id vsrc1 = load(inst.opr.src1, src1_mask, src1_repeat_offset);
-    spv::Id vsrc2 = load(inst.opr.src2, src2_mask, src2_repeat_offset);
+    sspv::Id vsrc0 = load(inst.opr.src0, src0_mask, src0_repeat_offset);
+    sspv::Id vsrc1 = load(inst.opr.src1, src1_mask, src1_repeat_offset);
+    sspv::Id vsrc2 = load(inst.opr.src2, src2_mask, src2_repeat_offset);
 
-    auto mul_result = m_b.createBinOp(spv::OpIMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
-    auto add_result = m_b.createBinOp(spv::OpIAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
+    auto mul_result = m_b.createBinOp(sspv::OpIMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
+    auto add_result = m_b.createBinOp(sspv::OpIAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
 
     store(inst.opr.dest, add_result, 0b1, dest_repeat_offset);
 
@@ -562,12 +562,12 @@ bool USSETranslatorVisitor::i32mad2(
         inst.opr.src2.flags |= RegisterFlags::Negative;
     }
 
-    spv::Id vsrc0 = load(inst.opr.src0, 0b1, 0);
-    spv::Id vsrc1 = load(inst.opr.src1, 0b1, 0);
-    spv::Id vsrc2 = load(inst.opr.src2, 0b1, 0);
+    sspv::Id vsrc0 = load(inst.opr.src0, 0b1, 0);
+    sspv::Id vsrc1 = load(inst.opr.src1, 0b1, 0);
+    sspv::Id vsrc2 = load(inst.opr.src2, 0b1, 0);
 
-    auto mul_result = m_b.createBinOp(spv::OpIMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
-    auto add_result = m_b.createBinOp(spv::OpIAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
+    auto mul_result = m_b.createBinOp(sspv::OpIMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
+    auto add_result = m_b.createBinOp(sspv::OpIAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
 
     // sn is mysterious argument.
     // These are confirmed by hw testing:

@@ -32,114 +32,114 @@ using namespace usse;
 
 // Return the uv coefficients (a v4f32), each in [0,1]
 // coords are the normalized coordinates in the sampled image
-static spv::Id get_uv_coeffs(spv::Builder &b, const spv::Id std_builtins, spv::Id sampled_image, spv::Id coords, spv::Id lod = spv::NoResult) {
+static sspv::Id get_uv_coeffs(sspv::Builder &b, const sspv::Id std_builtins, sspv::Id sampled_image, sspv::Id coords, sspv::Id lod = sspv::NoResult) {
     // https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html#textures-texel-filtering
-    const spv::Id f32 = b.makeFloatType(32);
-    const spv::Id v2f32 = b.makeVectorType(f32, 2);
-    const spv::Id i32 = b.makeIntType(32);
-    const spv::Id v2i32 = b.makeVectorType(i32, 2);
+    const sspv::Id f32 = b.makeFloatType(32);
+    const sspv::Id v2f32 = b.makeVectorType(f32, 2);
+    const sspv::Id i32 = b.makeIntType(32);
+    const sspv::Id v2i32 = b.makeVectorType(i32, 2);
 
-    if (lod == spv::NoResult) {
+    if (lod == sspv::NoResult) {
         // compute the lod here
-        const spv::Id query_lod = b.createOp(spv::OpImageQueryLod, v2f32, { sampled_image, coords });
-        lod = b.createOp(spv::OpVectorExtractDynamic, f32, { query_lod, b.makeIntConstant(0) });
+        const sspv::Id query_lod = b.createOp(sspv::OpImageQueryLod, v2f32, { sampled_image, coords });
+        lod = b.createOp(sspv::OpVectorExtractDynamic, f32, { query_lod, b.makeIntConstant(0) });
     }
 
-    const spv::Id layer = b.createUnaryOp(spv::OpConvertFToS, i32, lod);
+    const sspv::Id layer = b.createUnaryOp(sspv::OpConvertFToS, i32, lod);
 
     // first we need to get the image size
-    const spv::Id image_type = b.makeImageType(f32, spv::Dim2D, false, false, false, 1, spv::ImageFormatUnknown);
-    const spv::Id image = b.createUnaryOp(spv::OpImage, image_type, sampled_image);
-    spv::Id image_size = b.createOp(spv::OpImageQuerySizeLod, v2i32, { image, layer });
-    image_size = b.createUnaryOp(spv::OpConvertSToF, v2f32, image_size);
+    const sspv::Id image_type = b.makeImageType(f32, sspv::Dim2D, false, false, false, 1, sspv::ImageFormatUnknown);
+    const sspv::Id image = b.createUnaryOp(sspv::OpImage, image_type, sampled_image);
+    sspv::Id image_size = b.createOp(sspv::OpImageQuerySizeLod, v2i32, { image, layer });
+    image_size = b.createUnaryOp(sspv::OpConvertSToF, v2f32, image_size);
 
     // un-normalize the coordinates
-    coords = b.createBinOp(spv::OpFMul, v2f32, coords, image_size);
+    coords = b.createBinOp(sspv::OpFMul, v2f32, coords, image_size);
 
     // subtract 0.5 to each coord
-    const spv::Id half = b.makeFloatConstant(0.5f);
-    const spv::Id v2half = b.makeCompositeConstant(v2f32, { half, half });
-    coords = b.createBinOp(spv::OpFSub, v2f32, coords, v2half);
+    const sspv::Id half = b.makeFloatConstant(0.5f);
+    const sspv::Id v2half = b.makeCompositeConstant(v2f32, { half, half });
+    coords = b.createBinOp(sspv::OpFSub, v2f32, coords, v2half);
 
     // the uv coefficients are the fractional values
-    return b.setPrecision(b.createBuiltinCall(v2f32, std_builtins, GLSLstd450Fract, { coords }), spv::DecorationRelaxedPrecision);
+    return b.setPrecision(b.createBuiltinCall(v2f32, std_builtins, GLSLstd450Fract, { coords }), sspv::DecorationRelaxedPrecision);
 }
 
-spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex, int texture_index, const int dim, const Coord &coord, const DataType dest_type, const int lod_mode, const spv::Id extra1, const spv::Id extra2, const int gather4_comp) {
+sspv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const sspv::Id tex, int texture_index, const int dim, const Coord &coord, const DataType dest_type, const int lod_mode, const sspv::Id extra1, const sspv::Id extra2, const int gather4_comp) {
     auto coord_id = coord.first;
 
     if (coord.second != static_cast<int>(DataType::F32)) {
-        coord_id = m_b.createOp(spv::OpVectorExtractDynamic, type_f32, { m_b.createLoad(coord_id, spv::NoPrecision), m_b.makeIntConstant(0) });
+        coord_id = m_b.createOp(sspv::OpVectorExtractDynamic, type_f32, { m_b.createLoad(coord_id, sspv::NoPrecision), m_b.makeIntConstant(0) });
         coord_id = utils::unpack_one(m_b, m_util_funcs, m_features, coord_id, static_cast<DataType>(coord.second));
 
         // Shuffle if number of components is larger than 2
         if (m_b.getNumComponents(coord_id) > 2) {
-            coord_id = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { { true, coord_id }, { true, coord_id }, { false, 0 }, { false, 1 } });
+            coord_id = m_b.createOp(sspv::OpVectorShuffle, type_f32_v[2], { { true, coord_id }, { true, coord_id }, { false, 0 }, { false, 1 } });
         }
     }
 
     if (m_b.isPointer(coord_id)) {
-        coord_id = m_b.createLoad(coord_id, spv::NoPrecision);
+        coord_id = m_b.createLoad(coord_id, sspv::NoPrecision);
     }
 
-    assert(m_b.getTypeClass(m_b.getContainedTypeId(m_b.getTypeId(coord_id))) == spv::OpTypeFloat);
+    assert(m_b.getTypeClass(m_b.getContainedTypeId(m_b.getTypeId(coord_id))) == sspv::OpTypeFloat);
 
     // the texture viewport is only useful for surfaces and they are never cubes
     // also for the time being ignore sampleProj ops
     if (m_features.use_texture_viewport && dim == 2) {
         // coord = coord * viewport_ratio + viewport_offset
-        spv::Id viewport_ratio = utils::create_access_chain(m_b, spv::StorageClassUniform, m_spirv_params.render_info_id, { m_b.makeIntConstant(m_spirv_params.viewport_ratio_id), m_b.makeIntConstant(texture_index) });
-        viewport_ratio = m_b.createLoad(viewport_ratio, spv::NoPrecision);
-        spv::Id viewport_offset = utils::create_access_chain(m_b, spv::StorageClassUniform, m_spirv_params.render_info_id, { m_b.makeIntConstant(m_spirv_params.viewport_offset_id), m_b.makeIntConstant(texture_index) });
-        viewport_offset = m_b.createLoad(viewport_offset, spv::NoPrecision);
+        sspv::Id viewport_ratio = utils::create_access_chain(m_b, sspv::StorageClassUniform, m_spirv_params.render_info_id, { m_b.makeIntConstant(m_spirv_params.viewport_ratio_id), m_b.makeIntConstant(texture_index) });
+        viewport_ratio = m_b.createLoad(viewport_ratio, sspv::NoPrecision);
+        sspv::Id viewport_offset = utils::create_access_chain(m_b, sspv::StorageClassUniform, m_spirv_params.render_info_id, { m_b.makeIntConstant(m_spirv_params.viewport_offset_id), m_b.makeIntConstant(texture_index) });
+        viewport_offset = m_b.createLoad(viewport_offset, sspv::NoPrecision);
 
-        if (extra1 != spv::NoResult || lod_mode != 4) {
+        if (extra1 != sspv::NoResult || lod_mode != 4) {
             // only keep the first two coordinates (x,y)
-            coord_id = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { { true, coord_id }, { true, coord_id }, { false, 0 }, { false, 1 } });
+            coord_id = m_b.createOp(sspv::OpVectorShuffle, type_f32_v[2], { { true, coord_id }, { true, coord_id }, { false, 0 }, { false, 1 } });
             coord_id = m_b.createBuiltinCall(m_b.getTypeId(coord_id), std_builtins, GLSLstd450Fma, { coord_id, viewport_ratio, viewport_offset });
         } else {
             // extract the x,y and proj coordinate
-            spv::Id coord_xy = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { { true, coord_id }, { true, coord_id }, { false, 0 }, { false, 1 } });
-            spv::Id third_comp = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, coord_id, m_b.makeIntConstant(2));
+            sspv::Id coord_xy = m_b.createOp(sspv::OpVectorShuffle, type_f32_v[2], { { true, coord_id }, { true, coord_id }, { false, 0 }, { false, 1 } });
+            sspv::Id third_comp = m_b.createBinOp(sspv::OpVectorExtractDynamic, type_f32, coord_id, m_b.makeIntConstant(2));
             third_comp = m_b.createCompositeConstruct(type_f32_v[2], { third_comp, third_comp });
 
             // multiply the offset by the third component
-            viewport_offset = m_b.createBinOp(spv::OpFMul, type_f32_v[2], viewport_offset, third_comp);
+            viewport_offset = m_b.createBinOp(sspv::OpFMul, type_f32_v[2], viewport_offset, third_comp);
 
             // do the fma
             coord_xy = m_b.createBuiltinCall(m_b.getTypeId(coord_xy), std_builtins, GLSLstd450Fma, { coord_xy, viewport_ratio, viewport_offset });
 
             // add back the proj component
-            coord_id = m_b.createOp(spv::OpVectorShuffle, type_f32_v[3], { { true, coord_xy }, { true, coord_id }, { false, 0 }, { false, 1 }, { false, 4 } });
+            coord_id = m_b.createOp(sspv::OpVectorShuffle, type_f32_v[3], { { true, coord_xy }, { true, coord_id }, { false, 0 }, { false, 1 }, { false, 4 } });
         }
     }
 
-    spv::Id image_sample = spv::NoResult;
-    spv::Op op;
-    std::vector<spv::Id> params = { tex, coord_id };
+    sspv::Id image_sample = sspv::NoResult;
+    sspv::Op op;
+    std::vector<sspv::Id> params = { tex, coord_id };
     if (gather4_comp != -1) {
         // The gpx support gather with a grad but I don't think this is possible with spirV
-        op = spv::OpImageGather;
+        op = sspv::OpImageGather;
         params.push_back(m_b.makeIntConstant(gather4_comp));
-    } else if (extra1 == spv::NoResult) {
+    } else if (extra1 == sspv::NoResult) {
         if (lod_mode == 4)
-            op = spv::OpImageSampleProjImplicitLod;
+            op = sspv::OpImageSampleProjImplicitLod;
         else
-            op = spv::OpImageSampleImplicitLod;
+            op = sspv::OpImageSampleImplicitLod;
     } else {
-        op = spv::OpImageSampleExplicitLod;
+        op = sspv::OpImageSampleExplicitLod;
         switch (lod_mode) {
         case 1:
-            op = spv::OpImageSampleImplicitLod;
-            params.push_back(spv::ImageOperandsBiasMask);
+            op = sspv::OpImageSampleImplicitLod;
+            params.push_back(sspv::ImageOperandsBiasMask);
             params.push_back(extra1);
             break;
         case 2:
-            params.push_back(spv::ImageOperandsLodMask);
+            params.push_back(sspv::ImageOperandsLodMask);
             params.push_back(extra1);
             break;
         case 3:
-            params.push_back(spv::ImageOperandsGradMask);
+            params.push_back(sspv::ImageOperandsGradMask);
             params.push_back(extra1);
             params.push_back(extra2);
             break;
@@ -151,7 +151,7 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
     image_sample = m_b.createOp(op, type_f32_v[4], params);
 
     if (get_data_type_size(dest_type) < 4 && dest_type != DataType::UINT16 && dest_type != DataType::INT16)
-        m_b.setPrecision(image_sample, spv::DecorationRelaxedPrecision);
+        m_b.setPrecision(image_sample, sspv::DecorationRelaxedPrecision);
 
     if (is_integer_data_type(dest_type))
         image_sample = utils::convert_to_int(m_b, m_util_funcs, image_sample, dest_type, true);
@@ -175,12 +175,12 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
         shader::usse::Coord coord_inst = texture_query.coord;
 
         if (texture_query.prod_pos >= 0) {
-            spv::Id texture_coord = m_b.createLoad(texture_query.coord.first, spv::NoPrecision);
-            coord_inst.first = m_b.createOp(spv::OpVectorShuffle, type_f32_v[3], { { true, texture_coord }, { true, texture_coord }, { false, 0 }, { false, 1 }, { false, static_cast<uint32_t>(texture_query.prod_pos) } });
+            sspv::Id texture_coord = m_b.createLoad(texture_query.coord.first, sspv::NoPrecision);
+            coord_inst.first = m_b.createOp(sspv::OpVectorShuffle, type_f32_v[3], { { true, texture_coord }, { true, texture_coord }, { false, 0 }, { false, 1 }, { false, static_cast<uint32_t>(texture_query.prod_pos) } });
             proj = true;
         }
 
-        spv::Id fetch_result = do_fetch_texture(m_b.createLoad(texture_query.sampler, spv::NoPrecision), texture_query.sampler_index, texture_query.dim, coord_inst, store_op.type, proj ? 4 : 0, 0);
+        sspv::Id fetch_result = do_fetch_texture(m_b.createLoad(texture_query.sampler, sspv::NoPrecision), texture_query.sampler_index, texture_query.dim, coord_inst, store_op.type, proj ? 4 : 0, 0);
         store_op.num = texture_query.dest_offset;
 
         const Imm4 mask = (1U << texture_query.component_count) - 1;
@@ -226,7 +226,7 @@ bool USSETranslatorVisitor::smp(
 
     bool is_texture_buffer_load = false;
     // only used for a load using the texture buffer
-    spv::Id texture_index = 0;
+    sspv::Id texture_index = 0;
     if (!m_spirv_params.samplers.contains(inst.opr.src1.num)) {
         if (m_spirv_params.texture_buffer_sa_offset == -1) {
             LOG_ERROR("Can't get the sampler (sampler doesn't exist!)");
@@ -267,7 +267,7 @@ bool USSETranslatorVisitor::smp(
     // Base 0, turn it to base 1
     dim += 1;
 
-    spv::Id coord_mask = 0b0011;
+    sspv::Id coord_mask = 0b0011;
     if (dim == 3) {
         coord_mask = 0b0111;
     } else if (dim == 1) {
@@ -296,9 +296,9 @@ bool USSETranslatorVisitor::smp(
 
     // Generate simple stuff
     // Load the coord
-    spv::Id coords = load(inst.opr.src0, coord_mask);
+    sspv::Id coords = load(inst.opr.src0, coord_mask);
 
-    if (coords == spv::NoResult) {
+    if (coords == sspv::NoResult) {
         LOG_ERROR("Coord not loaded");
         return false;
     }
@@ -309,41 +309,41 @@ bool USSETranslatorVisitor::smp(
         dim = 2;
     }
 
-    spv::Id image_sampler = m_b.createLoad(sampler.id, spv::NoPrecision);
+    sspv::Id image_sampler = m_b.createLoad(sampler.id, sspv::NoPrecision);
 
     if (sb_mode == 2) {
         if (lod_mode != 0)
             LOG_WARN("SMP info with non-zero lod mode is not implemented");
 
-        const spv::Id v4u32 = m_b.makeVectorType(type_ui32, 4);
+        const sspv::Id v4u32 = m_b.makeVectorType(type_ui32, 4);
 
         // query info
-        const spv::Id query_lod = m_b.createOp(spv::OpImageQueryLod, type_f32_v[2], { image_sampler, coords });
-        const spv::Id lod = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, query_lod, m_b.makeIntConstant(0));
+        const sspv::Id query_lod = m_b.createOp(sspv::OpImageQueryLod, type_f32_v[2], { image_sampler, coords });
+        const sspv::Id lod = m_b.createBinOp(sspv::OpVectorExtractDynamic, type_f32, query_lod, m_b.makeIntConstant(0));
 
         // xy are the uv coefficients
-        spv::Id uv = get_uv_coeffs(m_b, std_builtins, image_sampler, coords, lod);
+        sspv::Id uv = get_uv_coeffs(m_b, std_builtins, image_sampler, coords, lod);
         // z is the trilinear fraction, w the LOD
-        spv::Id tri_frac = m_b.createBuiltinCall(type_f32, std_builtins, GLSLstd450Fract, { lod });
-        m_b.setPrecision(tri_frac, spv::DecorationRelaxedPrecision);
-        const spv::Id lod_level = m_b.createUnaryOp(spv::OpConvertFToU, type_ui32, lod);
-        m_b.setPrecision(lod_level, spv::DecorationRelaxedPrecision);
+        sspv::Id tri_frac = m_b.createBuiltinCall(type_f32, std_builtins, GLSLstd450Fract, { lod });
+        m_b.setPrecision(tri_frac, sspv::DecorationRelaxedPrecision);
+        const sspv::Id lod_level = m_b.createUnaryOp(sspv::OpConvertFToU, type_ui32, lod);
+        m_b.setPrecision(lod_level, sspv::DecorationRelaxedPrecision);
 
         // the result is stored as a vector of uint8, we must convert it
         uv = utils::convert_to_int(m_b, m_util_funcs, uv, DataType::UINT8, true);
         tri_frac = utils::convert_to_int(m_b, m_util_funcs, tri_frac, DataType::UINT8, true);
 
-        const spv::Id u = m_b.createBinOp(spv::OpVectorExtractDynamic, type_ui32, uv, m_b.makeIntConstant(0));
-        const spv::Id v = m_b.createBinOp(spv::OpVectorExtractDynamic, type_ui32, uv, m_b.makeIntConstant(1));
+        const sspv::Id u = m_b.createBinOp(sspv::OpVectorExtractDynamic, type_ui32, uv, m_b.makeIntConstant(0));
+        const sspv::Id v = m_b.createBinOp(sspv::OpVectorExtractDynamic, type_ui32, uv, m_b.makeIntConstant(1));
 
-        const spv::Id result = m_b.createCompositeConstruct(v4u32, { u, v, tri_frac, lod_level });
+        const sspv::Id result = m_b.createCompositeConstruct(v4u32, { u, v, tri_frac, lod_level });
         inst.opr.dest.type = DataType::UINT8;
         store(inst.opr.dest, result, 0b1111);
     } else {
         // Either LOD number or ddx
-        spv::Id extra1 = spv::NoResult;
+        sspv::Id extra1 = sspv::NoResult;
         // ddy
-        spv::Id extra2 = spv::NoResult;
+        sspv::Id extra2 = sspv::NoResult;
 
         // LOD mode: none, bias, replace, gradient
         if (lod_mode != 0) {
@@ -404,8 +404,8 @@ bool USSETranslatorVisitor::smp(
                 sampler_indices.push_back(smp.first - sa_count);
             }
 
-            std::vector<spv::Block *> segment_blocks;
-            m_b.makeSwitch(texture_index, spv::SelectionControlMaskNone, samplers.size(), sampler_indices, index_to_segment, -1, segment_blocks);
+            std::vector<sspv::Block *> segment_blocks;
+            m_b.makeSwitch(texture_index, sspv::SelectionControlMaskNone, samplers.size(), sampler_indices, index_to_segment, -1, segment_blocks);
             for (size_t s = 0; s < samplers.size(); s++) {
                 const SamplerInfo *smp = samplers[s];
 
@@ -413,7 +413,7 @@ bool USSETranslatorVisitor::smp(
                 if (tb_dest_fmt[fconv_type] == DataType::UNK)
                     inst.opr.dest.type = smp->component_type;
 
-                spv::Id result = do_fetch_texture(m_b.createLoad(smp->id, spv::NoPrecision), smp->index, dim, { coords, static_cast<int>(DataType::F32) }, inst.opr.dest.type, lod_mode, extra1);
+                sspv::Id result = do_fetch_texture(m_b.createLoad(smp->id, sspv::NoPrecision), smp->index, dim, { coords, static_cast<int>(DataType::F32) }, inst.opr.dest.type, lod_mode, extra1);
                 const Imm4 dest_mask = (1U << smp->component_count) - 1;
                 store(inst.opr.dest, result, dest_mask);
 
@@ -421,13 +421,13 @@ bool USSETranslatorVisitor::smp(
             }
             m_b.endSwitch(segment_blocks);
         } else if (sb_mode == 0) {
-            spv::Id result = do_fetch_texture(image_sampler, sampler.index, dim, { coords, static_cast<int>(DataType::F32) }, inst.opr.dest.type, lod_mode, extra1, extra2);
+            sspv::Id result = do_fetch_texture(image_sampler, sampler.index, dim, { coords, static_cast<int>(DataType::F32) }, inst.opr.dest.type, lod_mode, extra1, extra2);
             const Imm4 dest_mask = (1U << sampler.component_count) - 1;
             store(inst.opr.dest, result, dest_mask);
         } else {
             // sb_mode = 1 or 3 : gather 4 (+ uv if sb_mode = 3)
             // first gather all components
-            std::vector<spv::Id> g4_comps;
+            std::vector<sspv::Id> g4_comps;
             g4_comps.reserve(sampler.component_count);
             for (int comp = 0; comp < sampler.component_count; comp++) {
                 g4_comps.push_back(do_fetch_texture(image_sampler, sampler.index, dim, { coords, static_cast<int>(DataType::F32) }, inst.opr.dest.type, lod_mode, extra1, extra2, comp));
@@ -443,18 +443,18 @@ bool USSETranslatorVisitor::smp(
 
                 // we have the values in the following layout x1 x2 ... y1 y2 ...
                 // we want to store them with the layout x1 x2 x3 ... y1 y2 y3 ...
-                const spv::Id comp_type = utils::unwrap_type(m_b, m_b.getTypeId(g4_comps[0]));
+                const sspv::Id comp_type = utils::unwrap_type(m_b, m_b.getTypeId(g4_comps[0]));
 
-                std::vector<spv::Id> comps_alone;
+                std::vector<sspv::Id> comps_alone;
                 for (int pixel = 0; pixel < 4; pixel++) {
                     for (int comp = 0; comp < sampler.component_count; comp++) {
-                        comps_alone.push_back(m_b.createBinOp(spv::OpVectorExtractDynamic, comp_type, g4_comps[comp], m_b.makeIntConstant(pixel)));
+                        comps_alone.push_back(m_b.createBinOp(sspv::OpVectorExtractDynamic, comp_type, g4_comps[comp], m_b.makeIntConstant(pixel)));
                     }
                 }
 
                 for (size_t idx = 0; idx < comps_alone.size(); idx += 4) {
                     // pack them by 4 so each pack size is a multiple of 32 bits
-                    const spv::Id comp_packed = m_b.createCompositeConstruct(m_b.getTypeId(g4_comps[0]), { comps_alone[idx], comps_alone[idx + 1], comps_alone[idx + 2], comps_alone[idx + 3] });
+                    const sspv::Id comp_packed = m_b.createCompositeConstruct(m_b.getTypeId(g4_comps[0]), { comps_alone[idx], comps_alone[idx + 1], comps_alone[idx + 2], comps_alone[idx + 3] });
                     store(inst.opr.dest, comp_packed, 0b1111);
 
                     inst.opr.dest.num += get_data_type_size(inst.opr.dest.type);
@@ -463,27 +463,27 @@ bool USSETranslatorVisitor::smp(
 
             if (sb_mode == 3) {
                 // compute and save bilinear coefficients
-                const spv::Id uv = get_uv_coeffs(m_b, std_builtins, image_sampler, coords);
+                const sspv::Id uv = get_uv_coeffs(m_b, std_builtins, image_sampler, coords);
                 // the pixels returned by gather4 are in the following order : (0,1) (1,1) (1,0) (0,0)
                 // so at the end we want (1-u)v uv u(1-v) (1-u)(1-v)
                 // however, looking at the generated shader code in some games, it looks like the coefficients are
                 // expected to be in this order but reversed...
-                const spv::Id one = m_b.makeFloatConstant(1.0);
-                const spv::Id u = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, uv, m_b.makeIntConstant(0));
-                const spv::Id v = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, uv, m_b.makeIntConstant(1));
+                const sspv::Id one = m_b.makeFloatConstant(1.0);
+                const sspv::Id u = m_b.createBinOp(sspv::OpVectorExtractDynamic, type_f32, uv, m_b.makeIntConstant(0));
+                const sspv::Id v = m_b.createBinOp(sspv::OpVectorExtractDynamic, type_f32, uv, m_b.makeIntConstant(1));
 
-                const spv::Id onemu = m_b.createBinOp(spv::OpFSub, type_f32, one, u);
-                const spv::Id onemv = m_b.createBinOp(spv::OpFSub, type_f32, one, v);
+                const sspv::Id onemu = m_b.createBinOp(sspv::OpFSub, type_f32, one, u);
+                const sspv::Id onemv = m_b.createBinOp(sspv::OpFSub, type_f32, one, v);
                 
                 // (1-u) u
-                const spv::Id x_coeffs = m_b.createCompositeConstruct(type_f32_v[2], { onemu, u });
+                const sspv::Id x_coeffs = m_b.createCompositeConstruct(type_f32_v[2], { onemu, u });
                 // (1-u)v uv
-                const spv::Id comp1 = m_b.createBinOp(spv::OpVectorTimesScalar, type_f32_v[2], x_coeffs, v);
+                const sspv::Id comp1 = m_b.createBinOp(sspv::OpVectorTimesScalar, type_f32_v[2], x_coeffs, v);
                 // (1-u)(1-v) u(1-v)
-                const spv::Id comp2 = m_b.createBinOp(spv::OpVectorTimesScalar, type_f32_v[2], x_coeffs, onemv);
+                const sspv::Id comp2 = m_b.createBinOp(sspv::OpVectorTimesScalar, type_f32_v[2], x_coeffs, onemv);
                 // (1-u)v uv u(1-v) (1-u)(1-v) in reversed order
-                const spv::Id coeffs = m_b.createOp(spv::OpVectorShuffle, type_f32_v[4], { { true, comp1 }, { true, comp2 }, { false, 2 }, { false, 3 }, { false, 1 }, { false, 0 } });
-                m_b.setPrecision(coeffs, spv::DecorationRelaxedPrecision);
+                const sspv::Id coeffs = m_b.createOp(sspv::OpVectorShuffle, type_f32_v[4], { { true, comp1 }, { true, comp2 }, { false, 2 }, { false, 3 }, { false, 1 }, { false, 0 } });
+                m_b.setPrecision(coeffs, sspv::DecorationRelaxedPrecision);
                 
                 // bilinear coeffs are stored as float16
                 inst.opr.dest.type = DataType::F16;

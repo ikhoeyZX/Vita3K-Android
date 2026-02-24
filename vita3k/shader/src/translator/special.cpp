@@ -90,11 +90,11 @@ bool USSETranslatorVisitor::depthf(
     m_b.setLine(m_recompiler.cur_pc);
 
     if (frag_depth_id == 0) {
-        frag_depth_id = m_b.createVariable(spv::NoPrecision, spv::StorageClassOutput, type_f32, "gl_FragDepth");
-        m_b.addDecoration(frag_depth_id, spv::DecorationBuiltIn, spv::BuiltInFragDepth);
+        frag_depth_id = m_b.createVariable(sspv::NoPrecision, sspv::StorageClassOutput, type_f32, "gl_FragDepth");
+        m_b.addDecoration(frag_depth_id, sspv::DecorationBuiltIn, sspv::BuiltInFragDepth);
     }
 
-    spv::Id depth = load(inst.opr.src0, 0b1);
+    sspv::Id depth = load(inst.opr.src0, 0b1);
     m_b.createStore(depth, frag_depth_id);
 
     return true;
@@ -173,7 +173,7 @@ bool USSETranslatorVisitor::kill(
     LOG_DISASM("{:016x}: KILL {}", m_instr, disasm::s_predicate_str(pred));
 
     m_b.setLine(m_recompiler.cur_pc);
-    m_b.makeStatementTerminator(spv::OpKill, "kill");
+    m_b.makeStatementTerminator(sspv::OpKill, "kill");
 
     return true;
 }

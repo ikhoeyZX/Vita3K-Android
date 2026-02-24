@@ -30,14 +30,14 @@
 using namespace shader;
 using namespace usse;
 
-static spv::Id postprocess_dot_result_for_store(spv::Builder &b, spv::Id dot_result, shader::usse::Imm4 mask) {
+static sspv::Id postprocess_dot_result_for_store(sspv::Builder &b, sspv::Id dot_result, shader::usse::Imm4 mask) {
     const std::size_t comp_count = utils::dest_mask_to_comp_count(mask);
     if (comp_count == 1) {
         return dot_result;
     }
 
-    spv::Id type_result = b.makeVectorType(b.getTypeId(dot_result), comp_count);
-    std::vector<spv::Id> comps(comp_count, dot_result);
+    sspv::Id type_result = b.makeVectorType(b.getTypeId(dot_result), comp_count);
+    std::vector<sspv::Id> comps(comp_count, dot_result);
 
     return b.createCompositeConstruct(type_result, comps);
 }
@@ -140,16 +140,16 @@ bool USSETranslatorVisitor::vmad(
         disasm::operand_to_str(inst.opr.src2, write_mask, src2_repeat_offset));
 
     // SRC1 and SRC2 here is actually GPI0 and GPI1.
-    spv::Id vsrc0 = load(inst.opr.src0, write_mask, src0_repeat_offset);
-    spv::Id vsrc1 = load(inst.opr.src1, write_mask, src1_repeat_offset);
-    spv::Id vsrc2 = load(inst.opr.src2, write_mask, src2_repeat_offset);
+    sspv::Id vsrc0 = load(inst.opr.src0, write_mask, src0_repeat_offset);
+    sspv::Id vsrc1 = load(inst.opr.src1, write_mask, src1_repeat_offset);
+    sspv::Id vsrc2 = load(inst.opr.src2, write_mask, src2_repeat_offset);
 
-    if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
+    if (vsrc0 == sspv::NoResult || vsrc1 == sspv::NoResult || vsrc2 == sspv::NoResult) {
         LOG_ERROR("Source not loaded (vsrc0: {}, vsrc1: {}, vsrc2: {})", vsrc0, vsrc1, vsrc2);
         return false;
     }
 
-    spv::Id fma_result = m_b.createBuiltinCall(m_b.getTypeId(vsrc0), std_builtins, GLSLstd450Fma, { vsrc0, vsrc1, vsrc2 });
+    sspv::Id fma_result = m_b.createBuiltinCall(m_b.getTypeId(vsrc0), std_builtins, GLSLstd450Fma, { vsrc0, vsrc1, vsrc2 });
 
     store(inst.opr.dest, fma_result, write_mask, dest_repeat_offset);
     END_REPEAT()
@@ -266,16 +266,16 @@ bool USSETranslatorVisitor::vmad2(
     m_b.setLine(m_recompiler.cur_pc);
 
     // Translate the instruction
-    spv::Id vsrc0 = load(inst.opr.src0, dest_mask, 0);
-    spv::Id vsrc1 = load(inst.opr.src1, dest_mask, 0);
-    spv::Id vsrc2 = load(inst.opr.src2, dest_mask, 0);
+    sspv::Id vsrc0 = load(inst.opr.src0, dest_mask, 0);
+    sspv::Id vsrc1 = load(inst.opr.src1, dest_mask, 0);
+    sspv::Id vsrc2 = load(inst.opr.src2, dest_mask, 0);
 
-    if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
+    if (vsrc0 == sspv::NoResult || vsrc1 == sspv::NoResult || vsrc2 == sspv::NoResult) {
         LOG_ERROR("Source not loaded (vsrc0: {}, vsrc1: {}, vsrc2: {})", vsrc0, vsrc1, vsrc2);
         return false;
     }
 
-    spv::Id fma_result = m_b.createBuiltinCall(m_b.getTypeId(vsrc0), std_builtins, GLSLstd450Fma, { vsrc0, vsrc1, vsrc2 });
+    sspv::Id fma_result = m_b.createBuiltinCall(m_b.getTypeId(vsrc0), std_builtins, GLSLstd450Fma, { vsrc0, vsrc1, vsrc2 });
 
     store(inst.opr.dest, fma_result, dest_mask, 0);
 
@@ -368,15 +368,15 @@ bool USSETranslatorVisitor::vdp(
     LOG_DISASM("{:016x}: {}VDP {} {} {}", m_instr, disasm::e_predicate_str(ext_vec_predicate_to_ext(pred)), disasm::operand_to_str(inst.opr.dest, write_mask, 0),
         disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset), disasm::operand_to_str(inst.opr.src2, src_mask, src2_repeat_offset));
 
-    spv::Id lhs = load(inst.opr.src1, type == 1 ? 0b0111 : 0b1111, src1_repeat_offset);
-    spv::Id rhs = load(inst.opr.src2, type == 1 ? 0b0111 : 0b1111, src2_repeat_offset);
+    sspv::Id lhs = load(inst.opr.src1, type == 1 ? 0b0111 : 0b1111, src1_repeat_offset);
+    sspv::Id rhs = load(inst.opr.src2, type == 1 ? 0b0111 : 0b1111, src2_repeat_offset);
 
-    if (lhs == spv::NoResult || rhs == spv::NoResult) {
+    if (lhs == sspv::NoResult || rhs == sspv::NoResult) {
         LOG_ERROR("Source not loaded (lhs: {}, rhs: {})", lhs, rhs);
         return false;
     }
 
-    spv::Id result = m_b.createBinOp(spv::OpDot, type_f32, lhs, rhs);
+    sspv::Id result = m_b.createBinOp(sspv::OpDot, type_f32, lhs, rhs);
     result = postprocess_dot_result_for_store(m_b, result, write_mask);
     store(inst.opr.dest, result, write_mask, 0);
 
@@ -387,74 +387,74 @@ bool USSETranslatorVisitor::vdp(
     return true;
 }
 
-spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_mask, const Imm4 possible_dest_mask) {
-    spv::Id vsrc1 = load(inst.opr.src1, source_mask, 0);
-    spv::Id vsrc2 = load(inst.opr.src2, source_mask, 0);
-    std::vector<spv::Id> ids;
+sspv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_mask, const Imm4 possible_dest_mask) {
+    sspv::Id vsrc1 = load(inst.opr.src1, source_mask, 0);
+    sspv::Id vsrc2 = load(inst.opr.src2, source_mask, 0);
+    std::vector<sspv::Id> ids;
     ids.push_back(vsrc1);
 
-    if (vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
+    if (vsrc1 == sspv::NoResult || vsrc2 == sspv::NoResult) {
         LOG_WARN("Could not find a src register");
-        return spv::NoResult;
+        return sspv::NoResult;
     }
 
-    spv::Id result = spv::NoResult;
-    spv::Id source_type = m_b.getTypeId(vsrc1);
+    sspv::Id result = sspv::NoResult;
+    sspv::Id source_type = m_b.getTypeId(vsrc1);
 
     switch (inst.opcode) {
     case Opcode::AND: {
-        result = m_b.createBinOp(spv::OpBitwiseAnd, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(sspv::OpBitwiseAnd, source_type, vsrc1, vsrc2);
         break;
     }
 
     case Opcode::OR: {
-        if (m_b.getOpCode(vsrc2) == spv::Op::OpConstant && m_b.getConstantScalar(vsrc2) == 0) {
+        if (m_b.getOpCode(vsrc2) == sspv::Op::OpConstant && m_b.getConstantScalar(vsrc2) == 0) {
             result = vsrc1;
         } else {
-            result = m_b.createBinOp(spv::OpBitwiseOr, source_type, vsrc1, vsrc2);
+            result = m_b.createBinOp(sspv::OpBitwiseOr, source_type, vsrc1, vsrc2);
         }
         break;
     }
 
     case Opcode::XOR: {
-        result = m_b.createBinOp(spv::OpBitwiseXor, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(sspv::OpBitwiseXor, source_type, vsrc1, vsrc2);
         break;
     }
 
     case Opcode::SHL: {
-        result = m_b.createBinOp(spv::OpShiftLeftLogical, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(sspv::OpShiftLeftLogical, source_type, vsrc1, vsrc2);
         break;
     }
 
     case Opcode::SHR: {
-        result = m_b.createBinOp(spv::OpShiftRightLogical, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(sspv::OpShiftRightLogical, source_type, vsrc1, vsrc2);
         break;
     }
 
     case Opcode::ASR: {
-        result = m_b.createBinOp(spv::OpShiftRightArithmetic, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(sspv::OpShiftRightArithmetic, source_type, vsrc1, vsrc2);
         break;
     }
 
     case Opcode::VDSX:
     case Opcode::VF16DSX:
-        result = m_b.createOp(spv::OpDPdx, source_type, ids);
+        result = m_b.createOp(sspv::OpDPdx, source_type, ids);
         break;
 
     case Opcode::VDSY:
     case Opcode::VF16DSY:
-        result = m_b.createOp(spv::OpDPdy, source_type, ids);
+        result = m_b.createOp(sspv::OpDPdy, source_type, ids);
         break;
 
     case Opcode::VADD:
     case Opcode::VF16ADD: {
-        result = m_b.createBinOp(spv::OpFAdd, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(sspv::OpFAdd, source_type, vsrc1, vsrc2);
         break;
     }
 
     case Opcode::VMUL:
     case Opcode::VF16MUL: {
-        result = m_b.createBinOp(spv::OpFMul, source_type, vsrc1, vsrc2);
+        result = m_b.createBinOp(sspv::OpFMul, source_type, vsrc1, vsrc2);
         break;
     }
 
@@ -478,9 +478,9 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_ma
             result = m_b.createBuiltinCall(source_type, std_builtins, GLSLstd450Fract, { vsrc1 });
         } else {
             // We need to floor source 2
-            spv::Id source2_floored = m_b.createBuiltinCall(source_type, std_builtins, GLSLstd450Floor, { vsrc2 });
+            sspv::Id source2_floored = m_b.createBuiltinCall(source_type, std_builtins, GLSLstd450Floor, { vsrc2 });
             // Then subtract source 1 with the floored source 2. TADA!
-            result = m_b.createBinOp(spv::OpFSub, source_type, vsrc1, source2_floored);
+            result = m_b.createBinOp(sspv::OpFSub, source_type, vsrc1, source2_floored);
         }
 
         break;
@@ -488,7 +488,7 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_ma
 
     case Opcode::VDP:
     case Opcode::VF16DP: {
-        const spv::Op op = (m_b.getNumComponents(vsrc1) > 1) ? spv::OpDot : spv::OpFMul;
+        const sspv::Op op = (m_b.getNumComponents(vsrc1) > 1) ? sspv::OpDot : sspv::OpFMul;
         result = m_b.createBinOp(op, m_b.makeFloatType(32), vsrc1, vsrc2);
 
         result = postprocess_dot_result_for_store(m_b, result, possible_dest_mask);
@@ -500,7 +500,7 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_ma
     case Opcode::ISUB16:
     case Opcode::ISUBU32:
     case Opcode::ISUB32:
-        result = m_b.createBinOp(spv::OpISub, m_b.makeIntType(32), vsrc1, vsrc2);
+        result = m_b.createBinOp(sspv::OpISub, m_b.makeIntType(32), vsrc1, vsrc2);
         break;
 
     default: {
@@ -607,9 +607,9 @@ bool USSETranslatorVisitor::v32nmad(
 
     // Recompile
     m_b.setLine(m_recompiler.cur_pc);
-    spv::Id result = do_alu_op(inst, source_mask, dest_mask);
+    sspv::Id result = do_alu_op(inst, source_mask, dest_mask);
 
-    if (result != spv::NoResult) {
+    if (result != sspv::NoResult) {
         store(inst.opr.dest, result, dest_mask, 0);
     }
 
@@ -737,9 +737,9 @@ bool USSETranslatorVisitor::vcomp(
     LOG_DISASM("{:016x}: {}{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(op), disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset),
         disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
 
-    spv::Id result = load(inst.opr.src1, src_mask, src1_repeat_offset);
+    sspv::Id result = load(inst.opr.src1, src_mask, src1_repeat_offset);
 
-    if (result == spv::NoResult) {
+    if (result == sspv::NoResult) {
         LOG_ERROR("Result not loaded");
         return false;
     }
@@ -747,7 +747,7 @@ bool USSETranslatorVisitor::vcomp(
     switch (op) {
     case Opcode::VRCP: {
         // Get the inverse
-        result = m_b.createBinOp(spv::OpFDiv, m_b.getTypeId(result), m_b.makeFloatConstant(1.0f), result);
+        result = m_b.createBinOp(sspv::OpFDiv, m_b.getTypeId(result), m_b.makeFloatConstant(1.0f), result);
         break;
     }
 
@@ -767,10 +767,10 @@ bool USSETranslatorVisitor::vcomp(
         // y = e^src0 => return y
         // hack (kind of) :
         // define exp(Nan) as 1.0, this is needed for Freedom Wars to render properly
-        const spv::Id exp_val = m_b.createBuiltinCall(m_b.getTypeId(result), std_builtins, GLSLstd450Exp, { result });
-        const spv::Id ones = utils::make_uniform_vector_from_type(m_b, m_b.getTypeId(result), 1.0f);
-        const spv::Id is_nan = m_b.createUnaryOp(spv::OpIsNan, m_b.makeBoolType(), result);
-        result = m_b.createTriOp(spv::OpSelect, m_b.getTypeId(result), is_nan, ones, exp_val);
+        const sspv::Id exp_val = m_b.createBuiltinCall(m_b.getTypeId(result), std_builtins, GLSLstd450Exp, { result });
+        const sspv::Id ones = utils::make_uniform_vector_from_type(m_b, m_b.getTypeId(result), 1.0f);
+        const sspv::Id is_nan = m_b.createUnaryOp(sspv::OpIsNan, m_b.makeBoolType(), result);
+        result = m_b.createTriOp(sspv::OpSelect, m_b.getTypeId(result), is_nan, ones, exp_val);
         break;
     }
 
@@ -779,7 +779,7 @@ bool USSETranslatorVisitor::vcomp(
     }
 
     if (nb_components > 1) {
-        std::vector<spv::Id> composite_values(nb_components);
+        std::vector<sspv::Id> composite_values(nb_components);
         std::fill_n(composite_values.begin(), nb_components, result);
         result = m_b.createCompositeConstruct(type_f32_v[nb_components], composite_values);
     }
@@ -819,23 +819,23 @@ bool USSETranslatorVisitor::sop2(
     Imm1 dest_mod,
     Imm7 src1_n,
     Imm7 src2_n) {
-    static auto selector_zero = [](spv::Builder &b, const spv::Id type, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src1_alpha,
-                                    const spv::Id src2_alpha) {
+    static auto selector_zero = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src1_color, const sspv::Id src2_color, const sspv::Id src1_alpha,
+                                    const sspv::Id src2_alpha) {
         return utils::make_uniform_vector_from_type(b, type, 0);
     };
 
-    static auto selector_src1_color = [](spv::Builder &b, const spv::Id type, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src1_alpha,
-                                          const spv::Id src2_alpha) {
+    static auto selector_src1_color = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src1_color, const sspv::Id src2_color, const sspv::Id src1_alpha,
+                                          const sspv::Id src2_alpha) {
         return src1_color;
     };
 
-    static auto selector_src2_color = [](spv::Builder &b, const spv::Id type, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src1_alpha,
-                                          const spv::Id src2_alpha) {
+    static auto selector_src2_color = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src1_color, const sspv::Id src2_color, const sspv::Id src1_alpha,
+                                          const sspv::Id src2_alpha) {
         return src2_color;
     };
 
-    static auto selector_src1_alpha = [](spv::Builder &b, const spv::Id type, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src1_alpha,
-                                          const spv::Id src2_alpha) {
+    static auto selector_src1_alpha = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src1_color, const sspv::Id src2_color, const sspv::Id src1_alpha,
+                                          const sspv::Id src2_alpha) {
         if (!b.isScalarType(type) || b.getNumTypeComponents(type) > 1) {
             // We must do a composite construct
             return b.createCompositeConstruct(type, { src1_alpha, src1_alpha, src1_alpha });
@@ -844,8 +844,8 @@ bool USSETranslatorVisitor::sop2(
         return src1_alpha;
     };
 
-    static auto selector_src2_alpha = [](spv::Builder &b, const spv::Id type, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src1_alpha,
-                                          const spv::Id src2_alpha) {
+    static auto selector_src2_alpha = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src1_color, const sspv::Id src2_color, const sspv::Id src1_alpha,
+                                          const sspv::Id src2_alpha) {
         if (!b.isScalarType(type) || b.getNumTypeComponents(type) > 1) {
             // We must do a composite construct
             return b.createCompositeConstruct(type, { src2_alpha, src2_alpha, src2_alpha });
@@ -862,8 +862,8 @@ bool USSETranslatorVisitor::sop2(
         Opcode::FMAX
     };
 
-    using SelectorFunc = std::function<spv::Id(spv::Builder &, const spv::Id, const spv::Id, const spv::Id,
-        const spv::Id, const spv::Id)>;
+    using SelectorFunc = std::function<sspv::Id(sspv::Builder &, const sspv::Id, const sspv::Id, const sspv::Id,
+        const sspv::Id, const sspv::Id)>;
 
     static SelectorFunc color_selector_1[] = {
         selector_zero,
@@ -942,14 +942,14 @@ bool USSETranslatorVisitor::sop2(
         return true;
     }
 
-    auto apply_opcode = [&](Opcode op, spv::Id type, spv::Id lhs, spv::Id rhs) {
+    auto apply_opcode = [&](Opcode op, sspv::Id type, sspv::Id lhs, sspv::Id rhs) {
         switch (op) {
         case Opcode::FADD: {
-            return m_b.createBinOp(spv::OpFAdd, type, lhs, rhs);
+            return m_b.createBinOp(sspv::OpFAdd, type, lhs, rhs);
         }
 
         case Opcode::FSUB: {
-            return m_b.createBinOp(spv::OpFSub, type, lhs, rhs);
+            return m_b.createBinOp(sspv::OpFSub, type, lhs, rhs);
         }
 
         case Opcode::FMIN:
@@ -968,24 +968,24 @@ bool USSETranslatorVisitor::sop2(
         }
         }
 
-        return spv::NoResult;
+        return sspv::NoResult;
     };
 
-    spv::Id uniform_1_alpha = spv::NoResult;
-    spv::Id uniform_1_color = spv::NoResult;
+    sspv::Id uniform_1_alpha = sspv::NoResult;
+    sspv::Id uniform_1_color = sspv::NoResult;
 
-    auto apply_complement_modifiers = [&](spv::Id &target, Imm1 enable, spv::Id type, const bool is_rgb) {
+    auto apply_complement_modifiers = [&](sspv::Id &target, Imm1 enable, sspv::Id type, const bool is_rgb) {
         if (enable == 1) {
             if (is_rgb) {
                 if (!uniform_1_color)
                     uniform_1_color = utils::make_uniform_vector_from_type(m_b, type, 1);
 
-                target = m_b.createBinOp(spv::OpFSub, type, uniform_1_color, target);
+                target = m_b.createBinOp(sspv::OpFSub, type, uniform_1_color, target);
             } else {
                 if (!uniform_1_alpha)
                     uniform_1_alpha = m_b.makeFloatConstant(1.0f);
 
-                target = m_b.createBinOp(spv::OpFSub, type, uniform_1_alpha, target);
+                target = m_b.createBinOp(sspv::OpFSub, type, uniform_1_alpha, target);
             }
         }
     };
@@ -993,18 +993,18 @@ bool USSETranslatorVisitor::sop2(
     BEGIN_REPEAT(count)
     GET_REPEAT(inst, RepeatMode::SLMSI)
 
-    spv::Id src1_color = load(inst.opr.src1, 0b0111, src1_repeat_offset);
-    spv::Id src2_color = load(inst.opr.src2, 0b0111, src2_repeat_offset);
-    spv::Id src1_alpha = load(inst.opr.src1, 0b1000, src1_repeat_offset);
-    spv::Id src2_alpha = load(inst.opr.src2, 0b1000, src2_repeat_offset);
+    sspv::Id src1_color = load(inst.opr.src1, 0b0111, src1_repeat_offset);
+    sspv::Id src2_color = load(inst.opr.src2, 0b0111, src2_repeat_offset);
+    sspv::Id src1_alpha = load(inst.opr.src1, 0b1000, src1_repeat_offset);
+    sspv::Id src2_alpha = load(inst.opr.src2, 0b1000, src2_repeat_offset);
 
     src1_color = utils::convert_to_float(m_b, m_util_funcs, src1_color, DataType::UINT8, true);
     src2_color = utils::convert_to_float(m_b, m_util_funcs, src2_color, DataType::UINT8, true);
     src1_alpha = utils::convert_to_float(m_b, m_util_funcs, src1_alpha, DataType::UINT8, true);
     src2_alpha = utils::convert_to_float(m_b, m_util_funcs, src2_alpha, DataType::UINT8, true);
 
-    spv::Id src_color_type = m_b.getTypeId(src1_color);
-    spv::Id src_alpha_type = m_b.getTypeId(src1_alpha);
+    sspv::Id src_color_type = m_b.getTypeId(src1_color);
+    sspv::Id src_alpha_type = m_b.getTypeId(src1_alpha);
 
     // Apply source flag.
     // Complement is the vector that when added with source creates a nice vec4(1.0).
@@ -1013,11 +1013,11 @@ bool USSETranslatorVisitor::sop2(
     apply_complement_modifiers(src1_alpha, src1_mod, src_alpha_type, false);
 
     // Apply color selector
-    spv::Id factored_rgb_lhs = color_selector_1_func(m_b, src_color_type, src1_color, src2_color, src1_alpha, src2_alpha);
-    spv::Id factored_rgb_rhs = color_selector_2_func(m_b, src_color_type, src1_color, src2_color, src1_alpha, src2_alpha);
+    sspv::Id factored_rgb_lhs = color_selector_1_func(m_b, src_color_type, src1_color, src2_color, src1_alpha, src2_alpha);
+    sspv::Id factored_rgb_rhs = color_selector_2_func(m_b, src_color_type, src1_color, src2_color, src1_alpha, src2_alpha);
 
-    spv::Id factored_a_lhs = alpha_selector_1_func(m_b, src_alpha_type, src1_color, src2_color, src1_alpha, src2_alpha);
-    spv::Id factored_a_rhs = alpha_selector_2_func(m_b, src_alpha_type, src1_color, src2_color, src1_alpha, src2_alpha);
+    sspv::Id factored_a_lhs = alpha_selector_1_func(m_b, src_alpha_type, src1_color, src2_color, src1_alpha, src2_alpha);
+    sspv::Id factored_a_rhs = alpha_selector_2_func(m_b, src_alpha_type, src1_color, src2_color, src1_alpha, src2_alpha);
 
     // Apply modifiers
     // BREAKDOWN BREAKDOWN
@@ -1027,11 +1027,11 @@ bool USSETranslatorVisitor::sop2(
     apply_complement_modifiers(factored_a_rhs, amod2, src_alpha_type, false);
 
     // Factor them with source
-    factored_rgb_lhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_lhs, src1_color);
-    factored_rgb_rhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_rhs, src2_color);
+    factored_rgb_lhs = m_b.createBinOp(sspv::OpFMul, src_color_type, factored_rgb_lhs, src1_color);
+    factored_rgb_rhs = m_b.createBinOp(sspv::OpFMul, src_color_type, factored_rgb_rhs, src2_color);
 
-    factored_a_lhs = m_b.createBinOp(spv::OpFMul, src_alpha_type, factored_a_lhs, src1_alpha);
-    factored_a_rhs = m_b.createBinOp(spv::OpFMul, src_alpha_type, factored_a_rhs, src2_alpha);
+    factored_a_lhs = m_b.createBinOp(sspv::OpFMul, src_alpha_type, factored_a_lhs, src1_alpha);
+    factored_a_rhs = m_b.createBinOp(sspv::OpFMul, src_alpha_type, factored_a_rhs, src2_alpha);
 
     auto color_res = apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs);
     auto alpha_res = apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs);
@@ -1072,24 +1072,24 @@ bool shader::usse::USSETranslatorVisitor::sop2m(Imm2 pred,
     Imm7 destnum,
     Imm7 src1num,
     Imm7 src2num) {
-    static auto selector_zero = [](spv::Builder &b, const spv::Id type, const spv::Id src1, const spv::Id src2) {
+    static auto selector_zero = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src1, const sspv::Id src2) {
         return utils::make_uniform_vector_from_type(b, type, 0);
     };
 
-    static auto selector_src1_color = [](spv::Builder &b, const spv::Id type, const spv::Id src1, const spv::Id src2) {
+    static auto selector_src1_color = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src1, const sspv::Id src2) {
         return src1;
     };
 
-    static auto selector_src2_color = [](spv::Builder &b, const spv::Id type, const spv::Id src1, const spv::Id src2) {
+    static auto selector_src2_color = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src1, const sspv::Id src2) {
         return src2;
     };
 
-    static auto selector_src1_alpha = [](spv::Builder &b, const spv::Id type, const spv::Id src1, const spv::Id src2) {
-        return b.createOp(spv::OpVectorShuffle, type, { { true, src1 }, { true, src1 }, { false, 3 }, { false, 3 }, { false, 3 }, { false, 3 } });
+    static auto selector_src1_alpha = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src1, const sspv::Id src2) {
+        return b.createOp(sspv::OpVectorShuffle, type, { { true, src1 }, { true, src1 }, { false, 3 }, { false, 3 }, { false, 3 }, { false, 3 } });
     };
 
-    static auto selector_src2_alpha = [](spv::Builder &b, spv::Id type, const spv::Id src1, const spv::Id src2) {
-        return b.createOp(spv::OpVectorShuffle, type, { { true, src2 }, { true, src2 }, { false, 3 }, { false, 3 }, { false, 3 }, { false, 3 } });
+    static auto selector_src2_alpha = [](sspv::Builder &b, sspv::Id type, const sspv::Id src1, const sspv::Id src2) {
+        return b.createOp(sspv::OpVectorShuffle, type, { { true, src2 }, { true, src2 }, { false, 3 }, { false, 3 }, { false, 3 }, { false, 3 } });
     };
 
     // This opcode always operates on C10.
@@ -1100,7 +1100,7 @@ bool shader::usse::USSETranslatorVisitor::sop2m(Imm2 pred,
         Opcode::FMAX
     };
 
-    using SelectorFunc = std::function<spv::Id(spv::Builder &, const spv::Id, const spv::Id, const spv::Id)>;
+    using SelectorFunc = std::function<sspv::Id(sspv::Builder &, const sspv::Id, const sspv::Id, const sspv::Id)>;
 
     static SelectorFunc selector[] = {
         selector_zero,
@@ -1147,14 +1147,14 @@ bool shader::usse::USSETranslatorVisitor::sop2m(Imm2 pred,
         return true;
     }
 
-    auto apply_opcode = [&](Opcode op, spv::Id type, spv::Id lhs, spv::Id rhs) {
+    auto apply_opcode = [&](Opcode op, sspv::Id type, sspv::Id lhs, sspv::Id rhs) {
         switch (op) {
         case Opcode::FADD: {
-            return m_b.createBinOp(spv::OpFAdd, type, lhs, rhs);
+            return m_b.createBinOp(sspv::OpFAdd, type, lhs, rhs);
         }
 
         case Opcode::FSUB: {
-            return m_b.createBinOp(spv::OpFSub, type, lhs, rhs);
+            return m_b.createBinOp(sspv::OpFSub, type, lhs, rhs);
         }
 
         case Opcode::FMIN:
@@ -1173,53 +1173,53 @@ bool shader::usse::USSETranslatorVisitor::sop2m(Imm2 pred,
         }
         }
 
-        return spv::NoResult;
+        return sspv::NoResult;
     };
 
-    spv::Id uniform_1 = spv::NoResult;
+    sspv::Id uniform_1 = sspv::NoResult;
 
-    auto apply_complement_modifiers = [&](spv::Id &target, Imm1 enable, spv::Id type) {
+    auto apply_complement_modifiers = [&](sspv::Id &target, Imm1 enable, sspv::Id type) {
         if (enable == 1) {
             if (!uniform_1)
                 uniform_1 = utils::make_uniform_vector_from_type(m_b, type, 1);
 
-            target = m_b.createBinOp(spv::OpFSub, type, uniform_1, target);
+            target = m_b.createBinOp(sspv::OpFSub, type, uniform_1, target);
         }
     };
 
-    spv::Id src1 = load(inst.opr.src1, 0b1111, 0);
-    spv::Id src2 = load(inst.opr.src2, 0b1111, 0);
+    sspv::Id src1 = load(inst.opr.src1, 0b1111, 0);
+    sspv::Id src2 = load(inst.opr.src2, 0b1111, 0);
 
     src1 = utils::convert_to_float(m_b, m_util_funcs, src1, DataType::UINT8, true);
     src2 = utils::convert_to_float(m_b, m_util_funcs, src2, DataType::UINT8, true);
 
-    spv::Id src_type = m_b.getTypeId(src1);
+    sspv::Id src_type = m_b.getTypeId(src1);
 
     // Apply selector
-    spv::Id operation_1 = operation_1_lhs_selector_func(m_b, src_type, src1, src2);
-    spv::Id operation_2 = operation_2_lhs_selector_func(m_b, src_type, src1, src2);
+    sspv::Id operation_1 = operation_1_lhs_selector_func(m_b, src_type, src1, src2);
+    sspv::Id operation_2 = operation_2_lhs_selector_func(m_b, src_type, src1, src2);
 
     // Apply modifiers
     apply_complement_modifiers(operation_1, mod1, src_type);
     apply_complement_modifiers(operation_2, mod2, src_type);
 
     // Factor them with source
-    operation_1 = m_b.createBinOp(spv::OpFMul, src_type, operation_1, src1);
-    operation_2 = m_b.createBinOp(spv::OpFMul, src_type, operation_2, src2);
+    operation_1 = m_b.createBinOp(sspv::OpFMul, src_type, operation_1, src1);
+    operation_2 = m_b.createBinOp(sspv::OpFMul, src_type, operation_2, src2);
 
-    spv::Id result = apply_opcode(color_op, src_type, operation_1, operation_2);
-    spv::Id alpha_type = m_b.makeFloatType(32);
+    sspv::Id result = apply_opcode(color_op, src_type, operation_1, operation_2);
+    sspv::Id alpha_type = m_b.makeFloatType(32);
 
     // Alpha is at the first bit, so reverse that
     wmask = ((wmask & 0b1110) >> 1) | ((wmask & 1) << 3);
 
     if (wmask & 0b1000) {
         // Alpha is written, so calculate and also store
-        const spv::Id alpha_index = m_b.makeIntConstant(3);
-        spv::Id a1 = m_b.createBinOp(spv::OpVectorExtractDynamic, alpha_type, operation_1, alpha_index);
-        spv::Id a2 = m_b.createBinOp(spv::OpVectorExtractDynamic, alpha_type, operation_2, alpha_index);
+        const sspv::Id alpha_index = m_b.makeIntConstant(3);
+        sspv::Id a1 = m_b.createBinOp(sspv::OpVectorExtractDynamic, alpha_type, operation_1, alpha_index);
+        sspv::Id a2 = m_b.createBinOp(sspv::OpVectorExtractDynamic, alpha_type, operation_2, alpha_index);
 
-        result = m_b.createTriOp(spv::OpVectorInsertDynamic, src_type, result, apply_opcode(alpha_op, alpha_type, a1, a2), alpha_index);
+        result = m_b.createTriOp(sspv::OpVectorInsertDynamic, src_type, result, apply_opcode(alpha_op, alpha_type, a1, a2), alpha_index);
     }
 
     result = utils::convert_to_int(m_b, m_util_funcs, result, DataType::UINT8, true);
@@ -1258,28 +1258,28 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
     Imm7 src0n,
     Imm7 src1n,
     Imm7 src2n) {
-    static auto selector_zero = [](spv::Builder &b, const spv::Id type, const spv::Id src0_color, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src0_alpha, const spv::Id src1_alpha,
-                                    const spv::Id src2_alpha) {
+    static auto selector_zero = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src0_color, const sspv::Id src1_color, const sspv::Id src2_color, const sspv::Id src0_alpha, const sspv::Id src1_alpha,
+                                    const sspv::Id src2_alpha) {
         return utils::make_uniform_vector_from_type(b, type, 0);
     };
 
-    static auto selector_src0_color = [](spv::Builder &b, const spv::Id type, const spv::Id src0_color, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src0_alpha, const spv::Id src1_alpha,
-                                          const spv::Id src2_alpha) {
+    static auto selector_src0_color = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src0_color, const sspv::Id src1_color, const sspv::Id src2_color, const sspv::Id src0_alpha, const sspv::Id src1_alpha,
+                                          const sspv::Id src2_alpha) {
         return src0_color;
     };
 
-    static auto selector_src1_color = [](spv::Builder &b, const spv::Id type, const spv::Id src0_color, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src0_alpha, const spv::Id src1_alpha,
-                                          const spv::Id src2_alpha) {
+    static auto selector_src1_color = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src0_color, const sspv::Id src1_color, const sspv::Id src2_color, const sspv::Id src0_alpha, const sspv::Id src1_alpha,
+                                          const sspv::Id src2_alpha) {
         return src1_color;
     };
 
-    static auto selector_src2_color = [](spv::Builder &b, const spv::Id type, const spv::Id src0_color, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src0_alpha, const spv::Id src1_alpha,
-                                          const spv::Id src2_alpha) {
+    static auto selector_src2_color = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src0_color, const sspv::Id src1_color, const sspv::Id src2_color, const sspv::Id src0_alpha, const sspv::Id src1_alpha,
+                                          const sspv::Id src2_alpha) {
         return src2_color;
     };
 
-    static auto selector_src0_alpha = [](spv::Builder &b, const spv::Id type, const spv::Id src0_color, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src0_alpha, const spv::Id src1_alpha,
-                                          const spv::Id src2_alpha) {
+    static auto selector_src0_alpha = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src0_color, const sspv::Id src1_color, const sspv::Id src2_color, const sspv::Id src0_alpha, const sspv::Id src1_alpha,
+                                          const sspv::Id src2_alpha) {
         if (!b.isScalarType(type) || b.getNumTypeComponents(type) > 1) {
             // We must do a composite construct
             return b.createCompositeConstruct(type, { src0_alpha, src0_alpha, src0_alpha });
@@ -1288,8 +1288,8 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
         return src0_alpha;
     };
 
-    static auto selector_src1_alpha = [](spv::Builder &b, const spv::Id type, const spv::Id src0_color, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src0_alpha, const spv::Id src1_alpha,
-                                          const spv::Id src2_alpha) {
+    static auto selector_src1_alpha = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src0_color, const sspv::Id src1_color, const sspv::Id src2_color, const sspv::Id src0_alpha, const sspv::Id src1_alpha,
+                                          const sspv::Id src2_alpha) {
         if (!b.isScalarType(type) || b.getNumTypeComponents(type) > 1) {
             // We must do a composite construct
             return b.createCompositeConstruct(type, { src1_alpha, src1_alpha, src1_alpha });
@@ -1298,8 +1298,8 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
         return src1_alpha;
     };
 
-    static auto selector_src2_alpha = [](spv::Builder &b, const spv::Id type, const spv::Id src0_color, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src0_alpha, const spv::Id src1_alpha,
-                                          const spv::Id src2_alpha) {
+    static auto selector_src2_alpha = [](sspv::Builder &b, const sspv::Id type, const sspv::Id src0_color, const sspv::Id src1_color, const sspv::Id src2_color, const sspv::Id src0_alpha, const sspv::Id src1_alpha,
+                                          const sspv::Id src2_alpha) {
         if (!b.isScalarType(type) || b.getNumTypeComponents(type) > 1) {
             // We must do a composite construct
             return b.createCompositeConstruct(type, { src2_alpha, src2_alpha, src2_alpha });
@@ -1314,7 +1314,7 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
         Opcode::FSUB,
     };
 
-    using SelectorFunc = std::function<spv::Id(spv::Builder &, const spv::Id, const spv::Id, const spv::Id, const spv::Id, const spv::Id, const spv::Id, const spv::Id)>;
+    using SelectorFunc = std::function<sspv::Id(sspv::Builder &, const sspv::Id, const sspv::Id, const sspv::Id, const sspv::Id, const sspv::Id, const sspv::Id, const sspv::Id)>;
 
     static SelectorFunc color_selector[] = {
         selector_zero,
@@ -1396,14 +1396,14 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
         return true;
     }
 
-    auto apply_opcode = [&](Opcode op, spv::Id type, spv::Id lhs, spv::Id rhs) {
+    auto apply_opcode = [&](Opcode op, sspv::Id type, sspv::Id lhs, sspv::Id rhs) {
         switch (op) {
         case Opcode::FADD: {
-            return m_b.createBinOp(spv::OpFAdd, type, lhs, rhs);
+            return m_b.createBinOp(sspv::OpFAdd, type, lhs, rhs);
         }
 
         case Opcode::FSUB: {
-            return m_b.createBinOp(spv::OpFSub, type, lhs, rhs);
+            return m_b.createBinOp(sspv::OpFSub, type, lhs, rhs);
         }
 
         default: {
@@ -1412,34 +1412,34 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
         }
         }
 
-        return spv::NoResult;
+        return sspv::NoResult;
     };
 
-    spv::Id uniform_1_alpha = spv::NoResult;
-    spv::Id uniform_1_color = spv::NoResult;
+    sspv::Id uniform_1_alpha = sspv::NoResult;
+    sspv::Id uniform_1_color = sspv::NoResult;
 
-    auto apply_complement_modifiers = [&](spv::Id &target, Imm1 enable, spv::Id type, const bool is_rgb) {
+    auto apply_complement_modifiers = [&](sspv::Id &target, Imm1 enable, sspv::Id type, const bool is_rgb) {
         if (enable == 1) {
             if (is_rgb) {
                 if (!uniform_1_color)
                     uniform_1_color = utils::make_uniform_vector_from_type(m_b, type, 1);
 
-                target = m_b.createBinOp(spv::OpFSub, type, uniform_1_color, target);
+                target = m_b.createBinOp(sspv::OpFSub, type, uniform_1_color, target);
             } else {
                 if (!uniform_1_alpha)
                     uniform_1_alpha = m_b.makeFloatConstant(1.0f);
 
-                target = m_b.createBinOp(spv::OpFSub, type, uniform_1_alpha, target);
+                target = m_b.createBinOp(sspv::OpFSub, type, uniform_1_alpha, target);
             }
         }
     };
 
-    spv::Id src0_color = load(inst.opr.src0, 0b0111);
-    spv::Id src1_color = load(inst.opr.src1, 0b0111);
-    spv::Id src2_color = load(inst.opr.src2, 0b0111);
-    spv::Id src0_alpha = load(inst.opr.src0, 0b1000);
-    spv::Id src1_alpha = load(inst.opr.src1, 0b1000);
-    spv::Id src2_alpha = load(inst.opr.src2, 0b1000);
+    sspv::Id src0_color = load(inst.opr.src0, 0b0111);
+    sspv::Id src1_color = load(inst.opr.src1, 0b0111);
+    sspv::Id src2_color = load(inst.opr.src2, 0b0111);
+    sspv::Id src0_alpha = load(inst.opr.src0, 0b1000);
+    sspv::Id src1_alpha = load(inst.opr.src1, 0b1000);
+    sspv::Id src2_alpha = load(inst.opr.src2, 0b1000);
 
     src0_color = utils::convert_to_float(m_b, m_util_funcs, src0_color, DataType::UINT8, true);
     src1_color = utils::convert_to_float(m_b, m_util_funcs, src1_color, DataType::UINT8, true);
@@ -1448,15 +1448,15 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
     src1_alpha = utils::convert_to_float(m_b, m_util_funcs, src1_alpha, DataType::UINT8, true);
     src2_alpha = utils::convert_to_float(m_b, m_util_funcs, src2_alpha, DataType::UINT8, true);
 
-    spv::Id src_color_type = m_b.getTypeId(src0_color);
-    spv::Id src_alpha_type = m_b.getTypeId(src0_alpha);
+    sspv::Id src_color_type = m_b.getTypeId(src0_color);
+    sspv::Id src_alpha_type = m_b.getTypeId(src0_alpha);
 
     // Apply color selector
-    spv::Id factored_rgb_lhs = color_selector_1_func(m_b, src_color_type, src0_color, src1_color, src2_color, src0_alpha, src1_alpha, src2_alpha);
-    spv::Id factored_rgb_rhs = color_selector_2_func(m_b, src_color_type, src0_color, src1_color, src2_color, src0_alpha, src1_alpha, src2_alpha);
+    sspv::Id factored_rgb_lhs = color_selector_1_func(m_b, src_color_type, src0_color, src1_color, src2_color, src0_alpha, src1_alpha, src2_alpha);
+    sspv::Id factored_rgb_rhs = color_selector_2_func(m_b, src_color_type, src0_color, src1_color, src2_color, src0_alpha, src1_alpha, src2_alpha);
 
-    spv::Id factored_a_lhs = alpha_selector_1_func(m_b, src_alpha_type, src0_color, src1_color, src2_color, src0_alpha, src1_alpha, src2_alpha);
-    spv::Id factored_a_rhs = alpha_selector_2_func(m_b, src_alpha_type, src0_color, src1_color, src2_color, src0_alpha, src1_alpha, src2_alpha);
+    sspv::Id factored_a_lhs = alpha_selector_1_func(m_b, src_alpha_type, src0_color, src1_color, src2_color, src0_alpha, src1_alpha, src2_alpha);
+    sspv::Id factored_a_rhs = alpha_selector_2_func(m_b, src_alpha_type, src0_color, src1_color, src2_color, src0_alpha, src1_alpha, src2_alpha);
 
     // Apply modifiers
     // BREAKDOWN BREAKDOWN
@@ -1467,11 +1467,11 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
     apply_complement_modifiers(factored_a_rhs, cmod2, src_alpha_type, false);
 
     // Factor them with source
-    factored_rgb_lhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_lhs, src1_color);
-    factored_rgb_rhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_rhs, src2_color);
+    factored_rgb_lhs = m_b.createBinOp(sspv::OpFMul, src_color_type, factored_rgb_lhs, src1_color);
+    factored_rgb_rhs = m_b.createBinOp(sspv::OpFMul, src_color_type, factored_rgb_rhs, src2_color);
 
-    factored_a_lhs = m_b.createBinOp(spv::OpFMul, src_alpha_type, factored_a_lhs, src1_alpha);
-    factored_a_rhs = m_b.createBinOp(spv::OpFMul, src_alpha_type, factored_a_rhs, src2_alpha);
+    factored_a_lhs = m_b.createBinOp(sspv::OpFMul, src_alpha_type, factored_a_lhs, src1_alpha);
+    factored_a_rhs = m_b.createBinOp(sspv::OpFMul, src_alpha_type, factored_a_rhs, src2_alpha);
 
     auto color_res = apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs);
     auto alpha_res = apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs);
@@ -1811,7 +1811,7 @@ bool USSETranslatorVisitor::vdual(
         const auto is_vdp = (code == Opcode::VDP) || (code == Opcode::VSSQ);
         const uint32_t write_mask_source = code_info.vector_load ? (is_vdp ? (0b1111u >> (uint32_t)!comp_count_type) : write_mask_dest) : 0b0001;
 
-        spv::Id result;
+        sspv::Id result;
 
         switch (code) {
         case Opcode::VMOV: {
@@ -1820,98 +1820,98 @@ bool USSETranslatorVisitor::vdual(
         }
         case Opcode::FADD:
         case Opcode::VADD: {
-            const spv::Id first = load(ops[0], write_mask_source);
-            const spv::Id second = load(ops[1], write_mask_source);
-            result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(first), first, second);
+            const sspv::Id first = load(ops[0], write_mask_source);
+            const sspv::Id second = load(ops[1], write_mask_source);
+            result = m_b.createBinOp(sspv::OpFAdd, m_b.getTypeId(first), first, second);
             break;
         }
         case Opcode::FRCP: {
-            const spv::Id source = load(ops[0], write_mask_source);
+            const sspv::Id source = load(ops[0], write_mask_source);
             const int num_comp = m_b.getNumComponents(source);
-            const spv::Id one_const = m_b.makeFloatConstant(1.0f);
-            spv::Id one_v = spv::NoResult;
+            const sspv::Id one_const = m_b.makeFloatConstant(1.0f);
+            sspv::Id one_v = sspv::NoResult;
 
             if (num_comp == 1) {
                 one_v = one_const;
             } else {
-                std::vector<spv::Id> ones;
+                std::vector<sspv::Id> ones;
                 ones.insert(ones.begin(), num_comp, one_const);
 
                 one_v = m_b.makeCompositeConstant(type_f32_v[num_comp], ones);
             }
 
-            result = m_b.createBinOp(spv::OpFDiv, m_b.getTypeId(source), one_v, source);
+            result = m_b.createBinOp(sspv::OpFDiv, m_b.getTypeId(source), one_v, source);
             break;
         }
         case Opcode::FRSQ: {
-            const spv::Id source = load(ops[0], write_mask_source);
+            const sspv::Id source = load(ops[0], write_mask_source);
             result = m_b.createBuiltinCall(m_b.getTypeId(source), std_builtins, GLSLstd450InverseSqrt, { source });
             break;
         }
         case Opcode::FMUL:
         case Opcode::VMUL: {
-            const spv::Id first = load(ops[0], write_mask_source);
-            const spv::Id second = load(ops[1], write_mask_source);
-            result = m_b.createBinOp(spv::OpFMul, m_b.getTypeId(first), first, second);
+            const sspv::Id first = load(ops[0], write_mask_source);
+            const sspv::Id second = load(ops[1], write_mask_source);
+            result = m_b.createBinOp(sspv::OpFMul, m_b.getTypeId(first), first, second);
             break;
         }
         case Opcode::VDP: {
-            const spv::Id first = load(ops[0], write_mask_source);
-            const spv::Id second = load(ops[1], write_mask_source);
-            const spv::Op op = (m_b.getNumComponents(first) > 1) ? spv::OpDot : spv::OpFMul;
+            const sspv::Id first = load(ops[0], write_mask_source);
+            const sspv::Id second = load(ops[1], write_mask_source);
+            const sspv::Op op = (m_b.getNumComponents(first) > 1) ? sspv::OpDot : sspv::OpFMul;
             result = m_b.createBinOp(op, type_f32, first, second);
             break;
         }
         case Opcode::FEXP: {
             // hack: set exp(nan) = 1.0 (see VEXP)
-            const spv::Id source = load(ops[0], write_mask_source);
+            const sspv::Id source = load(ops[0], write_mask_source);
             result = m_b.createBuiltinCall(m_b.getTypeId(source), std_builtins, GLSLstd450Exp, { source });
             const int num_comp = m_b.getNumComponents(source);
-            const spv::Id ones = utils::make_uniform_vector_from_type(m_b, m_b.getTypeId(result), 1.0f);
-            const spv::Id is_nan = m_b.createUnaryOp(spv::OpIsNan, utils::make_vector_or_scalar_type(m_b, m_b.makeBoolType(), num_comp), result);
-            result = m_b.createTriOp(spv::OpSelect, m_b.getTypeId(result), is_nan, ones, result);
+            const sspv::Id ones = utils::make_uniform_vector_from_type(m_b, m_b.getTypeId(result), 1.0f);
+            const sspv::Id is_nan = m_b.createUnaryOp(sspv::OpIsNan, utils::make_vector_or_scalar_type(m_b, m_b.makeBoolType(), num_comp), result);
+            result = m_b.createTriOp(sspv::OpSelect, m_b.getTypeId(result), is_nan, ones, result);
             break;
         }
         case Opcode::FLOG: {
-            const spv::Id source = load(ops[0], write_mask_source);
+            const sspv::Id source = load(ops[0], write_mask_source);
             result = m_b.createBuiltinCall(m_b.getTypeId(source), std_builtins, GLSLstd450Log, { source });
             break;
         }
         case Opcode::VSSQ: {
-            const spv::Id source = load(ops[0], write_mask_source);
-            const spv::Op op = (m_b.getNumComponents(source) > 1) ? spv::OpDot : spv::OpFMul;
+            const sspv::Id source = load(ops[0], write_mask_source);
+            const sspv::Op op = (m_b.getNumComponents(source) > 1) ? sspv::OpDot : sspv::OpFMul;
             result = m_b.createBinOp(op, type_f32, source, source);
             break;
         }
         case Opcode::FMAD:
         case Opcode::VMAD: {
-            const spv::Id first = load(ops[0], write_mask_source);
-            const spv::Id second = load(ops[1], write_mask_source);
-            const spv::Id third = load(ops[2], write_mask_source);
-            const spv::Id type = m_b.getTypeId(first);
-            result = m_b.createBinOp(spv::OpFMul, type, first, second);
-            result = m_b.createBinOp(spv::OpFAdd, type, result, third);
+            const sspv::Id first = load(ops[0], write_mask_source);
+            const sspv::Id second = load(ops[1], write_mask_source);
+            const sspv::Id third = load(ops[2], write_mask_source);
+            const sspv::Id type = m_b.getTypeId(first);
+            result = m_b.createBinOp(sspv::OpFMul, type, first, second);
+            result = m_b.createBinOp(sspv::OpFAdd, type, result, third);
             break;
         }
         case Opcode::FSUBFLR: {
             // result = ops1 - Floor(ops2)
             // If two source are identical, let's use the fractional function
-            const spv::Id first = load(ops[0], write_mask_source);
-            const spv::Id type = m_b.getTypeId(first);
+            const sspv::Id first = load(ops[0], write_mask_source);
+            const sspv::Id type = m_b.getTypeId(first);
             if (ops[0].is_same(ops[1], write_mask_source)) {
                 result = m_b.createBuiltinCall(type, std_builtins, GLSLstd450Fract, { first });
             } else {
                 // We need to floor source 2
-                const spv::Id second = load(ops[1], write_mask_source);
-                spv::Id second_floored = m_b.createBuiltinCall(type, std_builtins, GLSLstd450Floor, { second });
+                const sspv::Id second = load(ops[1], write_mask_source);
+                sspv::Id second_floored = m_b.createBuiltinCall(type, std_builtins, GLSLstd450Floor, { second });
                 // Then subtract source 1 with the floored source 2.
-                result = m_b.createBinOp(spv::OpFSub, type, first, second_floored);
+                result = m_b.createBinOp(sspv::OpFSub, type, first, second_floored);
             }
             break;
         }
         default:
             LOG_ERROR("Missing implementation for DUAL {}.", disasm::opcode_str(code));
-            return spv::NoResult;
+            return sspv::NoResult;
         }
 
         disasm_str += fmt::format("{} {}", disasm::opcode_str(code), disasm::operand_to_str(dest, write_mask_dest));
@@ -1922,12 +1922,12 @@ bool USSETranslatorVisitor::vdual(
         return result;
     };
 
-    spv::Id op1_result = do_dual_op(op1.opcode, op1_srcs, op1.opr.dest, op1_write_mask, op1_info);
-    if (op1_result == spv::NoResult)
+    sspv::Id op1_result = do_dual_op(op1.opcode, op1_srcs, op1.opr.dest, op1_write_mask, op1_info);
+    if (op1_result == sspv::NoResult)
         return false;
     disasm_str += " + ";
-    spv::Id op2_result = do_dual_op(op2.opcode, op2_srcs, op2.opr.dest, op2_write_mask, op2_info);
-    if (op2_result == spv::NoResult)
+    sspv::Id op2_result = do_dual_op(op2.opcode, op2_srcs, op2.opr.dest, op2_write_mask, op2_info);
+    if (op2_result == sspv::NoResult)
         return false;
 
     // Dual instructions are async. To simulate that we store after both instructions are completed.

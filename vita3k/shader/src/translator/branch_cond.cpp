@@ -206,7 +206,7 @@ inline static bool is_sub_opcode(Opcode test_op) {
     return (test_op == Opcode::VSUB) || (test_op == Opcode::VF16SUB) || (test_op == Opcode::ISUB8) || (test_op == Opcode::ISUB16) || (test_op == Opcode::ISUB32) || (test_op == Opcode::ISUBU8) || (test_op == Opcode::ISUBU16) || (test_op == Opcode::ISUBU32) || (test_op == Opcode::FPSUB8);
 }
 
-spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, int zero_test, int sign_test, Imm4 load_mask, bool mask) {
+sspv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, int zero_test, int sign_test, Imm4 load_mask, bool mask) {
     // Usually we would expect this to have a compare behavior
     // Comparison is done by subtracting the first src by the second src, and compare the result value.
     // We currently optimize for that case first
@@ -215,38 +215,38 @@ spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, in
 
     bool has_4_comp = std::popcount(load_mask) == 4;
 
-    static const spv::Op tb_comp_ops[3][2][4] = {
-        { { spv::OpFOrdNotEqual,
-              spv::OpFOrdLessThan,
-              spv::OpFOrdGreaterThan,
-              spv::OpAll },
-            { spv::OpFOrdEqual,
-                spv::OpFOrdLessThanEqual,
-                spv::OpFOrdGreaterThanEqual,
-                spv::OpAll } },
-        { { spv::OpINotEqual,
-              spv::OpSLessThan,
-              spv::OpSGreaterThan,
-              spv::OpAll },
-            { spv::OpIEqual,
-                spv::OpSLessThanEqual,
-                spv::OpSGreaterThanEqual,
-                spv::OpAll } },
-        { { spv::OpINotEqual,
-              spv::OpULessThan,
-              spv::OpUGreaterThan,
-              spv::OpAll },
-            { spv::OpIEqual,
-                spv::OpULessThanEqual,
-                spv::OpUGreaterThanEqual,
-                spv::OpAll } },
+    static const sspv::Op tb_comp_ops[3][2][4] = {
+        { { sspv::OpFOrdNotEqual,
+              sspv::OpFOrdLessThan,
+              sspv::OpFOrdGreaterThan,
+              sspv::OpAll },
+            { sspv::OpFOrdEqual,
+                sspv::OpFOrdLessThanEqual,
+                sspv::OpFOrdGreaterThanEqual,
+                sspv::OpAll } },
+        { { sspv::OpINotEqual,
+              sspv::OpSLessThan,
+              sspv::OpSGreaterThan,
+              sspv::OpAll },
+            { sspv::OpIEqual,
+                sspv::OpSLessThanEqual,
+                sspv::OpSGreaterThanEqual,
+                sspv::OpAll } },
+        { { sspv::OpINotEqual,
+              sspv::OpULessThan,
+              sspv::OpUGreaterThan,
+              sspv::OpAll },
+            { sspv::OpIEqual,
+                sspv::OpULessThanEqual,
+                sspv::OpUGreaterThanEqual,
+                sspv::OpAll } },
     };
 
     // Load our compares
-    spv::Id lhs = spv::NoResult;
-    spv::Id rhs = spv::NoResult;
+    sspv::Id lhs = sspv::NoResult;
+    sspv::Id rhs = sspv::NoResult;
 
-    const spv::Id pred_type = utils::make_vector_or_scalar_type(m_b, m_b.makeBoolType(), has_4_comp ? 4 : 1);
+    const sspv::Id pred_type = utils::make_vector_or_scalar_type(m_b, m_b.makeBoolType(), has_4_comp ? 4 : 1);
 
     // Zero test number:
     // 0 - alway pass
@@ -263,7 +263,7 @@ spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, in
         index_tb_comp = 2;
     }
 
-    const spv::Op used_comp_op = tb_comp_ops[index_tb_comp][compare_include_equal][sign_test];
+    const sspv::Op used_comp_op = tb_comp_ops[index_tb_comp][compare_include_equal][sign_test];
 
     // Optimize this case. Alternative name is CMP.
     const char *tb_comp_str[2][4] = {
@@ -304,8 +304,8 @@ spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, in
 
         lhs = do_alu_op(inst, load_mask, has_4_comp ? 0b1111 : 0b1);
 
-        const spv::Id c0_type = utils::make_vector_or_scalar_type(m_b, m_b.makeFloatType(32), has_4_comp ? 4 : 1);
-        spv::Id c0 = utils::make_uniform_vector_from_type(m_b, c0_type, 0.0f);
+        const sspv::Id c0_type = utils::make_vector_or_scalar_type(m_b, m_b.makeFloatType(32), has_4_comp ? 4 : 1);
+        sspv::Id c0 = utils::make_uniform_vector_from_type(m_b, c0_type, 0.0f);
 
         if (is_signed_integer_data_type(load_data_type)) {
             c0 = m_b.makeIntConstant(0);
@@ -316,9 +316,9 @@ spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, in
         rhs = c0;
     }
 
-    if (lhs == spv::NoResult || rhs == spv::NoResult) {
+    if (lhs == sspv::NoResult || rhs == sspv::NoResult) {
         LOG_ERROR("Source not loaded (lhs: {}, rhs: {})", lhs, rhs);
-        return spv::NoResult;
+        return sspv::NoResult;
     }
 
     return m_b.createOp(used_comp_op, pred_type, { lhs, rhs });
@@ -400,7 +400,7 @@ bool USSETranslatorVisitor::vtst(
     pred_op.num = pdst_n;
     inst.opr.dest = pred_op;
 
-    const spv::Id pred_result = vtst_impl(inst, pred, zero_test, sign_test, load_mask, false);
+    const sspv::Id pred_result = vtst_impl(inst, pred, zero_test, sign_test, load_mask, false);
 
     store(inst.opr.dest, pred_result);
     return true;
@@ -476,11 +476,11 @@ bool USSETranslatorVisitor::vtstmsk(
     const bool is_vdp = (inst.opcode == Opcode::VDP || inst.opcode == Opcode::VF16DP);
     const bool output_4 = (alu_sel == 0 && tst_mask_type == 2);
 
-    spv::Id pred_result = vtst_impl(inst, pred, zero_test, sign_test, (is_vdp || output_4) ? 0b1111 : 0b1, true);
+    sspv::Id pred_result = vtst_impl(inst, pred, zero_test, sign_test, (is_vdp || output_4) ? 0b1111 : 0b1, true);
 
-    spv::Id output_type;
-    spv::Id zeros;
-    spv::Id ones;
+    sspv::Id output_type;
+    sspv::Id zeros;
+    sspv::Id ones;
     switch (load_data_type) {
     case DataType::F16:
     case DataType::F32:
@@ -526,7 +526,7 @@ bool USSETranslatorVisitor::vtstmsk(
     }
     }
 
-    pred_result = m_b.createOp(spv::OpSelect, output_type, { pred_result, ones, zeros });
+    pred_result = m_b.createOp(sspv::OpSelect, output_type, { pred_result, ones, zeros });
 
     store(inst.opr.dest, pred_result);
 
