@@ -29,7 +29,7 @@ typedef unsigned int Id;
 namespace shader::usse {
 
 using SpirvCode = std::vector<uint32_t>;
-using SpirvVarRegBank = spv::Id;
+using SpirvVarRegBank = sspv::Id;
 
 struct SpirvUniformBufferInfo {
     std::uint32_t base;
@@ -38,7 +38,7 @@ struct SpirvUniformBufferInfo {
 };
 
 struct SamplerInfo {
-    spv::Id id;
+    sspv::Id id;
     uint32_t index;
     DataType component_type;
     uint8_t component_count;
@@ -82,7 +82,7 @@ struct SpirvShaderParameters {
     std::map<std::uint32_t, SpirvUniformBufferInfo> buffers;
 
     // when not using buffer device address, contains the storage buffer type
-    spv::Id buffer_container;
+    sspv::Id buffer_container;
 
     // ids for the given fields in the uniform block container
     int buffer_addresses_id;
@@ -101,18 +101,18 @@ struct SpirvShaderParameters {
 
     int thread_buffer_sa_offset = -1;
     int thread_buffer_base;
-    spv::Id thread_buffer;
+    sspv::Id thread_buffer;
 
-    spv::Id render_info_id;
+    sspv::Id render_info_id;
 
     // When using shader interlock, specialization constant telling us if the texture is gamma corrected
-    spv::Id is_srgb_constant;
+    sspv::Id is_srgb_constant;
 };
 
-using Coord = std::pair<spv::Id, int>;
+using Coord = std::pair<sspv::Id, int>;
 
 struct NonDependentTextureQueryCallInfo {
-    spv::Id sampler;
+    sspv::Id sampler;
     Coord coord;
     int coord_index = 0;
     int sampler_index = 0;

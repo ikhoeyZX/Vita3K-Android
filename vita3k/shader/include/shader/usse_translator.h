@@ -35,20 +35,20 @@ class USSETranslatorVisitor final {
 public:
     using instruction_return_type = bool;
 
-    spv::Id std_builtins;
+    sspv::Id std_builtins;
 
-    spv::Id type_f32;
-    spv::Id type_ui32;
-    spv::Id type_f32_v[5]; // Starts from 1 ([1] is vec 1)
-    spv::Id const_f32[4];
+    sspv::Id type_f32;
+    sspv::Id type_ui32;
+    sspv::Id type_f32_v[5]; // Starts from 1 ([1] is vec 1)
+    sspv::Id const_f32[4];
 
-    spv::Id const_f32_v0[5];
+    sspv::Id const_f32_v0[5];
 
     utils::SpirvUtilFunctions &m_util_funcs;
 
-    spv::Block *main_block;
-    spv::Id out;
-    spv::Id frag_depth_id = 0;
+    sspv::Block *main_block;
+    sspv::Id out;
+    sspv::Id frag_depth_id = 0;
 
     // Contains repeat increasement offset
     int repeat_increase[4][17];
@@ -56,11 +56,11 @@ public:
 
     void do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries);
     // extra1 is either lod or ddx, extra2 is ddy
-    spv::Id do_fetch_texture(const spv::Id tex, const int texture_index, const int dim, const Coord &coord, const DataType dest_type, const int lod_mode,
-        const spv::Id extra1 = spv::NoResult, const spv::Id extra2 = spv::NoResult, const int gather4_comp = -1);
+    sspv::Id do_fetch_texture(const sspv::Id tex, const int texture_index, const int dim, const Coord &coord, const DataType dest_type, const int lod_mode,
+        const sspv::Id extra1 = sspv::NoResult, const sspv::Id extra2 = sspv::NoResult, const int gather4_comp = -1);
 
     USSETranslatorVisitor() = delete;
-    explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const SceGxmProgram &program, const FeatureState &features,
+    explicit USSETranslatorVisitor(sspv::Builder &_b, USSERecompiler &_recompiler, const SceGxmProgram &program, const FeatureState &features,
         utils::SpirvUtilFunctions &utils, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const NonDependentTextureQueryCallInfos &queries,
         bool is_secondary_program = false)
         : m_util_funcs(utils)
@@ -73,7 +73,7 @@ public:
         , m_features(features) {
         reset_for_new_session();
 
-        out = spv::NoResult;
+        out = sspv::NoResult;
 
         // Set main block
         main_block = m_b.getBuildPoint();
@@ -94,7 +94,7 @@ public:
         for (std::uint8_t i = 2; i < 5; i++) {
             type_f32_v[i] = m_b.makeVectorType(type_f32, i);
 
-            std::vector<spv::Id> consts;
+            std::vector<sspv::Id> consts;
 
             for (std::uint8_t j = 1; j < i + 1; j++) {
                 consts.push_back(const_f32[0]);
@@ -112,7 +112,7 @@ public:
      *
      * \returns A copy of given operand
      */
-    spv::Id load(Operand op, const Imm4 dest_mask, int shift_offset = 0);
+    sspv::Id load(Operand op, const Imm4 dest_mask, int shift_offset = 0);
 
     void reset_for_new_session() {
         reset_repeat_multiplier();
@@ -189,15 +189,15 @@ private:
         }
     }
 
-    void store(Operand dest, spv::Id source, std::uint8_t dest_mask = 0xFF, int shift_offset = 0);
-    spv::Id swizzle_to_spv_comp(spv::Id composite, spv::Id type, SwizzleChannel swizzle);
+    void store(Operand dest, sspv::Id source, std::uint8_t dest_mask = 0xFF, int shift_offset = 0);
+    sspv::Id swizzle_to_spv_comp(sspv::Id composite, sspv::Id type, SwizzleChannel swizzle);
 
     // TODO: Separate file for translator helpers?
     static size_t dest_mask_to_comp_count(Imm4 dest_mask);
 
     bool m_second_program{ false };
 
-    spv::Id do_alu_op(Instruction &inst, const Imm4 source_mask, const Imm4 possible_dest_mask);
+    sspv::Id do_alu_op(Instruction &inst, const Imm4 source_mask, const Imm4 possible_dest_mask);
 
 public:
     void set_secondary_program(const bool is_it) {
@@ -823,10 +823,10 @@ public:
         Imm7 src2_n);
     // Instructions end
 private:
-    spv::Id vtst_impl(Instruction inst, ExtPredicate pred, int zero_test, int sign_test, Imm4 load_mask, bool mask);
+    sspv::Id vtst_impl(Instruction inst, ExtPredicate pred, int zero_test, int sign_test, Imm4 load_mask, bool mask);
 
     // SPIR-V emitter
-    spv::Builder &m_b;
+    sspv::Builder &m_b;
 
     // Instruction word being translated
     const uint64_t &m_instr;
@@ -846,18 +846,18 @@ constexpr int sgx543_pc_bits = 20;
 struct USSERecompiler final {
     const std::uint64_t *inst;
     std::size_t count;
-    spv::Builder &b;
+    sspv::Builder &b;
     USSETranslatorVisitor visitor;
     std::uint64_t cur_instr;
     usse::USSEOffset cur_pc;
 
-    spv::Function *end_hook_func;
+    sspv::Function *end_hook_func;
 
     USSEBlockNode tree_block_node;
 
-    explicit USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features,
-        const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func,
-        const NonDependentTextureQueryCallInfos &queries, const spv::Id render_info_id);
+    explicit USSERecompiler(sspv::Builder &b, const SceGxmProgram &program, const FeatureState &features,
+        const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, sspv::Function *end_hook_func,
+        const NonDependentTextureQueryCallInfos &queries, const sspv::Id render_info_id);
 
     void reset(const std::uint64_t *inst, const std::size_t count);
 
@@ -868,8 +868,8 @@ struct USSERecompiler final {
     void compile_loop_node(const usse::USSELoopNode &loop);
     void compile_block(const usse::USSEBlockNode &block);
 
-    spv::Id get_condition_value(const std::uint8_t pred, const bool neg = false);
-    spv::Function *compile_program_function();
+    sspv::Id get_condition_value(const std::uint8_t pred, const bool neg = false);
+    sspv::Function *compile_program_function();
 };
 
 } // namespace shader::usse

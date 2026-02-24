@@ -42,7 +42,7 @@ struct SpirvUtilFunctions;
 
 using NonDependentTextureQueryCallInfos = std::vector<NonDependentTextureQueryCallInfo>;
 
-void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils,
-    spv::Function *begin_hook_func, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries, const uint32_t render_info_id, spv::Function *spv_func_main, std::vector<uint32_t> &interfaces);
+void convert_gxp_usse_to_spirv(sspv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils,
+    sspv::Function *begin_hook_func, sspv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries, const uint32_t render_info_id, sspv::Function *spv_func_main, std::vector<uint32_t> &interfaces);
 
 } // namespace shader::usse
