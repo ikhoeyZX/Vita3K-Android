@@ -299,8 +299,8 @@ EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
 
 EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     TRACY_FUNC(sceKernelGetFreeMemorySize, info);
-
-    // Default memory configuration
+    
+    // Default memory configuration is 256MB
     uint32_t max_user = MiB(256);
 
     // if DevKit then max_user = MB(512); else check sfo file for memory expansion mode
@@ -330,13 +330,13 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     constexpr uint32_t max_phycont = MiB(26); // Max physically contiguous memory (26 MiB)
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
+    
+    uint32_t tmp = mem_available(emuenv.mem);
+    uint32_t tmp2 = tmp - max_user;
+    LOG_INFO_ONCE("Free mem: {} MB", (tmp/MiB(1)));
+    LOG_INFO_ONCE("Need mem: {} MB", (max_user/MiB(1)));
 
-    const int tmp = mem_available(emuenv.mem);
-    int tmp2 = tmp - max_user;
-//    LOG_TRACE("Free mem: {} MB", (tmp/MiB(1)));
-//    LOG_TRACE("Need mem: {} MB", (max_user/MiB(1)));
-
-    if (tmp2 <= 0){
+    if (tmp2 <= max_user){
         LOG_ERROR("Out of memory!, use default settings!");
         tmp2 = align(mem_available(emuenv.mem) / 3, 0x1000);
         if(tmp2 < max_user){

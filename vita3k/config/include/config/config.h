@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -178,6 +178,7 @@ enum ScreenshotFormat {
     code(bool, "psn-signed-in", true, psn_signed_in)                                                    \
     code(bool, "http-enable", true, http_enable)                                                        \
     code(int, "adhoc-addr", 0, adhoc_addr)                                                              \
+    code(bool, "file-open-delay", false, file_open_delay)                                               \
     code(int, "http-timeout-attempts", 50, http_timeout_attempts)                                       \
     code(int, "http-timeout-sleep-ms", 100, http_timeout_sleep_ms)                                      \
     code(int, "http-read-end-attempts", 10, http_read_end_attempts)                                     \

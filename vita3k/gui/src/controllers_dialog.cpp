@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -173,10 +173,13 @@ static void add_bind_to_table(GuiState &gui, EmuEnvState &emuenv, const SDL_Game
 
 void swap_controller_ports(CtrlState &state, int source_port, int dest_port) {
     // Check if the ports are valid
-    if (source_port < 1 || source_port > SCE_CTRL_MAX_WIRELESS_NUM || dest_port < 1 || dest_port > SCE_CTRL_MAX_WIRELESS_NUM) {
+    
+    if (source_port < 0 || source_port >= SCE_CTRL_MAX_WIRELESS_NUM ||
+        dest_port < 0 || dest_port >= SCE_CTRL_MAX_WIRELESS_NUM) {
         LOG_ERROR("Ports are not valid.");
         return;
     }
+
 
     // Find the controllers corresponding to the source and destination ports
     auto source_controller_it = std::find_if(state.controllers.begin(), state.controllers.end(),
@@ -260,7 +263,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::PushID(i);
                 ImGui::SetNextItemWidth(50.f * emuenv.dpi_scale);
                 if (ImGui::Combo("##swap_port", &selected_port, port_names, SCE_CTRL_MAX_WIRELESS_NUM))
-                    swap_controller_ports(ctrl, i + 1, selected_port + 1);
+                    swap_controller_ports(ctrl, i, selected_port);
                 ImGui::PopID();
                 ImGui::TableSetColumnIndex(1);
                 ImGui::TableSetColumnIndex(1);

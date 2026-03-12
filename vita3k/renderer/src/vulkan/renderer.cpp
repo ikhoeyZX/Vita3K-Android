@@ -82,6 +82,9 @@ decltype(AHardwareBuffer_release) *_AHardwareBuffer_release;
 
 static void debug_log_message(std::string_view msg) {
     static const char *ignored_errors[] = {
+
+/* disable for now to find bug in all mobile gpu
+
         "VUID-vkCmdDrawIndexed-None-02721", // using r8g8b8a8 with non-multiple of 4 stride
         "VUID-VkImageViewCreateInfo-usage-02275", // srgb does not support the storage format
         "VUID-VkImageCreateInfo-imageCreateMaxMipLevels-02251", // srgb does not support the storage format
@@ -92,6 +95,7 @@ static void debug_log_message(std::string_view msg) {
         "VKDBGUTILWARN003", // Some Adreno warning
         "VK_FORMAT_BC", // BCn patch
         "VUID-vkCmdCopyBufferToImage-dstImage-01997" // BCn patch
+*/
     };
 
     bool log_error = true;

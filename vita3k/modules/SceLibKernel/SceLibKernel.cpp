@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -73,16 +73,18 @@ VAR_EXPORT(__stack_chk_guard) {
     return ptr.address();
 }
 
-EXPORT(int, __sce_aeabi_idiv0) {
+EXPORT(SceSize, __sce_aeabi_idiv0) {
     TRACY_FUNC(__sce_aeabi_idiv0);
     LOG_ERROR("Division by zero");
-    return UNIMPLEMENTED();
+    return 0;
+   // return UNIMPLEMENTED();
 }
 
-EXPORT(int, __sce_aeabi_ldiv0) {
+EXPORT(SceSize, __sce_aeabi_ldiv0) {
     TRACY_FUNC(__sce_aeabi_ldiv0);
     LOG_ERROR("Division by zero");
-    return UNIMPLEMENTED();
+    return 0;
+    // return UNIMPLEMENTED();
 }
 
 EXPORT(int, __stack_chk_fail) {
@@ -160,9 +162,16 @@ EXPORT(Ptr<void>, sceClibMemcpy, Ptr<void> dst, const void *src, SceSize len) {
     return dst;
 }
 
-EXPORT(int, sceClibMemcpyChk) {
-    TRACY_FUNC(sceClibMemcpyChk);
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, sceClibMemcpyChk, Ptr<void> dst, const Ptr<void> src, SceSize len) {
+    TRACY_FUNC(sceClibMemcpyChk, dst, src, len);
+    
+    if (len == 0) {
+        LOG_DEBUG("len is 0");
+        return dst;
+    }
+    LOG_DEBUG("call sceClibMemcpy");
+    CALL_EXPORT(sceClibMemcpy, dst, src.get(emuenv.mem), len);
+    return dst;
 }
 
 EXPORT(Ptr<void>, sceClibMemcpy_safe, Ptr<void> dst, const Ptr<void> src, SceSize len) {
@@ -622,9 +631,6 @@ EXPORT(int, sceIoMkdirAsync) {
     return UNIMPLEMENTED();
 }
 
-
-static const char* VN_file = "root.pfs";
-
 EXPORT(SceUID, sceIoOpen, const char *file, const int flags, const SceMode mode) {
     TRACY_FUNC(sceIoOpen, file, flags, mode);
     if (file == nullptr) {
@@ -632,9 +638,7 @@ EXPORT(SceUID, sceIoOpen, const char *file, const int flags, const SceMode mode)
     }
 
     // emmc 4.0 lowest respond time around 22.8 ms, 25ms should be okay
-    if (strstr(file, VN_file)) {
-       // VN files are too much to read so no delay because it slow!
-    }else{
+    if (emuenv.file_open_need_delay) {
         std::this_thread::sleep_for(std::chrono::milliseconds(25));
     }
 
@@ -1111,9 +1115,15 @@ EXPORT(int, sceKernelBacktraceSelf) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCallModuleExit) {
+EXPORT(int, sceKernelCallModuleExit, bool is_ok, int b, int c, int d, int e) {
     TRACY_FUNC(sceKernelCallModuleExit);
-    return UNIMPLEMENTED();
+    LOG_DEBUG("get value: a={}, b={}, c={}, d={}, e={}", is_ok, b, c, d, e);
+    
+    if(!is_ok)
+        return SCE_KERNEL_ERROR_NOT_IMPLEMENTED;
+
+    return SCE_KERNEL_OK;
+    //return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelCallWithChangeStack) {

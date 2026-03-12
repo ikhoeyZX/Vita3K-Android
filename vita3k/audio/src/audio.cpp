@@ -1,6 +1,5 @@
-
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -156,7 +155,8 @@ void AudioState::audio_output(ThreadState &thread, AudioOutPort &out_port, const
             thread.status_cond.wait(mlock, [&]() { return thread.status == ThreadStatus::run; });
         }
     } else {
-        adapter->audio_output(thread, out_port, buffer);
+        if(buffer)
+           adapter->audio_output(thread, out_port, buffer);
     }
 
     uint64_t now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -168,8 +168,7 @@ void AudioState::audio_output(ThreadState &thread, AudioOutPort &out_port, const
         // This is because the PS Vita and the host audio parameters do not match exactly
         // So instead only wait 50% of the time
         // also don't sleep for less than 0.5 ms
-        // to_wait /= 2;
-        to_wait /= 4;
+        to_wait /= 2;
         std::this_thread::sleep_for(std::chrono::microseconds(to_wait));
         out_port.last_output = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     } else {

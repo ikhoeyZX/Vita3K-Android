@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -2075,15 +2075,18 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
     // TODO: I do this because the sync function does not have access to the display state, but this is not great
     renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::NewFrame, false, frame, &emuenv.display);
 
-    if (emuenv.gxm.params.displayQueueMaxPendingCount == 1)
+    if (emuenv.gxm.params.displayQueueMaxPendingCount == 1) {
+		LOG_DEBUG("displayQueueMaxPendingCount call wait_empty");
         // double buffering, not handled by the queue configuration
         emuenv.gxm.display_queue.wait_empty();
-
+	}
+	
     return 0;
 }
 
 EXPORT(int, sceGxmDisplayQueueFinish) {
     TRACY_FUNC(sceGxmDisplayQueueFinish);
+	LOG_DEBUG("Call wait_empty");
     emuenv.gxm.display_queue.wait_empty();
 
     return 0;
@@ -2676,9 +2679,11 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
     return 0;
 }
 
-EXPORT(int, sceGxmIsDebugVersion) {
+EXPORT(bool, sceGxmIsDebugVersion, int val) {
     TRACY_FUNC(sceGxmIsDebugVersion);
-    return UNIMPLEMENTED();
+	LOG_DEBUG("GET VALUE = {}", val);
+	return false;
+   // return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, uint32_t size, uint32_t *offset) {

@@ -1168,6 +1168,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox("Discord Rich Presence", &emuenv.cfg.discord_rich_presence);
         SetTooltipEx(lang.emulator["discord_rich_presence"].c_str());
 #endif
+        ImGui::Checkbox("Reduce storage speed", &emuenv.cfg.file_open_delay);
+        SetTooltipEx("Reduce speed reading game files to emulate ps vita emmc speed");
+        
         ImGui::Checkbox(lang.emulator["texture_cache"].c_str(), &emuenv.cfg.texture_cache);
         SetTooltipEx(lang.emulator["texture_cache_description"].c_str());
         ImGui::SameLine();

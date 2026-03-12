@@ -172,6 +172,7 @@ public:
     uint32_t res_height_dpi_scale = 0;
     GDBState &gdb;
     HTTPState &http;
+    bool file_open_need_delay = false;
 
     EmuEnvState();
     // declaring a destructor is necessary to forward declare unique_ptrs

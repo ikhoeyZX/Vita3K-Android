@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <display/state.h>
 #include <renderer/gl/functions.h>
 #include <renderer/vulkan/functions.h>
+#include <renderer/vulkan/state.h>
 #include <renderer/vulkan/types.h>
 
 #include <renderer/functions.h>
@@ -86,11 +87,7 @@ COMMAND(new_frame) {
     }
 
     if (renderer.current_backend == Backend::Vulkan) {
-#if defined (__AARCH64__) && defined (__x86_64__)
-        vulkan::new_frame(*std::bit_cast<vulkan::VKContext *>(renderer.context));
-#else
         vulkan::new_frame(*reinterpret_cast<vulkan::VKContext *>(renderer.context));
-#endif
     }
 }
 
@@ -98,6 +95,23 @@ COMMAND(new_frame) {
 void finish(State &state, Context *context) {
     // Add NOP then wait for it
     renderer::send_single_command(state, context, renderer::CommandOpcode::Nop, true, 1);
+
+    // Wait for the VK wait thread to finish processing all pending requests.
+    // Push a dummy request then wait for the queue to drain, ensuring the last
+    // real request has been fully processed (not just dequeued).
+    if (state.current_backend == Backend::Vulkan) {
+        auto &vk_state = static_cast<vulkan::VKState &>(state);
+        vk_state.request_queue.push(vulkan::CallbackRequest{ nullptr });
+
+        // wait_empty() didn't work when memory mapping disabled'
+        if (state.features.enable_memory_mapping) {
+            LOG_DEBUG_ONCE("Call wait_empty()");
+            vk_state.request_queue.wait_empty();
+        } else {
+            LOG_DEBUG_ONCE("Call pop()");
+            vk_state.request_queue.pop(25);
+        }
+    }
 }
 
 int wait_for_status(State &state, int *status, int signal, bool wake_on_equal) {

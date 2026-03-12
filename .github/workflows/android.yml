@@ -47,7 +47,7 @@ jobs:
         shell: bash
         run: echo "git_short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
         
-      - name: Decode Keystore
+      - name: Decode Keystore Release build
         env:
           KEYSTORE_ENCODED: ${{ secrets.KEYSTORE }}
         run: echo $KEYSTORE_ENCODED | base64 --decode > "/home/runner/keystore.jks"
@@ -78,13 +78,20 @@ jobs:
           cp -r vita3k/shaders-builtin android/assets
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
           ./gradlew --stacktrace --info --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease
-          
+
+      - name: Decode Keystore Debug build
+        env:
+          KEYSTORE_ENCODED: ${{ secrets.KEYSTORE_DEBUG }}
+        run: |
+          rm "/home/runner/keystore.jks"
+          echo $KEYSTORE_ENCODED | base64 --decode > "/home/runner/keystore.jks"
+
       - name: Gradle build 64bit reldebug
         env:
           SIGNING_STORE_PATH: "/home/runner/keystore.jks"
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD_DEBUG }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS_DEBUG }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD_DEBUG }}
         run: |
           mkdir android/src/main/jniLibs
           mkdir android/build/intermediates/merged_native_libs/reldebug
