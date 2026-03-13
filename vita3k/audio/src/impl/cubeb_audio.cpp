@@ -1,6 +1,5 @@
-
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -84,7 +83,8 @@ CubebAudioAdapter::~CubebAudioAdapter() {
 }
 
 bool CubebAudioAdapter::init() {
-    if (cubeb_init(&cubeb_ctx, "Vita3K audio", "opensl") != CUBEB_OK) {
+ //   if (cubeb_init(&cubeb_ctx, "Vita3K audio", "opensl") != CUBEB_OK) {
+    if (cubeb_init(&cubeb_ctx, "Vita3K audio", nullptr) != CUBEB_OK) {
         LOG_ERROR("Could not initialize cubeb context");
         return false;
     }
