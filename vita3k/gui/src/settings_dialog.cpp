@@ -495,6 +495,7 @@ void set_config(EmuEnvState &emuenv, const std::string &app_path, bool custom) {
         emuenv.cfg.current_config.export_textures = emuenv.cfg.export_textures;
         emuenv.cfg.current_config.export_as_png = emuenv.cfg.export_as_png;
         emuenv.cfg.current_config.fps_hack = emuenv.cfg.fps_hack;
+        emuenv.cfg.current_config.audio_backend = emuenv.cfg.audio_backend;
         emuenv.cfg.current_config.audio_volume = emuenv.cfg.audio_volume;
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
         emuenv.cfg.current_config.pstv_mode = emuenv.cfg.pstv_mode;
