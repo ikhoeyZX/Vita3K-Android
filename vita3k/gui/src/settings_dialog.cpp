@@ -554,7 +554,7 @@ void set_config(EmuEnvState &emuenv, const std::string &app_path, bool custom) {
         emuenv.kernel.cpu_backend = set_cpu_backend(emuenv.cfg.current_config.cpu_backend);
         emuenv.kernel.cpu_opt = emuenv.cfg.current_config.cpu_opt;
         emuenv.kernel.cpu_unsafe = emuenv.cfg.current_config.cpu_unsafe;
-        emuenv.audio.set_backend(emuenv.cfg.audio_backend);
+   //     emuenv.audio.set_backend(emuenv.cfg.audio_backend);
     }
 
     emuenv.audio.set_global_volume(emuenv.cfg.current_config.audio_volume / 100.f);
