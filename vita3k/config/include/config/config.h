@@ -92,9 +92,9 @@ enum ScreenshotFormat {
     code(bool, "export-as-png", true, export_as_png)                                                    \
     code(std::string, "memory-mapping", "double-buffer", memory_mapping)                                \
     code(std::string, "vk-mapping", "Mailbox", vk_mapping)                                              \
-    code(std::string, "deep-stencil", "D24UnormS8Uint", deep_stencil)                                        \
+    code(std::string, "deep-stencil", "D24UnormS8Uint", deep_stencil)                                   \
     code(bool, "boot-apps-full-screen", false, boot_apps_full_screen)                                   \
-    code(std::string, "audio-backend", "Cubeb", audio_backend)                                          \
+    code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(int, "audio-volume", 100, audio_volume)                                                        \
     code(bool, "ngs-enable", true, ngs_enable)                                                          \
     code(std::string, "audio-drv", "auto", audio_drv)                                                   \
