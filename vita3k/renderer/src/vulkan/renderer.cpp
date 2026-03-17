@@ -1366,7 +1366,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         vk::BufferDeviceAddressInfoKHR address_info{
             .buffer = buffer.buffer
         };
-#ifndef __aarch64__
+#ifdef __aarch64__
      //   const uint64_t buffer_address = device.getBufferAddress(address_info) + buffer_offset;
         const uint64_t buffer_address = device.getBufferAddress(address_info);
 #else
