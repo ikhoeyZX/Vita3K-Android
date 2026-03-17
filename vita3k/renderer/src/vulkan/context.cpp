@@ -278,8 +278,8 @@ static vk::DescriptorSet retrieve_color_descriptor(VKState &state, FrameDescript
     };
 
     vk::DescriptorPoolCreateInfo descriptor_pool_info{
-        .maxSets = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING,
-        .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
+        .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+        .maxSets = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING
     };
     descriptor_pool_info.setPoolSizes(pool_size);
 
@@ -477,7 +477,7 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
         // send it to the wait queue
         state.request_queue.push(FenceWaitRequest{ fence });
 
-        if (state.mapping_method == MappingMethod::DoubleBuffer) {
+  //      if (state.mapping_method == MappingMethod::DoubleBuffer) {
             // sync all the visibility buffers
             for (auto &range : occlusion_ranges) {
                 state.request_queue.push(BufferSyncRequest{ current_visibility_buffer->address + range.offset * 4, range.size * 4 });
@@ -486,7 +486,7 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
             // we must sync the two buffers
             if (surface_info && surface_info->need_buffer_sync)
                 state.request_queue.push(BufferSyncRequest{ surface_info->data.address(), static_cast<uint32_t>(surface_info->total_bytes) });
-        }
+//        }
 
         if (surface_info && surface_info->need_post_surface_sync) {
             state.request_queue.push(PostSurfaceSyncRequest{ surface_info });
