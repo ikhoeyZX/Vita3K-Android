@@ -14,12 +14,12 @@ jobs:
       VCPKG_ROOT: /usr/local/share/vcpkg
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           submodules: recursive
  
-      - uses: hendrikmuhs/ccache-action@v1.2
+      - uses: hendrikmuhs/ccache-action@v1.2.21
 
       - name: Restore Gradle Cache
         uses: actions/cache@v4
@@ -60,7 +60,7 @@ jobs:
 #             link-to-sdk: true
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
         with:
           gradle-home-cache-cleanup: true
           
@@ -108,12 +108,12 @@ jobs:
           mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-release.apk
           mv  android/build/outputs/apk/reldebug/android-reldebug.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-reldebug.apk
           
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: vita3k-${{ env.git_short_sha }}-release_arm64.zip
           path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-release.apk
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: vita3k-${{ env.git_short_sha }}-reldebug_arm64.zip
           path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-reldebug.apk
@@ -138,7 +138,7 @@ jobs:
 #        run: |
 #          mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release.apk
           
-#      - uses: actions/upload-artifact@v4
+#      - uses: actions/upload-artifact@v5
 #        with:
 #          name: vita3k-${{ env.git_short_sha }}-release_armv7a.zip
 #          path: android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release.apk
