@@ -1356,7 +1356,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 		const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
 //        const int64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
 //        buffer.mapped_data = std::bit_cast<void *> (buffer_ptr_val + buffer_offset);
-		buffer.mapped_data = buffer_ptr_val;
+		buffer.mapped_data = std::bit_cast<void *>(buffer_ptr_val);
 #else
 		const uintptr_t buffer_ptr_val = reinterpret_cast<uintptr_t>(buffer.mapped_data);
         const intptr_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
