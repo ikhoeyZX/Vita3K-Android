@@ -99,7 +99,7 @@ VKContext::VKContext(VKState &state, MemState &mem)
 
         vk::DescriptorPoolCreateInfo descriptor_pool_info{
             // one for the global buffer descriptor, one for the empty descriptor
-            .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
+            .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
             .maxSets = 2,
             .poolSizeCount = nb_descriptor / 2,
             .pPoolSizes = pool_sizes.data()
