@@ -41,8 +41,26 @@ static spv::Id get_uv_coeffs(spv::Builder &b, const spv::Id std_builtins, spv::I
 
     if (lod == spv::NoResult) {
         // compute the lod here
+#ifdef ANDROID
+        spv::Id dx = b.createUnaryOp(spv::OpDPdx, vecType, coords);
+        spv::Id dy = b.createUnaryOp(spv::OpDPdy, vecType, coords);
+
+        spv::Id len_dx = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Length, {dx});
+        spv::Id len_dy = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Length, {dy});
+
+        spv::Id max_len = b.createExtInst(floatType, extGLSLstd450, GLSLstd450FMax, {len_dx, len_dy});
+
+        // Query texture size at LOD 0
+        spv::Id tex_size = b.createOpImageQuerySizeLod(sampled_image, lod0);
+        spv::Id width = b.createCompositeExtract(tex_size, floatType, 0);
+
+        spv::Id mul = b.createBinOp(spv::OpFMul, floatType, max_len, width);
+        lod = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Log2, {mul});
+#else
+        // note this is not supported in mobile gpu
         const spv::Id query_lod = b.createOp(spv::OpImageQueryLod, v2f32, { sampled_image, coords });
         lod = b.createOp(spv::OpVectorExtractDynamic, f32, { query_lod, b.makeIntConstant(0) });
+#endif
     }
 
     const spv::Id layer = b.createUnaryOp(spv::OpConvertFToS, i32, lod);
@@ -318,9 +336,26 @@ bool USSETranslatorVisitor::smp(
         const spv::Id v4u32 = m_b.makeVectorType(type_ui32, 4);
 
         // query info
+#ifdef ANDROID
+        const spv::Id dx = b.createUnaryOp(spv::OpDPdx, vecType, coords);
+        const spv::Id dy = b.createUnaryOp(spv::OpDPdy, vecType, coords);
+
+        const spv::Id len_dx = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Length, {dx});
+        const spv::Id len_dy = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Length, {dy});
+
+        const spv::Id max_len = b.createExtInst(floatType, extGLSLstd450, GLSLstd450FMax, {len_dx, len_dy});
+
+        // Query texture size at LOD 0
+        const spv::Id tex_size = b.createOpImageQuerySizeLod(image_sampler, lod0);
+        const spv::Id width = b.createCompositeExtract(tex_size, floatType, 0);
+
+        const spv::Id mul = b.createBinOp(spv::OpFMul, floatType, max_len, width);
+        const spv::Id lod = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Log2, {mul});
+#else
         const spv::Id query_lod = m_b.createOp(spv::OpImageQueryLod, type_f32_v[2], { image_sampler, coords });
         const spv::Id lod = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, query_lod, m_b.makeIntConstant(0));
-
+#endif
+        
         // xy are the uv coefficients
         spv::Id uv = get_uv_coeffs(m_b, std_builtins, image_sampler, coords, lod);
         // z is the trilinear fraction, w the LOD
