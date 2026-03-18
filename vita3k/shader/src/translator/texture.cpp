@@ -42,8 +42,8 @@ static spv::Id get_uv_coeffs(spv::Builder &b, const spv::Id std_builtins, spv::I
     if (lod == spv::NoResult) {
         // compute the lod here
 #ifdef ANDROID
-        spv::Id dx = b.createUnaryOp(spv::OpDPdx, vecType, coords);
-        spv::Id dy = b.createUnaryOp(spv::OpDPdy, vecType, coords);
+        spv::Id dx = b.createUnaryOp(spv::OpDPdx, v2f32, coords);
+        spv::Id dy = b.createUnaryOp(spv::OpDPdy, v2f32, coords);
 
         spv::Id len_dx = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Length, {dx});
         spv::Id len_dy = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Length, {dy});
@@ -337,8 +337,8 @@ bool USSETranslatorVisitor::smp(
 
         // query info
 #ifdef ANDROID
-        const spv::Id dx = b.createUnaryOp(spv::OpDPdx, vecType, coords);
-        const spv::Id dy = b.createUnaryOp(spv::OpDPdy, vecType, coords);
+        const spv::Id dx = b.createUnaryOp(spv::OpDPdx, type_f32_v[2], coords);
+        const spv::Id dy = b.createUnaryOp(spv::OpDPdy, type_f32_v[2], coords);
 
         const spv::Id len_dx = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Length, {dx});
         const spv::Id len_dy = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Length, {dy});
