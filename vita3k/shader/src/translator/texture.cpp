@@ -42,14 +42,12 @@ static spv::Id get_uv_coeffs(spv::Builder &b, const spv::Id std_builtins, spv::I
     if (lod == spv::NoResult) {
         // compute the lod here
 #ifdef ANDROID
-       const spv::Id dx   = b.createOp(spv::OpDPdx, v2f32, { coords });
-       const spv::Id dy   = b.createOp(spv::OpDPdy, v2f32, { coords });
-       const spv::Id dx2  = b.createOp(spv::OpFMul, v2f32, { dx, dx });
-       const spv::Id dy2  = b.createOp(spv::OpFMul, v2f32, { dy, dy });
-       const spv::Id sum  = b.createOp(spv::OpFAdd, v2f32, { dx2, dy2 });
-       const spv::Id maxc = b.createOp(spv::OpExtInst, f32, { b.makeExtInst(GLSLstd450FMax), b.createCompositeExtract(sum, 0), b.createCompositeExtract(sum, 1) });
-       const spv::Id len  = b.createOp(spv::OpExtInst, f32, { b.makeExtInst(GLSLstd450Sqrt), maxc });
-       lod  = b.createOp(spv::OpExtInst, f32, { b.makeExtInst(GLSLstd450Log2), len });
+    const spv::Id size = b.createOpImageQuerySize(sampled_image);
+    lod = builder.createExtractElement(size, b.makeIntConstant(0));
+
+        // if still fail, force LOD = 0
+        if (lod == spv::NoResult) 
+           lod = b.makeIntConstant(0);
 #else
         // note this is not supported in mobile gpu
         const spv::Id query_lod = b.createOp(spv::OpImageQueryLod, v2f32, { sampled_image, coords });
@@ -331,14 +329,12 @@ bool USSETranslatorVisitor::smp(
 
         // query info
 #ifdef ANDROID
-       const spv::Id dx   = b.createOp(spv::OpDPdx, type_f32_v[2], { coords });
-       const spv::Id dy   = b.createOp(spv::OpDPdy, type_f32_v[2], { coords });
-       const spv::Id dx2  = b.createOp(spv::OpFMul, type_f32_v[2], { dx, dx });
-       const spv::Id dy2  = b.createOp(spv::OpFMul, type_f32_v[2], { dy, dy });
-       const spv::Id sum  = b.createOp(spv::OpFAdd, type_f32_v[2], { dx2, dy2 });
-       const spv::Id maxc = b.createOp(spv::OpExtInst, type_f32, { b.makeExtInst(GLSLstd450FMax), b.createCompositeExtract(sum, 0), b.createCompositeExtract(sum, 1) });
-       const spv::Id len  = b.createOp(spv::OpExtInst, type_f32, { b.makeExtInst(GLSLstd450Sqrt), maxc });
-       const spv::Id lod  = b.createOp(spv::OpExtInst, type_f32, { b.makeExtInst(GLSLstd450Log2), len });
+       const spv::Id size = b.createOpImageQuerySize(image_sampler);
+       lod = builder.createExtractElement(size, b.makeIntConstant(0));
+
+        // if still fail, force LOD = 0
+        if (lod == spv::NoResult) 
+           lod = b.makeIntConstant(0);
 #else
         const spv::Id query_lod = m_b.createOp(spv::OpImageQueryLod, type_f32_v[2], { image_sampler, coords });
         const spv::Id lod = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, query_lod, m_b.makeIntConstant(0));
