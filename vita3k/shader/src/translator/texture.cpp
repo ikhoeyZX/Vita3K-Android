@@ -45,17 +45,17 @@ static spv::Id get_uv_coeffs(spv::Builder &b, const spv::Id std_builtins, spv::I
         spv::Id dx = b.createUnaryOp(spv::OpDPdx, v2f32, coords);
         spv::Id dy = b.createUnaryOp(spv::OpDPdy, v2f32, coords);
 
-        spv::Id len_dx = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Length, {dx});
-        spv::Id len_dy = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Length, {dy});
+        spv::Id len_dx = b.makeExtInst(f32, extGLSLstd450, GLSLstd450Length, {dx});
+        spv::Id len_dy = b.makeExtInst(f32, extGLSLstd450, GLSLstd450Length, {dy});
 
-        spv::Id max_len = b.createExtInst(floatType, extGLSLstd450, GLSLstd450FMax, {len_dx, len_dy});
+        spv::Id max_len = b.makeExtInst(f32, extGLSLstd450, GLSLstd450FMax, {len_dx, len_dy});
 
         // Query texture size at LOD 0
         spv::Id tex_size = b.createOpImageQuerySizeLod(sampled_image, lod0);
-        spv::Id width = b.createCompositeExtract(tex_size, floatType, 0);
+        spv::Id width = b.createCompositeExtract(tex_size, f32, 0);
 
-        spv::Id mul = b.createBinOp(spv::OpFMul, floatType, max_len, width);
-        lod = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Log2, {mul});
+        spv::Id mul = b.createBinOp(spv::OpFMul, f32, max_len, width);
+        lod = b.makeExtInst(f32, extGLSLstd450, GLSLstd450Log2, {mul});
 #else
         // note this is not supported in mobile gpu
         const spv::Id query_lod = b.createOp(spv::OpImageQueryLod, v2f32, { sampled_image, coords });
@@ -340,17 +340,17 @@ bool USSETranslatorVisitor::smp(
         const spv::Id dx = b.createUnaryOp(spv::OpDPdx, type_f32_v[2], coords);
         const spv::Id dy = b.createUnaryOp(spv::OpDPdy, type_f32_v[2], coords);
 
-        const spv::Id len_dx = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Length, {dx});
-        const spv::Id len_dy = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Length, {dy});
+        const spv::Id len_dx = b.makeExtInst(type_f32, extGLSLstd450, GLSLstd450Length, {dx});
+        const spv::Id len_dy = b.makeExtInst(type_f32, extGLSLstd450, GLSLstd450Length, {dy});
 
-        const spv::Id max_len = b.createExtInst(floatType, extGLSLstd450, GLSLstd450FMax, {len_dx, len_dy});
+        const spv::Id max_len = b.makeExtInst(type_f32, extGLSLstd450, GLSLstd450FMax, {len_dx, len_dy});
 
         // Query texture size at LOD 0
         const spv::Id tex_size = b.createOpImageQuerySizeLod(image_sampler, lod0);
-        const spv::Id width = b.createCompositeExtract(tex_size, floatType, 0);
+        const spv::Id width = b.createCompositeExtract(tex_size, type_f32, 0);
 
         const spv::Id mul = b.createBinOp(spv::OpFMul, floatType, max_len, width);
-        const spv::Id lod = b.createExtInst(floatType, extGLSLstd450, GLSLstd450Log2, {mul});
+        const spv::Id lod = b.makeExtInst(type_f32, extGLSLstd450, GLSLstd450Log2, {mul});
 #else
         const spv::Id query_lod = m_b.createOp(spv::OpImageQueryLod, type_f32_v[2], { image_sampler, coords });
         const spv::Id lod = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, query_lod, m_b.makeIntConstant(0));
