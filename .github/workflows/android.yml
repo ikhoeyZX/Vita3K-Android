@@ -22,7 +22,7 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1.2.21
 
       - name: Restore Gradle Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.3
         with:
           path: |
             ~/.gradle/
@@ -108,12 +108,12 @@ jobs:
           mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-release.apk
           mv  android/build/outputs/apk/reldebug/android-reldebug.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-reldebug.apk
           
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7.0.0
         with:
           name: vita3k-${{ env.git_short_sha }}-release_arm64.zip
           path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-release.apk
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7.0.0
         with:
           name: vita3k-${{ env.git_short_sha }}-reldebug_arm64.zip
           path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-reldebug.apk
