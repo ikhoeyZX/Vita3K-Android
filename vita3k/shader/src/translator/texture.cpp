@@ -42,20 +42,14 @@ static spv::Id get_uv_coeffs(spv::Builder &b, const spv::Id std_builtins, spv::I
     if (lod == spv::NoResult) {
         // compute the lod here
 #ifdef ANDROID
-        spv::Id dx = b.createUnaryOp(spv::OpDPdx, v2f32, coords);
-        spv::Id dy = b.createUnaryOp(spv::OpDPdy, v2f32, coords);
-
-        spv::Id len_dx = b.makeExtInst(f32, extGLSLstd450, GLSLstd450Length, {dx});
-        spv::Id len_dy = b.makeExtInst(f32, extGLSLstd450, GLSLstd450Length, {dy});
-
-        spv::Id max_len = b.makeExtInst(f32, extGLSLstd450, GLSLstd450FMax, {len_dx, len_dy});
-
-        // Query texture size at LOD 0
-        spv::Id tex_size = b.createOpImageQuerySizeLod(sampled_image, lod0);
-        spv::Id width = b.createCompositeExtract(tex_size, f32, 0);
-
-        spv::Id mul = b.createBinOp(spv::OpFMul, f32, max_len, width);
-        lod = b.makeExtInst(f32, extGLSLstd450, GLSLstd450Log2, {mul});
+       const spv::Id dx   = b.createOp(spv::OpDPdx, v2f32, { coords });
+       const spv::Id dy   = b.createOp(spv::OpDPdy, v2f32, { coords });
+       const spv::Id dx2  = b.createOp(spv::OpFMul, v2f32, { dx, dx });
+       const spv::Id dy2  = b.createOp(spv::OpFMul, v2f32, { dy, dy });
+       const spv::Id sum  = b.createOp(spv::OpFAdd, v2f32, { dx2, dy2 });
+       const spv::Id maxc = b.createOp(spv::OpExtInst, f32, { b.makeExtInst(GLSLstd450FMax), b.createCompositeExtract(sum, 0), b.createCompositeExtract(sum, 1) });
+       const spv::Id len  = b.createOp(spv::OpExtInst, f32, { b.makeExtInst(GLSLstd450Sqrt), maxc });
+       lod  = b.createOp(spv::OpExtInst, f32, { b.makeExtInst(GLSLstd450Log2), len });
 #else
         // note this is not supported in mobile gpu
         const spv::Id query_lod = b.createOp(spv::OpImageQueryLod, v2f32, { sampled_image, coords });
@@ -337,20 +331,14 @@ bool USSETranslatorVisitor::smp(
 
         // query info
 #ifdef ANDROID
-        const spv::Id dx = b.createUnaryOp(spv::OpDPdx, type_f32_v[2], coords);
-        const spv::Id dy = b.createUnaryOp(spv::OpDPdy, type_f32_v[2], coords);
-
-        const spv::Id len_dx = b.makeExtInst(type_f32, extGLSLstd450, GLSLstd450Length, {dx});
-        const spv::Id len_dy = b.makeExtInst(type_f32, extGLSLstd450, GLSLstd450Length, {dy});
-
-        const spv::Id max_len = b.makeExtInst(type_f32, extGLSLstd450, GLSLstd450FMax, {len_dx, len_dy});
-
-        // Query texture size at LOD 0
-        const spv::Id tex_size = b.createOpImageQuerySizeLod(image_sampler, lod0);
-        const spv::Id width = b.createCompositeExtract(tex_size, type_f32, 0);
-
-        const spv::Id mul = b.createBinOp(spv::OpFMul, floatType, max_len, width);
-        const spv::Id lod = b.makeExtInst(type_f32, extGLSLstd450, GLSLstd450Log2, {mul});
+       const spv::Id dx   = b.createOp(spv::OpDPdx, type_f32_v[2], { coords });
+       const spv::Id dy   = b.createOp(spv::OpDPdy, type_f32_v[2], { coords });
+       const spv::Id dx2  = b.createOp(spv::OpFMul, type_f32_v[2], { dx, dx });
+       const spv::Id dy2  = b.createOp(spv::OpFMul, type_f32_v[2], { dy, dy });
+       const spv::Id sum  = b.createOp(spv::OpFAdd, type_f32_v[2], { dx2, dy2 });
+       const spv::Id maxc = b.createOp(spv::OpExtInst, type_f32, { b.makeExtInst(GLSLstd450FMax), b.createCompositeExtract(sum, 0), b.createCompositeExtract(sum, 1) });
+       const spv::Id len  = b.createOp(spv::OpExtInst, type_f32, { b.makeExtInst(GLSLstd450Sqrt), maxc });
+       const spv::Id lod  = b.createOp(spv::OpExtInst, type_f32, { b.makeExtInst(GLSLstd450Log2), len });
 #else
         const spv::Id query_lod = m_b.createOp(spv::OpImageQueryLod, type_f32_v[2], { image_sampler, coords });
         const spv::Id lod = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, query_lod, m_b.makeIntConstant(0));
