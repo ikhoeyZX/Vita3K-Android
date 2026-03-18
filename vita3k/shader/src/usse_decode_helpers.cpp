@@ -413,8 +413,7 @@ usse::Imm4 decode_write_mask(RegisterBank dest_bank, usse::Imm4 write_mask, cons
 
     usse::Imm4 new_write_mask = 0;
 
-    // disable float16 for testing
- /*   if (f16) {
+    if (f16) {
         if (write_mask & 0b0001) {
             new_write_mask |= 0b11;
         }
@@ -423,10 +422,9 @@ usse::Imm4 decode_write_mask(RegisterBank dest_bank, usse::Imm4 write_mask, cons
             new_write_mask |= 0b1100;
         }
     } else {
-    */
         // F32 mask restricted with only XY
         new_write_mask = (write_mask & 0b11);
-//    }
+    }
 
     return new_write_mask;
 }
