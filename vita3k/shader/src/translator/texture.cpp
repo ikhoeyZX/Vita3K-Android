@@ -334,7 +334,7 @@ bool USSETranslatorVisitor::smp(
 
         // query info
         const spv::Id query_lod = m_b.createOp(spv::OpImageQueryLod, type_f32_v[2], { image_sampler, coords });
-        const spv::Id lod = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, query_lod, m_b.makeIntConstant(0));
+        spv::Id lod = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, query_lod, m_b.makeIntConstant(0));
 
         // if still fail, force LOD = 0
         if (lod == spv::NoResult) {
