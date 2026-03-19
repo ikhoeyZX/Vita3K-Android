@@ -42,8 +42,13 @@ static spv::Id get_uv_coeffs(spv::Builder &b, const spv::Id std_builtins, spv::I
     if (lod == spv::NoResult) {
         // compute the lod here
 #ifdef ANDROID
-    const spv::Id size = b.createOpImageQuerySize(sampled_image);
-    lod = builder.createExtractElement(size, b.makeIntConstant(0));
+        const spv::Id dPdx = b.createOp(spv::OpDPdx, v2f32, { coords });
+        const spv::Id dPdy = b.createOp(spv::OpDPdy, v2f32, { coords });
+
+        const spv::Id fwidthX = b.createOp(spv::OpFwidth, f32, { coordsX });
+        const spv::Id fwidthY = b.createOp(spv::OpFwidth, f32, { coordsY });
+
+        lod = b.createOp(spv::OpExtInst, f32, { glslExtInstSet, GLSLstd450Log2, fwidthXorY });
 
         // if still fail, force LOD = 0
         if (lod == spv::NoResult) 
@@ -329,8 +334,13 @@ bool USSETranslatorVisitor::smp(
 
         // query info
 #ifdef ANDROID
-       const spv::Id size = b.createOpImageQuerySize(image_sampler);
-       lod = builder.createExtractElement(size, b.makeIntConstant(0));
+       const spv::Id dPdx = b.createOp(spv::OpDPdx, type_f32_v[2], { coords });
+        const spv::Id dPdy = b.createOp(spv::OpDPdy, type_f32_v[2], { coords });
+
+        const spv::Id fwidthX = b.createOp(spv::OpFwidth, type_f32, { coordsX });
+        const spv::Id fwidthY = b.createOp(spv::OpFwidth, type_f32, { coordsY });
+
+        spv::Id lod = b.createOp(spv::OpExtInst, ftype_f32, { glslExtInstSet, GLSLstd450Log2, fwidthXorY });
 
         // if still fail, force LOD = 0
         if (lod == spv::NoResult) 
