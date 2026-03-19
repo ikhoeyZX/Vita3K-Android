@@ -116,10 +116,10 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
             coord_id = m_b.createBuiltinCall(m_b.getTypeId(coord_id), std_builtins, GLSLstd450Fma, { coord_id, viewport_ratio, viewport_offset });
         } else {
 #ifdef ANDROID
-            auto x = m_b.createCompositeExtract(coord_id, 0);
-            auto y = m_b.createCompositeExtract(coord_id, 1);
-            auto z = m_b.createCompositeExtract(coord_id, 2);
-            auto w = m_b.createCompositeExtract(coord_id, 3);
+            const auto x = m_b.createCompositeExtract(coord_id, m_b.getTypeId(coord_id), {0u});
+            const auto y = m_b.createCompositeExtract(coord_id, m_b.getTypeId(coord_id), {1u});
+            const auto z = m_b.createCompositeExtract(coord_id, m_b.getTypeId(coord_id), {2u});
+            const auto w = m_b.createCompositeExtract(coord_id, m_b.getTypeId(coord_id), {3u});
 
             spv::Id safe_coord = m_b.createCompositeConstruct(type_f32_v[4], { x, y, z, w });
             spv::Id coord_xy = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { { true, safe_coord }, { true, safe_coord }, { false, 0 }, { false, 1 } });
