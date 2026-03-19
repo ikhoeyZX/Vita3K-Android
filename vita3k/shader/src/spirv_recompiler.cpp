@@ -405,7 +405,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     spv::Id v4 = b.makeVectorType(f32, 4);
 
   //  spv::Id current_coord = b.createVariable(spv::NoPrecision, spv::StorageClassInput, v4, "gl_FragCoord");
-    spv::Id current_coord = b.createVariable(spv::RelaxedPrecision, spv::StorageClassInput, v4, "gl_FragCoord");
+    spv::Id current_coord = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassInput, v4, "gl_FragCoord");
     b.addDecoration(current_coord, spv::DecorationBuiltIn, spv::BuiltInFragCoord);
 
     translation_state.interfaces.push_back(current_coord);
@@ -727,7 +727,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         if (target_to_store.type == DataType::INT16 || target_to_store.type == DataType::UINT16)
             // a F16 cannot hold a INT16 or UINT16
           //  precision = spv::NoPrecision;
-            precision = spv::RelaxedPrecision;
+            precision = spv::DecorationRelaxedPrecision;
 
         auto store_source_result = [&](const bool direct_store = false) {
             if (source != spv::NoResult) {
@@ -912,18 +912,18 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     spv_params.indexes = b.createVariable(spv::NoPrecision, spv::StorageClassPrivate, index_arr_type, "idx");
     spv_params.outs = b.createVariable(spv::NoPrecision, spv::StorageClassPrivate, o_arr_type, "outs");
 */
-    spv_params.ins = b.createVariable(spv::RelaxedPrecision, spv::StorageClassPrivate, pa_arr_type, "pa");
-    spv_params.uniforms = b.createVariable(spv::RelaxedPrecision, spv::StorageClassPrivate, sa_arr_type, "sa");
-    spv_params.internals = b.createVariable(spv::RelaxedPrecision, spv::StorageClassPrivate, i_arr_type, "internals");
-    spv_params.temps = b.createVariable(spv::RelaxedPrecision, spv::StorageClassPrivate, temp_arr_type, "r");
-    spv_params.predicates = b.createVariable(spv::RelaxedPrecision, spv::StorageClassPrivate, pred_arr_type, "p");
-    spv_params.indexes = b.createVariable(spv::RelaxedPrecision, spv::StorageClassPrivate, index_arr_type, "idx");
-    spv_params.outs = b.createVariable(spv::RelaxedPrecision, spv::StorageClassPrivate, o_arr_type, "outs");
+    spv_params.ins = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassPrivate, pa_arr_type, "pa");
+    spv_params.uniforms = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassPrivate, sa_arr_type, "sa");
+    spv_params.internals = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassPrivate, i_arr_type, "internals");
+    spv_params.temps = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassPrivate, temp_arr_type, "r");
+    spv_params.predicates = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassPrivate, pred_arr_type, "p");
+    spv_params.indexes = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassPrivate, index_arr_type, "idx");
+    spv_params.outs = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassPrivate, o_arr_type, "outs");
 
     SamplerMap samplers;
 
   //  spv::Id ite_copy = b.createVariable(spv::NoPrecision, spv::StorageClassFunction, i32_type, "i");
-    spv::Id ite_copy = b.createVariable(spv::RelaxedPrecision, spv::StorageClassFunction, i32_type, "i");
+    spv::Id ite_copy = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassFunction, i32_type, "i");
 
     using literal_pair = std::pair<std::uint32_t, spv::Id>;
 
