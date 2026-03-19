@@ -1,3 +1,4 @@
+
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
 //
@@ -82,9 +83,6 @@ decltype(AHardwareBuffer_release) *_AHardwareBuffer_release;
 
 static void debug_log_message(std::string_view msg) {
     static const char *ignored_errors[] = {
-
-/* disable for now to find bug in all mobile gpu
-
         "VUID-vkCmdDrawIndexed-None-02721", // using r8g8b8a8 with non-multiple of 4 stride
         "VUID-VkImageViewCreateInfo-usage-02275", // srgb does not support the storage format
         "VUID-VkImageCreateInfo-imageCreateMaxMipLevels-02251", // srgb does not support the storage format
@@ -95,7 +93,6 @@ static void debug_log_message(std::string_view msg) {
         "VKDBGUTILWARN003", // Some Adreno warning
         "VK_FORMAT_BC", // BCn patch
         "VUID-vkCmdCopyBufferToImage-dstImage-01997" // BCn patch
-*/
     };
 
     bool log_error = true;
@@ -1250,8 +1247,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 #ifdef __ANDROID__
         // if we get there, this means we support the hardware buffer extension
         AHardwareBuffer_Desc buffer_desc{
-         //   .width = static_cast<uint32_t>(size + KiB(4)),
-		    .width = static_cast<uint32_t>(size),
+            .width = static_cast<uint32_t>(size + KiB(4)),
             .height = 1,
             .layers = 1,
             .format = AHARDWAREBUFFER_FORMAT_BLOB,
@@ -1313,8 +1309,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 
         vk::StructureChain<vk::BufferCreateInfo, vk::ExternalMemoryBufferCreateInfoKHR> buffer_info{
             vk::BufferCreateInfo{
-             //   .size = size + KiB(4),
-		        .size = size,
+                .size = size + KiB(4),
                 .usage = mapped_memory_flags,
                 .sharingMode = vk::SharingMode::eExclusive },
             vk::ExternalMemoryBufferCreateInfoKHR{
@@ -1338,8 +1333,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     case MappingMethod::PageTable: {
         // add 4 KiB because we can as an easy way to prevent crashes due to memory accesses right after the memory boundary
         // also make sure later the mapped address is 4K aligned
-        // vkutil::Buffer buffer(size + KiB(4));
-		vkutil::Buffer buffer(size);
+        vkutil::Buffer buffer(size + KiB(4));
         constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
 	        // .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
             .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessRandom,
@@ -1347,16 +1341,15 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 	        .usage = vma::MemoryUsage::eAuto,
 		//	.requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
         //    .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
-		    .requiredFlags = vk::MemoryPropertyFlagBits::eDeviceLocal,
-            .preferredFlags = vk::MemoryPropertyFlagBits::eHostVisible,
+		    .requiredFlags = vk::MemoryPropertyFlagBits::eHostVisible,
+            .preferredFlags = vk::MemoryPropertyFlagBits::eDeviceLocal,
         };
         buffer.init_buffer(mapped_memory_flags, memory_mapped_alloc);
 
 #ifdef __aarch64__
 		const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
-//        const int64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
-//        buffer.mapped_data = std::bit_cast<void *> (buffer_ptr_val + buffer_offset);
-		buffer.mapped_data = std::bit_cast<void *>(buffer_ptr_val);
+        const int64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
+        buffer.mapped_data = std::bit_cast<void *> (buffer_ptr_val + buffer_offset);
 #else
 		const uintptr_t buffer_ptr_val = reinterpret_cast<uintptr_t>(buffer.mapped_data);
         const intptr_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
@@ -1366,9 +1359,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         vk::BufferDeviceAddressInfoKHR address_info{
             .buffer = buffer.buffer
         };
-#ifdef __aarch64__
-     //   const uint64_t buffer_address = device.getBufferAddress(address_info) + buffer_offset;
-        const uint64_t buffer_address = device.getBufferAddress(address_info);
+#ifndef __aarch64__
+        const uint64_t buffer_address = device.getBufferAddress(address_info) + buffer_offset;
 #else
 		const uintptr_t buffer_address = device.getBufferAddress(address_info) + buffer_offset;
 #endif
@@ -1552,19 +1544,20 @@ void VKState::set_async_compilation(bool enable) {
 
 #ifdef __ANDROID__
 std::vector<std::string> VKState::get_gpu_list() {
+    if (!support_custom_drivers())
+        return { physical_device_properties.properties.deviceName.data() };
+
     // get the stock name
     std::vector<std::string> gpu_list = { physical_device_properties.properties.deviceName.data() };
 
-	if (support_custom_drivers()) {
-       // First value is the stock driver
-       fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver";
-       fs::create_directories(driver_path);
+    // First value is the stock driver
+    fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver";
+    fs::create_directories(driver_path);
 
-       for (const auto &entry : boost::make_iterator_range(fs::directory_iterator(driver_path), {})) {
-           if (fs::is_directory(entry.path()))
-               gpu_list.push_back(entry.path().filename().c_str());
-       }
-	}
+    for (const auto &entry : boost::make_iterator_range(fs::directory_iterator(driver_path), {})) {
+        if (fs::is_directory(entry.path()))
+            gpu_list.push_back(entry.path().filename().c_str());
+    }
 
     return gpu_list;
 }
