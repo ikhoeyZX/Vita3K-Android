@@ -41,25 +41,15 @@ static spv::Id get_uv_coeffs(spv::Builder &b, const spv::Id std_builtins, spv::I
 
     if (lod == spv::NoResult) {
         // compute the lod here
-#ifdef ANDROID
-        const spv::Id dPdx = b.createOp(spv::OpDPdx, v2f32, { coords });
-        const spv::Id dPdy = b.createOp(spv::OpDPdy, v2f32, { coords });
-
-        const spv::Id sum = b.createOp(spv::OpFAdd, f32, { dPdx, dPdy });
-        const spv::Id rho = b.createOp(spv::OpExtInst, f32, { std_builtins, b.makeIntConstant(GLSLstd450Sqrt), sum });
-
-        lod = b.createOp(spv::OpExtInst, f32, { std_builtins, b.makeIntConstant(GLSLstd450Log2), rho });
+        const spv::Id query_lod = b.createOp(spv::OpImageQueryLod, v2f32, { sampled_image, coords });
 
         // if still fail, force LOD = 0
         if (lod == spv::NoResult) {
            LOG_WARN("lod got NoResult!, set to 0");
            lod = b.makeIntConstant(0);
         }
-#else
-        // note this is not supported in mobile gpu
-        const spv::Id query_lod = b.createOp(spv::OpImageQueryLod, v2f32, { sampled_image, coords });
+        
         lod = b.createOp(spv::OpVectorExtractDynamic, f32, { query_lod, b.makeIntConstant(0) });
-#endif
     }
 
     const spv::Id layer = b.createUnaryOp(spv::OpConvertFToS, i32, lod);
@@ -345,24 +335,15 @@ bool USSETranslatorVisitor::smp(
         const spv::Id v4u32 = m_b.makeVectorType(type_ui32, 4);
 
         // query info
-#ifdef ANDROID
-        const spv::Id dPdx = m_b.createOp(spv::OpDPdx, type_f32_v[2], { coords });
-        const spv::Id dPdy = m_b.createOp(spv::OpDPdy, type_f32_v[2], { coords });
-
-        const spv::Id sum = m_b.createOp(spv::OpFAdd, type_f32, { dPdx, dPdy });
-        const spv::Id rho = m_b.createOp(spv::OpExtInst, type_f32, { std_builtins, m_b.makeIntConstant(GLSLstd450Sqrt), sum });
-
-        spv::Id lod = m_b.createOp(spv::OpExtInst, type_f32, { std_builtins, m_b.makeIntConstant(GLSLstd450Log2), rho });
+        const spv::Id query_lod = m_b.createOp(spv::OpImageQueryLod, type_f32_v[2], { image_sampler, coords });
 
         // if still fail, force LOD = 0
-        if (lod == spv::NoResult) {
-           LOG_WARN("lod got NoResult!, set to 0");
-           lod = m_b.makeIntConstant(0);
+        if (query_lod == spv::NoResult) {
+           LOG_WARN("query_lod got NoResult!, set to 0");
+           query_lod = m_b.makeIntConstant(0);
         }
-#else
-        const spv::Id query_lod = m_b.createOp(spv::OpImageQueryLod, type_f32_v[2], { image_sampler, coords });
+        
         const spv::Id lod = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, query_lod, m_b.makeIntConstant(0));
-#endif
         
         // xy are the uv coefficients
         spv::Id uv = get_uv_coeffs(m_b, std_builtins, image_sampler, coords, lod);
