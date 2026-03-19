@@ -340,9 +340,9 @@ bool USSETranslatorVisitor::smp(
         const spv::Id dPdy = m_b.createOp(spv::OpDPdy, type_f32_v[2], { coords });
 
         const spv::Id sum = m_b.createOp(spv::OpFAdd, type_f32, { dPdx, dPdy });
-        const spv::Id rho = m_b.createOp(spv::OpExtInst, type_f32, { std_builtins, b.makeIntConstant(GLSLstd450Sqrt), sum });
+        const spv::Id rho = m_b.createOp(spv::OpExtInst, type_f32, { std_builtins, m_b.makeIntConstant(GLSLstd450Sqrt), sum });
 
-        spv::Id lod = m_b.createOp(spv::OpExtInst, type_f32, { std_builtins, b.makeIntConstant(GLSLstd450Log2), rho });
+        spv::Id lod = m_b.createOp(spv::OpExtInst, type_f32, { std_builtins, m_b.makeIntConstant(GLSLstd450Log2), rho });
 
         // if still fail, force LOD = 0
         if (lod == spv::NoResult) {
