@@ -1,4 +1,3 @@
-
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
 //
@@ -658,6 +657,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         bool support_buffer_device_address = false;
         bool support_external_memory = false;
         bool support_shader_interlock = false;
+		bool support_spirv14 = false;
         const std::map<std::string_view, bool *> optional_extensions = {
             { vk::KHRGetMemoryRequirements2ExtensionName, &temp_bool },
             // can be used by vma to improve performance
@@ -692,6 +692,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             // used for memory trapping in android
             { VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME, &support_android_buffer_import },
             { VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME, &support_unix_fd_import },
+		    // get spirv 1.4 support
+		    { VK_KHR_SPIRV_1_4, &support_spirv14 },
 #endif
         };
 
@@ -710,6 +712,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             support_buffer_device_address &= static_cast<bool>(features.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress);
         }
         support_memory_mapping &= support_buffer_device_address;
+        support_spirv_1_4 = support_spirv14;
 
         if (support_standard_layout) {
             auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
@@ -834,6 +837,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 			LOG_WARN_ONCE("Your device didn't support shader interlock!");
             device_info.unlink<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>();
 		}
+		if (!support_spirv_1_4)
+			LOG_WARN_ONCE("Your device didn't support SPIRV 1.4");
 
         try {
 			device = physical_device.createDevice(device_info.get<vk::DeviceCreateInfo>());
@@ -1339,9 +1344,9 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessRandom,
             // .usage = vma::MemoryUsage::eAutoPreferHost,
 	        .usage = vma::MemoryUsage::eAuto,
-		//	.requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
+			.requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
         //    .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
-		    .requiredFlags = vk::MemoryPropertyFlagBits::eHostVisible,
+		//    .requiredFlags = vk::MemoryPropertyFlagBits::eHostVisible,
             .preferredFlags = vk::MemoryPropertyFlagBits::eDeviceLocal,
         };
         buffer.init_buffer(mapped_memory_flags, memory_mapped_alloc);
@@ -1591,20 +1596,28 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 		}
 
 	    case 1: {
-			std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm, vk::Format::eS8Uint, vk::Format::eX8D24UnormPack32 };
-			for ( vk::Format format : candidates ) {
+			std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm, vk::Format::eS8Uint, vk::Format::eX8D24UnormPack32};
+			for (vk::Format format : candidates) {
 				  vk::FormatProperties props = physical_device.getFormatProperties( format );
 				
-                  if ( props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment )
+                  if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
                       result.push_back(vk::to_string(format));
 				}
 	              // if not found use default instead
-            if ( result.empty() ) 
+            if (result.empty()) 
                 result.push_back(vk::to_string(vk::Format::eD24UnormS8Uint));
 				
 	        break;
 		}
-		
+
+		case 3: {
+			// print spirv version
+			result = { "1.0", "1.1", "1.2",  "1.3" };
+            if (features.support_spirv_1_4)
+                result.push_back("1.4");
+	        break;
+		}
+				
 	    default: 
 			result.push_back("INVALID");
 		    break;
