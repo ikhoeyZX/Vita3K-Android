@@ -1029,6 +1029,32 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
         }
 
+        // Spirv version
+        // untested, for now we set manually and later i will change how shader work
+        const std::vector<std::string> spirv_list_str = emuenv.renderer->get_vulkan_feature_list(2);
+
+        std::vector<const char *> spirv_list;
+        for (const auto &spirv : spirv_list_str)
+            spirv_list.push_back(spirv.c_str());
+
+        static std::string str_set_spirv;
+        static int current_spirv_list;
+        static bool is_fill;
+        if (is_fill) {
+           current_spirv_list = std::find(spirv_list.begin(), spirv_list.end(), str_set_spirv) - spirv_list.begin();
+        } else {
+            current_spirv_list = emuenv.cfg.spirv_version;
+            is_fill = true;
+        }
+        if(ImGui::Combo(lang.gpu["spirv_version"].c_str(), &current_stencil_list, stencil_list.data(), static_cast<int>(stencil_list.size()))) {
+            str_set_spirv = spirv_list_str[current_stencil_list];
+            &emuenv.cfg.spirv_version = current_spirv_list;
+        }
+        if (ImGui::IsItemHovered()) {
+            SetTooltipEx(lang.gpu["spirv_version_description"].c_str());
+            ImGui::Spacing();
+        }
+
         if (emuenv.renderer->support_custom_drivers()) {
             if (is_vulkan) {
                 if (is_ingame)
