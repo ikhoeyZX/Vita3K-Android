@@ -93,6 +93,7 @@ enum ScreenshotFormat {
     code(std::string, "memory-mapping", "double-buffer", memory_mapping)                                \
     code(std::string, "vk-mapping", "Mailbox", vk_mapping)                                              \
     code(std::string, "deep-stencil", "D24UnormS8Uint", deep_stencil)                                   \
+    code(int, "set-spirv", 0, set_spirv)                                                                \
     code(bool, "boot-apps-full-screen", false, boot_apps_full_screen)                                   \
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(int, "audio-volume", 100, audio_volume)                                                        \
