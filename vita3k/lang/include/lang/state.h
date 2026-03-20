@@ -588,7 +588,8 @@ struct LangState {
             { "turbo_description", "Provides a way to force the GPU to run at the maximum possible clocks (thermal constraints will still be applied)" },
             { "deep_stencil", "Vulkan deep stencil format" },
             { "deep_stencil_description", "Changing deep stencil format very usefull if you have problem with game,\nknown issue that old phone GPU can't use eD32SfloatS8Uint!" },
-
+            { "spirv_version", "Change shader Spir-V version" },
+            { "spirv_version_description", "If you changing this version, you need clear shader cache since this function tied to shader pipelines " },
             { "use_astc", "Use ASTC texture" },
             { "use_astc_description", "Use ASTC texture compression instead DXT (BCn), render output maybe similiar to Mali GPU" },
             { "fps_hack", "FPS Hack" },
