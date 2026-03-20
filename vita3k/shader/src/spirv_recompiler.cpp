@@ -1873,15 +1873,17 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     SceGxmProgramType program_type = program.get_type();
 
     // SPV 1.3 is only supported by Vulkan 1.1
-    const unsigned int spv_version = translation_state.is_vulkan ? spv::Spv_1_0 : spv::Spv_1_3;
-
+   // const unsigned int spv_version = translation_state.is_vulkan ? spv::Spv_1_0 : spv::Spv_1_3;
+    const unsigned int spv_version = features.support_spirv;
+    
     spv::SpvBuildLogger spv_logger;
     spv::Builder b(spv_version, 0x1337 << 12, &spv_logger);
     b.setSourceFile(shader_hash);
     b.setEmitOpLines();
     b.addSourceExtension("gxp");
     if (features.enable_memory_mapping)
-        b.setMemoryModel(spv::AddressingModelPhysicalStorageBuffer64, spv::MemoryModelGLSL450);
+//        b.setMemoryModel(spv::AddressingModelPhysicalStorageBuffer64, spv::MemoryModelGLSL450);
+        b.setMemoryModel(spv::AddressingModelPhysical64, spv::MemoryModelGLSL450);
     else
         b.setMemoryModel(spv::AddressingModelLogical, spv::MemoryModelGLSL450);
 
