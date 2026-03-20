@@ -1040,7 +1040,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         static int current_spirv_list;
         static bool is_fill;
         if (is_fill) {
-           current_spirv_list = std::find(spirv_list.begin(), spirv_list.end(), str_set_spirv) - spirv_list.begin();
+            current_spirv_list = std::find(spirv_list.begin(), spirv_list.end(), str_set_spirv) - spirv_list.begin();
         } else {
             current_spirv_list = emuenv.cfg.set_spirv;
             is_fill = true;
@@ -1054,6 +1054,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
         ImGui::Spacing();
 
+        // Adreno only
         if (emuenv.renderer->support_custom_drivers()) {
             if (is_vulkan) {
                 if (is_ingame)
