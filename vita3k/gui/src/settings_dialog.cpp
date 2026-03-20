@@ -1008,7 +1008,6 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
         if (ImGui::IsItemHovered()) {
             SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
-            ImGui::Spacing();
         }
         ImGui::Spacing();
 
@@ -1026,8 +1025,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
         if (ImGui::IsItemHovered()) {
             SetTooltipEx(lang.gpu["deep_stencil_description"].c_str());
-            ImGui::Spacing();
         }
+        ImGui::Spacing();
 
         // Spirv version
         // untested, for now we set manually and later i will change how shader work
@@ -1043,17 +1042,17 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (is_fill) {
            current_spirv_list = std::find(spirv_list.begin(), spirv_list.end(), str_set_spirv) - spirv_list.begin();
         } else {
-            current_spirv_list = emuenv.cfg.spirv_version;
+            current_spirv_list = &emuenv.cfg.set_spirv;
             is_fill = true;
         }
-        if(ImGui::Combo(lang.gpu["spirv_version"].c_str(), &current_stencil_list, stencil_list.data(), static_cast<int>(stencil_list.size()))) {
-            str_set_spirv = spirv_list_str[current_stencil_list];
-            &emuenv.cfg.spirv_version = current_spirv_list;
+        if(ImGui::Combo(lang.gpu["spirv_version"].c_str(), &current_spirv_list, spirv_list.data(), static_cast<int>(spirv_list.size()))) {
+            str_set_spirv = spirv_list_str[current_spirv_list];
+            emuenv.cfg.set_spirv = current_spirv_list;
         }
         if (ImGui::IsItemHovered()) {
             SetTooltipEx(lang.gpu["spirv_version_description"].c_str());
-            ImGui::Spacing();
         }
+        ImGui::Spacing();
 
         if (emuenv.renderer->support_custom_drivers()) {
             if (is_vulkan) {
