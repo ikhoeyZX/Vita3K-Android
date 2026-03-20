@@ -1017,6 +1017,7 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
         mapping_method = request_mapping;
 
     features.enable_memory_mapping = mapping_method != MappingMethod::Disabled;
+	features.support_spirv = cfg.current_config.set_spirv;
 
 #ifdef __ANDROID__
     if (mapping_method == MappingMethod::NativeBuffer) {
