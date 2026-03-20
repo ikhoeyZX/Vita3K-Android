@@ -693,7 +693,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             { VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME, &support_android_buffer_import },
             { VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME, &support_unix_fd_import },
 		    // get spirv 1.4 support
-		    { VK_KHR_SPIRV_1_4, &support_spirv14 },
+		    { vk::KHRSpirv14ExtensionName, &support_spirv14 },
 #endif
         };
 
@@ -712,7 +712,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             support_buffer_device_address &= static_cast<bool>(features.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress);
         }
         support_memory_mapping &= support_buffer_device_address;
-        support_spirv_1_4 = support_spirv14;
+        features.support_spirv_1_4 = support_spirv14;
 
         if (support_standard_layout) {
             auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
@@ -837,7 +837,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 			LOG_WARN_ONCE("Your device didn't support shader interlock!");
             device_info.unlink<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>();
 		}
-		if (!support_spirv_1_4)
+		if (!features.support_spirv_1_4)
 			LOG_WARN_ONCE("Your device didn't support SPIRV 1.4");
 
         try {
