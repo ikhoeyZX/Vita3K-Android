@@ -1043,6 +1043,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             current_spirv_list = std::find(spirv_list.begin(), spirv_list.end(), str_set_spirv) - spirv_list.begin();
         } else {
             current_spirv_list = emuenv.cfg.set_spirv;
+            str_set_spirv = spirv_list_str[current_spirv_list];
             is_fill = true;
         }
         if(ImGui::Combo(lang.gpu["spirv_version"].c_str(), &current_spirv_list, spirv_list.data(), static_cast<int>(spirv_list.size()))) {
