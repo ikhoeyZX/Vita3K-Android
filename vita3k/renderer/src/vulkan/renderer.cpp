@@ -1610,7 +1610,7 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 	        break;
 		}
 
-		case 3: {
+		case 2: {
 			// print spirv version
 			result = { "1.0", "1.1", "1.2",  "1.3" };
             if (features.support_spirv_1_4)
