@@ -30,8 +30,8 @@ struct FeatureState {
     bool enable_memory_mapping = false; ///< Is the host GPU memory directly mapped with gxm memory?
     bool support_scaled_attribute_formats = true; // can we pass integer to the shader and read them as floats? This is not supported on some Android GPUs
     bool use_texture_viewport = false; ///< Are we using texture viewports in the shader
+    bool support_spirv_1_4 = false; ///< optional
     int support_spirv = 0; ///< instead hardcoded version spirv, just get from hardware instead
-
 
     bool is_programmable_blending_supported() const {
         return support_shader_interlock || support_texture_barrier || direct_fragcolor;
