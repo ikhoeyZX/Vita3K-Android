@@ -461,7 +461,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             // Reason is for compatibility between vertex and fragment. This is like an anti-crash when linking.
             // Fragment will only copy what it needed.
             // const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), 4);
-            const spv::Id pa_iter_type = vec4zero;
+            const spv::Id pa_iter_type = b.createCompositeConstruct(v4z, { zero, zero, zero, zero });
 
             const auto pa_iter_size = num_comp;
             spv::Id pa_iter_var = spv::NoResult;
@@ -807,11 +807,11 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 spv::Id load_normal_cond = b.createBinOp(spv::OpFOrdLessThan, b.makeBoolType(), utils::create_access_chain(b, spv::StorageClassPrivate, translation_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_use_raw_image) }), b.makeFloatConstant(0.5f));
                 spv::Builder::If cond_builder(load_normal_cond, spv::SelectionControlMaskNone, b);
 
-                source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
+                source = b.createOp(spv::OpImageRead, v4z, { b.createLoad(color_attachment, spv::DecorationRelaxedPrecision), current_coord });
                 store_source_result();
                 cond_builder.makeBeginElse();
                 color_attachment = color_attachment_raw;
-                source = b.createOp(spv::OpImageRead, uiv4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
+                source = b.createOp(spv::OpImageRead, uiv4, { b.createLoad(color_attachment, spv::DecorationRelaxedPrecision), current_coord });
                 target_to_store.type = DataType::UINT16;
                 store_source_result(true);
                 cond_builder.makeEndIf();
@@ -819,7 +819,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 // Generated here already, so empty it out to prevent further gen
                 source = spv::NoResult;
             } else {
-                source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::DecorationRelaxedPrecision), current_coord });
+                source = b.createOp(spv::OpImageRead, v4z, { b.createLoad(color_attachment, spv::DecorationRelaxedPrecision), current_coord });
                 b.setPrecision(source, precision);
 
                 if (translation_state.is_vulkan) {
@@ -834,7 +834,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                     const spv::Id gamma = utils::make_uniform_vector_from_type(b, v3, 2.2f);
                     rgb = b.createBuiltinCall(v3, utils.std_builtins, GLSLstd450Pow, { rgb, gamma });
                     b.setPrecision(rgb, precision);
-                    source = b.createOp(spv::OpVectorShuffle, v4, { { true, rgb }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 }, { false, 6 } });
+                    source = b.createOp(spv::OpVectorShuffle, v4z, { { true, rgb }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 }, { false, 6 } });
 
                     b.setPrecision(source, precision);
                     store_source_result();
@@ -1575,8 +1575,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     } else {
         spv::Id v4z = b.makeVectorType(b.makeFloatType(32), 4);
         const spv::Id zero = b.makeFloatConstant(0.0f);
-        const spv::Id vec4zero = b.makeCompositeConstant(v4z, {zero, zero, zero, zero});
-        spv::Id out = b.createVariable(precision, spv::StorageClassOutput, v4z, vec4zero);
+        spv::Id out = b.createVariable(precision, spv::StorageClassOutput, v4z, {zero, zero, zero, zero});
         translate_state.interfaces.push_back(out);
         out = b.createVariable(precision, spv::StorageClassOutput, v4z, "out_color");
         translate_state.interfaces.push_back(out);
@@ -1976,7 +1975,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
 
     std::vector<spv::Id> empty_args;
 
-    if (translation_state.is_vulkan && !features.enable_memory_mapping && && spv_version >= spv::Spv_1_3)
+    if (translation_state.is_vulkan && !features.enable_memory_mapping && spv_version >= spv::Spv_1_3)
         // core in spv 1.3
         b.addExtension("SPV_KHR_storage_buffer_storage_class");
 
