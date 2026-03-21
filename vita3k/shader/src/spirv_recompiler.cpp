@@ -408,8 +408,6 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     spv::Id v2z = b.makeVectorType(f32, 2);
     spv::Id v4z = b.makeVectorType(f32, 4);
     spv::Id zero = b.makeFloatConstant(0.0f);
-    const spv::Id vec2zero = b.makeCompositeConstant(v2z, {zero, zero});
-    const spv::Id vec4zero = b.makeCompositeConstant(v4z, {zero, zero, zero, zero});
     
   //  spv::Id current_coord = b.createVariable(spv::NoPrecision, spv::StorageClassInput, v4, "gl_FragCoord");
     spv::Id current_coord = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassInput, v4z, "gl_FragCoord");
@@ -771,7 +769,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             spv::Id coord_0 = b.makeIntConstant(0);
             const spv::Id ivec2 = b.makeVectorType(b.makeIntType(32), 2);
             coord_0 = b.makeCompositeConstant(ivec2, { coord_0, coord_0 });
-            source = b.createOp(spv::OpImageRead, v4, { b.createLoad(last_frag_data, spv::NoPrecision), coord_0 });
+            source = b.createOp(spv::OpImageRead, v4z, { b.createLoad(last_frag_data, spv::NoPrecision), coord_0 });
             b.setPrecision(source, precision);
 
             translation_state.last_frag_data_id = last_frag_data;
@@ -791,7 +789,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             translation_state.color_attachment_id = color_attachment;
 
             spv::Id i32 = b.makeIntegerType(32, true);
-            current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), b.createLoad(current_coord, spv::NoPrecision));
+            current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), b.createLoad(current_coord, spv::DecorationRelaxedPrecision));
             current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { { true, current_coord }, { true, current_coord }, { false, 0 }, { false, 1 } });
 
             if (features.preserve_f16_nan_as_u16) {
@@ -821,7 +819,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 // Generated here already, so empty it out to prevent further gen
                 source = spv::NoResult;
             } else {
-                source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
+                source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::DecorationRelaxedPrecision), current_coord });
                 b.setPrecision(source, precision);
 
                 if (translation_state.is_vulkan) {
@@ -853,9 +851,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             // Try to initialize outs[0] to some nice value. In case the GPU has garbage data for our shader
       /*      spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
             spv::Id rezero = b.makeFloatConstant(0.0f);
-            source = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
             */
-            source = vec4zero;
+            source = b.makeCompositeConstant(v4z, { zero, zero, zero, zero });
+            
         }
 
         store_source_result();
