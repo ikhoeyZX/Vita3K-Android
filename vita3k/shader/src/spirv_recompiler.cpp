@@ -246,7 +246,8 @@ static spv::Id create_param_sampler(spv::Builder &b, const std::string &name, co
     spv::Id sampled_type = b.makeFloatType(32);
     spv::Id image_type = b.makeImageType(sampled_type, dim_type, false, false, false, 1, spv::ImageFormatUnknown);
     spv::Id sampled_image_type = b.makeSampledImageType(image_type);
-    return b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
+//    return b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
+    return b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
 }
 
 static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, const TranslationState &translation_state, const char *name, const RegisterBank bank, const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32, bool convert_to_float = false) {
@@ -302,7 +303,8 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
 
         if (!b.isConstant(var)) {
             if (b.isPointer(var))
-                var = b.createLoad(var, spv::NoPrecision);
+            //    var = b.createLoad(var, spv::NoPrecision);
+                var = b.createLoad(var, spv::DecorationRelaxedPrecision);
             var = utils::finalize(b, var, var, SWIZZLE_CHANNEL_4_DEFAULT, b.makeIntConstant(0), dest_mask);
 
             if (!features.support_rgb_attributes && !translation_state.is_fragment && dest_mask == 0b1111) {
@@ -348,12 +350,12 @@ static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &featu
     spv::ImageFormat format = translation_state.image_storage_format;
 //    if (name == "f_mask")
          // f_mask is always rgba8
-    LOG_DEBUG("f_mask is always rgba8 was disabled");
     if(format == spv::ImageFormat::ImageFormatUnknown || format == spv::ImageFormat::ImageFormatMax)
         format = spv::ImageFormat::ImageFormatRgba8;
 
     spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, format);
-    spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
+//    spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
+    spv::Id sampler = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
     
     return sampler;
 }
@@ -364,7 +366,8 @@ static spv::Id create_builtin_sampler_for_raw(spv::Builder &b, const FeatureStat
     spv::ImageFormat img_format = spv::ImageFormatRgba16ui;
 
     spv::Id image_type = b.makeImageType(ui32, spv::Dim2D, false, false, false, sampled, img_format);
-    spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
+  //  spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
+    spv::Id sampler = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
 
     return sampler;
 }
@@ -402,8 +405,13 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     std::array<shader::usse::Coord, 11> coords;
 
     spv::Id f32 = b.makeFloatType(32);
-    spv::Id v4 = b.makeVectorType(f32, 4);
-
+    spv::Id v2z = b.makeVectorType(f32, 2);
+    spv::Id v4z = b.makeVectorType(f32, 4);
+    spv::Id zero = b.makeFloatConstant(0.0f);
+    const spv::Id vec2zero = b.makeCompositeConstant(v2z, {zero, zero});
+    const spv::Id vec4zero = b.makeCompositeConstant(v4z, {zero, zero, zero, zero});
+    spv::Id v4 = b.createVariable(v4z, spv::StorageClassFunction, vec4zero);
+    
   //  spv::Id current_coord = b.createVariable(spv::NoPrecision, spv::StorageClassInput, v4, "gl_FragCoord");
     spv::Id current_coord = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassInput, v4, "gl_FragCoord");
     b.addDecoration(current_coord, spv::DecorationBuiltIn, spv::BuiltInFragCoord);
@@ -455,7 +463,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             // Force this to 4. TODO: Don't
             // Reason is for compatibility between vertex and fragment. This is like an anti-crash when linking.
             // Fragment will only copy what it needed.
-            const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), 4);
+            // const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), 4);
+            const spv::Id pa_iter_type = vec4zero;
+
             const auto pa_iter_size = num_comp;
             spv::Id pa_iter_var = spv::NoResult;
 
@@ -676,8 +686,14 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 coord_name += std::to_string(query_info.coord_index);
             }
 
+            spv::id coord_index_vec;
+            if(query_info.coord_index == 10) // vec2
+                coord_index_vec = b.createVariable(v2z, spv::StorageClassFunction, vec2zero);
+            else // vec 4
+                coord_index_vec = b.createVariable(v4z, spv::StorageClassFunction, vec4zero);
+            
             coords[query_info.coord_index].first = b.createVariable(spv::NoPrecision, spv::StorageClassInput,
-                b.makeVectorType(b.makeFloatType(32), /*tex_coord_comp_count*/ query_info.coord_index == 10 ? 2 : 4), coord_name.c_str());
+                coord_index_vec, coord_name.c_str());
 
             if (query_info.coord_index == 10)
                 b.addDecoration(coords[query_info.coord_index].first, spv::DecorationBuiltIn, spv::BuiltInPointCoord);
@@ -836,9 +852,11 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             }
         } else {
             // Try to initialize outs[0] to some nice value. In case the GPU has garbage data for our shader
-            spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
+      /*      spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
             spv::Id rezero = b.makeFloatConstant(0.0f);
             source = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
+            */
+            source = vec4zero;
         }
 
         store_source_result();
@@ -1547,7 +1565,8 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
             b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, old_color });
             cond_builder.makeEndIf();
         } else {
-            b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, color });
+         //   b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, color });
+            b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::DecorationRelaxedPrecision), translated_id, color });
         }
 
         if (features.preserve_f16_nan_as_u16) {
@@ -1557,7 +1576,12 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
             b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_raw_id, spv::NoPrecision), translated_id, color });
         }
     } else {
-        spv::Id out = b.createVariable(precision, spv::StorageClassOutput, b.makeVectorType(b.makeFloatType(32), 4), "out_color");
+        spv::Id v4z = b.makeVectorType(b.makeFloatType(32), 4);
+        const spv::Id zero = b.makeFloatConstant(0.0f);
+        const spv::Id vec4zero = b.makeCompositeConstant(v4z, {zero, zero, zero, zero});
+        spv::Id out = b.createVariable(precision, spv::StorageClassOutput, v4z, vec4zero);
+        translate_state.interfaces.push_back(out);
+        out = b.createVariable(precision, spv::StorageClassOutput, v4z, "out_color");
         translate_state.interfaces.push_back(out);
         b.addDecoration(out, spv::DecorationLocation, 0);
         b.createStore(color, out);
@@ -1884,18 +1908,21 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
        spv::Spv_1_5, // vulkan 1.2
        // spv::Spv_1_6  // vulkan 1.3 or higher, need update glslang
     };
+
+    int idx;
+    if(translation_state.is_vulkan)
+       idx = std::clamp(features.support_spirv, 0, 6);
+    else
+        idx = 0; // openGL
     
-    int idx = std::clamp(features.support_spirv, 0, 6);
     const unsigned int spv_version = spv_versions[idx];
 
-    LOG_DEBUG("translation_state.is_vulkan = {}", translation_state.is_vulkan);
-    LOG_DEBUG("spv_version = {}", spv_version);
     spv::SpvBuildLogger spv_logger;
     spv::Builder b(spv_version, 0x1337 << 12, &spv_logger);
     b.setSourceFile(shader_hash);
     b.setEmitOpLines();
     b.addSourceExtension("gxp");
-    if (features.enable_memory_mapping)
+    if (features.enable_memory_mapping && translation_state.is_vulkan)
         if(spv_version >= spv::Spv_1_3)
             // this memory model need SPV_KHR_physical_storage_buffer
            b.setMemoryModel(spv::AddressingModelPhysicalStorageBuffer64, spv::MemoryModelGLSL450);
@@ -1910,7 +1937,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
         b.addCapability(spv::CapabilityImageQuery);
     if (features.support_unknown_format)
         b.addCapability(spv::CapabilityStorageImageReadWithoutFormat);
-    if (features.enable_memory_mapping && spv_version >= spv::Spv_1_3) {
+    if (features.enable_memory_mapping && spv_version >= spv::Spv_1_3 && translation_state.is_vulkan) {
         // this feature only exist in spv 1.3 or newer
         b.addExtension("SPV_KHR_physical_storage_buffer");
         b.addCapability(spv::CapabilityPhysicalStorageBufferAddresses);
@@ -1952,7 +1979,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
 
     std::vector<spv::Id> empty_args;
 
-    if (translation_state.is_vulkan && !features.enable_memory_mapping)
+    if (translation_state.is_vulkan && !features.enable_memory_mapping && && spv_version >= spv::Spv_1_3)
         // core in spv 1.3
         b.addExtension("SPV_KHR_storage_buffer_storage_class");
 
@@ -2058,7 +2085,7 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
     options.version = 320;
     options.es = true;
     options.enable_row_major_load_workaround = false; // spirv.hpp say when true it reduce performance in some android devices
-//    options.vertex.fixup_clipspace = true;
+    options.vertex.fixup_clipspace = true;
 //    options.enable_420pack_extension = false; 
 #else
     options.version = 430;
