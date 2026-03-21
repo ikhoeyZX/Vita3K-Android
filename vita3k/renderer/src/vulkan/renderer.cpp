@@ -1617,7 +1617,6 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
             if (features.support_spirv_1_4) {
                 result.push_back("1.4");
 				result.push_back("1.5");
-				result.push_back("1.6");
 			}
 	        break;
 		}
