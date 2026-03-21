@@ -1889,7 +1889,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     const unsigned int spv_version = spv_versions[idx];
 
     LOG_DEBUG("translation_state.is_vulkan = {}", translation_state.is_vulkan);
-    LOG_DEBUG("spv_version = {}", spv_version;
+    LOG_DEBUG("spv_version = {}", spv_version);
     spv::SpvBuildLogger spv_logger;
     spv::Builder b(spv_version, 0x1337 << 12, &spv_logger);
     b.setSourceFile(shader_hash);
@@ -1897,6 +1897,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     b.addSourceExtension("gxp");
     if (features.enable_memory_mapping)
         if(spv_version >= spv::Spv_1_3)
+            // this memory model need SPV_KHR_physical_storage_buffer
            b.setMemoryModel(spv::AddressingModelPhysicalStorageBuffer64, spv::MemoryModelGLSL450);
         else
            b.setMemoryModel(spv::AddressingModelPhysical64, spv::MemoryModelGLSL450);
@@ -1910,6 +1911,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     if (features.support_unknown_format)
         b.addCapability(spv::CapabilityStorageImageReadWithoutFormat);
     if (features.enable_memory_mapping && spv_version >= spv::Spv_1_3) {
+        // this feature only exist in spv 1.3 or newer
         b.addExtension("SPV_KHR_physical_storage_buffer");
         b.addCapability(spv::CapabilityPhysicalStorageBufferAddresses);
     }
