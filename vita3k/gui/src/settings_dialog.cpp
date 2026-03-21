@@ -950,111 +950,112 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang.gpu["fps_hack"].c_str(), &config.fps_hack);
         SetTooltipEx(lang.gpu["fps_hack_description"].c_str());
 
-        if (emuenv.renderer->supported_mapping_methods_mask > 1 && !is_renderer_changed) {
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
+        if (!is_renderer_changed && is_vulkan) {
+           if (emuenv.renderer->supported_mapping_methods_mask > 1) {
+               ImGui::Spacing();
+               ImGui::Separator();
+               ImGui::Spacing();
 
-            if (is_ingame)
-                ImGui::BeginDisabled();
+               if (is_ingame)
+                   ImGui::BeginDisabled();
 
-            std::vector<const char *> mapping_methods_strings = {
-                "Disabled",
-                "Double buffer",
-                "External host",
-                "Page table",
-                "Native buffer"
-            };
-            std::vector<std::string_view> mapping_methods_indexes = {
-                "disabled",
-                "double-buffer",
-                "external-host",
-                "page-table",
-                "native-buffer"
-            };
+               std::vector<const char *> mapping_methods_strings = {
+                   "Disabled",
+                   "Double buffer",
+                   "External host",
+                   "Page table",
+                   "Native buffer"
+               };
+               std::vector<std::string_view> mapping_methods_indexes = {
+                   "disabled",
+                   "double-buffer",
+                   "external-host",
+                   "page-table",
+                   "native-buffer"
+               };
 
-            int list_pos = 0;
-            for (int i = 0; i < 5; i++) {
-                if ((1 << i) & emuenv.renderer->supported_mapping_methods_mask) {
-                    list_pos++;
-                } else {
-                    mapping_methods_strings.erase(mapping_methods_strings.begin() + list_pos);
-                    mapping_methods_indexes.erase(mapping_methods_indexes.begin() + list_pos);
-                }
-            }
+               int list_pos = 0;
+               for (int i = 0; i < 5; i++) {
+                   if ((1 << i) & emuenv.renderer->supported_mapping_methods_mask) {
+                       list_pos++;
+                   } else {
+                       mapping_methods_strings.erase(mapping_methods_strings.begin() + list_pos);
+                       mapping_methods_indexes.erase(mapping_methods_indexes.begin() + list_pos);
+                   }
+               }
 
-            static int current_mapping = std::find(mapping_methods_indexes.begin(), mapping_methods_indexes.end(), config.memory_mapping) - mapping_methods_indexes.begin();
-            if (ImGui::Combo(lang.gpu["mapping_method"].c_str(), &current_mapping, mapping_methods_strings.data(), mapping_methods_strings.size())) {
-                config.memory_mapping = mapping_methods_indexes[current_mapping];
-            }
-            if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("%s", lang.gpu["mapping_method_description"].c_str());
-            }
-            ImGui::Spacing();
+               static int current_mapping = std::find(mapping_methods_indexes.begin(), mapping_methods_indexes.end(), config.memory_mapping) - mapping_methods_indexes.begin();
+               if (ImGui::Combo(lang.gpu["mapping_method"].c_str(), &current_mapping, mapping_methods_strings.data(), mapping_methods_strings.size())) {
+                   config.memory_mapping = mapping_methods_indexes[current_mapping];
+               }
+               if (ImGui::IsItemHovered()) {
+                   ImGui::SetTooltip("%s", lang.gpu["mapping_method_description"].c_str());
+               }
+               ImGui::Spacing();
+           }
+           ImGui::Spacing();
+
+           // Swapchain
+           // you need restart to take effect in this menu
+           const std::vector<std::string> vk_surface_list_str = emuenv.renderer->get_vulkan_feature_list(0);
+
+           std::vector<const char *> vk_surface_list;
+           for (const auto &vk_surface : vk_surface_list_str)
+               vk_surface_list.push_back(vk_surface.c_str());
+
+           static int current_surface_format = std::find(vk_surface_list.begin(), vk_surface_list.end(), config.vk_mapping) - vk_surface_list.begin();
+           if (ImGui::Combo(lang.gpu["surface_format_method"].c_str(), &current_surface_format, vk_surface_list.data(), vk_surface_list.size())) {
+               config.vk_mapping = vk_surface_list[current_surface_format];
+           }
+           if (ImGui::IsItemHovered()) {
+               SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
+           }
+           ImGui::Spacing();
+
+           // Deep stencil
+           // usefull for some games and old hardware
+           const std::vector<std::string> stencil_list_str = emuenv.renderer->get_vulkan_feature_list(1);
+
+           std::vector<const char *> stencil_list;
+           for (const auto &stencil : stencil_list_str)
+               stencil_list.push_back(stencil.c_str());
+
+           static int current_stencil_list = std::find(stencil_list.begin(), stencil_list.end(), config.deep_stencil) - stencil_list.begin();
+           if(ImGui::Combo(lang.gpu["deep_stencil"].c_str(), &current_stencil_list, stencil_list.data(), static_cast<int>(stencil_list.size()))) {
+               config.deep_stencil = stencil_list_str[current_stencil_list];
+           }
+           if (ImGui::IsItemHovered()) {
+               SetTooltipEx(lang.gpu["deep_stencil_description"].c_str());
+           }
+           ImGui::Spacing();
+
+           // Spirv version
+           // untested, for now we set manually and later i will change how shader work
+           const std::vector<std::string> spirv_list_str = emuenv.renderer->get_vulkan_feature_list(2);
+           std::vector<const char *> spirv_list;
+           for (const auto &spirv : spirv_list_str)
+               spirv_list.push_back(spirv.c_str());
+
+           static std::string str_set_spirv;
+           static int current_spirv_list;
+           static bool is_fill;
+           if (is_fill) {
+               current_spirv_list = std::find(spirv_list.begin(), spirv_list.end(), str_set_spirv) - spirv_list.begin();
+           } else {
+               current_spirv_list = emuenv.cfg.set_spirv;
+               str_set_spirv = spirv_list_str[current_spirv_list];
+               is_fill = true;
+           }
+           if(ImGui::Combo(lang.gpu["spirv_version"].c_str(), &current_spirv_list, spirv_list.data(), static_cast<int>(spirv_list.size()))) {
+               str_set_spirv = spirv_list_str[current_spirv_list];
+               emuenv.cfg.set_spirv = current_spirv_list;
+           }
+           if (ImGui::IsItemHovered()) {
+               SetTooltipEx(lang.gpu["spirv_version_description"].c_str());
+           }
+           ImGui::Spacing();
         }
-        ImGui::Spacing();
-
-        // Swapchain
-        // you need restart to take effect in this menu
-        const std::vector<std::string> vk_surface_list_str = emuenv.renderer->get_vulkan_feature_list(0);
-
-        std::vector<const char *> vk_surface_list;
-        for (const auto &vk_surface : vk_surface_list_str)
-            vk_surface_list.push_back(vk_surface.c_str());
-
-        static int current_surface_format = std::find(vk_surface_list.begin(), vk_surface_list.end(), config.vk_mapping) - vk_surface_list.begin();
-        if (ImGui::Combo(lang.gpu["surface_format_method"].c_str(), &current_surface_format, vk_surface_list.data(), vk_surface_list.size())) {
-            config.vk_mapping = vk_surface_list[current_surface_format];
-        }
-        if (ImGui::IsItemHovered()) {
-            SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
-        }
-        ImGui::Spacing();
-
-        // Deep stencil
-        // usefull for some games and old hardware
-        const std::vector<std::string> stencil_list_str = emuenv.renderer->get_vulkan_feature_list(1);
-
-        std::vector<const char *> stencil_list;
-        for (const auto &stencil : stencil_list_str)
-            stencil_list.push_back(stencil.c_str());
-
-        static int current_stencil_list = std::find(stencil_list.begin(), stencil_list.end(), config.deep_stencil) - stencil_list.begin();
-        if(ImGui::Combo(lang.gpu["deep_stencil"].c_str(), &current_stencil_list, stencil_list.data(), static_cast<int>(stencil_list.size()))) {
-            config.deep_stencil = stencil_list_str[current_stencil_list];
-        }
-        if (ImGui::IsItemHovered()) {
-            SetTooltipEx(lang.gpu["deep_stencil_description"].c_str());
-        }
-        ImGui::Spacing();
-
-        // Spirv version
-        // untested, for now we set manually and later i will change how shader work
-        const std::vector<std::string> spirv_list_str = emuenv.renderer->get_vulkan_feature_list(2);
-
-        std::vector<const char *> spirv_list;
-        for (const auto &spirv : spirv_list_str)
-            spirv_list.push_back(spirv.c_str());
-
-        static std::string str_set_spirv;
-        static int current_spirv_list;
-        static bool is_fill;
-        if (is_fill) {
-            current_spirv_list = std::find(spirv_list.begin(), spirv_list.end(), str_set_spirv) - spirv_list.begin();
-        } else {
-            current_spirv_list = emuenv.cfg.set_spirv;
-            str_set_spirv = spirv_list_str[current_spirv_list];
-            is_fill = true;
-        }
-        if(ImGui::Combo(lang.gpu["spirv_version"].c_str(), &current_spirv_list, spirv_list.data(), static_cast<int>(spirv_list.size()))) {
-            str_set_spirv = spirv_list_str[current_spirv_list];
-            emuenv.cfg.set_spirv = current_spirv_list;
-        }
-        if (ImGui::IsItemHovered()) {
-            SetTooltipEx(lang.gpu["spirv_version_description"].c_str());
-        }
-        ImGui::Spacing();
-
+        
         // Adreno only
         if (emuenv.renderer->support_custom_drivers()) {
             if (is_vulkan) {
