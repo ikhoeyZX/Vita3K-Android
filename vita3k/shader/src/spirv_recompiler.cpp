@@ -410,10 +410,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     spv::Id zero = b.makeFloatConstant(0.0f);
     const spv::Id vec2zero = b.makeCompositeConstant(v2z, {zero, zero});
     const spv::Id vec4zero = b.makeCompositeConstant(v4z, {zero, zero, zero, zero});
-    spv::Id v4 = b.createVariable(v4z, spv::StorageClassFunction, vec4zero);
     
   //  spv::Id current_coord = b.createVariable(spv::NoPrecision, spv::StorageClassInput, v4, "gl_FragCoord");
-    spv::Id current_coord = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassInput, v4, "gl_FragCoord");
+    spv::Id current_coord = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassInput, v4z, "gl_FragCoord");
     b.addDecoration(current_coord, spv::DecorationBuiltIn, spv::BuiltInFragCoord);
 
     translation_state.interfaces.push_back(current_coord);
@@ -686,7 +685,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 coord_name += std::to_string(query_info.coord_index);
             }
 
-            spv::id coord_index_vec;
+            spv::Id coord_index_vec;
             if(query_info.coord_index == 10) // vec2
                 coord_index_vec = b.createVariable(v2z, spv::StorageClassFunction, vec2zero);
             else // vec 4
