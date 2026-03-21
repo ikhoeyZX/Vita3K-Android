@@ -1882,11 +1882,11 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
        spv::Spv_1_3, // vulkan 1.1
        spv::Spv_1_4,
        spv::Spv_1_5, // vulkan 1.2
-       spv::Spv_1_6  // vulkan 1.3 or higher
+       0x00010600 // spv::Spv_1_6  // vulkan 1.3 or higher, or should i remove it?
     };
     
     int idx = std::clamp(features.support_spirv, 0, 6);
-    spv_version = spv_versions[idx];
+    const unsigned int spv_version = spv_versions[idx];
 
     LOG_DEBUG("translation_state.is_vulkan = {}", translation_state.is_vulkan);
     LOG_DEBUG("spv_version = {}", spv_version;
