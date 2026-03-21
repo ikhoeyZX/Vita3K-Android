@@ -687,9 +687,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             spv::Id coord_index_vec;
             if(query_info.coord_index == 10) // vec2
-                coord_index_vec = b.createCompositeConstruct(v2z, vec2zero);
+                coord_index_vec = b.createCompositeConstruct(v2z, { zero, zero });
                 else // vec 4
-                coord_index_vec = b.createCompositeConstruct(v4z, vec4zero);
+                coord_index_vec = b.createCompositeConstruct(v4z, { zero, zero, zero, zero });
             
             coords[query_info.coord_index].first = b.createVariable(spv::NoPrecision, spv::StorageClassInput,
                 coord_index_vec, coord_name.c_str());
