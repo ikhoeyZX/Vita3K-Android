@@ -136,7 +136,7 @@ static vk::DescriptorSet retrieve_descriptor(VKContext &context, bool is_vertex,
     };
 
     vk::DescriptorPoolCreateInfo descriptor_pool_info{
-        .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet 
+        .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
         .maxSets = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING
     };
     descriptor_pool_info.setPoolSizes(pool_size);
