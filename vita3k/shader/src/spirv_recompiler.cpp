@@ -1575,11 +1575,11 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     } else {
         spv::Id v4z = b.makeVectorType(b.makeFloatType(32), 4);
         const spv::Id zero = b.makeFloatConstant(0.0f);
-        spv::Id out = b.createVariable(precision, spv::StorageClassOutput, v4z, {zero, zero, zero, zero});
-        translate_state.interfaces.push_back(out);
-        out = b.createVariable(precision, spv::StorageClassOutput, v4z, "out_color");
+        spv::Id v4zero = b.createCompositeConstruct(v4z, { zero, zero, zero, zero });
+        spv::Id out = b.createVariable(precision, spv::StorageClassOutput, v4z, "out_color");
         translate_state.interfaces.push_back(out);
         b.addDecoration(out, spv::DecorationLocation, 0);
+        b.createStore(color, v4zero);
         b.createStore(color, out);
 
         if (features.preserve_f16_nan_as_u16) {
