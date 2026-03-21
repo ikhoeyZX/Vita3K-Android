@@ -298,6 +298,7 @@ VKState::VKState(int gpu_idx)
 }
 
 bool VKState::init() {
+	shader::CURRENT_VERSION = cfg.set_spirv;
     shader_version = fmt::format("v{}", shader::CURRENT_VERSION);
     return true;
 }
