@@ -839,8 +839,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 		}
 		if (!features.support_spirv_1_4)
 			LOG_WARN_ONCE("Your device didn't support SPIRV 1.4");
-		
-		shader::CURRENT_VERSION = config.set_spirv;
 
         try {
 			device = physical_device.createDevice(device_info.get<vk::DeviceCreateInfo>());
