@@ -477,7 +477,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 res_multiplier = b.createLoad(res_multiplier, spv::NoPrecision);
                 // don't change the z and w coords
                 spv::Id one = b.makeFloatConstant(1.0f);
-                res_multiplier = b.createCompositeConstruct(v4, { res_multiplier, res_multiplier, one, one });
+                res_multiplier = b.createCompositeConstruct(v4z, { res_multiplier, res_multiplier, one, one });
 
                 pa_iter_var = b.createBinOp(spv::OpFDiv, v4, pa_iter_var, res_multiplier);
             } else {
