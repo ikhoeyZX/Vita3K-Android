@@ -1343,12 +1343,12 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
 	        // .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
             .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessRandom,
-            // .usage = vma::MemoryUsage::eAutoPreferHost,
-	        .usage = vma::MemoryUsage::eAuto,
-			.requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
+            .usage = vma::MemoryUsage::eAutoPreferHost,
+	       // .usage = vma::MemoryUsage::eAuto,
+			// .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
         //    .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
-		//    .requiredFlags = vk::MemoryPropertyFlagBits::eHostVisible,
-            .preferredFlags = vk::MemoryPropertyFlagBits::eDeviceLocal,
+		    .requiredFlags = vk::MemoryPropertyFlagBits::eHostCached,
+            .preferredFlags = vk::MemoryPropertyFlagBits::eHostVisible,
         };
         buffer.init_buffer(mapped_memory_flags, memory_mapped_alloc);
 
@@ -1613,10 +1613,10 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 
 		case 2: {
 			// print spirv version
-			result = { "1.0", "1.1", "1.2",  "1.3" };
+			result = { "1.0", "1.1", "1.2",  "1.3 (vulkan 1.1)" };
             if (features.support_spirv_1_4) {
                 result.push_back("1.4");
-				result.push_back("1.5");
+				result.push_back("1.5 (vulkan 1.2)");
 			}
 	        break;
 		}
