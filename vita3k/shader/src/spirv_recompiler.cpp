@@ -246,7 +246,7 @@ static spv::Id create_param_sampler(spv::Builder &b, const std::string &name, co
     spv::Id sampled_type = b.makeFloatType(32);
     spv::Id image_type = b.makeImageType(sampled_type, dim_type, false, false, false, 1, spv::ImageFormatUnknown);
     spv::Id sampled_image_type = b.makeSampledImageType(image_type);
-//    return b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
+    //    return b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
     return b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
 }
 
@@ -303,8 +303,7 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
 
         if (!b.isConstant(var)) {
             if (b.isPointer(var))
-            //    var = b.createLoad(var, spv::NoPrecision);
-                var = b.createLoad(var, spv::DecorationRelaxedPrecision);
+                var = b.createLoad(var, spv::NoPrecision);
             var = utils::finalize(b, var, var, SWIZZLE_CHANNEL_4_DEFAULT, b.makeIntConstant(0), dest_mask);
 
             if (!features.support_rgb_attributes && !translation_state.is_fragment && dest_mask == 0b1111) {
@@ -354,7 +353,7 @@ static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &featu
         format = spv::ImageFormat::ImageFormatRgba8;
 
     spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, format);
-//    spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
+    //    spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
     spv::Id sampler = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
     
     return sampler;
@@ -366,7 +365,7 @@ static spv::Id create_builtin_sampler_for_raw(spv::Builder &b, const FeatureStat
     spv::ImageFormat img_format = spv::ImageFormatRgba16ui;
 
     spv::Id image_type = b.makeImageType(ui32, spv::Dim2D, false, false, false, sampled, img_format);
-  //  spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
+    //  spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
     spv::Id sampler = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
 
     return sampler;
@@ -405,12 +404,12 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     std::array<shader::usse::Coord, 11> coords;
 
     spv::Id f32 = b.makeFloatType(32);
-    spv::Id v2z = b.makeVectorType(f32, 2);
-    spv::Id v4z = b.makeVectorType(f32, 4);
+    spv::Id v2 = b.makeVectorType(f32, 2);
+    spv::Id v4 = b.makeVectorType(f32, 4);
     spv::Id zero = b.makeFloatConstant(0.0f);
-    
+
   //  spv::Id current_coord = b.createVariable(spv::NoPrecision, spv::StorageClassInput, v4, "gl_FragCoord");
-    spv::Id current_coord = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassInput, v4z, "gl_FragCoord");
+    spv::Id current_coord = b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassInput, v4, "gl_FragCoord");
     b.addDecoration(current_coord, spv::DecorationBuiltIn, spv::BuiltInFragCoord);
 
     translation_state.interfaces.push_back(current_coord);
@@ -460,9 +459,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             // Force this to 4. TODO: Don't
             // Reason is for compatibility between vertex and fragment. This is like an anti-crash when linking.
             // Fragment will only copy what it needed.
-            // const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), 4);
-            const spv::Id pa_iter_type = b.createCompositeConstruct(v4z, { zero, zero, zero, zero });
-
+            const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), 4);
             const auto pa_iter_size = num_comp;
             spv::Id pa_iter_var = spv::NoResult;
 
@@ -475,9 +472,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 res_multiplier = b.createLoad(res_multiplier, spv::NoPrecision);
                 // don't change the z and w coords
                 spv::Id one = b.makeFloatConstant(1.0f);
-                res_multiplier = b.createCompositeConstruct(v4z, { res_multiplier, res_multiplier, one, one });
+                res_multiplier = b.createCompositeConstruct(v4, { res_multiplier, res_multiplier, one, one });
 
-                pa_iter_var = b.createBinOp(spv::OpFDiv, v4z, pa_iter_var, res_multiplier);
+                pa_iter_var = b.createBinOp(spv::OpFDiv, v4, pa_iter_var, res_multiplier);
             } else {
                 spv::Decoration precision = get_data_type_size(pa_dtype) < 4 ? spv::DecorationRelaxedPrecision : spv::NoPrecision;
                 pa_iter_var = b.createVariable(precision, spv::StorageClassInput, pa_iter_type, pa_name.c_str());
@@ -683,14 +680,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 coord_name += std::to_string(query_info.coord_index);
             }
 
-            spv::Id coord_index_vec;
-            if(query_info.coord_index == 10) // vec2
-                coord_index_vec = b.createCompositeConstruct(v2z, { zero, zero });
-                else // vec 4
-                coord_index_vec = b.createCompositeConstruct(v4z, { zero, zero, zero, zero });
-            
+            LOG_DEBUG("coord_name = {}, query_info.coord_index = {}", coord_name.c_str(), query_info.coord_index);
             coords[query_info.coord_index].first = b.createVariable(spv::NoPrecision, spv::StorageClassInput,
-                coord_index_vec, coord_name.c_str());
+                b.makeVectorType(b.makeFloatType(32), /*tex_coord_comp_count*/ query_info.coord_index == 10 ? 2 : 4), coord_name.c_str());
 
             if (query_info.coord_index == 10)
                 b.addDecoration(coords[query_info.coord_index].first, spv::DecorationBuiltIn, spv::BuiltInPointCoord);
@@ -769,7 +761,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             spv::Id coord_0 = b.makeIntConstant(0);
             const spv::Id ivec2 = b.makeVectorType(b.makeIntType(32), 2);
             coord_0 = b.makeCompositeConstant(ivec2, { coord_0, coord_0 });
-            source = b.createOp(spv::OpImageRead, v4z, { b.createLoad(last_frag_data, spv::NoPrecision), coord_0 });
+            source = b.createOp(spv::OpImageRead, v4, { b.createLoad(last_frag_data, spv::NoPrecision), coord_0 });
             b.setPrecision(source, precision);
 
             translation_state.last_frag_data_id = last_frag_data;
@@ -807,7 +799,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 spv::Id load_normal_cond = b.createBinOp(spv::OpFOrdLessThan, b.makeBoolType(), utils::create_access_chain(b, spv::StorageClassPrivate, translation_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_use_raw_image) }), b.makeFloatConstant(0.5f));
                 spv::Builder::If cond_builder(load_normal_cond, spv::SelectionControlMaskNone, b);
 
-                source = b.createOp(spv::OpImageRead, v4z, { b.createLoad(color_attachment, spv::DecorationRelaxedPrecision), current_coord });
+                source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::DecorationRelaxedPrecision), current_coord });
                 store_source_result();
                 cond_builder.makeBeginElse();
                 color_attachment = color_attachment_raw;
@@ -819,7 +811,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 // Generated here already, so empty it out to prevent further gen
                 source = spv::NoResult;
             } else {
-                source = b.createOp(spv::OpImageRead, v4z, { b.createLoad(color_attachment, spv::DecorationRelaxedPrecision), current_coord });
+                source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::DecorationRelaxedPrecision), current_coord });
                 b.setPrecision(source, precision);
 
                 if (translation_state.is_vulkan) {
@@ -834,7 +826,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                     const spv::Id gamma = utils::make_uniform_vector_from_type(b, v3, 2.2f);
                     rgb = b.createBuiltinCall(v3, utils.std_builtins, GLSLstd450Pow, { rgb, gamma });
                     b.setPrecision(rgb, precision);
-                    source = b.createOp(spv::OpVectorShuffle, v4z, { { true, rgb }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 }, { false, 6 } });
+                    source = b.createOp(spv::OpVectorShuffle, v4, { { true, rgb }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 }, { false, 6 } });
 
                     b.setPrecision(source, precision);
                     store_source_result();
@@ -849,11 +841,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             }
         } else {
             // Try to initialize outs[0] to some nice value. In case the GPU has garbage data for our shader
-      /*      spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
+            spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
             spv::Id rezero = b.makeFloatConstant(0.0f);
-            */
-            source = b.makeCompositeConstant(v4z, { zero, zero, zero, zero });
-            
+            source = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
         }
 
         store_source_result();
@@ -1555,14 +1545,13 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
             rgb = b.createBuiltinCall(v3, utils.std_builtins, GLSLstd450Pow, { rgb, gamma });
             color = b.createOp(spv::OpVectorShuffle, v4, { { true, rgb }, { true, color }, { false, 0 }, { false, 1 }, { false, 2 }, { false, 6 } });
 
-            b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, color });
+            b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::DecorationRelaxedPrecision), translated_id, color });
 
             // else (no shader gamma correction, nothing to do)
             cond_builder.makeBeginElse();
-            b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, old_color });
+            b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::DecorationRelaxedPrecision), translated_id, old_color });
             cond_builder.makeEndIf();
         } else {
-         //   b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, color });
             b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::DecorationRelaxedPrecision), translated_id, color });
         }
 
@@ -1570,16 +1559,12 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
             color_val_operand.type = DataType::UINT16;
             color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, reg_off);
 
-            b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_raw_id, spv::NoPrecision), translated_id, color });
+            b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_raw_id, spv::DecorationRelaxedPrecision), translated_id, color });
         }
     } else {
-        spv::Id v4z = b.makeVectorType(b.makeFloatType(32), 4);
-        const spv::Id zero = b.makeFloatConstant(0.0f);
-        spv::Id v4zero = b.createCompositeConstruct(v4z, { zero, zero, zero, zero });
-        spv::Id out = b.createVariable(precision, spv::StorageClassOutput, v4z, "out_color");
+        spv::Id out = b.createVariable(precision, spv::StorageClassOutput, b.makeVectorType(b.makeFloatType(32), 4), "out_color");
         translate_state.interfaces.push_back(out);
         b.addDecoration(out, spv::DecorationLocation, 0);
-        b.createStore(color, v4zero);
         b.createStore(color, out);
 
         if (features.preserve_f16_nan_as_u16) {
