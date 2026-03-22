@@ -674,19 +674,20 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             // TODO: this really right?
             std::string coord_name = "v_TexCoord";
 
-            if (query_info.coord_index == 10) {
+        /*
+           if (query_info.coord_index == 10) {
                 coord_name = "gl_PointCoord";
             } else {
                 coord_name += std::to_string(query_info.coord_index);
             }
+        */
 
+            coord_name += std::to_string(query_info.coord_index);
+            
             LOG_DEBUG("coord_name = {}, query_info.coord_index = {}", coord_name.c_str(), query_info.coord_index);
             coords[query_info.coord_index].first = b.createVariable(spv::NoPrecision, spv::StorageClassInput,
-                b.makeVectorType(b.makeFloatType(32), /*tex_coord_comp_count*/ query_info.coord_index == 10 ? 2 : 4), coord_name.c_str());
-
-            if (query_info.coord_index == 10)
-                b.addDecoration(coords[query_info.coord_index].first, spv::DecorationBuiltIn, spv::BuiltInPointCoord);
-            else
+                b.makeVectorType(b.makeFloatType(32), 2), coord_name.c_str());
+            
                 b.addDecoration(coords[query_info.coord_index].first, spv::DecorationLocation, TEXCOORD_BASE_LOCATION + query_info.coord_index);
 
             translation_state.interfaces.push_back(coords[query_info.coord_index].first);
