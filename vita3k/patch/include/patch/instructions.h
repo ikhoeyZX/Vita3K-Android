@@ -1,5 +1,6 @@
+
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +29,7 @@ using TranslateFn = uint32_t (*)(std::vector<uint32_t> &args);
 enum class Instruction {
     NOP,
     T1_MOV,
+    A1_MOV,
 
     // All-encompassing "this is not an instruction" value
     INVALID,
@@ -49,8 +51,10 @@ uint32_t nop(std::vector<uint32_t> &args);
  * https://developer.arm.com/documentation/ddi0406/c/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/MOV--immediate-?lang=en
  */
 uint32_t t1_mov(std::vector<uint32_t> &args);
+uint32_t a1_mov(std::vector<uint32_t> &args);
 
 static const std::map<std::string, Op> instruction_funcs = {
     { "nop", { Instruction::NOP, nop } },
     { "t1_mov", { Instruction::T1_MOV, t1_mov } },
+    { "a1_mov", { Instruction::A1_MOV, a1_mov } },
 };
