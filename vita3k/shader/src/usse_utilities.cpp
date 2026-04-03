@@ -233,10 +233,9 @@ spv::Function *make_fx10_pack_func(spv::Builder &b, const SpirvUtilFunctions &ut
 
     // Create function entry: float pack3xFX10(vec3 to_pack)
     spv::Function *fx10_pack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32, "pack3xFX10", spv::LinkageTypeMax, { vec3_f32 },
+        spv::NoPrecision, type_f32, "pack3xFX10", { vec3_f32 },
         decorations, &fx10_pack_func_block);
-    b.setupFunctionDebugInfo(fx10_pack_func, "pack3xFX10", { vec3_f32 }, { "to_pack" });
-
+    
     // Get function parameter id (input vector)
     spv::Id extracted = fx10_pack_func->getParamId(0);
 
