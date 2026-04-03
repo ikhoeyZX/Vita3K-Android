@@ -224,11 +224,11 @@ spv::Function *make_fx10_pack_func(spv::Builder &b, const SpirvUtilFunctions &ut
     spv::Block *last_build_point = b.getBuildPoint();
 
     // Basic types
-    spv::Id type_i32 = b.makeIntType(32);
+    spv::Id type_u32 = b.makeUintType(32);
     spv::Id type_f32 = b.makeFloatType(32);
 
     // FX10 packs 3 signed 10-bit components into a single 32-bit value.
-    spv::Id vec3_i32 = b.makeVectorType(type_i32, 3);
+    spv::Id vec3_u32 = b.makeVectorType(type_u32, 3);
     spv::Id vec3_f32 = b.makeVectorType(type_f32, 3);
 
     // Create function entry: float pack3xFX10(vec3 to_pack)
@@ -250,25 +250,25 @@ spv::Function *make_fx10_pack_func(spv::Builder &b, const SpirvUtilFunctions &ut
     spv::Id int_vec = convert_to_int(b, utils, clamped, DataType::C10, true);
 
     // Bitcast int vector to unsigned vector for safe bitwise operations
-    spv::Id int_vec_u = b.createUnaryOp(spv::OpBitcast, vec3_i32, int_vec);
+    spv::Id int_vec_u = b.createUnaryOp(spv::OpBitcast, vec3_u32, int_vec);
 
     // Create 10-bit mask (0x3FF) for each vector component
-    spv::Id mask_10bits = b.makeCompositeConstant(vec3_i32,
-        { b.makeIntConstant(0x3FF), b.makeIntConstant(0x3FF), b.makeIntConstant(0x3FF) });
+    spv::Id mask_10bits = b.makeCompositeConstant(vec3_u32,
+        { b.makeUintConstant(0x3FF), b.makeUintConstant(0x3FF), b.makeUintConstant(0x3FF) });
 
     // Mask out only the lowest 10 bits for each component
-    int_vec_u = b.createBinOp(spv::OpBitwiseAnd, vec3_i32, int_vec_u, mask_10bits);
+    int_vec_u = b.createBinOp(spv::OpBitwiseAnd, vec3_u32, int_vec_u, mask_10bits);
 
-    // Shift each component by (0, 10, 20) bits to pack into a single 32-bit int
-    spv::Id shifts = b.makeCompositeConstant(vec3_i32,
-        { b.makeIntConstant(0), b.makeIntConstant(10), b.makeIntConstant(20) });
-    int_vec_u = b.createBinOp(spv::OpShiftLeftLogical, vec3_i32, int_vec_u, shifts);
+    // Shift each component by (0, 10, 20) bits to pack into a single 32-bit uint
+    spv::Id shifts = b.makeCompositeConstant(vec3_u32,
+        { b.makeUintConstant(0), b.makeUintConstant(10), b.makeUintConstant(20) });
+    int_vec_u = b.createBinOp(spv::OpShiftLeftLogical, vec3_u32, int_vec_u, shifts);
 
-    // Combine all 3 components into a single int using bitwise OR
-    spv::Id packed = b.createCompositeExtract(int_vec_u, type_i32, 0);
+    // Combine all 3 components into a single uint using bitwise OR
+    spv::Id packed = b.createCompositeExtract(int_vec_u, type_u32, 0);
     for (int i = 1; i < 3; ++i) {
-        spv::Id comp = b.createCompositeExtract(int_vec_u, type_i32, i);
-        packed = b.createBinOp(spv::OpBitwiseOr, type_i32, packed, comp);
+        spv::Id comp = b.createCompositeExtract(int_vec_u, type_u32, i);
+        packed = b.createBinOp(spv::OpBitwiseOr, type_u32, packed, comp);
     }
 
     // Bitcast the packed uint into a float (bitwise equivalent)
@@ -433,7 +433,7 @@ spv::Function *make_pack_func(spv::Builder &b, const FeatureState &features, Dat
     return pack_func;
 }
 
-stspv::Function *make_f16_unpack_func(spv::Builder &b, const SpirvUtilFunctions &utils, const FeatureState &features) {
+spv::Function *make_f16_unpack_func(spv::Builder &b, const SpirvUtilFunctions &utils, const FeatureState &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *f16_unpack_func_block;
