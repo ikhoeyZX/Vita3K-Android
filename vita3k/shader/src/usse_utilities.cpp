@@ -282,6 +282,13 @@ spv::Function *make_fx10_pack_func(spv::Builder &b, const SpirvUtilFunctions &ut
     return fx10_pack_func;
 }
 
+int get_packed_component_count(const DataType type) {
+    if (type == DataType::C10)
+        return 3;
+    else
+        return static_cast<int>(4 / get_data_type_size(type));
+}
+
 spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &features, DataType source_type) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
