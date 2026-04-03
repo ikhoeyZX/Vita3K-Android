@@ -32,7 +32,7 @@ struct FeatureState {
     bool use_texture_viewport = false; ///< Are we using texture viewports in the shader
     bool support_spirv_1_4 = false; ///< optional
     int support_spirv = 0; ///< instead hardcoded version spirv, just get from hardware instead
-    bool bool use_glsl = false; ///< mark shader as glsl not vulkan, since only adreno support SSBO, we use this for other gpu
+    bool use_glsl = false; ///< mark shader as glsl not vulkan, since only adreno support SSBO, we use this for other gpu
 
     bool is_programmable_blending_supported() const {
         return support_shader_interlock || support_texture_barrier || direct_fragcolor;
