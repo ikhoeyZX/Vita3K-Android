@@ -763,9 +763,13 @@ bool USSETranslatorVisitor::vldst(
             return true;
         }
 
+        bool support_spirv = false;
+        if (m_features.support_spirv >= 4)
+            support_spirv = true;
+            
         for (int i = 0; i < total_bytes_fo_fetch / 4; ++i) {
             spv::Id offset = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(4 * i));
-            spv::Id src = utils::fetch_memory(m_b, m_spirv_params, m_util_funcs, offset);
+            spv::Id src = utils::fetch_memory(m_b, m_spirv_params, m_util_funcs, offset, support_spirv, m_features.use_glsl);
             store(to_store, src, 0b1);
             to_store.num += 1;
         }
