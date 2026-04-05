@@ -993,7 +993,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             spv_params.buffer_container = b.createVariable(spv::NoPrecision, spv::StorageClassUniform, buffer_container_type,
                 is_vert ? "vertexData" : "fragmentData");
         else if (features.support_spirv >= 4)
-            spv_params.buffer_container = b.createVariable(spv::NoPrecision, spv::PhysicalStorageBuffer, buffer_container_type,
+            spv_params.buffer_container = b.createVariable(spv::NoPrecision, spv::StorageClassPhysicalStorageBuffer, buffer_container_type,
                 is_vert ? "vertexData" : "fragmentData");
         else
             spv_params.buffer_container = b.createVariable(spv::NoPrecision, spv::StorageClassStorageBuffer, buffer_container_type,
@@ -1159,8 +1159,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         if (buffer.reg_block_size > 0) {
             if (features.enable_memory_mapping) {
                 Operand dest{
-                    // .num = static_cast<uint16_t>(buffer.reg_start_offset),
-                    .num = static_cast<uint32_t>(buffer.reg_start_offset),
+                    .num = static_cast<uint16_t>(buffer.reg_start_offset),
                     .bank = RegisterBank::SECATTR,
                     .type = DataType::F32,
                 };
