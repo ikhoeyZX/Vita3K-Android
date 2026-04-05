@@ -1918,8 +1918,8 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
         b.addExtension("SPV_KHR_vulkan_memory_model");
     } else if (features.enable_memory_mapping && translation_state.is_vulkan)
         b.setMemoryModel(spv::AddressingModelPhysicalStorageBuffer64, spv::MemoryModelGLSL450);
-    // else
-    //    b.setMemoryModel(spv::AddressingModelLogical, spv::MemoryModelGLSL450);
+     else
+        b.setMemoryModel(spv::AddressingModelLogical, spv::MemoryModelGLSL450);
 
     // Capabilities
     b.addCapability(spv::CapabilityShader);
@@ -2081,7 +2081,7 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
 //    options.enable_420pack_extension = true;
 //    options.force_flattened_io_blocks = false;
 //    options.emit_line_directives = true;
-    options.force_zero_initialized_variables = true;
+//    options.force_zero_initialized_variables = true;
     
     // disabled, bad for opengl es
 //    options.enable_row_major_load_workaround = true; // spirv.hpp say when true it reduce performance in some android devices
@@ -2250,7 +2250,7 @@ void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
 
     FeatureState features;
 #ifdef ANDROID
-    features.direct_fragcolor = false;
+    features.direct_fragcolor = true;
     features.support_shader_interlock = false;
 #else
     features.direct_fragcolor = false;
