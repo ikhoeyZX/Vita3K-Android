@@ -501,7 +501,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             } else if (input_id == 0xD000) {
                 // Not sure, comment out for now
                 // input_id = 10;
-                do_coord = true;
+                // do_coord = true;
                 LOG_DEBUG("input_id == 0xD000");
             }
 
