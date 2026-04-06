@@ -1911,11 +1911,14 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     b.setSourceFile(shader_hash);
     b.setEmitOpLines();
     b.addSourceExtension("gxp");
-    if (features.enable_memory_mapping && translation_state.is_vulkan && spv_version >= spv::Spv_1_3)
-        // this memory model need SPV_KHR_physical_storage_buffer and only exist after spv 1.3
+    if (features.enable_memory_mapping && translation_state.is_vulkan && (spv_version == spv::Spv_1_5)) {
+        b.setMemoryModel(spv::AddressingModelPhysicalStorageBuffer64, spv::MemoryModelVulkan);
+        b.addCapability(spv::CapabilityVulkanMemoryModel);
+        b.addExtension("SPV_KHR_vulkan_memory_model");
+    } else if (features.enable_memory_mapping && translation_state.is_vulkan)
         b.setMemoryModel(spv::AddressingModelPhysicalStorageBuffer64, spv::MemoryModelGLSL450);
-    else
-        b.setMemoryModel(spv::AddressingModelLogical, spv::MemoryModelGLSL450);
+    // else
+    //    b.setMemoryModel(spv::AddressingModelLogical, spv::MemoryModelGLSL450);
 
     // Capabilities
     b.addCapability(spv::CapabilityShader);
@@ -1923,9 +1926,10 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
         b.addCapability(spv::CapabilityImageQuery);
     if (features.support_unknown_format)
         b.addCapability(spv::CapabilityStorageImageReadWithoutFormat);
-    if (features.enable_memory_mapping && spv_version >= spv::Spv_1_3 && translation_state.is_vulkan) {
-        // this feature only exist in spv 1.3 or newer
+    if (translation_state.is_vulkan) {
         b.addExtension("SPV_KHR_physical_storage_buffer");
+    }
+    if (features.enable_memory_mapping && translation_state.is_vulkan) {
         b.addCapability(spv::CapabilityPhysicalStorageBufferAddresses);
     }
 
@@ -2214,6 +2218,7 @@ GeneratedShader convert_gxp(const SceGxmProgram &program, const std::string &sha
     shader.spirv = convert_gxp_to_spirv_impl(program, shader_hash, features, translation_state, force_shader_debug, dumper);
 
     if (translation_state.is_target_glsl) {
+        LOG_DEBUG("CREATE GLSL");
         // also generate the glsl file
         // this destroys shader.spirv
         shader.glsl = convert_spirv_to_glsl(shader_hash, shader.spirv, features, translation_state);
