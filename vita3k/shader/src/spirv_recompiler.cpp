@@ -56,19 +56,19 @@ namespace shader {
 // * Constants *
 // **************
 
-static constexpr int REG_PA_COUNT = 32 * 4;
-static constexpr int REG_SA_COUNT = 32 * 4;
-static constexpr int REG_I_COUNT = 3 * 4;
-static constexpr int REG_TEMP_COUNT = 20 * 4;
-static constexpr int REG_INDEX_COUNT = 2 * 4;
-static constexpr int REG_PRED_COUNT = 4 * 4;
-static constexpr int REG_O_COUNT = 20 * 4;
+constexpr int REG_PA_COUNT = 32 * 4;
+constexpr int REG_SA_COUNT = 32 * 4;
+constexpr int REG_I_COUNT = 3 * 4;
+constexpr int REG_TEMP_COUNT = 20 * 4;
+constexpr int REG_INDEX_COUNT = 2 * 4;
+constexpr int REG_PRED_COUNT = 4 * 4;
+constexpr int REG_O_COUNT = 20 * 4;
 
 // **************
 // * Prototypes *
 // **************
 
-static spv::Id get_type_fallback(spv::Builder &b);
+spv::Id get_type_fallback(spv::Builder &b);
 
 // ******************
 // * Helper structs *
@@ -129,7 +129,7 @@ using VertexProgramOutputPropertiesMap = boost::unordered_map<SceGxmVertexProgra
 // * Functions (implementation) *
 // ******************************
 
-static spv::Id create_array_if_needed(spv::Builder &b, const spv::Id param_id, const Input &input, const uint32_t explicit_array_size = 0) {
+spv::Id create_array_if_needed(spv::Builder &b, const spv::Id param_id, const Input &input, const uint32_t explicit_array_size = 0) {
     // disabled
     return param_id;
 
@@ -141,7 +141,7 @@ static spv::Id create_array_if_needed(spv::Builder &b, const spv::Id param_id, c
     return param_id;
 }
 
-static spv::Id get_type_basic(spv::Builder &b, const Input &input) {
+spv::Id get_type_basic(spv::Builder &b, const Input &input) {
     switch (input.type) {
         // clang-format off
     case DataType::F16:
@@ -166,17 +166,17 @@ static spv::Id get_type_basic(spv::Builder &b, const Input &input) {
     }
 }
 
-static spv::Id get_type_fallback(spv::Builder &b) {
+spv::Id get_type_fallback(spv::Builder &b) {
     return b.makeFloatType(32);
 }
 
-static spv::Id get_type_scalar(spv::Builder &b, const Input &input) {
+spv::Id get_type_scalar(spv::Builder &b, const Input &input) {
     spv::Id param_id = get_type_basic(b, input);
     param_id = create_array_if_needed(b, param_id, input);
     return param_id;
 }
 
-static spv::Id get_type_vector(spv::Builder &b, const Input &input) {
+spv::Id get_type_vector(spv::Builder &b, const Input &input) {
     if (input.component_count == 1) {
         return get_type_scalar(b, input);
     }
@@ -186,7 +186,7 @@ static spv::Id get_type_vector(spv::Builder &b, const Input &input) {
     return param_id;
 }
 
-static spv::Id get_type_array(spv::Builder &b, const Input &input) {
+spv::Id get_type_array(spv::Builder &b, const Input &input) {
     spv::Id param_id = get_type_basic(b, input);
     if (input.component_count > 1) {
         param_id = b.makeVectorType(param_id, input.component_count);
@@ -198,7 +198,7 @@ static spv::Id get_type_array(spv::Builder &b, const Input &input) {
     return param_id;
 }
 
-static spv::Id get_param_type(spv::Builder &b, const Input &input) {
+spv::Id get_param_type(spv::Builder &b, const Input &input) {
     switch (input.generic_type) {
     case GenericType::SCALER:
         return get_type_scalar(b, input);
@@ -244,7 +244,7 @@ spv::StorageClass reg_type_to_spv_storage_class(usse::RegisterBank reg_type) {
     return spv::StorageClassMax;
 }
 
-static spv::Id create_param_sampler(spv::Builder &b, const std::string &name, const spv::Dim dim_type) {
+spv::Id create_param_sampler(spv::Builder &b, const std::string &name, const spv::Dim dim_type) {
     spv::Id sampled_type = b.makeFloatType(32);
     spv::Id image_type = b.makeImageType(sampled_type, dim_type, false, false, false, 1, spv::ImageFormatUnknown);
     spv::Id sampled_image_type = b.makeSampledImageType(image_type);
@@ -252,7 +252,7 @@ static spv::Id create_param_sampler(spv::Builder &b, const std::string &name, co
     return b.createVariable(spv::DecorationRelaxedPrecision, spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
 }
 
-static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, const TranslationState &translation_state, const char *name, const RegisterBank bank, const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32, bool convert_to_float = false) {
+spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, const TranslationState &translation_state, const char *name, const RegisterBank bank, const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32, bool convert_to_float = false) {
     uint32_t total_var_comp = size;
     spv::Id var = !force_id ? (b.createVariable(spv::NoPrecision, reg_type_to_spv_storage_class(bank), type, name)) : force_id;
     Operand dest;
@@ -342,7 +342,7 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
     return var;
 }
 
-static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &features, TranslationState &translation_state, const std::string &name) {
+spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &features, TranslationState &translation_state, const std::string &name) {
     spv::Id sampled_type = b.makeFloatType(32);
 
     // 2 = storage image
@@ -352,7 +352,7 @@ static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &featu
 //    if (name == "f_mask")
          // f_mask is always rgba8
     if(format == spv::ImageFormat::ImageFormatUnknown || format == spv::ImageFormat::ImageFormatMax)
-        format = spv::ImageFormat::ImageFormatRgba8;
+        format = spv::ImageFormat::ImageFormatRgba16;
 
     spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, format);
     spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
@@ -360,7 +360,7 @@ static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &featu
     return sampler;
 }
 
-static spv::Id create_builtin_sampler_for_raw(spv::Builder &b, const FeatureState &features, TranslationState &translation_state, const std::string &name) {
+spv::Id create_builtin_sampler_for_raw(spv::Builder &b, const FeatureState &features, TranslationState &translation_state, const std::string &name) {
     spv::Id ui32 = b.makeUintType(32);
     int sampled = 2;
     spv::ImageFormat img_format = spv::ImageFormatRgba16ui;
@@ -371,7 +371,7 @@ static spv::Id create_builtin_sampler_for_raw(spv::Builder &b, const FeatureStat
     return sampler;
 }
 
-static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translation_state, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers,
+void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translation_state, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers,
     const SceGxmProgram &program) {
     static const boost::unordered_map<std::uint32_t, std::pair<std::string, std::uint32_t>> name_map = {
         { 0xD000, { "v_Position", 0 } },
@@ -860,7 +860,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 }
 
 // For uniform buffer resigned in registers
-static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_bank, spv::Id block, spv::Id ite, const int start, const int vec4_count) {
+void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_bank, spv::Id block, spv::Id ite, const int start, const int vec4_count) {
     int start_in_vec4_granularity = start / 4;
 
     utils::make_for_loop(builder, ite, builder.makeIntConstant(0), builder.makeIntConstant(vec4_count), [&]() {
@@ -898,7 +898,7 @@ static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_ban
     });
 }
 
-static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
+SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
     const FeatureState &features, TranslationState &translation_state, SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
     SpirvShaderParameters spv_params = {};
     const SceGxmProgramParameter *const gxp_parameters = program.program_parameters();
@@ -989,9 +989,16 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             b.addDecoration(buffer_container_type, spv::DecorationGLSLShared);
         }
 
-        spv_params.buffer_container = b.createVariable(spv::NoPrecision, spv::StorageClassStorageBuffer, buffer_container_type,
-            is_vert ? "vertexData" : "fragmentData");
-
+        if (features.use_glsl)
+            spv_params.buffer_container = b.createVariable(spv::NoPrecision, spv::StorageClassUniform, buffer_container_type,
+                is_vert ? "vertexData" : "fragmentData");
+        else if (features.support_spirv >= 4)
+            spv_params.buffer_container = b.createVariable(spv::NoPrecision, spv::StorageClassPhysicalStorageBuffer, buffer_container_type,
+                is_vert ? "vertexData" : "fragmentData");
+        else
+            spv_params.buffer_container = b.createVariable(spv::NoPrecision, spv::StorageClassStorageBuffer, buffer_container_type,
+                is_vert ? "vertexData" : "fragmentData");
+ 
         b.addDecoration(spv_params.buffer_container, spv::DecorationRestrict);
         b.addDecoration(spv_params.buffer_container, spv::DecorationNonWritable);
         const int ssbo_binding = (is_vert ? 0 : 1) + (translation_state.is_vulkan ? 2 : 0);
