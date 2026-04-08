@@ -36,7 +36,11 @@
 #include <unistd.h>
 #endif
 
-constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
+#ifdef ANDROID
+const uint32_t STANDARD_PAGE_SIZE = KiB(16);
+#else
+const uint32_t STANDARD_PAGE_SIZE = KiB(4);
+#endif
 constexpr size_t TOTAL_MEM_SIZE = GiB(4);
 constexpr bool LOG_PROTECT = false;
 constexpr bool PAGE_NAME_TRACKING = false;
@@ -69,7 +73,7 @@ bool init(MemState &state, const bool use_page_table) {
     state.page_size = std::max(STANDARD_PAGE_SIZE, state.page_size);
 
     assert(state.page_size >= 4096); // Limit imposed by Unicorn.
-    assert(!use_page_table || state.page_size == KiB(4));
+    assert(!use_page_table || state.page_size == STANDARD_PAGE_SIZE);
 
     void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
 
@@ -122,9 +126,9 @@ bool init(MemState &state, const bool use_page_table) {
 
     state.use_page_table = use_page_table;
     if (use_page_table) {
-        state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / KiB(4)]);
+        state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / STANDARD_PAGE_SIZE]);
         // we use an absolute offset (it is faster), so each entry is the same
-        std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE / KiB(4), state.memory.get());
+        std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE / STANDARD_PAGE_SIZE, state.memory.get());
     }
 
     return true;
@@ -225,7 +229,7 @@ void unprotect_inner(MemState &state, Address addr, uint32_t size) {
     if (LOG_PROTECT) {
         fmt::print("Unprotect: {} {}\n", log_hex(addr), size);
     }
-    uint8_t *addr_ptr = state.use_page_table ? state.page_table[addr / KiB(4)] : state.memory.get();
+    uint8_t *addr_ptr = state.use_page_table ? state.page_table[addr / STANDARD_PAGE_SIZE] : state.memory.get();
 
 #ifdef _WIN32
     DWORD old_protect = 0;
@@ -238,7 +242,7 @@ void unprotect_inner(MemState &state, Address addr, uint32_t size) {
 }
 
 void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm perm) {
-    uint8_t *addr_ptr = state.use_page_table ? state.page_table[addr / KiB(4)] : state.memory.get();
+    uint8_t *addr_ptr = state.use_page_table ? state.page_table[addr / STANDARD_PAGE_SIZE] : state.memory.get();
 
 #ifdef _WIN32
     DWORD old_protect = 0;
@@ -418,23 +422,23 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
 #endif    
     uint8_t *page_table_entry = addr_ptr - addr;
     uint8_t *original_address = &mem.memory[addr];
-    for (int block = 0; block < size / KiB(4); block++) {
+    for (int block = 0; block < size / STANDARD_PAGE_SIZE; block++) {
         // this is not thread write safe, but hopefully not other thread is busy copying while this happens
-        memcpy(addr_ptr + block * KiB(4), original_address + block * KiB(4), KiB(4));
-        mem.page_table[addr / KiB(4) + block] = page_table_entry;
+        memcpy(addr_ptr + block * STANDARD_PAGE_SIZE, original_address + block * STANDARD_PAGE_SIZE, STANDARD_PAGE_SIZE);
+        mem.page_table[addr / STANDARD_PAGE_SIZE + block] = page_table_entry;
     }
 
     // set the first page table entry to the original value to be able to call protect_inner
-    mem.page_table[addr / KiB(4)] = mem.memory.get();
+    mem.page_table[addr / STANDARD_PAGE_SIZE] = mem.memory.get();
     protect_inner(mem, addr, size, MemPerm::None);
-    mem.page_table[addr / KiB(4)] = page_table_entry;
+    mem.page_table[addr / STANDARD_PAGE_SIZE] = page_table_entry;
 
     const std::unique_lock<std::mutex> lock(mem.protect_mutex);
     mem.external_mapping[addr_value] = { addr, size };
 }
 
 void remove_external_mapping(MemState &mem, uint8_t *addr_ptr, uint32_t size) {
-    #if defined(__aarch64__ ) || defined(__x86_64__)
+#if defined(__aarch64__ ) || defined(__x86_64__)
     uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
 #else
     uintptr_t addr_value = reinterpret_cast<uintptr_t>(addr_ptr);
@@ -476,13 +480,13 @@ void remove_external_mapping(MemState &mem, uint8_t *addr_ptr, uint32_t size) {
 
     if (mem.use_page_table) {
         // unprotect the original memory range
-        mem.page_table[mapping.address / KiB(4)] = mem.memory.get();
+        mem.page_table[mapping.address / STANDARD_PAGE_SIZE] = mem.memory.get();
         unprotect_inner(mem, mapping.address, mapping.size);
         // copy back and reset the page table
-        for (int block = 0; block < mapping.size / KiB(4); block++) {
+        for (int block = 0; block < mapping.size / STANDARD_PAGE_SIZE; block++) {
             // this is not thread write safe, but hopefully not other thread is busy copying while this happens
-            memcpy(&mem.memory[mapping.address] + block * KiB(4), addr_ptr + block * KiB(4), KiB(4));
-            mem.page_table[mapping.address / KiB(4) + block] = mem.memory.get();
+            memcpy(&mem.memory[mapping.address] + block * STANDARD_PAGE_SIZE, addr_ptr + block * STANDARD_PAGE_SIZE, STANDARD_PAGE_SIZE);
+            mem.page_table[mapping.address / STANDARD_PAGE_SIZE + block] = mem.memory.get();
         }
     }
 }
