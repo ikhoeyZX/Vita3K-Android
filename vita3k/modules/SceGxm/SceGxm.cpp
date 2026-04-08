@@ -2695,8 +2695,17 @@ EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, uint32_t size, uint32_t
     }
 
     // TODO What should this be?
-    *offset = base.address();
+    // *offset = base.address();
 
+	uint32_t STANDARD_PAGE_SIZE = KiB(4);
+	
+	if ((base.address() % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0)) {
+        LOG_WARN_ONCE("Mapping unaligned fragment memory with align");
+	    // try align 4KiB-aligned
+        *offset = align(base.address(), STANDARD_PAGE_SIZE);
+        size = align(base.address() + size, STANDARD_PAGE_SIZE) - aligned_base;
+    }
+	
     return 0;
 }
 
@@ -2706,18 +2715,31 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-#ifdef ANDROID
-    uint32_t STANDARD_PAGE_SIZE = KiB(16);
-#else
     uint32_t STANDARD_PAGE_SIZE = KiB(4);
-#endif
-	
-    if ((base.address() % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0))
-        LOG_WARN_ONCE("Mapping unaligned GPU memory");
+	bool is_aligned = false;
+	Address aligned_base;
 
-    // Make sure the base address and size are 4KiB-aligned
-    Address aligned_base = align_down(base.address(), STANDARD_PAGE_SIZE);
-    size = align(base.address() + size, STANDARD_PAGE_SIZE) - aligned_base;
+	if (emuenv.mem.use_page_table && (base.address() % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0))
+		// try align 4KiB-aligned with page table
+		LOG_WARN_ONCE("Mapping unaligned GPU memory in page table");
+        aligned_base = align(base.address(), STANDARD_PAGE_SIZE);
+        size = align(base.address() + size, STANDARD_PAGE_SIZE) - aligned_base;
+    } else if ((base.address() % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0)) {
+        LOG_WARN_ONCE("Mapping unaligned GPU memory with align");
+	    // try align 4KiB-aligned
+        aligned_base = align(base.address(), STANDARD_PAGE_SIZE);
+        size = align(base.address() + size, STANDARD_PAGE_SIZE) - aligned_base;
+    }
+
+	// if align not work then align_down
+	if ((aligned_base % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0)) {
+       LOG_WARN_ONCE("Mapping unaligned GPU memory with align_down");
+       // Make sure the base address and size are 4KiB-aligned
+       aligned_base = align_down(base.address(), STANDARD_PAGE_SIZE);
+       size = align(base.address() + size, STANDARD_PAGE_SIZE) - aligned_base;
+    } else if (aligned_base == nullptr) {
+		aligned_base = base.address();
+    }
 
     // Check if it has already been mapped
     // Some games intentionally overlapping mapped region. Nothing we can do. Allow it, bear your own consequences.
@@ -2740,6 +2762,7 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
 
         return 0;
     }
+	LOG_ERROR("_aligned_base_ or _size_ are invalid!");
 
     return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 }
@@ -2752,8 +2775,18 @@ EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, uint32_t size, uint32_t *
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
+	LOG_DEBUG("SIZE : {}, OFFSET {}", size, &offset);
     // TODO What should this be?
-    *offset = base.address();
+    // *offset = base.address();
+	
+	uint32_t STANDARD_PAGE_SIZE = KiB(4);
+	
+	if ((base.address() % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0)) {
+        LOG_WARN_ONCE("Mapping unaligned vertex memory with align");
+	    // try align 4KiB-aligned
+        *offset = align(base.address(), STANDARD_PAGE_SIZE);
+        size = align(base.address() + size, STANDARD_PAGE_SIZE) - aligned_base;
+	}
 
     return 0;
 }
@@ -5466,18 +5499,22 @@ EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-#ifdef ANDROID
-    uint32_t STANDARD_PAGE_SIZE = KiB(16);
-#else
     uint32_t STANDARD_PAGE_SIZE = KiB(4);
-#endif
+	Address aligned_base;
+
+	if (emuenv.mem.use_page_table && (base.address() % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0))
+		// try align 4KiB-aligned with page table
+		LOG_WARN_ONCE("Mapping unaligned GPU memory in page table");
+        aligned_base = align(base.address(), STANDARD_PAGE_SIZE);
+    } else if ((base.address() % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0)) {
+        LOG_WARN_ONCE("Mapping unaligned GPU memory with align");
+	    // try align 4KiB-aligned
+        aligned_base = align(base.address(), STANDARD_PAGE_SIZE);
+    } else if (aligned_base == nullptr) {
+	    aligned_base = base.address();
+    }
 	
-    if (base.address() % STANDARD_PAGE_SIZE != 0)
-        LOG_WARN_ONCE("Unmapping unaligned GPU memory");
-
-    // Make sure the base address are 4KiB-aligned
-    Address aligned_base = align_down(base.address(), STANDARD_PAGE_SIZE);
-
+	
     auto ite = emuenv.gxm.memory_mapped_regions.find(aligned_base);
     if (ite == emuenv.gxm.memory_mapped_regions.end()) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
