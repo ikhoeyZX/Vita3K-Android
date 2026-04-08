@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -44,7 +44,13 @@
 #define SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT 0
 
 #define SCE_KERNEL_STACK_SIZE_USER_MAIN KiB(256)
+
+#ifdef ANDROID
+#define SCE_KERNEL_STACK_SIZE_USER_DEFAULT KiB(16)
+#else
 #define SCE_KERNEL_STACK_SIZE_USER_DEFAULT KiB(4)
+#endif
+
 #define SCE_KERNEL_THREAD_STACK_SIZE_MAX MiB(32)
 
 #define SCE_KERNEL_ATTR_TH_FIFO 0x00000000U
