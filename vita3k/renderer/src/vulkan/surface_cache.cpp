@@ -63,11 +63,7 @@ void protect_surface(MemState &mem, ColorSurfaceCacheInfo &info) {
     const bool trap_reads = (info.tiling == SurfaceTiling::Linear
         && format_support_surface_sync(info.format));
 
-#ifdef ANDROID
-    uint32_t STANDARD_PAGE_SIZE = KiB(16);
-#else
     uint32_t STANDARD_PAGE_SIZE = KiB(4);
-#endif
     
     uint32_t addr_start = align(info.data.address(), STANDARD_PAGE_SIZE);
     uint32_t addr_end = align_down(info.data.address() + info.total_bytes, STANDARD_PAGE_SIZE);
