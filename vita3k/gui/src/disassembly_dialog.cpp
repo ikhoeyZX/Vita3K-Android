@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 
 namespace gui {
 
-static void evaluate_code(GuiState &gui, EmuEnvState &emuenv, uint32_t from, uint32_t count, bool thumb) {
+void evaluate_code(GuiState &gui, EmuEnvState &emuenv, uint32_t from, uint32_t count, bool thumb) {
     gui.disassembly.clear();
 
     if (emuenv.kernel.threads.empty()) {
@@ -36,12 +36,18 @@ static void evaluate_code(GuiState &gui, EmuEnvState &emuenv, uint32_t from, uin
 
     uint16_t size = 1;
     uint32_t addr = from;
+    
+#ifdef ANDROID
+    uint32_t STANDARD_PAGE_SIZE = KiB(16);
+#else
+    uint32_t STANDARD_PAGE_SIZE = KiB(4);
+#endif
 
     for (std::uint32_t a = 0; a < count && size != 0; a++) {
         // Apparently some THUMB instructions are 4 bytes long, so check all 4 just to be safe.
-        size_t addr_page = addr / KiB(4);
+        size_t addr_page = addr / STANDARD_PAGE_SIZE;
 
-        if (addr_page == 0 || !is_valid_addr(emuenv.mem, addr_page * KiB(4))) {
+        if (addr_page == 0 || !is_valid_addr(emuenv.mem, addr_page * STANDARD_PAGE_SIZE)) {
             gui.disassembly.emplace_back(fmt::format("Disassembled {} instructions.", a));
             break;
         }
@@ -68,7 +74,7 @@ void reevaluate_code(GuiState &gui, EmuEnvState &emuenv) {
     evaluate_code(gui, emuenv, address, count, thumb);
 }
 
-static const char *archs[] = {
+const char *archs[] = {
     "ARM",
     "THUMB",
 };
