@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,6 +29,12 @@ static constexpr std::array<const char *, 2> blacklist = {
 };
 
 void draw_allocations_dialog(GuiState &gui, EmuEnvState &emuenv) {
+#ifdef ANDROID
+    const uint32_t STANDARD_PAGE_SIZE = KiB(16);
+#else
+    const uint32_t STANDARD_PAGE_SIZE = KiB(4);
+#endif
+    
     ImGui::Begin("Memory Allocations", &gui.debug_menu.allocations_dialog);
 
     const std::lock_guard<std::mutex> lock(emuenv.mem.generation_mutex);
@@ -38,11 +44,11 @@ void draw_allocations_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         const auto &page = emuenv.mem.alloc_table[generation_num];
         if (ImGui::TreeNode(fmt::format("{}: {}", generation_num, generation_name).c_str())) {
-            ImGui::Text("Range 0x%08zx - 0x%08zx.", generation_num * KiB(4), (generation_num + page.size) * KiB(4));
+            ImGui::Text("Range 0x%08zx - 0x%08zx.", generation_num * STANDARD_PAGE_SIZE, (generation_num + page.size) * STANDARD_PAGE_SIZE);
             ImGui::Text("Size: %i KiB (%i page[s])", page.size * 4, page.size);
             if (ImGui::Selectable("View/Edit")) {
-                gui.memory_editor_start = generation_num * KiB(4);
-                gui.memory_editor_count = page.size * KiB(4);
+                gui.memory_editor_start = generation_num * STANDARD_PAGE_SIZE;
+                gui.memory_editor_count = page.size * STANDARD_PAGE_SIZE;
                 gui.debug_menu.memory_editor_dialog = true;
             }
             if (ImGui::Selectable("View Disassembly")) {
