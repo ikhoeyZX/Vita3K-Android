@@ -909,7 +909,11 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
     // create the default image and buffer
     {
-        default_buffer = vkutil::Buffer(KiB(4));
+#ifdef ANDROID
+    default_buffer = vkutil::Buffer(KiB(16));
+#else
+    default_buffer = vkutil::Buffer(KiB(4));
+#endif
         default_buffer.init_buffer(vk::BufferUsageFlagBits::eVertexBuffer);
 
         // create the default image, it must be cleared then transitioned
@@ -1247,13 +1251,18 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     return static_cast<uint32_t>(std::countr_zero(hardware_types));
 
     };
-    
+#ifdef ANDROID
+    uint32_t STANDARD_PAGE_SIZE = KiB(16);
+#else
+    uint32_t STANDARD_PAGE_SIZE = KiB(4);
+#endif
+	
     switch (mapping_method) {
     case MappingMethod::NativeBuffer: {
 #ifdef __ANDROID__
         // if we get there, this means we support the hardware buffer extension
         AHardwareBuffer_Desc buffer_desc{
-            .width = static_cast<uint32_t>(size + KiB(4)),
+		    .width = static_cast<uint32_t>(size + STANDARD_PAGE_SIZE),
             .height = 1,
             .layers = 1,
             .format = AHARDWAREBUFFER_FORMAT_BLOB,
@@ -1301,7 +1310,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             uint32_t mapped_memory_type = find_suitable_mapped_type(fd_props.memoryTypeBits);
             vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportMemoryFdInfoKHR, vk::MemoryAllocateFlagsInfo> alloc_info{
                 vk::MemoryAllocateInfo{
-                    .allocationSize = size + KiB(4),
+                    .allocationSize = size + STANDARD_PAGE_SIZE,
                     .memoryTypeIndex = mapped_memory_type },
                 vk::ImportMemoryFdInfoKHR{
                     .handleType = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd,
@@ -1315,7 +1324,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 
         vk::StructureChain<vk::BufferCreateInfo, vk::ExternalMemoryBufferCreateInfoKHR> buffer_info{
             vk::BufferCreateInfo{
-                .size = size + KiB(4),
+                .size = size + STANDARD_PAGE_SIZE,
                 .usage = mapped_memory_flags,
                 .sharingMode = vk::SharingMode::eExclusive },
             vk::ExternalMemoryBufferCreateInfoKHR{
@@ -1339,7 +1348,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     case MappingMethod::PageTable: {
         // add 4 KiB because we can as an easy way to prevent crashes due to memory accesses right after the memory boundary
         // also make sure later the mapped address is 4K aligned
-        vkutil::Buffer buffer(size + KiB(4));
+        vkutil::Buffer buffer(size + STANDARD_PAGE_SIZE);
         constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
 	        // .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
             .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessRandom,
@@ -1354,11 +1363,11 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 
 #ifdef __aarch64__
 		const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
-        const int64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
+        const int64_t buffer_offset = align(buffer_ptr_val, STANDARD_PAGE_SIZE) - buffer_ptr_val;
         buffer.mapped_data = std::bit_cast<void *> (buffer_ptr_val + buffer_offset);
 #else
 		const uintptr_t buffer_ptr_val = reinterpret_cast<uintptr_t>(buffer.mapped_data);
-        const intptr_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
+        const intptr_t buffer_offset = align(buffer_ptr_val, STANDARD_PAGE_SIZE) - buffer_ptr_val;
 		buffer.mapped_data = reinterpret_cast<void *> (buffer_ptr_val + buffer_offset);
 #endif
 
@@ -1443,7 +1452,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     }
 
     case MappingMethod::DoubleBuffer: {
-        vkutil::Buffer buffer(size + KiB(4));
+        vkutil::Buffer buffer(size + STANDARD_PAGE_SIZE);
         buffer.init_buffer(mapped_memory_flags, vkutil::vma_mapped_alloc);
 
         vk::BufferDeviceAddressInfoKHR address_info{
