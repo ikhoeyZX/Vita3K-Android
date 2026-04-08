@@ -58,11 +58,7 @@ public:
         if (addr == 0) {
             return nullptr;
         } else if (mem.use_page_table) {
-#ifdef ANDROID
-            return reinterpret_cast<T *>(mem.page_table[addr / KiB(16)] + addr);
-#else
             return reinterpret_cast<T *>(mem.page_table[addr / KiB(4)] + addr);
-#endif
         } else {
             return reinterpret_cast<T *>(&mem.memory[addr]);
         }
@@ -72,11 +68,7 @@ public:
     bool atomic_compare_and_swap(MemState &mem, U value, U expected) {
         static_assert(std::is_arithmetic_v<U>);
         static_assert(std::is_same_v<U, T>);
-#ifdef ANDROID
-        uint8_t *mem_ptr = mem.use_page_table ? mem.page_table[addr / KiB(16)] : mem.memory.get();
-#else
         uint8_t *mem_ptr = mem.use_page_table ? mem.page_table[addr / KiB(4)] : mem.memory.get();
-#endif
         const auto ptr = reinterpret_cast<volatile U *>(&mem_ptr[addr]);
         return ::atomic_compare_and_swap(ptr, value, expected);
     }
