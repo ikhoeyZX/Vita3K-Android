@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -49,7 +49,11 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     constexpr size_t KERNEL_TLS_SIZE = 0x800;
 
     // the stack size should be page-aligned
+#ifdef ANDROID
+    stack_size = align(stack_size, KiB(16));
+#else
     stack_size = align(stack_size, KiB(4));
+#endif
 
     this->name = name;
     this->entry_point = entry_point.address();
