@@ -2678,7 +2678,7 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
 
 EXPORT(bool, sceGxmIsDebugVersion) {
     TRACY_FUNC(sceGxmIsDebugVersion);
-    LOG_INFO("mark as non debuging system")
+    LOG_INFO("mark as non debuging system");
     return false;
 }
 
@@ -2705,12 +2705,12 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
 	const uint32_t STANDARD_PAGE_SIZE = KiB(4);
 	Address aligned_base = base.address();
 	
-	if (emuenv.mem.use_page_table && (aligned_base % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0))
+	if (emuenv.mem.use_page_table && (aligned_base % KiB(4) != 0) || (size % KiB(4) != 0))
 		// try align 4KiB-aligned with page table
 		LOG_WARN_ONCE("Mapping unaligned GPU memory in page table");
         aligned_base = align(base.address(), STANDARD_PAGE_SIZE);
         size = align(base.address() + size, STANDARD_PAGE_SIZE) - aligned_base;
-    } else if ((aligned_base % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0)) {
+    } else if ((aligned_base % KiB(4) != 0) || (size % KiB(4) != 0)) {
         LOG_WARN_ONCE("Mapping unaligned GPU memory with align");
 	    // try align 4KiB-aligned
         aligned_base = align(aligned_base, STANDARD_PAGE_SIZE);
@@ -2718,7 +2718,7 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
     }
 
     // if align not work then align_down
-	if ((aligned_base % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0)) {
+	if ((aligned_base % KiB(4) != 0) || (size % KiB(4) != 0)) {
        LOG_WARN_ONCE("Mapping unaligned GPU memory with align_down");
        // Make sure the base address and size are 4KiB-aligned
        aligned_base = align_down(base.address(), STANDARD_PAGE_SIZE);
@@ -5476,11 +5476,11 @@ EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
 	const uint32_t STANDARD_PAGE_SIZE = KiB(4);
 	Address aligned_base = base.address();
 
-	if (emuenv.mem.use_page_table && aligned_base % STANDARD_PAGE_SIZE != 0)
+	if (emuenv.mem.use_page_table && aligned_base % KiB(4) != 0)
 		// try align 4KiB-aligned with page table
 		LOG_WARN_ONCE("Mapping unaligned memory in page table");
         aligned_base = align(base.address(), STANDARD_PAGE_SIZE);
-    } else if (aligned_base % STANDARD_PAGE_SIZE != 0) {
+    } else if (aligned_base % KiB(4) != 0) {
         LOG_WARN_ONCE("Mapping unaligned memory with align");
 	    // try align 4KiB-aligned
         aligned_base = align(aligned_base, STANDARD_PAGE_SIZE);
