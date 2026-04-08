@@ -29,11 +29,7 @@ static constexpr std::array<const char *, 2> blacklist = {
 };
 
 void draw_allocations_dialog(GuiState &gui, EmuEnvState &emuenv) {
-#ifdef ANDROID
-    const uint32_t STANDARD_PAGE_SIZE = KiB(16);
-#else
-    const uint32_t STANDARD_PAGE_SIZE = KiB(4);
-#endif
+    uint32_t STANDARD_PAGE_SIZE = KiB(4);
     
     ImGui::Begin("Memory Allocations", &gui.debug_menu.allocations_dialog);
 
