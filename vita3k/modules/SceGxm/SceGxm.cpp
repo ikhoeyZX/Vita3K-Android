@@ -2706,12 +2706,18 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if ((base.address() % KiB(4) != 0) || (size % KiB(4) != 0))
+#ifdef ANDROID
+    uint32_t STANDARD_PAGE_SIZE = KiB(16);
+#else
+    uint32_t STANDARD_PAGE_SIZE = KiB(4);
+#endif
+	
+    if ((base.address() % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0))
         LOG_WARN_ONCE("Mapping unaligned GPU memory");
 
     // Make sure the base address and size are 4KiB-aligned
-    Address aligned_base = align_down(base.address(), KiB(4));
-    size = align(base.address() + size, KiB(4)) - aligned_base;
+    Address aligned_base = align_down(base.address(), STANDARD_PAGE_SIZE);
+    size = align(base.address() + size, STANDARD_PAGE_SIZE) - aligned_base;
 
     // Check if it has already been mapped
     // Some games intentionally overlapping mapped region. Nothing we can do. Allow it, bear your own consequences.
@@ -5460,11 +5466,17 @@ EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (base.address() % KiB(4) != 0)
+#ifdef ANDROID
+    uint32_t STANDARD_PAGE_SIZE = KiB(16);
+#else
+    uint32_t STANDARD_PAGE_SIZE = KiB(4);
+#endif
+	
+    if (base.address() % STANDARD_PAGE_SIZE != 0)
         LOG_WARN_ONCE("Unmapping unaligned GPU memory");
 
     // Make sure the base address are 4KiB-aligned
-    Address aligned_base = align_down(base.address(), KiB(4));
+    Address aligned_base = align_down(base.address(), STANDARD_PAGE_SIZE);
 
     auto ite = emuenv.gxm.memory_mapped_regions.find(aligned_base);
     if (ite == emuenv.gxm.memory_mapped_regions.end()) {
