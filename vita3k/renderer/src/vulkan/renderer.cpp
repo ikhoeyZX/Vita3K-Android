@@ -909,11 +909,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
     // create the default image and buffer
     {
-#ifdef ANDROID
-    default_buffer = vkutil::Buffer(KiB(16));
-#else
-    default_buffer = vkutil::Buffer(KiB(4));
-#endif
+
+        default_buffer = vkutil::Buffer(KiB(4));
         default_buffer.init_buffer(vk::BufferUsageFlagBits::eVertexBuffer);
 
         // create the default image, it must be cleared then transitioned
@@ -1251,11 +1248,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     return static_cast<uint32_t>(std::countr_zero(hardware_types));
 
     };
-#ifdef ANDROID
-    uint32_t STANDARD_PAGE_SIZE = KiB(16);
-#else
+
     uint32_t STANDARD_PAGE_SIZE = KiB(4);
-#endif
 	
     switch (mapping_method) {
     case MappingMethod::NativeBuffer: {
