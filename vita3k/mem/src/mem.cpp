@@ -36,11 +36,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef ANDROID
-const uint32_t STANDARD_PAGE_SIZE = KiB(16);
-#else
 const uint32_t STANDARD_PAGE_SIZE = KiB(4);
-#endif
 constexpr size_t TOTAL_MEM_SIZE = GiB(4);
 constexpr bool LOG_PROTECT = false;
 constexpr bool PAGE_NAME_TRACKING = false;
