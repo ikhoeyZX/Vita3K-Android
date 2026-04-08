@@ -2638,8 +2638,8 @@ EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params
     if (!params || !hostMemSize)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    *hostMemSize = static_cast<uint32_t>(KiB(64));
-    return STUBBED("64KiB emuenv mem");
+    *hostMemSize = static_cast<uint32_t>(KiB(96));
+    return STUBBED("96KiB emuenv mem");
 }
 
 EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
@@ -2697,8 +2697,8 @@ EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, uint32_t size, uint32_t
     // TODO What should this be?
     // *offset = base.address();
 
-	uint32_t STANDARD_PAGE_SIZE = KiB(4);
-	
+	const uint32_t STANDARD_PAGE_SIZE = KiB(4);
+	Address aligned_base;
 	if ((base.address() % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0)) {
         LOG_WARN_ONCE("Mapping unaligned fragment memory with align");
 	    // try align 4KiB-aligned
@@ -2715,7 +2715,7 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    uint32_t STANDARD_PAGE_SIZE = KiB(4);
+    const uint32_t STANDARD_PAGE_SIZE = KiB(4);
 	bool is_aligned = false;
 	Address aligned_base;
 
@@ -2779,7 +2779,7 @@ EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, uint32_t size, uint32_t *
     // TODO What should this be?
     // *offset = base.address();
 	
-	uint32_t STANDARD_PAGE_SIZE = KiB(4);
+	const uint32_t STANDARD_PAGE_SIZE = KiB(4);
 	
 	if ((base.address() % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0)) {
         LOG_WARN_ONCE("Mapping unaligned vertex memory with align");
@@ -5499,7 +5499,7 @@ EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    uint32_t STANDARD_PAGE_SIZE = KiB(4);
+    const uint32_t STANDARD_PAGE_SIZE = KiB(4);
 	Address aligned_base;
 
 	if (emuenv.mem.use_page_table && (base.address() % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0))
