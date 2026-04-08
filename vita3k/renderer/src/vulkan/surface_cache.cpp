@@ -63,13 +63,19 @@ void protect_surface(MemState &mem, ColorSurfaceCacheInfo &info) {
     const bool trap_reads = (info.tiling == SurfaceTiling::Linear
         && format_support_surface_sync(info.format));
 
-    uint32_t addr_start = align(info.data.address(), KiB(4));
-    uint32_t addr_end = align_down(info.data.address() + info.total_bytes, KiB(4));
+#ifdef ANDROID
+    uint32_t STANDARD_PAGE_SIZE = KiB(16);
+#else
+    uint32_t STANDARD_PAGE_SIZE = KiB(4);
+#endif
+    
+    uint32_t addr_start = align(info.data.address(), STANDARD_PAGE_SIZE);
+    uint32_t addr_end = align_down(info.data.address() + info.total_bytes, STANDARD_PAGE_SIZE);
     bool small_surface = addr_start >= addr_end;
     if (small_surface) {
         // we still need to protect something, even if it's not completely accurate
-        addr_start = align_down(info.data.address(), KiB(4));
-        addr_end = align(info.data.address() + info.total_bytes, KiB(4));
+        addr_start = align_down(info.data.address(), STANDARD_PAGE_SIZE);
+        addr_end = align(info.data.address() + info.total_bytes, STANDARD_PAGE_SIZE);
     }
 
     // Use MemPerm::None to trap both reads and writes for surfaces that support sync,
