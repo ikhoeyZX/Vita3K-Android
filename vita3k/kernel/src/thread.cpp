@@ -49,11 +49,7 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     constexpr size_t KERNEL_TLS_SIZE = 0x800;
 
     // the stack size should be page-aligned
-#ifdef ANDROID
-    stack_size = align(stack_size, KiB(16));
-#else
     stack_size = align(stack_size, KiB(4));
-#endif
 
     this->name = name;
     this->entry_point = entry_point.address();
