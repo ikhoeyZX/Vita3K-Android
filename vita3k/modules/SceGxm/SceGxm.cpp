@@ -2700,7 +2700,7 @@ EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, uint32_t size, uint32_t
 	const uint32_t STANDARD_PAGE_SIZE = KiB(4);
 	Address aligned_base = base.address();
 
-	if (emuenv.mem.use_page_table && (aligned_base % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0))
+	if (emuenv.mem.use_page_table && (aligned_base % STANDARD_PAGE_SIZE != 0) || (size % STANDARD_PAGE_SIZE != 0)) {
 		// try align 4KiB-aligned with page table
 		LOG_WARN_ONCE("Mapping unaligned fragment memory in page table");
         aligned_base = align(base.address(), STANDARD_PAGE_SIZE);
