@@ -1917,8 +1917,8 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
         b.addExtension("SPV_KHR_vulkan_memory_model");
     } else if (features.enable_memory_mapping && translation_state.is_vulkan)
         b.setMemoryModel(spv::AddressingModelPhysicalStorageBuffer64, spv::MemoryModelGLSL450);
-    // else
-    //    b.setMemoryModel(spv::AddressingModelLogical, spv::MemoryModelGLSL450);
+     else
+        b.setMemoryModel(spv::AddressingModelLogical, spv::MemoryModelGLSL450);
 
     // Capabilities
     b.addCapability(spv::CapabilityShader);
@@ -1926,13 +1926,11 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
         b.addCapability(spv::CapabilityImageQuery);
     if (features.support_unknown_format)
         b.addCapability(spv::CapabilityStorageImageReadWithoutFormat);
-    if (translation_state.is_vulkan) {
+    if (features.enable_memory_mapping) {
         b.addExtension("SPV_KHR_physical_storage_buffer");
-    }
-    if (features.enable_memory_mapping && translation_state.is_vulkan) {
         b.addCapability(spv::CapabilityPhysicalStorageBufferAddresses);
     }
-
+    
     NonDependentTextureQueryCallInfos texture_queries;
     utils::SpirvUtilFunctions utils;
     utils.std_builtins = b.import("GLSL.std.450");
@@ -2062,7 +2060,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     return spirv;
 }
 
-static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCode &spirv_binary, const FeatureState &features, TranslationState &translation_state) {
+std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCode &spirv_binary, const FeatureState &features, TranslationState &translation_state) {
     spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
 
     spirv_cross::CompilerGLSL::Options options;
@@ -2078,6 +2076,8 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
 
     if (translation_state.is_vulkan)
         options.vulkan_semantics = true;
+    else
+        #define GL_GOOGLE_cpp_style_line_directive false
 
     options.enable_420pack_extension = true;
     options.force_flattened_io_blocks = true;
