@@ -586,8 +586,11 @@ bool USSETranslatorVisitor::vldst(
         type_to_ldst = DataType::INT8;
         break;
 
-    default:
+    default: {
+        LOG_ERROR("data_type -> type_to_ldst : UNKNOWN! = {}", log_hex(data_type);
+        type_to_ldst = DataType::F32;
         break;
+    }
     }
 
     const int total_number_to_fetch = mask_count + 1;
