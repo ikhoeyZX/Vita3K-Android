@@ -1,4 +1,3 @@
-
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
 //
@@ -579,44 +578,43 @@ bool USSETranslatorVisitor::vldst(
     
     switch (data_type) {
     case 0:
-        type_to_ldst = DataType::F32;
+        // type_to_ldst = DataType::F32;
+        type_to_ldst = DataType::INT16;
         break;
 
     case 1:
-        type_to_ldst = DataType::INT16;
+        // type_to_ldst = DataType::INT16;
+        type_to_ldst = DataType::INT32;
         break;
 
     case 2:
         type_to_ldst = DataType::INT8;
         break;
 
-    case 3:
-        LOG_DEBUG("case 3");
+    case 3: 
+        type_to_ldst = DataType::F16;
         break;
-    case 4:
-        LOG_DEBUG("case 4");
+        
+    case 4: 
+        type_to_ldst = DataType::F32;
         break;
-    case 5:
-        LOG_DEBUG("case 5");
+    
+    case 5: 
+        type_to_ldst = DataType::C10;
         break;
-    case 6:
-        LOG_DEBUG("case 6");
+    
+    case 6: 
+        type_to_ldst = DataType::UINT16;
         break;
-    case 7:
-        LOG_DEBUG("case 7");
+    
+    case 7: 
+        type_to_ldst = DataType::UINT32;
         break;
-    case 8:
-        LOG_DEBUG("case 8");
+    
+    case 8: {
+        type_to_ldst = DataType::UINT8;
         break;
-    case 9:
-        LOG_DEBUG("case 9");
-        break;
-    case 10:
-        LOG_DEBUG("case 10");
-        break;
-    case 11:
-        LOG_DEBUG("case 11");
-        break;
+    
     default: {
         LOG_ERROR("data_type -> type_to_ldst : UNKNOWN!");
         type_to_ldst = DataType::F32;
