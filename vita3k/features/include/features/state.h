@@ -33,6 +33,7 @@ struct FeatureState {
     bool support_spirv_1_4 = false; ///< optional
     int support_spirv = 0; ///< instead hardcoded version spirv, just get from hardware instead
     bool use_glsl = false; ///< mark shader as glsl not vulkan, since only adreno support SSBO, we use this for other gpu
+    bool support_f16i8 = false; ///< vulkan only, support VK_KHR_shader_float16_int8 for shaders
 
     bool is_programmable_blending_supported() const {
         return support_shader_interlock || support_texture_barrier || direct_fragcolor;
