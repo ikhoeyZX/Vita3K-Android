@@ -2071,8 +2071,8 @@ std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCode &spi
 #ifdef ANDROID
 //    options.fragment.default_float_precision = options.Highp;
 //    options.fragment.default_int_precision = options.Highp;
-    options.fragment.default_float_precision = options.DontCare;
-    options.fragment.default_int_precision = options.DontCare;
+    options.fragment.default_float_precision = options.Lowp;
+    options.fragment.default_int_precision = options.Lowp;
     
     options.version = 320;
     options.es = true;
@@ -2084,7 +2084,6 @@ std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCode &spi
 
     options.enable_420pack_extension = true;
     options.force_flattened_io_blocks = true;
-    options.emit_line_directives = true;
     options.enable_storage_image_qualifier_deduction = false;
     options.force_zero_initialized_variables = true;
     
