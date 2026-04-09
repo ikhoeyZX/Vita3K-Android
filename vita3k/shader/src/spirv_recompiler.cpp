@@ -141,31 +141,25 @@ spv::Id create_array_if_needed(spv::Builder &b, const spv::Id param_id, const In
     return param_id;
 }
 
-spv::Id get_type_basic(spv::Builder &b, const Input &input) {
+spv::Id get_type_basic(spv::Builder &b, const Input &input, bool support_f16i8) {
     switch (input.type) {
         // clang-format off
-    case DataType::F16: {
-        if (features.support_f16i8)
+    case DataType::F16: 
+        if (support_f16i8)
             return b.makeFloatType(16);
-        else
-            return b.makeFloatType(32);
-    }
-        
     case DataType::F32:
          return b.makeFloatType(32);
 
-    case DataType::UINT8:
+    case DataType::UINT8: 
+        if (support_f16i8)
+            return b.makeUntType(8);
     case DataType::UINT16:
     case DataType::UINT32:
         return b.makeUintType(32);
 
-    case DataType::INT8: {
-        if (features.support_f16i8)
+    case DataType::INT8: 
+        if (support_f16i8)
             return b.makeIntType(8);
-        else
-            return b.makeIntType(32);
-    }
-        
     case DataType::INT16:
     case DataType::INT32:
         return b.makeIntType(32);
@@ -182,24 +176,24 @@ spv::Id get_type_fallback(spv::Builder &b) {
     return b.makeFloatType(32);
 }
 
-spv::Id get_type_scalar(spv::Builder &b, const Input &input) {
-    spv::Id param_id = get_type_basic(b, input);
+spv::Id get_type_scalar(spv::Builder &b, const Input &input, bool support_f16i8) {
+    spv::Id param_id = get_type_basic(b, input, support_f16i8);
     param_id = create_array_if_needed(b, param_id, input);
     return param_id;
 }
 
-spv::Id get_type_vector(spv::Builder &b, const Input &input) {
+spv::Id get_type_vector(spv::Builder &b, const Input &input, bool support_f16i8) {
     if (input.component_count == 1) {
-        return get_type_scalar(b, input);
+        return get_type_scalar(b, input, support_f16i8);
     }
-    spv::Id param_id = get_type_basic(b, input);
+    spv::Id param_id = get_type_basic(b, input, support_f16i8);
     param_id = b.makeVectorType(param_id, input.component_count);
 
     return param_id;
 }
 
-spv::Id get_type_array(spv::Builder &b, const Input &input) {
-    spv::Id param_id = get_type_basic(b, input);
+spv::Id get_type_array(spv::Builder &b, const Input &input, bool support_f16i8) {
+    spv::Id param_id = get_type_basic(b, input, support_f16i8);
     if (input.component_count > 1) {
         param_id = b.makeVectorType(param_id, input.component_count);
     }
@@ -210,14 +204,14 @@ spv::Id get_type_array(spv::Builder &b, const Input &input) {
     return param_id;
 }
 
-spv::Id get_param_type(spv::Builder &b, const Input &input) {
+spv::Id get_param_type(spv::Builder &b, const Input &input, bool support_f16i8) {
     switch (input.generic_type) {
     case GenericType::SCALER:
-        return get_type_scalar(b, input);
+        return get_type_scalar(b, input, support_f16i8);
     case GenericType::VECTOR:
-        return get_type_vector(b, input);
+        return get_type_vector(b, input, support_f16i8);
     case GenericType::ARRAY:
-        return get_type_array(b, input);
+        return get_type_array(b, input, support_f16i8);
     default: {
         LOG_ERROR("get_param_type : UNKNOW OR INVALID!");
         return get_type_fallback(b);
@@ -1186,7 +1180,7 @@ SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &pr
     }
 
     const auto add_var_to_reg = [&](const Input &input, const std::string &name, std::uint16_t semantic, bool pa, bool regformat, std::int32_t location, std::uint32_t index) {
-        spv::Id param_type = get_param_type(b, input);
+        spv::Id param_type = get_param_type(b, input, features.support_f16i8);
         const int type_size = get_data_type_size(input.type);
         DataType input_type = input.type;
 
