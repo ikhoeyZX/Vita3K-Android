@@ -611,7 +611,7 @@ bool USSETranslatorVisitor::vldst(
         type_to_ldst = DataType::UINT32;
         break;
     
-    case 8: {
+    case 8: 
         type_to_ldst = DataType::UINT8;
         break;
     
