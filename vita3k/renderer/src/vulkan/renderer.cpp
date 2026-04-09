@@ -658,6 +658,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         bool support_external_memory = false;
         bool support_shader_interlock = false;
 		bool support_spirv14 = false;
+		bool support_f16i8_ext = false;
         const std::map<std::string_view, bool *> optional_extensions = {
             { vk::KHRGetMemoryRequirements2ExtensionName, &temp_bool },
             // can be used by vma to improve performance
@@ -678,6 +679,10 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             { vk::KHRShaderFloat16Int8ExtensionName, &support_fsr },
             // used for accurate programmable blending on desktop GPUs
             { vk::EXTFragmentShaderInterlockExtensionName, &support_shader_interlock },
+			// get spirv 1.4 support
+		    { vk::KHRSpirv14ExtensionName, &support_spirv14 },
+			// get low precission support
+		    { VK_KHR_SHADER_FLOAT16_INT8, &support_f16i8_ext },
 #ifdef __APPLE__
             // Needed to create the MoltenVK device
             { vk::KHRPortabilitySubsetExtensionName, &temp_bool },
@@ -692,8 +697,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             // used for memory trapping in android
             { VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME, &support_android_buffer_import },
             { VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME, &support_unix_fd_import },
-		    // get spirv 1.4 support
-		    { vk::KHRSpirv14ExtensionName, &support_spirv14 },
 #endif
         };
 
@@ -713,6 +716,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         }
         support_memory_mapping &= support_buffer_device_address;
         features.support_spirv_1_4 = support_spirv14;
+		features.support_f16i8 = support_f16i8_ext;
 
         if (support_standard_layout) {
             auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
