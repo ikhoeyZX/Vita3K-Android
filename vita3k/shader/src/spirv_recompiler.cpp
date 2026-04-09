@@ -144,7 +144,13 @@ spv::Id create_array_if_needed(spv::Builder &b, const spv::Id param_id, const In
 spv::Id get_type_basic(spv::Builder &b, const Input &input) {
     switch (input.type) {
         // clang-format off
-    case DataType::F16:
+    case DataType::F16: {
+        if (features.support_f16i8)
+            return b.makeFloatType(16);
+        else
+            return b.makeFloatType(32);
+    }
+        
     case DataType::F32:
          return b.makeFloatType(32);
 
@@ -153,7 +159,13 @@ spv::Id get_type_basic(spv::Builder &b, const Input &input) {
     case DataType::UINT32:
         return b.makeUintType(32);
 
-    case DataType::INT8:
+    case DataType::INT8: {
+        if (features.support_f16i8)
+            return b.makeIntType(8);
+        else
+            return b.makeIntType(32);
+    }
+        
     case DataType::INT16:
     case DataType::INT32:
         return b.makeIntType(32);
