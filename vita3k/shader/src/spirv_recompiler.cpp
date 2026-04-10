@@ -2075,27 +2075,16 @@ std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCode &spi
     spirv_cross::CompilerGLSL::Options options;
 
 #ifdef ANDROID
-//    options.fragment.default_float_precision = options.Highp;
-//    options.fragment.default_int_precision = options.Highp;
-    options.fragment.default_float_precision = options.Lowp;
-    options.fragment.default_int_precision = options.Lowp;
+    options.fragment.default_float_precision = options.Highp;
+    options.fragment.default_int_precision = options.Highp;
     
     options.version = 320;
     options.es = true;
 
     if (translation_state.is_vulkan)
         options.vulkan_semantics = true;
-    else
-        #define GL_GOOGLE_cpp_style_line_directive false
-
-    options.enable_420pack_extension = true;
-    options.force_flattened_io_blocks = true;
-    options.enable_storage_image_qualifier_deduction = false;
-    options.force_zero_initialized_variables = true;
     
-    // disabled, bad for opengl es
-//    options.enable_row_major_load_workaround = true; // spirv.hpp say when true it reduce performance in some android devices
-//    options.vertex.fixup_clipspace = true;
+    options.enable_420pack_extension = true;
     
 #else
     options.version = 430;
