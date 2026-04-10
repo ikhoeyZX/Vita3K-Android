@@ -574,8 +574,6 @@ bool USSETranslatorVisitor::vldst(
     DataType type_to_ldst = DataType::UNK;
 
     LOG_INFO("data_type -> type_to_ldst : {}", log_hex(data_type));
-    type_to_ldst = data_type;
-
     switch (data_type) {
     case 0:
         type_to_ldst = DataType::F32;
