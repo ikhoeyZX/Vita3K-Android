@@ -152,7 +152,7 @@ spv::Id get_type_basic(spv::Builder &b, const Input &input, bool support_f16i8) 
 
     case DataType::UINT8: 
         if (support_f16i8)
-            return b.makeUntType(8);
+            return b.makeUintType(8);
     case DataType::UINT16:
     case DataType::UINT32:
         return b.makeUintType(32);
