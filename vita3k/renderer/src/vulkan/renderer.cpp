@@ -682,7 +682,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 			// get spirv 1.4 support
 		    { vk::KHRSpirv14ExtensionName, &support_spirv14 },
 			// get low precission support
-		    { VK_KHR_SHADER_FLOAT16_INT8, &support_f16i8_ext },
+		    { vk::KHRShaderFloat16Int8ExtensionName, &support_f16i8_ext },
 #ifdef __APPLE__
             // Needed to create the MoltenVK device
             { vk::KHRPortabilitySubsetExtensionName, &temp_bool },
