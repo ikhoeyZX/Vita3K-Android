@@ -579,42 +579,18 @@ bool USSETranslatorVisitor::vldst(
     switch (data_type) {
     case 0:
         // type_to_ldst = DataType::F32;
-        type_to_ldst = DataType::INT16;
+        type_to_ldst = DataType::F16;
         break;
 
     case 1:
         // type_to_ldst = DataType::INT16;
-        type_to_ldst = DataType::INT32;
+        type_to_ldst = DataType::F32;
         break;
 
     case 2:
-        type_to_ldst = DataType::INT8;
-        break;
-
-    case 3: 
-        type_to_ldst = DataType::F16;
-        break;
-        
-    case 4: 
-        type_to_ldst = DataType::F32;
-        break;
-    
-    case 5: 
         type_to_ldst = DataType::C10;
         break;
-    
-    case 6: 
-        type_to_ldst = DataType::UINT16;
-        break;
-    
-    case 7: 
-        type_to_ldst = DataType::UINT32;
-        break;
-    
-    case 8: 
-        type_to_ldst = DataType::UINT8;
-        break;
-    
+
     default: {
         LOG_ERROR("data_type -> type_to_ldst : UNKNOWN!");
         type_to_ldst = DataType::F32;
