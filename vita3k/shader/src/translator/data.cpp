@@ -575,20 +575,20 @@ bool USSETranslatorVisitor::vldst(
 
     LOG_INFO("data_type -> default : {}", log_hex(type_to_ldst));
     LOG_INFO("data_type -> type_to_ldst need : {}", log_hex(data_type));
-    
+    type_to_ldst = data_type;
+
+    /*
     switch (data_type) {
     case 0:
-        // type_to_ldst = DataType::F32;
-        type_to_ldst = DataType::F16;
-        break;
-
-    case 1:
-        // type_to_ldst = DataType::INT16;
         type_to_ldst = DataType::F32;
         break;
 
+    case 1:
+        type_to_ldst = DataType::INT16;
+        break;
+
     case 2:
-        type_to_ldst = DataType::C10;
+        type_to_ldst = DataType::INT8;
         break;
 
     default: {
@@ -597,6 +597,7 @@ bool USSETranslatorVisitor::vldst(
         break;
     }
     }
+*/
 
     const int total_number_to_fetch = mask_count + 1;
     const int total_bytes_fo_fetch = get_data_type_size(type_to_ldst) * total_number_to_fetch;
