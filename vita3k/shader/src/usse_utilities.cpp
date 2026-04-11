@@ -159,7 +159,7 @@ const SpirvVarRegBank *get_reg_bank(const shader::usse::SpirvShaderParameters &p
     case RegisterBank::INDEX:
         return &params.indexes;
     default:
-        // LOG_WARN("Reg bank {} unsupported", static_cast<uint8_t>(reg_bank));
+        LOG_WARN_ONCE("Reg bank {} unsupported", static_cast<uint8_t>(reg_bank));
         return nullptr;
     }
 }
@@ -533,7 +533,6 @@ spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, spv::Id buffer_
     spv::Id rem_inv_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem_inv, eight_cst);
 
     spv::Id src;
-    LOG_DEBUG("is_glsl = {}, is_spirv1_4 = {}", is_glsl, is_spirv1_4);
     if (is_glsl)
         src = b.createLoad(utils::create_access_chain(b, spv::StorageClassUniform, buffer_container, { b.makeIntConstant(info.index_in_container), base_vector, base_offset }), spv::NoPrecision);
     else if (is_spirv1_4)
@@ -575,8 +574,6 @@ spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderParamete
     spv::Id type_i32 = b.makeIntType(32);
     spv::Id type_bool = b.makeBoolType();
 
-    LOG_DEBUG("is_glsl = {}, is_spirv1_4 = {}", is_glsl, is_spv1_4);
-    
     spv::Block *func_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
@@ -621,8 +618,6 @@ spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderParamete
 }
 
 spv::Id fetch_memory(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, spv::Id addr, bool is_spv1_4, bool is_glsl) {
-   LOG_DEBUG("is_glsl = {}, is_spirv1_4 = {}", is_glsl, is_spv1_4);
-    
     if (!utils.fetch_memory) {
         utils.fetch_memory = make_fetch_memory_func(b, params, is_spv1_4, is_glsl);
     }
@@ -636,8 +631,6 @@ spv::Id make_or_get_buffer_ptr(spv::Builder &b, shader::usse::utils::SpirvUtilFu
     if (utils.buffer_address_vec[buffer_utils_idx][is_write])
         return utils.buffer_address_vec[buffer_utils_idx][is_write];
 
-    LOG_DEBUG("is_glsl = {}, is_spirv1_4 = {}", is_glsl, is_spv1_4);
-    
     const spv::Id f32 = b.makeFloatType(32);
     const spv::Id vec = shader::usse::utils::make_vector_or_scalar_type(b, f32, nb_components);
     spv::Id runtime_array;
@@ -678,8 +671,6 @@ void buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params,
     if (features.support_spirv >= 4)
         is_spv14 = true;
 
-    LOG_DEBUG("is_glsl = {}, is_spirv1_4 = {}", features.use_glsl, is_spv14);
-    
     spv::Id buffer_idx_val;
     if (buffer_idx == -1) {
         // buffer index is in the upper 4 bits of addr
