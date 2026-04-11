@@ -1906,8 +1906,6 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     if (translation_state.is_vulkan && features.enable_memory_mapping)
         // spirv 1.4 or higher need memory mapping
        idx = std::clamp(features.support_spirv, 0, 5);
-    else if (translation_state.is_vulkan && !features.enable_memory_mapping)
-        idx = std::clamp(features.support_spirv, 0, 3);
     else
         idx = 0; // openGLES only support up to spirv 1.1
     
