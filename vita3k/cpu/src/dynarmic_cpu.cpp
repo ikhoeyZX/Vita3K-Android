@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -364,7 +364,6 @@ DynarmicCPU::~DynarmicCPU() = default;
 int DynarmicCPU::run() {
     halted = false;
     break_ = false;
-    exit_request = false;
     parent->svc_called = false;
     Dynarmic::HaltReason halt_reason;
     do {
@@ -413,7 +412,7 @@ bool DynarmicCPU::get_log_mem() {
 }
 
 void DynarmicCPU::stop() {
-    exit_request = true;
+    jit->HaltExecution();
 }
 
 uint32_t DynarmicCPU::get_reg(uint8_t idx) {
