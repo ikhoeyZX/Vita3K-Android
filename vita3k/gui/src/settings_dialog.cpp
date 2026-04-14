@@ -754,6 +754,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Checkbox(lang.gpu["v_sync"].c_str(), &config.v_sync);
             SetTooltipEx(lang.gpu["v_sync_description"].c_str());
             ImGui::SameLine();
+            ImGui::Checkbox(lang.gpu["use_ssbo_opengles"].c_str(), &emuenv.cfg.use_ssbo_opengles);
+            SetTooltipEx(lang.gpu["use_ssbo_opengles_description"].c_str());
+            ImGui::SameLine();
         }
         bool has_surface_sync = !is_vulkan || (emuenv.renderer->supported_mapping_methods_mask > 1);
 #ifdef ANDROID
