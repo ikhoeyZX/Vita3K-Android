@@ -364,6 +364,7 @@ DynarmicCPU::~DynarmicCPU() = default;
 int DynarmicCPU::run() {
     halted = false;
     break_ = false;
+    exit_request = false;
     parent->svc_called = false;
     Dynarmic::HaltReason halt_reason;
     do {
@@ -412,7 +413,8 @@ bool DynarmicCPU::get_log_mem() {
 }
 
 void DynarmicCPU::stop() {
-    jit->HaltExecution();
+    exit_request = true;
+    // jit->HaltExecution();
 }
 
 uint32_t DynarmicCPU::get_reg(uint8_t idx) {
@@ -478,8 +480,7 @@ CPUContext DynarmicCPU::save_context() {
     CPUContext ctx;
     ctx.cpu_registers = jit->Regs();
     static_assert(sizeof(ctx.fpu_registers) == sizeof(jit->ExtRegs()));
-    // memcpy(ctx.fpu_registers.data(), jit->ExtRegs().data(), sizeof(ctx.fpu_registers));
-    memmove(ctx.fpu_registers.data(), jit->ExtRegs().data(), sizeof(ctx.fpu_registers));
+    memcpy(ctx.fpu_registers.data(), jit->ExtRegs().data(), sizeof(ctx.fpu_registers));
     ctx.fpscr = jit->Fpscr();
     ctx.cpsr = jit->Cpsr();
 
