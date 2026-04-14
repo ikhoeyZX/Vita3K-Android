@@ -167,6 +167,7 @@ enum ScreenshotFormat {
     code(bool, "dencrypt-installs", true, dencrypt_installs)                                            \
     code(bool, "asia-font-support", false, asia_font_support)                                           \
     code(bool, "shader-cache", true, shader_cache)                                                      \
+    code(bool, "use-ssbo-opengles", true, use_ssbo_opengles)                                            \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(bool, "fps-hack", false, fps_hack)                                                             \
     code(bool, "use-astc", false, use_astc)                                                             \
