@@ -557,6 +557,8 @@ struct LangState {
             { "renderer_accuracy", "Renderer Accuracy" },
             { "v_sync", "V-Sync" },
             { "v_sync_description", "Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid visual tearing." },
+            { "use_ssbo_opengles", "SSBO on OpenGLES" },
+            { "use_ssbo_opengles_description", "Use SSBO instead UBO, this method only supported in Adreno!" },
             { "disable_surface_sync", "Disable Surface Sync" },
             { "surface_sync_description", "Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on)." },
             { "async_pipeline_compilation", "Asynchronous Pipeline Compilation" },
