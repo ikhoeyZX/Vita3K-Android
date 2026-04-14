@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -265,8 +265,10 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
 
 #ifdef ANDROID
     gl_state.features.use_mask_bit = false;
-    if (!config.use_ssbo_opengles)
+    if (!config.use_ssbo_opengles) 
        gl_state.features.use_glsl = true; 
+    else
+       gl_state.context.is_ssbo = true;
 #else
     gl_state.features.use_mask_bit = true;
 #endif
