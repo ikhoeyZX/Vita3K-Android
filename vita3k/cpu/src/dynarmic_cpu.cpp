@@ -362,9 +362,12 @@ DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, Dynarmic::Ex
 DynarmicCPU::~DynarmicCPU() = default;
 
 int DynarmicCPU::run() {
+    if (!jit->IsExecuting() && exit_request == true) {
+        exit_request = false;
+        LOG_INFO("exit_request = false");
+    }
     halted = false;
     break_ = false;
-    exit_request = false;
     parent->svc_called = false;
     Dynarmic::HaltReason halt_reason;
     do {
@@ -414,7 +417,10 @@ bool DynarmicCPU::get_log_mem() {
 
 void DynarmicCPU::stop() {
     exit_request = true;
-    // jit->HaltExecution();
+    if (jit->IsExecuting()) {
+        jit->HaltExecution();
+        LOG_INFO("exit_request = true");
+    }
 }
 
 uint32_t DynarmicCPU::get_reg(uint8_t idx) {
