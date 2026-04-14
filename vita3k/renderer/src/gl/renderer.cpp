@@ -265,7 +265,8 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
 
 #ifdef ANDROID
     gl_state.features.use_mask_bit = false;
-//    gl_state.features.use_glsl = true; 
+    if (!config.use_ssbo_opengles)
+       gl_state.features.use_glsl = true; 
 #else
     gl_state.features.use_mask_bit = true;
 #endif
