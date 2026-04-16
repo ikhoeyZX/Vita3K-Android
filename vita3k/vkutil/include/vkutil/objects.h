@@ -155,7 +155,11 @@ public:
 class DestroyQueue {
 private:
     vk::Device device;
+#ifdef __aarch64__ && __x86_64__
     std::vector<uint64_t> destroy_list;
+#else
+    std::vector<uint32_t> destroy_list;
+#endif
 
 public:
     void init(vk::Device device);
@@ -165,12 +169,13 @@ public:
         if (!vk_object)
             return;
 
+#ifdef __aarch64__ && __x86_64__
         destroy_list.push_back(static_cast<uint64_t>(T::objectType));
-#ifndef __arm__
         destroy_list.push_back(std::bit_cast<uint64_t>(vk_object));
 #else
+        destroy_list.push_back(static_cast<uint32_t>(T::objectType));
         auto raw_handle = static_cast<typename T::CType>(vk_object);
-        destroy_list.push_back(reinterpret_cast<uint64_t>(raw_handle));
+        destroy_list.push_back(reinterpret_cast<uint32_t>(raw_handle));
 #endif
         vk_object = nullptr;
     }
