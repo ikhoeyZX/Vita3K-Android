@@ -267,8 +267,6 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     gl_state.features.use_mask_bit = false;
     if (!config.use_ssbo_opengles) 
        gl_state.features.use_glsl = true; 
-    else
-       gl_state.context.is_ssbo = true;
 #else
     gl_state.features.use_mask_bit = true;
 #endif
@@ -381,6 +379,9 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
 void set_context(GLState &state, GLContext &context, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features) {
     R_PROFILE(__func__);
 
+    if (features.use_glsl) 
+        context.is_ssbo = true;
+    
     bind_fundamental(context);
 
     if (rt) {
