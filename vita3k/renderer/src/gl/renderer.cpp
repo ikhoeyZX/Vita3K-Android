@@ -379,7 +379,7 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
 void set_context(GLState &state, GLContext &context, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features) {
     R_PROFILE(__func__);
 
-    if (features.use_glsl) 
+    if (!features.use_glsl) 
         context.is_ssbo = true;
     
     bind_fundamental(context);
