@@ -32,8 +32,6 @@ bool set_uniform_buffer(GLContext &context, const ShaderProgram *program, const 
     const size_t data_size_upload = std::min<size_t>(size, program->uniform_buffer_sizes.at(block_num) * 4);
     const size_t offset_start_upload = offset * 4;
 
-    LOG_DEBUG("context.is_ssbo = {}", context.is_ssbo);
-            
     if (vertex_shader) {
         if (!context.vertex_uniform_buffer_storage_ptr.first) {
             // Allocate a region for it. Don't worry though, when the shader program is changed
