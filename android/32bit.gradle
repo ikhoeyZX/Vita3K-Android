@@ -10,7 +10,7 @@ android {
 
 	defaultConfig {
 		applicationId "org.vita3k_32.emulator.ikhoeyZX"
-		minSdk 28
+		minSdk 27
 		targetSdk 34
 		versionCode 12
 		versionName "0.2.0-12.5-ikhoeyZX-32bit"
@@ -98,11 +98,12 @@ android {
 }
 
 dependencies {
-	implementation 'androidx.appcompat:appcompat:1.6.1'
-	implementation "androidx.core:core:1.12.0"
-	implementation 'androidx.core:core-google-shortcuts:1.1.0'
-	implementation 'com.google.android.material:material:1.11.0'
-	implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+	implementation 'androidx.appcompat:appcompat:1.7.0'
+	implementation "androidx.core:core:1.16.0-alpha02"
+	implementation 'androidx.core:core-google-shortcuts:1.2.0-alpha01'
+	implementation 'com.google.android.material:material:1.13.0-alpha11'
+	implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
 	implementation 'com.getkeepsafe.relinker:relinker:1.4.5'
-	implementation 'com.jakewharton:process-phoenix:2.1.2'
+	implementation 'com.jakewharton:process-phoenix:3.0.0'
+	implementation 'androidx.documentfile:documentfile:1.1.0-alpha01'
 }
