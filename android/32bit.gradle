@@ -92,14 +92,16 @@ android {
     }
     packagingOptions {
         jniLibs {
-            useLegacyPackaging false
+            useLegacyPackaging true
         }
+		exclude 'META-INF/proguard/androidx-*.pro'
+        exclude 'META-INF/kotlin/**'
     }
 }
 
 dependencies {
 	implementation 'androidx.appcompat:appcompat:1.7.0'
-	implementation "androidx.core:core:1.16.0-alpha02"
+	implementation 'androidx.core:core:1.15.0'
 	implementation 'androidx.core:core-google-shortcuts:1.2.0-alpha01'
 	implementation 'com.google.android.material:material:1.13.0-alpha11'
 	implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
