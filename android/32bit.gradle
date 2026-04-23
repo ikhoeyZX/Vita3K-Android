@@ -10,7 +10,7 @@ android {
 
 	defaultConfig {
 		applicationId "org.vita3k_32.emulator.ikhoeyZX"
-		minSdk 27
+		minSdk 28
 		targetSdk 34
 		versionCode 12
 		versionName "0.2.0-12.5-ikhoeyZX-32bit"
