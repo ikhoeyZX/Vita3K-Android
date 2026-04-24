@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 android {
 	namespace "org.vita3k.emulator"
 	compileSdk 36
-	ndkVersion "30.0.14518594-beta1"
+	ndkVersion "29.0.14206865"
 	buildFeatures {
 		buildConfig true
 	}
