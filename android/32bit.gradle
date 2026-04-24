@@ -2,8 +2,8 @@ apply plugin: 'com.android.application'
 
 android {
 	namespace "org.vita3k.emulator"
-	compileSdk 34
-	ndkVersion "27.0.12077973"
+	compileSdk 36
+	ndkVersion "29.0.14206865"
 	buildFeatures {
 		buildConfig true
 	}
@@ -11,7 +11,7 @@ android {
 	defaultConfig {
 		applicationId "org.vita3k_32.emulator.ikhoeyZX"
 		minSdk 27
-		targetSdk 34
+		targetSdk 36
 		versionCode 12
 		versionName "0.2.0-12.5-ikhoeyZX-32bit"
 
@@ -100,8 +100,8 @@ android {
 }
 
 dependencies {
-	implementation 'androidx.appcompat:appcompat:1.6.0'
-	implementation 'androidx.core:core:1.14.0'
+	implementation 'androidx.appcompat:appcompat:1.7.1'
+	implementation 'androidx.core:core:1.18.0'
 	implementation 'androidx.core:core-google-shortcuts:1.2.0-alpha01'
 	implementation 'com.google.android.material:material:1.13.0-alpha11'
 	implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
