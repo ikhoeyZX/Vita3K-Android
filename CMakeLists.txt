@@ -9,13 +9,13 @@ endif()
 
 project(Vita3K)
 
-set(USE_UNICORN FALSE)
+set(USE_UNICORN TRUE)
 set(USE_DYNARMIC TRUE)
 
 #auto set for 32 bit arm
 if(ARCHITECTURE STREQUAL "arm")
-   set(USE_UNICORN FALSE)
-   set(USE_DYNARMIC TRUE)
+   set(USE_UNICORN TRUE)
+   set(USE_DYNARMIC FALSE)
 endif()
 
 # Detects the amount of processors of the host machine and forwards the result to CPU_COUNT
