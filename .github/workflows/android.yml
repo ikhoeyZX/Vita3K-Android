@@ -118,27 +118,27 @@ jobs:
           name: vita3k-${{ env.git_short_sha }}-reldebug_arm64.zip
           path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-reldebug.apk
 
-#      - name: Gradle build 32bit
-#        env:
-#          SIGNING_STORE_PATH: "/home/runner/keystore.jks"
-#          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-#          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-#          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-#        run: |
-#          bash -c "yes || Yes || true" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
-#          rm -rf android/build/*
-#          rm android/build.gradle
-#          mv android/32bit.gradle android/build.gradle
-#          sudo apt-get install -y libboost-all-dev
-#          sudo apt-get install -y build-essential libboost-system-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev
-#          export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
-#          ./gradlew --stacktrace --info --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease
+      - name: Gradle build 32bit
+        env:
+          SIGNING_STORE_PATH: "/home/runner/keystore.jks"
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          bash -c "yes || Yes || true" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
+          rm -rf android/build/*
+          rm android/build.gradle
+          mv android/32bit.gradle android/build.gradle
+          sudo apt-get install -y libboost-all-dev
+          sudo apt-get install -y build-essential libboost-system-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev
+          export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
+          ./gradlew --stacktrace --info --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease
 
-#      - name: Rename APK
-#        run: |
-#          mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release.apk
+      - name: Rename APK
+        run: |
+          mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release.apk
           
-#      - uses: actions/upload-artifact@v5
-#        with:
-#          name: vita3k-${{ env.git_short_sha }}-release_armv7a.zip
-#          path: android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release.apk
+      - uses: actions/upload-artifact@v5
+        with:
+          name: vita3k-${{ env.git_short_sha }}-release_armv7a.zip
+          path: android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release.apk
