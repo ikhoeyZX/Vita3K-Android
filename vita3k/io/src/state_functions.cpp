@@ -25,7 +25,10 @@
 #endif
 
 #include <io/state.h>
+#include <emuenv/state.h>
 
+EmuEnvState &emuenv;
+if (!env.use_unicorn)
 static const uint32_t page_size = []() -> uint32_t {
 #ifdef _WIN32
     SYSTEM_INFO system_info = {};
@@ -35,6 +38,7 @@ static const uint32_t page_size = []() -> uint32_t {
     return static_cast<uint32_t>(sysconf(_SC_PAGESIZE));
 #endif
 }();
+)
 
 SceOff FileStats::read(void *input_data, const int element_size, const SceSize element_count) const {
     if (!wrapped_file)
