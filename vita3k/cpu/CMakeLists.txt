@@ -10,17 +10,21 @@ src/disasm.cpp
 src/cpu.cpp
 )
 
-set(SOURCE_UNICORN_CPU
-include/cpu/impl/unicorn_cpu.h
+if(USE_UNICORN)
+   set(SOURCE_UNICORN_CPU
+   include/cpu/impl/unicorn_cpu.h
 
-src/unicorn_cpu.cpp
-)
+   src/unicorn_cpu.cpp
+   )
+endif()
 
-set(SOURCE_DYNARMIC_CPU
-include/cpu/impl/dynarmic_cpu.h
+if(USE_DYNARMIC)
+    set(SOURCE_DYNARMIC_CPU
+    include/cpu/impl/dynarmic_cpu.h
 
-src/dynarmic_cpu.cpp
-)
+    src/dynarmic_cpu.cpp
+    )
+endif()
 
 add_library( cpu STATIC ${SOURCE_LIST})
 if(USE_UNICORN)
