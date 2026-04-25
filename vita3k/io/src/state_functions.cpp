@@ -27,9 +27,10 @@
 #include <io/state.h>
 #include <emuenv/state.h>
 
+struct emuenv;
 EmuEnvState &emuenv;
-if (!env.use_unicorn)
 static const uint32_t page_size = []() -> uint32_t {
+if (!emuenv.use_unicorn) {
 #ifdef _WIN32
     SYSTEM_INFO system_info = {};
     GetSystemInfo(&system_info);
@@ -37,6 +38,9 @@ static const uint32_t page_size = []() -> uint32_t {
 #else
     return static_cast<uint32_t>(sysconf(_SC_PAGESIZE));
 #endif
+} else {
+    return 0x1000;
+}
 }();
 )
 
