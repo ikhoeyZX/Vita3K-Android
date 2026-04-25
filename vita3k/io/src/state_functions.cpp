@@ -25,12 +25,9 @@
 #endif
 
 #include <io/state.h>
-#include <emuenv/state.h>
 
-struct emuenv;
-EmuEnvState &emuenv;
 static const uint32_t page_size = []() -> uint32_t {
-if (!emuenv.use_unicorn) {
+
 #ifdef _WIN32
     SYSTEM_INFO system_info = {};
     GetSystemInfo(&system_info);
@@ -38,9 +35,7 @@ if (!emuenv.use_unicorn) {
 #else
     return static_cast<uint32_t>(sysconf(_SC_PAGESIZE));
 #endif
-} else {
-    return 0x1000;
-}
+   // return 0x1000;
 }();
 )
 
@@ -56,7 +51,8 @@ SceOff FileStats::read(void *input_data, const int element_size, const SceSize e
     // so set 1 byte to 0 in all pages to trigger all possible pagefaults in this range
     // todo: call a mem function to check this instead
     volatile uint8_t *input_addr = reinterpret_cast<volatile uint8_t *>(input_data);
-    for (int i = 0; i < element_size * element_count; i += page_size)
+   // for (int i = 0; i < element_size * element_count; i += page_size)
+    for (int i = 0; i < element_size * element_count; i += 0x1000)
         input_addr[i] = 0;
     input_addr[element_size * element_count - 1] = 0;
 
