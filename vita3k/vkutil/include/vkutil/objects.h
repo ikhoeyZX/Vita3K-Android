@@ -158,7 +158,7 @@ private:
 #if defined(__aarch64__) && defined(__x86_64__)
     std::vector<uint64_t> destroy_list;
 #else
-    std::vector<uint32_t> destroy_list;
+    std::vector<uintptr_t> destroy_list;
 #endif
 
 public:
@@ -173,9 +173,9 @@ public:
         destroy_list.push_back(static_cast<uint64_t>(T::objectType));
         destroy_list.push_back(std::bit_cast<uint64_t>(vk_object));
 #else
-        destroy_list.push_back(static_cast<uint32_t>(T::objectType));
+        destroy_list.push_back(static_cast<uintptr_t>(T::objectType));
         auto raw_handle = static_cast<typename T::CType>(vk_object);
-        destroy_list.push_back(reinterpret_cast<uint32_t>(raw_handle));
+        destroy_list.push_back(reinterpret_cast<uintptr_t>(raw_handle));
 #endif
         vk_object = nullptr;
     }
