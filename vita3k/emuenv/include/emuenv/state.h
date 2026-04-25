@@ -173,6 +173,7 @@ public:
     GDBState &gdb;
     HTTPState &http;
     bool file_open_need_delay = false;
+    bool use_unicorn = false;
 
     EmuEnvState();
     // declaring a destructor is necessary to forward declare unique_ptrs
