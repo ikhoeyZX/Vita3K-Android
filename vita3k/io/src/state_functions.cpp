@@ -37,7 +37,6 @@ static const uint32_t page_size = []() -> uint32_t {
 #endif
    // return 0x1000;
 }();
-)
 
 SceOff FileStats::read(void *input_data, const int element_size, const SceSize element_count) const {
     if (!wrapped_file)
