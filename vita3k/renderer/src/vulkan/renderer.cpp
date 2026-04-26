@@ -1011,9 +1011,9 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
         request_mapping = MappingMethod::DoubleBuffer;
     else if (config_mapping == "external-host")
         request_mapping = MappingMethod::ExernalHost;
-    else if (config_mapping == "page-table")
+    else if (config_mapping == "page-table" && cfg.current_config.cpu_backend == "Dynarmic")
         request_mapping = MappingMethod::PageTable;
-    else if (config_mapping == "native-buffer")
+    else if (config_mapping == "native-buffer" && cfg.current_config.cpu_backend == "Dynarmic")
         request_mapping = MappingMethod::NativeBuffer;
     const std::string_view mapping_string[] = { "Disabled", "Double buffer", "External Host", "Page Table", "Native Buffer" };
 
