@@ -306,7 +306,7 @@ void DestroyQueue::destroy_objects() {
 
         case vk::ObjectType::eImage: {
             // special case: this is a vma allocation
-            auto image = std::bit_cast<vk::Image>(el);
+            auto image = vk::Image(reinterpret_cast<VkImage>(el));
 #if defined(__aarch64__) || defined(__x86_64__)
             auto allocation = std::bit_cast<vma::Allocation>(destroy_list[idx++]);
 #else
@@ -318,7 +318,7 @@ void DestroyQueue::destroy_objects() {
 
         case vk::ObjectType::eBuffer: {
             // special case: this is a vma allocation
-            auto buffer = std::bit_cast<vk::Buffer>(el);
+            auto buffer = vk::Buffer(reinterpret_cast<VkBuffer>(el));
 #if defined(__aarch64__) || defined(__x86_64__)
             auto allocation = std::bit_cast<vma::Allocation>(destroy_list[idx++]);
 #else
@@ -336,7 +336,7 @@ void DestroyQueue::destroy_objects() {
             device.freeCommandBuffers(cmd_pool, cmd_buffer);
 #else
             auto cmd_buffer = reinterpret_cast<VkCommandBuffer>(static_cast<uintptr_t>(el));
-            auto cmd_pool = std::bit_cast<vk::CommandPool>(destroy_list[idx++]);
+            auto cmd_pool = vk::CommandPool(reinterpret_cast<VkCommandPool>(destroy_list[idx++]));
             device.freeCommandBuffers(cmd_pool, vk::CommandBuffer(cmd_buffer));
 #endif
             break;
