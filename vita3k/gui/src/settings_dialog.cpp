@@ -978,7 +978,13 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                };
 
                int list_pos = 0;
-               for (int i = 0; i < 5; i++) {
+               int total = 5;
+
+               // unicorn only support disabled and double-buffer
+               if (config_cpu_backend == CPUBackend::Unicorn)
+                   total = 1;
+               
+               for (int i = 0; i < total; i++) {
                    if ((1 << i) & emuenv.renderer->supported_mapping_methods_mask) {
                        list_pos++;
                    } else {
@@ -986,7 +992,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                        mapping_methods_indexes.erase(mapping_methods_indexes.begin() + list_pos);
                    }
                }
-
+               
                static int current_mapping = std::find(mapping_methods_indexes.begin(), mapping_methods_indexes.end(), config.memory_mapping) - mapping_methods_indexes.begin();
                if (ImGui::Combo(lang.gpu["mapping_method"].c_str(), &current_mapping, mapping_methods_strings.data(), mapping_methods_strings.size())) {
                    config.memory_mapping = mapping_methods_indexes[current_mapping];
