@@ -278,7 +278,7 @@ void DestroyQueue::add_cmd_buffer(vk::CommandBuffer cmd_buffer, vk::CommandPool 
 #if defined(__aarch64__) || defined(__x86_64__)
     destroy_list.push_back(std::bit_cast<uint64_t>(cmd_pool));
 #else
-    destroy_list.push_back(std::reinterpret_cast<uint32_t>(cmd_pool));
+    destroy_list.push_back(static_cast<uint32_t>(reinterpret_cast<uintptr_t>(cmd_pool)));
 #endif
 }
 
@@ -296,11 +296,8 @@ void DestroyQueue::destroy_objects() {
     int idx = 0;
     while (idx < destroy_list.size()) {
         const vk ::ObjectType type = static_cast<vk::ObjectType>(destroy_list[idx++]);
-#if defined(__aarch64__) || defined(__x86_64__)
         uint64_t el = destroy_list[idx++];
-#else
-        uint32_t el = destroy_list[idx++];
-#endif
+
         switch (type) {
             // handle special cases apart
 
