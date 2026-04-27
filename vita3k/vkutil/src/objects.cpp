@@ -1,3 +1,4 @@
+
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
 //
@@ -102,17 +103,16 @@ void Image::init_image(vk::ImageUsageFlags usage, vk::ComponentMapping mapping, 
     constexpr vk::ImageUsageFlags view_usages = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eStorage;
     if (!(usage & view_usages))
         return;
-    
-    // vk::ImageSubresourceRange range = (format == vk::Format::eD24UnormS8Uint) ? vkutil::ds_subresource_range : vkutil::color_subresource_range;
+
     vk::ImageSubresourceRange range;
     if (format == vk::Format::eD16UnormS8Uint || format == vk::Format::eD24UnormS8Uint || format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eX8D24UnormPack32) {
         range = vkutil::ds_subresource_range;
-    } else if (format == vk::Format::eS8Uint || format == vk::Format::eD16Unorm || format == vk::Format::eD32Sfloat){
+    } else if (format == vk::Format::eS8Uint || format == vk::Format::eD16Unorm || format == vk::Format::eD32Sfloat) {
         range = vkutil::d_subresource_range;
     } else {
         range = vkutil::color_subresource_range;
     }
-    
+
     vk::ImageViewCreateInfo view_info{
         .image = image,
         .viewType = vk::ImageViewType::e2D,
@@ -253,11 +253,7 @@ void DestroyQueue::add_image(Image &image) {
     if (image.image) {
         add(image.image);
         image.image = nullptr;
-#if defined(__aarch64__) || defined(__x86_64__)
-        destroy_list.push_back(std::bit_cast<uint64_t>(image.allocation));
-#else
-        destroy_list.push_back(static_cast<uint32_t>(reinterpret_cast<uintptr_t>(static_cast<VmaAllocation>(image.allocation))));
-#endif
+        destroy_list.push_back(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(static_cast<VmaAllocation>(image.allocation))));
     }
 }
 
@@ -265,21 +261,13 @@ void DestroyQueue::add_buffer(Buffer &buffer) {
     if (buffer.buffer) {
         add(buffer.buffer);
         buffer.buffer = nullptr;
-#if defined(__aarch64__) || defined(__x86_64__)
-        destroy_list.push_back(std::bit_cast<uint64_t>(buffer.allocation));
-#else
-        destroy_list.push_back(static_cast<uint32_t>(reinterpret_cast<uintptr_t>(static_cast<VmaAllocation>(buffer.allocation))));
-#endif
+        destroy_list.push_back(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(static_cast<VmaAllocation>(buffer.allocation))));
     }
 }
 
 void DestroyQueue::add_cmd_buffer(vk::CommandBuffer cmd_buffer, vk::CommandPool cmd_pool) {
     add(cmd_buffer);
-#if defined(__aarch64__) || defined(__x86_64__)
     destroy_list.push_back(std::bit_cast<uint64_t>(cmd_pool));
-#else
-    destroy_list.push_back(static_cast<uint32_t>(reinterpret_cast<uintptr_t>(cmd_pool)));
-#endif
 }
 
 #define HANDLE_DESTROY(type)                          \
@@ -297,45 +285,30 @@ void DestroyQueue::destroy_objects() {
     while (idx < destroy_list.size()) {
         const vk ::ObjectType type = static_cast<vk::ObjectType>(destroy_list[idx++]);
         uint64_t el = destroy_list[idx++];
-
         switch (type) {
             // handle special cases apart
 
         case vk::ObjectType::eImage: {
             // special case: this is a vma allocation
-            auto image = vk::Image(reinterpret_cast<VkImage>(el));
-#if defined(__aarch64__) || defined(__x86_64__)
-            auto allocation = std::bit_cast<vma::Allocation>(destroy_list[idx++]);
-#else
+            auto image = std::bit_cast<vk::Image>(el);
             auto allocation = reinterpret_cast<VmaAllocation>(static_cast<uintptr_t>(destroy_list[idx++]));
-#endif
             allocator.destroyImage(image, allocation);
             break;
         }
 
         case vk::ObjectType::eBuffer: {
             // special case: this is a vma allocation
-            auto buffer = vk::Buffer(reinterpret_cast<VkBuffer>(el));
-#if defined(__aarch64__) || defined(__x86_64__)
-            auto allocation = std::bit_cast<vma::Allocation>(destroy_list[idx++]);
-#else
+            auto buffer = std::bit_cast<vk::Buffer>(el);
             auto allocation = reinterpret_cast<VmaAllocation>(static_cast<uintptr_t>(destroy_list[idx++]));
-#endif
             allocator.destroyBuffer(buffer, allocation);
             break;
         }
 
         case vk::ObjectType::eCommandBuffer: {
             // special case: we must specify the command pool
-#if defined(__aarch64__) || defined(__x86_64__)
-            auto cmd_buffer = std::bit_cast<vk::CommandBuffer>(el);
-            auto cmd_pool = std::bit_cast<vk::CommandPool>(destroy_list[idx++]);
-            device.freeCommandBuffers(cmd_pool, cmd_buffer);
-#else
             auto cmd_buffer = reinterpret_cast<VkCommandBuffer>(static_cast<uintptr_t>(el));
-            auto cmd_pool = vk::CommandPool(reinterpret_cast<VkCommandPool>(destroy_list[idx++]));
+            auto cmd_pool = std::bit_cast<vk::CommandPool>(destroy_list[idx++]);
             device.freeCommandBuffers(cmd_pool, vk::CommandBuffer(cmd_buffer));
-#endif
             break;
         }
 
