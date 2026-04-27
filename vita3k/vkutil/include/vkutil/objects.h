@@ -155,7 +155,8 @@ public:
 class DestroyQueue {
 private:
     vk::Device device;
-    std::vector<uint64_t> destroy_list;
+   // std::vector<uint64_t> destroy_list;
+    std::vector<vma::Allocation> destroy_list;
 
 public:
     void init(vk::Device device);
