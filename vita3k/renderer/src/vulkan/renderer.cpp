@@ -1672,7 +1672,7 @@ bool VKState::support_custom_drivers() {
 }
 
 void VKState::set_turbo_mode(bool set) {
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && defined(__aarch64__)
     if (!support_custom_drivers())
         return;
 
