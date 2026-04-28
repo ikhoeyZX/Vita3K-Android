@@ -302,7 +302,7 @@ bool VKState::init() {
     return true;
 }
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && defined(__aarch64__)
 static void *load_custom_adreno_driver(const std::string &driver_name) {
     const fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver_name / "/";
 
@@ -424,7 +424,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 	    // VK_API_VERSION_1_(minor)
         vk_api_version = VK_MAKE_API_VERSION(0, 1, minor, 0);
 		
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && defined(__aarch64__)
         if (!config.current_config.custom_driver_name.empty()) {
             void *vulkan_handle = load_custom_adreno_driver(config.current_config.custom_driver_name);
             if (vulkan_handle) {
