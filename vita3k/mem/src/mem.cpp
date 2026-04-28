@@ -589,27 +589,20 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
     }
 }
 
-#else //ifdef 1
+#else // ifdef 1
 
 static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     auto context = static_cast<ucontext_t *>(uct);
 
-#ifdef __arm__ //ifdef 2
-    _arm_ctx *ctx = reinterpret_cast<_arm_ctx *>(context->uc_mcontext.__reserved);
-    // get the ESR register
-    while (ctx->magic != ESR_MAGIC) {
-        if (ctx->magic == 0)
-            [[unlikely]]
-            raise(SIGTRAP);
-        else
-            [[likely]]
-            ctx = reinterpret_cast<_arm_ctx *>(reinterpret_cast<uint8_t *>(ctx) + ctx->size);
-    }
-
-    const uint64_t esr = reinterpret_cast<esr_context *>(ctx)->esr;
+#ifdef __arm__ // ifdef 2
+    // TODO: handle ARM exceptions
+    const bool is_executing = false;
+    const bool is_writing = false;
+    LOG_CRITICAL("Unhandled ARM access violation at {}", log_hex(reinterpret_cast<uintptr_t>(info->si_addr)));
+    raise(SIGTRAP);
+    return;
 #elif __aarch64__ // ifdef 2
-    
-#ifdef __APPLE__ // ifdef 3
+#ifdef __APPLE__  // ifdef 3
     const uint32_t esr = context->uc_mcontext->__es.__esr;
 #else // ifdef 3
     _aarch64_ctx *ctx = reinterpret_cast<_aarch64_ctx *>(context->uc_mcontext.__reserved);
@@ -631,7 +624,6 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     const bool is_data_abort = (exception_class == 0b100100) || (exception_class == 0b100101);
     const bool is_writing = is_data_abort && (esr & (1 << 6));
 #else // ifdef 2
-    
 #ifdef __APPLE__ // ifdef 4
     const uint64_t err = context->uc_mcontext->__es.__err;
 #else // ifdef 4
@@ -639,7 +631,7 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
 #endif // ifdef 4
     const bool is_executing = err & 0x10;
     const bool is_writing = err & 0x2;
-#endif //ifdef 2
+#endif // ifdef 2
 
     if (!is_executing) {
         if (access_violation_handler(reinterpret_cast<uint8_t *>(info->si_addr), is_writing)) {
@@ -647,7 +639,7 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
         }
     }
 
-    LOG_CRITICAL("Unhandled access to {}", log_hex(*reinterpret_cast<uintptr_t *>(&info->si_addr)));
+    LOG_CRITICAL("Unhandled access to {}", log_hex(reinterpret_cast<uintptr_t>(info->si_addr)));
     raise(SIGTRAP);
     return;
 }
