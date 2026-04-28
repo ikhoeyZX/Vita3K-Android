@@ -142,8 +142,6 @@ endif ()
 if(ANDROID)
    if (ARCHITECTURE STREQUAL "arm64")
 	  add_subdirectory(libadrenotools)
-   else()
-      add_subdirectory(libadrenotools EXCLUDE_FROM_ALL)
    endif()
 endif()
 
