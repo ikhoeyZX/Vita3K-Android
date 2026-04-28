@@ -160,8 +160,6 @@ endif()
 if (ARCHITECTURE STREQUAL "x86" OR ARCHITECTURE STREQUAL "arm")
 	message(STATUS "Dynarmic support disabled for architecture: ${ARCHITECTURE}")
 	add_subdirectory(dynarmic EXCLUDE_FROM_ALL)
-	set(USE_DYNARMIC FALSE)
-    set(USE_UNICORN TRUE)
 elseif(USE_DYNARMIC)
    if (ARCHITECTURE STREQUAL "arm64")
 	set(DYNARMIC_TESTS OFF CACHE BOOL "")
@@ -290,6 +288,12 @@ elseif(ANDROID)
 		
 		file(COPY "${CMAKE_BINARY_DIR}/external/validation_layers/${VALIDATION_BINARY}/${ANDROID_ABI}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt")
 	endif()
+endif()
+
+# See https://github.com/KhronosGroup/Vulkan-Hpp?tab=readme-ov-file#cc-interop-for-handles
+if(ARCHITECTURE STREQUAL "arm")
+	message(STATUS "Enabling Vulkan-Hpp typesafe conversion for arm architecture")
+	target_compile_definitions(vulkan INTERFACE VULKAN_HPP_TYPESAFE_CONVERSION=1)
 endif()
 
 add_library(vma INTERFACE)
