@@ -59,10 +59,11 @@ import java.util.Locale;
 */
 public class SDLActivity extends Activity implements View.OnSystemUiVisibilityChangeListener {
     private static final String TAG = "SDL";
+/*
     private static final int SDL_MAJOR_VERSION = 2;
     private static final int SDL_MINOR_VERSION = 33;
     private static final int SDL_MICRO_VERSION = 0;
-/*
+
     // Display InputType.SOURCE/CLASS of events and devices
     //
     // SDLActivity.debugSource(device.getSources(), "device[" + device.getName() + "]");
@@ -278,6 +279,10 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         };
     }
 
+    protected void setupLayout(ViewGroup layout){
+        layout.addView(mSurface);
+    }
+    
     // Load the .so
     public void loadLibraries() {
        for (String lib : getLibraries()) {
@@ -345,6 +350,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             errorMsgBrokenLib = e.getMessage();
         }
 
+        /*
         if (!mBrokenLibraries) {
             String expected_version = String.valueOf(SDL_MAJOR_VERSION) + "." +
                                       String.valueOf(SDL_MINOR_VERSION) + "." +
@@ -355,7 +361,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                 errorMsgBrokenLib = "SDL C/Java version mismatch (expected " + expected_version + ", got " + version + ")";
             }
         }
-
+*/
         if (mBrokenLibraries) {
             mSingleton = this;
             AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(this);
@@ -396,7 +402,8 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         mSurface = createSDLSurface(this);
 
         mLayout = new RelativeLayout(this);
-        mLayout.addView(mSurface);
+        setupLayout(mLayout);
+       // mLayout.addView(mSurface);
 
         // Get our current screen orientation and pass it down.
         mCurrentOrientation = SDLActivity.getCurrentOrientation();
