@@ -9,8 +9,11 @@ endif()
 
 project(Vita3K)
 
-# use unicorn and dynarmic, if false only dynarmic
-set(USE_BOTH_CPU TRUE)
+set(USE_UNICORN TRUE)
+set(USE_DYNARMIC TRUE)
+
+# don't change it
+set(IS_ARM FALSE)
 
 # Detects the amount of processors of the host machine and forwards the result to CPU_COUNT
 include(ProcessorCount)
