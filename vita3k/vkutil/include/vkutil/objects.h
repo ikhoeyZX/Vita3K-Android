@@ -166,8 +166,12 @@ public:
             return;
 
         destroy_list.push_back(static_cast<uint64_t>(T::objectType));
+#if defined(__aarch64__) || defined(__x86_64__)
+        destroy_list.push_back(std::bit_cast<uint64_t>(vk_object));
+#else
         auto raw_handle = static_cast<typename T::CType>(vk_object);
         destroy_list.push_back(reinterpret_cast<uint64_t>(raw_handle));
+#endif
         vk_object = nullptr;
     }
 
