@@ -79,44 +79,44 @@ jobs:
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
           ./gradlew --stacktrace --info --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease
 
-      - name: Decode Keystore Debug build
-        env:
-          KEYSTORE_ENCODED: ${{ secrets.KEYSTORE_DEBUG }}
-        run: |
-          rm "/home/runner/keystore.jks"
-          echo $KEYSTORE_ENCODED | base64 --decode > "/home/runner/keystore.jks"
+#      - name: Decode Keystore Debug build
+#        env:
+#          KEYSTORE_ENCODED: ${{ secrets.KEYSTORE_DEBUG }}
+#        run: |
+#          rm "/home/runner/keystore.jks"
+#          echo $KEYSTORE_ENCODED | base64 --decode > "/home/runner/keystore.jks"
 
-      - name: Gradle build 64bit reldebug
-        env:
-          SIGNING_STORE_PATH: "/home/runner/keystore.jks"
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD_DEBUG }}
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS_DEBUG }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD_DEBUG }}
-        run: |
-          mkdir android/src/main/jniLibs
-          mkdir android/build/intermediates/merged_native_libs/reldebug
-          mkdir android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs
-          mkdir android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out
-          mkdir android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out/lib
-          export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
-          cp -r android/prebuilt/ android/src/main/jniLibs
-          cp -r android/prebuilt/ android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out/lib/
-          ./gradlew --configuration-cache --build-cache --parallel --configure-on-demand assembleReldebug
+#      - name: Gradle build 64bit reldebug
+#        env:
+#          SIGNING_STORE_PATH: "/home/runner/keystore.jks"
+#          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD_DEBUG }}
+#          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS_DEBUG }}
+#          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD_DEBUG }}
+#        run: |
+#          mkdir android/src/main/jniLibs
+#          mkdir android/build/intermediates/merged_native_libs/reldebug
+#          mkdir android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs
+#          mkdir android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out
+#          mkdir android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out/lib
+#          export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
+#          cp -r android/prebuilt/ android/src/main/jniLibs
+#          cp -r android/prebuilt/ android/build/intermediates/merged_native_libs/reldebug/mergeReldebugNativeLibs/out/lib/
+#          ./gradlew --configuration-cache --build-cache --parallel --configure-on-demand assembleReldebug
 
       - name: Rename APK
         run: |
           mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-release.apk
-          mv  android/build/outputs/apk/reldebug/android-reldebug.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-reldebug.apk
+#          mv  android/build/outputs/apk/reldebug/android-reldebug.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-reldebug.apk
           
       - uses: actions/upload-artifact@v7.0.0
         with:
           name: vita3k-${{ env.git_short_sha }}-release_arm64.zip
           path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-release.apk
 
-      - uses: actions/upload-artifact@v7.0.0
-        with:
-          name: vita3k-${{ env.git_short_sha }}-reldebug_arm64.zip
-          path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-reldebug.apk
+#      - uses: actions/upload-artifact@v7.0.0
+#        with:
+#          name: vita3k-${{ env.git_short_sha }}-reldebug_arm64.zip
+#          path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-reldebug.apk
 
       - name: Gradle build 32bit
         env:
