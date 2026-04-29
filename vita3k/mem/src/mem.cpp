@@ -59,6 +59,7 @@ static std::string get_error_msg() {
 #endif
 
 bool init(MemState &state, const bool use_page_table) {
+    
 #ifdef _WIN32
     SYSTEM_INFO system_info = {};
     GetSystemInfo(&system_info);
@@ -120,7 +121,8 @@ bool init(MemState &state, const bool use_page_table) {
 //    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
 #endif
 
-    state.use_page_table = use_page_table;
+    // state.use_page_table = use_page_table;
+    state.use_page_table = false;
     if (use_page_table) {
         state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / STANDARD_PAGE_SIZE]);
         // we use an absolute offset (it is faster), so each entry is the same
