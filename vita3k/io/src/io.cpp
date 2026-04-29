@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -101,7 +101,6 @@ SceSize get_directory_used_size(const VitaIoDevice device, const std::string &vf
 
 bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, const fs::path &pref_path, bool redirect_stdio) {
     // Iterate through the entire list of devices and create the subdirectories if they do not exist
-    LOG_INFO("INIT IO");
     for (auto i : VitaIoDevice::_names()) {
         if (!device::is_valid_output_path(i))
             continue;
