@@ -50,11 +50,10 @@ target_link_libraries(renderer PUBLIC display mem stb shader glutil threads conf
 target_link_libraries(renderer PRIVATE ddspp sdl2 stb ffmpeg xxHash::xxhash concurrentqueue)
 
 if (ANDROID)
-# idk why it wont detect arch type, so simple fix use global detector instead
-   if (IS_ARM)
-	    target_link_libraries(renderer PRIVATE android)
+   if(${ANDROID_ABI} STREQUAL "arm64-v8a")
+	    target_link_libraries(renderer PRIVATE android adrenotools)
    else()
-        target_link_libraries(renderer PRIVATE android adrenotools)
+        target_link_libraries(renderer PRIVATE android )
    endif()
 endif()
 
