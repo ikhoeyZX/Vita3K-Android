@@ -9,11 +9,9 @@ endif()
 
 project(Vita3K)
 
+# this set only work in 64 bit
 set(USE_UNICORN TRUE)
 set(USE_DYNARMIC TRUE)
-
-# don't change it
-set(IS_ARM FALSE)
 
 # Detects the amount of processors of the host machine and forwards the result to CPU_COUNT
 include(ProcessorCount)
