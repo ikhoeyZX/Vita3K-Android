@@ -269,7 +269,7 @@ target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Vulkan-
 if(APPLE)
 	target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/MoltenVK")
 elseif(ANDROID)
-	if(NOT ARCHITECTURE STREQUAL "arm")
+	if(NOT ${ANDROID_ABI} STREQUAL "armeabi-v7a")
 	   # add validation layer
 	   if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt/${ANDROID_ABI}/libVkLayer_khronos_validation.so")
 		   set(VALIDATION_BINARY "android-binaries-1.4.341.0")
