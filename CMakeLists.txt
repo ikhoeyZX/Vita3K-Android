@@ -14,6 +14,9 @@ project(Vita3K)
 set(USE_UNICORN TRUE)
 set(USE_DYNARMIC TRUE)
 
+# Vulkan validation layer
+set(USE_VK_LAYER FALSE)
+
 # Detects the amount of processors of the host machine and forwards the result to CPU_COUNT
 include(ProcessorCount)
 ProcessorCount(CPU_COUNT)
