@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.30.6)
 if(CMAKE_SYSTEM_NAME STREQUAL "Android")
 	set(ANDROID 1)
 	set(VCPKG_TARGET_ANDROID 1)
+	set(VCPKG_CMAKE_SYSTEM_VERSION 28)
 	# this file must be included before everything else
 	include("cmake/vcpkg_android.cmake")
 endif()
