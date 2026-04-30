@@ -26,6 +26,7 @@ if(ANDROID)
     # fix 32 bit build
     if(${ANDROID_ABI} STREQUAL "armeabi-v7a")
         option(BOOST_FILESYSTEM_DISABLE_GETRANDOM "Disable boost getrandom on 32bit" ON)
+		set(BOOST_FILESYSTEM_DISABLE_GETRANDOM ON CACHE BOOL "Force disable getrandom API in Boost" FORCE)
     endif()
     set(CMAKE_SYSROOT "")
     set(CMAKE_OSX_SYSROOT "")
