@@ -23,6 +23,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
 
 if(ANDROID)
+    # fix 32 bit build
+    if(${ANDROID_ABI} STREQUAL "armeabi-v7a")
+        option(BOOST_FILESYSTEM_DISABLE_GETRANDOM "Disable boost getrandom on 32bit" ON)
+    endif()
     set(CMAKE_SYSROOT "")
     set(CMAKE_OSX_SYSROOT "")
     set_property(GLOBAL
