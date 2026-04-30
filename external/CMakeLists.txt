@@ -269,25 +269,27 @@ target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Vulkan-
 if(APPLE)
 	target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/MoltenVK")
 elseif(ANDROID)
-	# add validation layer
-	if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt/${ANDROID_ABI}/libVkLayer_khronos_validation.so")
-		set(VALIDATION_BINARY "android-binaries-1.4.341.0")
+	if(ARCHITECTURE NOT STREQUAL "arm")
+	   # add validation layer
+	   if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt/${ANDROID_ABI}/libVkLayer_khronos_validation.so")
+		   set(VALIDATION_BINARY "android-binaries-1.4.341.0")
 
-		# download it if not already done
-		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/validation_layers.zip")
-			message(STATUS "Downloading validation layer...")
-			file(DOWNLOAD https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download/vulkan-sdk-1.4.341.0/${VALIDATION_BINARY}.zip
-				"${CMAKE_BINARY_DIR}/external/validation_layers.zip" SHOW_PROGRESS)
-		endif()
+		   # download it if not already done
+		   if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/validation_layers.zip")
+			   message(STATUS "Downloading validation layer...")
+			   file(DOWNLOAD https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download/vulkan-sdk-1.4.341.0/${VALIDATION_BINARY}.zip
+				   "${CMAKE_BINARY_DIR}/external/validation_layers.zip" SHOW_PROGRESS)
+		   endif()
 
-		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/validation_layers")
-			file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/validation_layers")
-			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${CMAKE_BINARY_DIR}/external/validation_layers.zip"
-				WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/validation_layers")
-		endif()
+		   if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/validation_layers")
+			   file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/validation_layers")
+			   execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${CMAKE_BINARY_DIR}/external/validation_layers.zip"
+				   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/validation_layers")
+		   endif()
 		
-		file(COPY "${CMAKE_BINARY_DIR}/external/validation_layers/${VALIDATION_BINARY}/${ANDROID_ABI}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt")
-	endif()
+		   file(COPY "${CMAKE_BINARY_DIR}/external/validation_layers/${VALIDATION_BINARY}/${ANDROID_ABI}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt")
+	   endif()
+   endif()
 endif()
 
 # See https://github.com/KhronosGroup/Vulkan-Hpp?tab=readme-ov-file#cc-interop-for-handles
