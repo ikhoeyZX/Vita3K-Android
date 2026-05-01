@@ -592,7 +592,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
 
                 // TODO: when the virtual process bringup is fixed, uncomment this
                 // Try allocating at image base for RELEXEC to avoid having to relocate the main module
-                /*
+                
                 segment_address = try_alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
 
                 if (!segment_address) {
@@ -606,7 +606,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                         return SCE_KERNEL_ERROR_NO_MEMORY; //TODO is this correct?
                     }
                 }
-                */
+                
 
                 if (isRelocatable) {
                     segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
