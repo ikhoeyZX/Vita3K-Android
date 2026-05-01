@@ -120,7 +120,12 @@ bool init(MemState &state, const bool use_page_table) {
 //    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
 #endif
 
+#ifdef __arm__
+    // unicorn cpu doesn't support page table
+    state.use_page_table = false;
+#else
     state.use_page_table = use_page_table;
+#endif
     if (use_page_table) {
         state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / STANDARD_PAGE_SIZE]);
         // we use an absolute offset (it is faster), so each entry is the same
