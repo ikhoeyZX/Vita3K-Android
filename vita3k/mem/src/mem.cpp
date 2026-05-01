@@ -37,7 +37,11 @@
 #endif
 
 const uint32_t STANDARD_PAGE_SIZE = KiB(4);
+#ifdef __arm__
+constexpr size_t TOTAL_MEM_SIZE = GiB(2);
+#else
 constexpr size_t TOTAL_MEM_SIZE = GiB(4);
+#endif
 constexpr bool LOG_PROTECT = false;
 constexpr bool PAGE_NAME_TRACKING = false;
 
@@ -91,7 +95,9 @@ bool init(MemState &state, const bool use_page_table) {
     const int fd = 0;
     const off_t offset = 0;
     // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address
-    state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+    // state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+    state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset));
+
     if (state.memory.get() == MAP_FAILED) {
         LOG_CRITICAL("mmap failed {}", get_error_msg());
         return false;
