@@ -649,6 +649,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     } else
         ImGui::PopStyleColor();
 
+#ifndef __arm__
     // CPU
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("CPU")) {
@@ -686,7 +687,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
-
+#endif
+    
     // GPU
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("GPU")) {
@@ -971,7 +973,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                std::vector<const char *> mapping_methods_strings = {
                    "Disabled",
                    "Double buffer",
-#ifdef __aarch64__
+#ifndef __arm__
                    "External host",
                    "Page table",
                    "Native buffer"
@@ -980,7 +982,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                std::vector<std::string_view> mapping_methods_indexes = {
                    "disabled",
                    "double-buffer",
-#ifdef __aarch64__
+#ifndef __arm__
                    "external-host",
                    "page-table",
                    "native-buffer"
@@ -1565,12 +1567,14 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SameLine();
         ImGui::Checkbox(lang.debug["dump_elfs"].c_str(), &emuenv.kernel.debugger.dump_elfs);
         SetTooltipEx(lang.debug["dump_elfs_description"].c_str());
+#ifndef __arm__
         if (emuenv.backend_renderer == renderer::Backend::Vulkan) {
             ImGui::Spacing();
             ImGui::Checkbox(lang.debug["validation_layer"].c_str(), &emuenv.cfg.validation_layer);
             ImGui::SameLine();
             SetTooltipEx(lang.debug["validation_layer_description"].c_str());
         }
+#endif
         ImGui::Spacing();
         ImGui::Checkbox(lang.debug["debug_menu"].c_str(), &emuenv.cfg.debug_menu);
         ImGui::Spacing();
