@@ -655,13 +655,17 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
         static const char *LIST_CPU_BACKEND[] = {
+#ifdef USE_DYNARMIC
             "Dynarmic",
+#endif
 #ifdef USE_UNICORN
             "Unicorn"
 #endif
         };
         static const char *LIST_CPU_BACKEND_DISPLAY[] = {
+#ifdef USE_DYNARMIC
             "Dynarmic",
+#endif
 #ifdef USE_UNICORN
             lang.cpu["unicorn"].c_str()
 #endif
@@ -714,7 +718,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 gpu_list.push_back(gpu.c_str());
             ImGui::Combo(lang.gpu["gpu"].c_str(), &emuenv.cfg.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size()));
             SetTooltipEx(lang.gpu["select_gpu"].c_str());
-
+            
+#ifdef __aarch64__
             if (emuenv.renderer->support_custom_drivers()) {
                 if (emuenv.cfg.gpu_idx == 0)
                     config.custom_driver_name = "";
@@ -739,6 +744,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     }
                 }
             }
+#endif
 
             if (is_ingame)
                 ImGui::BeginDisabled();
@@ -965,26 +971,24 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                std::vector<const char *> mapping_methods_strings = {
                    "Disabled",
                    "Double buffer",
+#ifdef __aarch64__
                    "External host",
                    "Page table",
                    "Native buffer"
+#endif
                };
                std::vector<std::string_view> mapping_methods_indexes = {
                    "disabled",
                    "double-buffer",
+#ifdef __aarch64__
                    "external-host",
                    "page-table",
                    "native-buffer"
+#endif
                };
 
                int list_pos = 0;
-               int total = 5;
-
-               // unicorn only support disabled and double-buffer
-               if (config_cpu_backend == CPUBackend::Unicorn)
-                   total = 1;
-               
-               for (int i = 0; i < total; i++) {
+               for (int i = 0; i < mapping_methods_strings.size(); i++) {
                    if ((1 << i) & emuenv.renderer->supported_mapping_methods_mask) {
                        list_pos++;
                    } else {
