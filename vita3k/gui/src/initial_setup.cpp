@@ -252,7 +252,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
             emuenv.cfg.initial_setup = true;
 #ifdef __arm__
             emuenv.cfg.cpu_backend = "Unicorn";
-            emuenv.cfg.cpu_opt = false
+            emuenv.cfg.cpu_opt = false;
             emuenv.cfg.cpu_unsafe = false;
 #endif
 
