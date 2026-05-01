@@ -109,15 +109,9 @@ enum ScreenshotFormat {
     code(int, "delay-start", 10, delay_start)                                                           \
     code(float, "background-alpha", .300f, background_alpha)                                            \
     code(int, "log-level", 0, log_level)                                                                \
-#ifdef __arm__
-    code(std::string, "cpu-backend", "Unicorn", cpu_backend)                                            \
-    code(bool, "cpu-opt", false, cpu_opt)                                                               \
-    code(bool, "cpu-unsafe", false, cpu_unsafe)                                                         \
-#else
     code(std::string, "cpu-backend", "Dynarmic", cpu_backend)                                           \
     code(bool, "cpu-opt", true, cpu_opt)                                                                \
     code(bool, "cpu-unsafe", false, cpu_unsafe)                                                         \
-#endif
     code(std::string, "pref-path", std::string{}, pref_path)                                            \
     code(bool, "discord-rich-presence", true, discord_rich_presence)                                    \
     code(bool, "wait-for-debugger", false, wait_for_debugger)                                           \
