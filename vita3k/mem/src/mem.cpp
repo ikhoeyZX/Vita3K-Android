@@ -71,8 +71,9 @@ bool init(MemState &state, const bool use_page_table) {
     assert(state.page_size >= 4096); // Limit imposed by Unicorn.
     assert(!use_page_table || state.page_size == STANDARD_PAGE_SIZE);
 
-    void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
-
+    // default 34
+    void *preferred_address = reinterpret_cast<void *>(1ULL << 31);
+ 
 #ifdef _WIN32
     state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(preferred_address, TOTAL_MEM_SIZE, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
     if (!state.memory) {
