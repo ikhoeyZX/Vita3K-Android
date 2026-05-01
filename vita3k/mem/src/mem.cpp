@@ -37,7 +37,7 @@
 #endif
 
 const uint32_t STANDARD_PAGE_SIZE = KiB(4);
-constexpr size_t TOTAL_MEM_SIZE = GiB(2.2);
+constexpr size_t TOTAL_MEM_SIZE = GiB(3);
 constexpr bool LOG_PROTECT = false;
 constexpr bool PAGE_NAME_TRACKING = false;
 
