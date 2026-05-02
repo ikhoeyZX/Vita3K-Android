@@ -592,7 +592,13 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
 
                 // TODO: when the virtual process bringup is fixed, uncomment this
                 // Try allocating at image base for RELEXEC to avoid having to relocate the main module
-                
+        #ifdef __arm__
+                if(seg_header.p_memsz == 0x81000000) {
+                    LOG_WARN("OUT OF MEMORY IN 32BIT, realloc...");
+                    seg_header.p_memsz = 0x3e000000
+                }
+        #endif
+                    
                 segment_address = try_alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
 
                 if (!segment_address) {
