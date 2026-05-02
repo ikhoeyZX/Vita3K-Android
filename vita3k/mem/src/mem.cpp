@@ -38,7 +38,7 @@
 
 const uint32_t STANDARD_PAGE_SIZE = KiB(4);
 #ifdef __arm__
-constexpr size_t TOTAL_MEM_SIZE = GiB(2.7);
+constexpr size_t TOTAL_MEM_SIZE = (static_cast<size_t>(1.2 * 1024 * 1024 * 1024) + 0xFFF) & ~0xFFF;
 #else
 constexpr size_t TOTAL_MEM_SIZE = GiB(4);
 #endif
