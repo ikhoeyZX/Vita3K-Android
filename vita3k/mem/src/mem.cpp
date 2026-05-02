@@ -37,7 +37,7 @@
 #endif
 
 const uint32_t STANDARD_PAGE_SIZE = KiB(4);
-constexpr size_t TOTAL_MEM_SIZE = GiB(3);
+constexpr size_t TOTAL_MEM_SIZE = GiB(2.5);
 constexpr bool LOG_PROTECT = false;
 constexpr bool PAGE_NAME_TRACKING = false;
 
@@ -102,7 +102,7 @@ bool init(MemState &state, const bool use_page_table) {
     }
 
     if (state.memory.get() == MAP_FAILED) {
-        LOG_CRITICAL("mmap failed {}", get_error_msg());
+        LOG_CRITICAL("retry, mmap failed {}", get_error_msg());
         return false;
     }
 #endif
