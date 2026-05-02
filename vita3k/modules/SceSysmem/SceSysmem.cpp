@@ -130,6 +130,19 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *pName, SceKernelMemBlockType 
     // https://wiki.henkaku.xyz/vita/SceSysmem_Types#memtype_bit_value
     Address start_address;
     switch (type) {
+#ifdef __arm__
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
+        start_address = 0x20600000;
+        break;
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
+        start_address = 0x387FFFFF;
+        break;
+    default:
+        start_address = 0x3FFFFFFF;
+        break;
+    }
+#else
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
         start_address = 0x70000000U;
@@ -142,7 +155,8 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *pName, SceKernelMemBlockType 
         start_address = 0x80000000U;
         break;
     }
-
+#endif
+    
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
