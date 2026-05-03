@@ -592,22 +592,26 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
 
                 // TODO: when the virtual process bringup is fixed, uncomment this
                 // Try allocating at image base for RELEXEC to avoid having to relocate the main module
+                auto map_seg_header = seg_header.p_memsz;
         #ifdef __arm__
                 if(seg_header.p_memsz == 0x81000000) {
                     LOG_WARN("OUT OF MEMORY IN 32BIT, realloc...");
-                    seg_header.p_memsz = 0x3e000000
+                    map_seg_header = 0x3e000000;
                 }
         #endif
                     
-                segment_address = try_alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
-
+                // segment_address = try_alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
+                segment_address = try_alloc_at(mem, seg_header.p_vaddr, map_seg_header, alloc_name.c_str());
+ 
                 if (!segment_address) {
-                    if (isRelocatable) { //Try allocating somewhere else
-                        segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
+                    if (isRelocatable) { // Try allocating somewhere else
+                        // segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
+                        segment_address = alloc(mem, map_seg_header, alloc_name.c_str());
                     }
 
                     if (!isRelocatable || !segment_address) {
-                        LOG_CRITICAL("Loading {} ELF {} failed: Could not allocate {} bytes @ {} for segment {}.", (isRelocatable) ? "relocatable" : "fixed", self_path, log_hex(seg_header.p_memsz), log_hex(seg_header.p_vaddr), seg_index);
+                        // LOG_CRITICAL("Loading {} ELF {} failed: Could not allocate {} bytes @ {} for segment {}.", (isRelocatable) ? "relocatable" : "fixed", self_path, log_hex(seg_header.p_memsz), log_hex(seg_header.p_vaddr), seg_index);
+                        LOG_CRITICAL("Loading {} ELF {} failed: Could not allocate {} bytes @ {} for segment {}.", (isRelocatable) ? "relocatable" : "fixed", self_path, log_hex(map_seg_header), log_hex(seg_header.p_vaddr), seg_index);
                         free_all_segments(mem, segment_reloc_info);
                         return SCE_KERNEL_ERROR_NO_MEMORY; //TODO is this correct?
                     }
@@ -615,9 +619,11 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                 
 
                 if (isRelocatable) {
-                    segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
+                    // segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
+                    segment_address = alloc(mem, map_seg_header, alloc_name.c_str());
                 } else {
-                    segment_address = alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
+                   // segment_address = alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
+                    segment_address = alloc_at(mem, seg_header.p_vaddr, map_seg_header, alloc_name.c_str());
                 }
 
                 if (!segment_address) {
@@ -645,7 +651,8 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                     }
                 }
 
-                segment_reloc_info[seg_index] = { segment_address, seg_header.p_vaddr, seg_header.p_memsz };
+                // segment_reloc_info[seg_index] = { segment_address, seg_header.p_vaddr, seg_header.p_memsz };
+                segment_reloc_info[seg_index] = { segment_address, seg_header.p_vaddr, map_seg_header };
             }
         } else if (seg_header.p_type == PT_SCE_RELA) {
             if (seg_infos[seg_index].compression == 2) {
