@@ -594,7 +594,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                 // Try allocating at image base for RELEXEC to avoid having to relocate the main module
                 auto map_seg_header = seg_header.p_memsz;
         #ifdef __arm__
-                if(seg_header.p_memsz == 0x81000000) {
+                if(log_hex(seg_header.p_memsz) == 0x81000000) {
                     LOG_WARN("OUT OF MEMORY IN 32BIT, realloc...");
                     map_seg_header = 0x3e000000;
                 }
