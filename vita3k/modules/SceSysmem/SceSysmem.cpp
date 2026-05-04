@@ -133,13 +133,13 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *pName, SceKernelMemBlockType 
 #ifdef __arm__
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
-        start_address = 0x20600000;
+        start_address = 0x19600000;
         break;
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
-        start_address = 0x387FFFFF;
+        start_address = 0x377FFFFF;
         break;
     default:
-        start_address = 0x3FFFFFFF;
+        start_address = 0x3EFFFFFF;
         break;
     }
 #else
@@ -161,6 +161,7 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *pName, SceKernelMemBlockType 
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
     Ptr<void> address = Ptr<void>(alloc_aligned(mem, size, pName, alignment, start_address));
+    LOG_DEBUG("start_address = {}", log_hex(start_address));
 
     if (!address) {
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
