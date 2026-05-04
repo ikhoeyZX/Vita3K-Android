@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -596,7 +596,8 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         #ifdef __arm__
                 if(seg_header.p_vaddr >= 0x81000000) {
                     LOG_WARN("OUT OF MEMORY IN 32BIT, realloc...");
-                    map_seg_header = seg_header.p_vaddr - 0x43000000;
+                   // map_seg_header = seg_header.p_vaddr - 0x43000000;
+                    map_seg_header = seg_header.p_vaddr - 0x50000000;
                     
                     //map_seg_header = 0x3e000000;
                     LOG_DEBUG("map_seg_header = {}", log_hex(map_seg_header));
@@ -606,7 +607,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                     
                 // segment_address = try_alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
                 segment_address = try_alloc_at(mem, map_seg_header, seg_header.p_memsz, alloc_name.c_str());
-
+ 
         #ifdef __arm__
                 LOG_DEBUG("segment_address 1 = {}", log_hex(segment_address));
         #endif
@@ -620,7 +621,6 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                     LOG_DEBUG("segment_address 2 = {}", log_hex(segment_address));
                     LOG_DEBUG("isRelocatable 1 = {}", isRelocatable);
         #endif
-                    
                     if (!isRelocatable || !segment_address) {
                         // LOG_CRITICAL("Loading {} ELF {} failed: Could not allocate {} bytes @ {} for segment {}.", (isRelocatable) ? "relocatable" : "fixed", self_path, log_hex(seg_header.p_memsz), log_hex(seg_header.p_vaddr), seg_index);
                         LOG_CRITICAL("Loading {} ELF {} failed: Could not allocate {} bytes @ {} for segment {}.", (isRelocatable) ? "relocatable" : "fixed", self_path, log_hex(seg_header.p_memsz), log_hex(map_seg_header), seg_index);
