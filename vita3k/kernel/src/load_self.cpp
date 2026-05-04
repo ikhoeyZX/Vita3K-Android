@@ -597,10 +597,10 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                 if(seg_header.p_vaddr >= 0x81000000) {
                     LOG_WARN("OUT OF MEMORY IN 32BIT, realloc...");
                    // map_seg_header = seg_header.p_vaddr - 0x43000000;
-                    map_seg_header = seg_header.p_vaddr - 0x50000000;
+                    map_seg_header = nullptr;
                     
                     //map_seg_header = 0x3e000000;
-                    LOG_DEBUG("map_seg_header = {}", log_hex(map_seg_header));
+                    // LOG_DEBUG("map_seg_header = {}", log_hex(map_seg_header));
        
                 }
         #endif
