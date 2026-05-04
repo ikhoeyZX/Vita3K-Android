@@ -96,7 +96,8 @@ bool init(MemState &state, const bool use_page_table) {
     const int fd = 0;
     const off_t offset = 0;
     // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address
-    state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+   // state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+     state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
      
     if (state.memory.get() == MAP_FAILED) {
         LOG_CRITICAL("pref address: mmap failed {}", get_error_msg());
