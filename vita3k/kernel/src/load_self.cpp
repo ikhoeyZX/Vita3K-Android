@@ -604,7 +604,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
        
                 }
         #endif
-                    
+                  
                 // segment_address = try_alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
                 segment_address = try_alloc_at(mem, map_seg_header, seg_header.p_memsz, alloc_name.c_str());
  
@@ -631,7 +631,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                 
 
                 if (isRelocatable) {
-                    // segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
+                    segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
                 } else {
                    // segment_address = alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
                     segment_address = alloc_at(mem, map_seg_header, seg_header.p_memsz, alloc_name.c_str());
@@ -643,7 +643,8 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         #endif
                 
                 if (!segment_address) {
-                    LOG_CRITICAL("Loading {} ELF {} failed: Could not allocate {} bytes @ {} for segment {}.", (isRelocatable) ? "relocatable" : "fixed", self_path, log_hex(seg_header.p_memsz), log_hex(seg_header.p_vaddr), seg_index);
+                    // LOG_CRITICAL("Loading {} ELF {} failed: Could not allocate {} bytes @ {} for segment {}.", (isRelocatable) ? "relocatable" : "fixed", self_path, log_hex(seg_header.p_memsz), log_hex(seg_header.p_vaddr), seg_index);
+                    LOG_CRITICAL("Loading {} ELF {} failed: Could not allocate {} bytes @ {} for segment {}.", (isRelocatable) ? "relocatable" : "fixed", self_path, log_hex(seg_header.p_memsz), map_seg_header, seg_index);
                     free_all_segments(mem, segment_reloc_info);
                     return SCE_KERNEL_ERROR_NO_MEMORY; // TODO is this correct?
                 }
