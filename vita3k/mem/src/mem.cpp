@@ -38,7 +38,7 @@
 
 const uint32_t STANDARD_PAGE_SIZE = KiB(4);
 #ifdef __arm__
-constexpr size_t TOTAL_MEM_SIZE = (static_cast<size_t>(2 * 1024 * 1024 * 1024) + 0xFFF) & ~0xFFF;
+constexpr size_t TOTAL_MEM_SIZE = (static_cast<size_t>(1.4 * 1024 * 1024 * 1024) + 0xFFF) & ~0xFFF;
 #else
 constexpr size_t TOTAL_MEM_SIZE = GiB(4);
 #endif
@@ -101,12 +101,7 @@ bool init(MemState &state, const bool use_page_table) {
      
     if (state.memory.get() == MAP_FAILED) {
         LOG_CRITICAL("pref address: mmap failed {}", get_error_msg());
-/*        state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
-     
-        if (state.memory.get() == MAP_FAILED) {
-            LOG_CRITICAL("mmap failed {}", get_error_msg());
-  */          return false;
-        }
+        return false;
     }
 #endif
 
