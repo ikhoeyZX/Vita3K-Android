@@ -606,11 +606,11 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                   
                 // segment_address = try_alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
                 segment_address = try_alloc_at(mem, map_seg_header, seg_header.p_memsz, alloc_name.c_str());
- 
+  
         #ifdef __arm__
                 LOG_DEBUG("segment_address 1 = {}", log_hex(segment_address));
         #endif
-                
+                /*
                 if (!segment_address) {
                     if (isRelocatable) { // Try allocating somewhere else
                          segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
@@ -628,7 +628,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                     }
                 }
                 
-
+*/
                 if (isRelocatable) {
                     segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
                 } else {
@@ -639,6 +639,12 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         #ifdef __arm__
                     LOG_DEBUG("segment_address 3 = {}", log_hex(segment_address));
                     LOG_DEBUG("isRelocatable 2 = {}", isRelocatable);
+        #endif
+                if (!segment_address) {
+                    segment_address = try_alloc_at(mem, map_seg_header, seg_header.p_memsz, alloc_name.c_str());
+                }
+        #ifdef __arm__
+                    LOG_DEBUG("segment_address 4 = {}", log_hex(segment_address));
         #endif
                 
                 if (!segment_address) {
