@@ -627,8 +627,8 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                         return SCE_KERNEL_ERROR_NO_MEMORY; //TODO is this correct?
                     }
                 }
-                
-*/
+            
+
                 if (isRelocatable) {
                     segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
                 } else {
@@ -646,7 +646,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         #ifdef __arm__
                     LOG_DEBUG("segment_address 4 = {}", log_hex(segment_address));
         #endif
-                
+                */
                 if (!segment_address) {
                     // LOG_CRITICAL("Loading {} ELF {} failed: Could not allocate {} bytes @ {} for segment {}.", (isRelocatable) ? "relocatable" : "fixed", self_path, log_hex(seg_header.p_memsz), log_hex(seg_header.p_vaddr), seg_index);
                     LOG_CRITICAL("Loading {} ELF {} failed: Could not allocate {} bytes @ {} for segment {}.", (isRelocatable) ? "relocatable" : "fixed", self_path, log_hex(seg_header.p_memsz), map_seg_header, seg_index);
