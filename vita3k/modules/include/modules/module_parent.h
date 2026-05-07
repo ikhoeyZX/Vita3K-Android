@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 #include <kernel/types.h>
 #include <module/bridge.h>
+#include <patch/patch.h>
 #include <util/types.h>
 
 struct CPUState;
@@ -35,7 +36,7 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
  * \param module_path Full path of module file (with device)
  * \return UID of the loaded module object or SCE_ERROR on failure
  */
-SceUID load_module(EmuEnvState &emuenv, const std::string &module_path);
+SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, const std::vector<Patch> *patches = nullptr);
 int unload_module(EmuEnvState &emuenv, SceUID module_id);
 
 uint32_t start_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});
