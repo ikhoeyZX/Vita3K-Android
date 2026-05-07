@@ -511,8 +511,8 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
         }
     };
     
-    lib_load_list.emplace_back("os0:kd/bootimage.skprx");
-    lib_load_list.emplace_back("os0:kd/sysmodule.skprx");
+   //  lib_load_list.emplace_back("os0:kd/bootimage.skprx");
+   //  lib_load_list.emplace_back("os0:kd/sysmodule.skprx");
     
     add_preload_module(0x00010000, SCE_SYSMODULE_INVALID, "libc", true);
     add_preload_module(0x00020000, SCE_SYSMODULE_DBG, "libdbg", false);
