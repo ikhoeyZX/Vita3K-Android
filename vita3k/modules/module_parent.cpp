@@ -242,6 +242,7 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, const Pa
     fs::path translated_module_path = translate_path(module_path.c_str(), device, emuenv.io.device_paths);
     auto system_path = device::construct_emulated_path(device, translated_module_path, emuenv.pref_path, emuenv.io.redirect_stdio);
 
+    /*
     if (module_path.starts_with("os0:kd/")) {
         if (!fs::exists(system_path)) {
             SceKernelBootimageInfo *bootimage_info = Ptr<SceKernelBootimageInfo>(emuenv.kernel.export_nids[nid_sceKernelBootimageInfo]).get(emuenv.mem);
@@ -258,6 +259,7 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, const Pa
             }
         }
     }
+    */
 
     if (emuenv.io.case_isens_find_enabled && !fs::exists(system_path)) {
         // Attempt a case-insensitive file search.
