@@ -82,9 +82,18 @@ CubebAudioAdapter::~CubebAudioAdapter() {
         cubeb_destroy(cubeb_ctx);
 }
 
-bool CubebAudioAdapter::init() {
+bool CubebAudioAdapter::init(bool type) {
+    const char* value = nullptr;
+
+#ifdef ANDROID
+    if (type)
+        value = "opensl";
+    else
+        value = "aaudio";
+#endif
+    
  //   if (cubeb_init(&cubeb_ctx, "Vita3K audio", "opensl") != CUBEB_OK) {
-    if (cubeb_init(&cubeb_ctx, "Vita3K audio", nullptr) != CUBEB_OK) {
+    if (cubeb_init(&cubeb_ctx, "Vita3K audio", value) != CUBEB_OK) {
         LOG_ERROR("Could not initialize cubeb context");
         return false;
     }
@@ -107,7 +116,8 @@ AudioOutPortPtr CubebAudioAdapter::open_port(int nb_channels, int freq, int nb_s
     uint32_t latency;
     if (cubeb_get_min_latency(cubeb_ctx, &port->spec, &latency) != CUBEB_OK)
         // default value (min latency is not supported on OpenSL)
-        latency = 256;
+        // latency = 256;
+        latency = 768;
 
     if (cubeb_stream_init(cubeb_ctx, &port->out_stream, "Vita3K audio out", nullptr, nullptr, nullptr,
             &port->spec, latency, impl_cubeb_audio_callback, impl_cubeb_state_callback, port.get())
