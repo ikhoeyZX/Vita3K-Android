@@ -51,6 +51,9 @@ public:
 
     CallbackOrAccessOneWord CompileSendOneWord(bool two, unsigned opc1, CoprocReg CRn,
         CoprocReg CRm, unsigned opc2) override {
+        if (CRn == CoprocReg::C13 && CRm == CoprocReg::C0 && opc1 == 0 && opc2 == 3) {
+            return &tpidruro;
+        }
         return CallbackOrAccessOneWord{};
     }
 
