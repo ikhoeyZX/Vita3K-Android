@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 
 #include <util/string_utils.h>
 
-constexpr bool TRACE_RETURN_VALUES = true;
+constexpr bool TRACE_RETURN_VALUES = false;
 constexpr bool LOG_REGISTERS = false;
 
 static inline void func_trace(CPUState &state) {
@@ -128,7 +128,7 @@ void UnicornCPU::log_error_details(uc_err code) {
     LOG_ERROR("Unicorn error {}. {}\n{}", log_hex(code), uc_strerror(code), this->save_context().description());
 
     auto pc = this->get_pc();
-    if (pc < parent->mem->page_size)
+    if (pc < parent->mem->host_page_size)
         LOG_CRITICAL("PC is 0x{:x}", pc);
     else
         LOG_WARN("Executing: {}", disassemble(*parent, pc, nullptr));
@@ -150,7 +150,11 @@ UnicornCPU::UnicornCPU(CPUState *state)
 
     // Don't map the null page into unicorn so that unicorn returns access error instead of
     // crashing the whole emulator on invalid access
-    err = uc_mem_map_ptr(uc.get(), state->mem->page_size, GiB(4) - state->mem->page_size, UC_PROT_ALL, &state->mem->memory[state->mem->page_size]);
+#ifdef __arm__
+    err = uc_mem_map_ptr(uc.get(), state->mem->host_page_size, GiB(1.2) - state->mem->host_page_size, UC_PROT_ALL, &state->mem->memory[state->mem->host_page_size]);
+#else
+    err = uc_mem_map_ptr(uc.get(), state->mem->host_page_size, GiB(4) - state->mem->host_page_size, UC_PROT_ALL, &state->mem->memory[state->mem->host_page_size]);
+#endif
     assert(err == UC_ERR_OK);
 
     enable_vfp_fpu(uc.get());
