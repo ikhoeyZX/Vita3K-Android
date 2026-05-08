@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ public:
     CubebAudioAdapter(AudioState &audio_state);
     ~CubebAudioAdapter() override;
 
-    bool init() override;
+    bool init(bool type) override;
     AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample) override;
     void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) override;
     void set_volume(AudioOutPort &out_port, float volume) override;
