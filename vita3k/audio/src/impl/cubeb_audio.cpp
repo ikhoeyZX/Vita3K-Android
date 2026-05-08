@@ -82,14 +82,14 @@ CubebAudioAdapter::~CubebAudioAdapter() {
         cubeb_destroy(cubeb_ctx);
 }
 
-bool CubebAudioAdapter::init(bool type) {
+bool CubebAudioAdapter::init() {
     const char* value = nullptr;
 
 #ifdef ANDROID
-    if (type)
-        value = "opensl";
-    else
+    if (cubeb_aaudio)
         value = "aaudio";
+    else
+        value = "opensl";
 #endif
     
  //   if (cubeb_init(&cubeb_ctx, "Vita3K audio", "opensl") != CUBEB_OK) {
