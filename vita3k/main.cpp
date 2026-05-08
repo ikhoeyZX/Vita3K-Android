@@ -284,8 +284,7 @@ int main(int argc, char *argv[]) {
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS, "0");
 
         const auto audio_mode = emuenv.cfg.audio_drv;
-        if (audio_mode != "auto")
-            SDL_SetHint(SDL_HINT_AUDIODRIVER, audio_mode.c_str());
+        SDL_SetHint(SDL_HINT_AUDIODRIVER, audio_mode.c_str());
 
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_SENSOR) < 0) {
             auto fail_text = fmt::format("SDL initialization failed.\n Reason: {}", SDL_GetError());
