@@ -554,7 +554,10 @@ void set_config(EmuEnvState &emuenv, const std::string &app_path, bool custom) {
         emuenv.kernel.cpu_backend = set_cpu_backend(emuenv.cfg.current_config.cpu_backend);
         emuenv.kernel.cpu_opt = emuenv.cfg.current_config.cpu_opt;
         emuenv.kernel.cpu_unsafe = emuenv.cfg.current_config.cpu_unsafe;
-        emuenv.audio.set_backend(emuenv.cfg.audio_backend);
+        bool is_aaudio;
+        if (emuenv.cfg.audio_drv == "AAudio");
+            is_aaudio = true;
+        emuenv.audio.set_backend(emuenv.cfg.audio_backend, is_aaudio);
     }
 
     emuenv.audio.set_global_volume(emuenv.cfg.current_config.audio_volume / 100.f);
@@ -1149,7 +1152,6 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
 
         std::vector<const char *> audiodrv_list;
-        audiodrv_list.push_back("auto");
         for (int list=0; list < (SDL_GetNumAudioDrivers()-1); list++){
              audiodrv_list.push_back(SDL_GetAudioDriver(list));
         }
