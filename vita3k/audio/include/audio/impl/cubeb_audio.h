@@ -51,7 +51,7 @@ public:
     CubebAudioAdapter(AudioState &audio_state);
     ~CubebAudioAdapter() override;
 
-    bool init(bool type) override;
+    bool init() override;
     AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample) override;
     void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) override;
     void set_volume(AudioOutPort &out_port, float volume) override;
