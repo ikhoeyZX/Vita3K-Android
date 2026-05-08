@@ -86,10 +86,10 @@ bool CubebAudioAdapter::init() {
     const char* value = nullptr;
 
 #ifdef ANDROID
-    if (cubeb_aaudio)
+//    if (cubeb_aaudio)
         value = "aaudio";
-    else
-        value = "opensl";
+//    else
+//        value = "opensl";
 #endif
     
  //   if (cubeb_init(&cubeb_ctx, "Vita3K audio", "opensl") != CUBEB_OK) {
