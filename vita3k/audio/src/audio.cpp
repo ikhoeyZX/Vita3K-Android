@@ -84,7 +84,7 @@ bool AudioState::init(const ResumeAudioThread &resume_thread, const std::string 
     return true;
 }
 
-void AudioState::set_backend(const std::string &adapter_name) {
+void AudioState::set_backend(const std::string &adapter_name, bool cubeb_backend) {
     if (adapter_name == this->audio_backend)
         return;
 
@@ -95,6 +95,7 @@ void AudioState::set_backend(const std::string &adapter_name) {
         adapter = std::make_unique<SDLAudioAdapter>(*this);
     } else if (adapter_name == "Cubeb") {
         adapter = std::make_unique<CubebAudioAdapter>(*this);
+        cubeb_aaudio = cubeb_backend;
     } else {
         LOG_ERROR("Unknown audio adapter {}", adapter_name);
         return;
