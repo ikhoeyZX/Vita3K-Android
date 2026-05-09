@@ -290,6 +290,9 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
     Address vaddr = 0;
     const std::unique_lock<std::mutex> lock(state.protect_mutex);
     if (fault_addr < memory_addr || fault_addr >= memory_addr + TOTAL_MEM_SIZE) {
+#ifdef __arm__
+        return false;
+#else
         if (state.use_page_table) {
             // this may come from an external mapping
             uint64_t addr_val = std::bit_cast<uint64_t>(addr);
@@ -302,6 +305,7 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
         } else {
             return false;
         }
+#endif
     } else {
         vaddr = static_cast<Address>(fault_addr - memory_addr);
     }
