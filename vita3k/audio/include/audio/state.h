@@ -122,7 +122,7 @@ struct AudioState {
     bool cubeb_aaudio = false;
 
     bool init(const ResumeAudioThread &resume_thread, const std::string &adapter_name);
-    void set_backend(const std::string &adapter_name, bool cubeb_backend);
+    void set_backend(const std::string &adapter_name);
     AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample);
     void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer);
     void set_volume(AudioOutPort &out_port, float volume);
