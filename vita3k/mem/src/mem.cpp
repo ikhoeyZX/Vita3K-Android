@@ -50,11 +50,11 @@ constexpr bool PAGE_NAME_TRACKING = true;
 #endif
 
 // TODO: support multiple handlers
-AccessViolationHandler access_violation_handler;
-void register_access_violation_handler(const AccessViolationHandler &handler);
+static AccessViolationHandler access_violation_handler;
+static void register_access_violation_handler(const AccessViolationHandler &handler);
 
-Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force);
-void delete_memory(uint8_t *memory);
+static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force);
+static void delete_memory(uint8_t *memory);
 
 #ifdef _WIN32
 std::string get_error_msg() {
