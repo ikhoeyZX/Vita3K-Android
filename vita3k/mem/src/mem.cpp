@@ -38,7 +38,7 @@
 
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
 #ifdef __arm__
-constexpr size_t TOTAL_MEM_SIZE = GiB(2.4);
+constexpr size_t TOTAL_MEM_SIZE = static_cast<uint32_t>(GiB(2.4));
 #else
 constexpr size_t TOTAL_MEM_SIZE = GiB(4);
 #endif
@@ -400,6 +400,10 @@ bool is_protecting(MemState &state, Address addr, MemPerm *perm) {
 }
 
 void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *addr_ptr) {
+#ifdef __arm__
+    // 32bit doesn't support page table
+    return;
+#else
     assert((size & 4095) == 0);
     if (!mem.use_page_table)
         return;
@@ -420,10 +424,15 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
 
     const std::unique_lock<std::mutex> lock(mem.protect_mutex);
     mem.external_mapping[addr_value] = { addr, size };
+#endif
 }
 
 void remove_external_mapping(MemState &mem, uint8_t *addr_ptr, uint32_t size) {
+#ifdef __arm__
+    uintptr_t addr_value = reinterpret_cast<uintptr_t>(addr_ptr);
+#else
     uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
+#endif
     MemExternalMapping mapping;
     if (mem.use_page_table) {
         const std::unique_lock<std::mutex> lock(mem.protect_mutex);
@@ -598,7 +607,7 @@ void deinit_mem(MemState &state) {
     state.host_page_size = 0;
 }
 
-#ifdef _WIN32
+#ifdef _WIN32 // ifdef 1
 
 static LONG WINAPI exception_handler(PEXCEPTION_POINTERS pExp) noexcept {
     if (pExp->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT && IsDebuggerPresent()) {
@@ -624,7 +633,7 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
     }
 }
 
-#else
+#else // ifdef 1
 
 static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     auto context = static_cast<ucontext_t *>(uct);
@@ -636,7 +645,7 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     LOG_CRITICAL("Unhandled ARM access violation at {}", log_hex(reinterpret_cast<uintptr_t>(info->si_addr)));
     raise(SIGTRAP);
     return;
-#elif __aarch64__
+#elif __aarch64__ // ifdef 2
 #ifdef __APPLE__
     const uint32_t esr = context->uc_mcontext->__es.__esr;
 #else
