@@ -26,7 +26,7 @@
 
 struct MemState;
 
-CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem);
+CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, bool cpu_unsafe, SceUID thread_id, std::size_t processor_id, MemState &mem);
 int run(CPUState &state);
 int step(CPUState &state);
 void stop(CPUState &state);
