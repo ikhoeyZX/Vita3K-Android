@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -144,7 +144,14 @@ struct KernelState {
     SceRtcTick base_tick;
     Ptr<SceProcessParam> process_param;
 
+    SceUID get_nex
     Debugger debugger;
+
+    // kubridge exception handlers (DABT=0, PABT=1, UNDEF=2)
+    static constexpr int EXCEPTION_HANDLER_MAX = 3;
+    std::atomic<Address> exception_handlers[EXCEPTION_HANDLER_MAX]{};
+
+    SceUID get_nex
 
     SceUID get_next_uid() {
         return next_uid++;
