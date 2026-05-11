@@ -205,7 +205,7 @@ struct SceKernelBootimageInfo {
 
 constexpr uint32_t nid_sceKernelBootimageInfo = 0x9C08E88A;
 
-SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
+SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, const Patches *const patches) {
     // Check if module is already loaded
     {
         const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
