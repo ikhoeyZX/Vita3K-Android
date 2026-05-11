@@ -102,3 +102,6 @@
 [submodule "external/tracy"]
 	path = external/tracy
 	url = https://github.com/wolfpld/tracy.git
+[submodule "external/substitute"]
+	path = external/substitute
+	url = https://github.com/Vita3K/substitute.git
