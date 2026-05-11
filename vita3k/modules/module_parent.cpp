@@ -192,6 +192,19 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
     }
 }
 
+struct SceKernelBootimageModules {
+    Ptr<const char> path;
+    Ptr<const void> data;
+    SceSize size;
+};
+
+struct SceKernelBootimageInfo {
+    SceSize number;
+    Ptr<const SceKernelBootimageModules> list;
+};
+
+constexpr uint32_t nid_sceKernelBootimageInfo = 0x9C08E88A;
+
 SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
     // Check if module is already loaded
     {
@@ -207,6 +220,43 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
     }
 
     LOG_INFO("Loading module \"{}\"", module_path);
+    if (module_path.starts_with("vs0:sys/external/")) {
+        // check if module is LLEd or not
+        // check only for this path because app modules are always LLEd and os0 modules can be loaded only by developer.
+        const auto module_name = fs::path(module_path).stem().string();
+        if (!is_lle_module(module_name, emuenv)) {
+            LOG_INFO("Module {} is HLE. Skipping load.", module_name);
+            const SceKernelModulePtr kernelModuleInfo = std::make_shared<KernelModule>();
+            memset(kernelModuleInfo.get(), 0, sizeof(KernelModule));
+
+            auto *sceKernelModuleInfo = &kernelModuleInfo->info;
+            sceKernelModuleInfo->size = sizeof(*sceKernelModuleInfo);
+            strncpy(sceKernelModuleInfo->path, module_path.c_str(), sizeof(sceKernelModuleInfo->path) - 1);
+            // module_name is stubbed.
+            strncpy(sceKernelModuleInfo->module_name, module_name.c_str(), 28);
+
+            const SceUID uid = emuenv.kernel.get_next_uid();
+            sceKernelModuleInfo->modid = uid;
+            {
+                const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+                emuenv.kernel.loaded_modules[uid] = kernelModuleInfo;
+            }
+            return uid;
+        }
+    }
+
+    const auto load_module_data = [&](const void *module_data) -> SceUID {
+        SceUID module_id = load_self(emuenv.kernel, emuenv.mem, module_data, module_path, emuenv.log_path / "elfdumps" / emuenv.io.title_id, patches);
+
+        if (module_id >= 0) {
+            const auto module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
+            LOG_INFO("Module {} (at \"{}\") loaded", module->info.module_name, module_path);
+        } else {
+            LOG_ERROR("Failed to load module {}", module_path);
+        }
+
+        return module_id;
+    };
     vfs::FileBuffer module_buffer;
     bool res;
     VitaIoDevice device = device::get_device(module_path);
