@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,6 +16,8 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <module/module.h>
+
+#include <cstring>
 
 EXPORT(int, __aeabi_idiv) {
     return UNIMPLEMENTED();
@@ -77,20 +79,26 @@ EXPORT(int, kmemchr) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, kmemcmp) {
-    return UNIMPLEMENTED();
+EXPORT(int, kmemcmp, const void *s1, const void *s2, SceSize len) {
+    TRACY_FUNC(kmemcmp, s1, s2, len);
+    return memcmp(s1, s2, len);
 }
 
-EXPORT(int, kmemcpy) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, kmemcpy, Ptr<void> dst, const void *src, SceSize len) {
+    TRACY_FUNC(kmemcpy, dst, src, len);
+    memcpy(dst.get(emuenv.mem), src, len);
+    return dst;
 }
 
-EXPORT(int, kmemmove) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, kmemmove, Ptr<void> dst, const void *src, SceSize len) {
+    TRACY_FUNC(kmemmove, dst, src, len);
+    memmove(dst.get(emuenv.mem), src, len);
+    return dst;
 }
 
-EXPORT(int, kmemset) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, kmemset, Ptr<void> dst, int ch, SceSize len) {
+    memset(dst.get(emuenv.mem), ch, len);
+    return dst;
 }
 
 EXPORT(int, rshift) {
@@ -101,24 +109,32 @@ EXPORT(int, ksnprintf) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, kstrchr) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, kstrchr, const char *str, int c) {
+    TRACY_FUNC(kstrchr, str, c);
+    char *res = const_cast<char *>(strchr(str, c));
+    return Ptr<char>(res, emuenv.mem);
 }
 
-EXPORT(int, kstrcmp) {
-    return UNIMPLEMENTED();
+EXPORT(int, kstrcmp, const char *s1, const char *s2) {
+    TRACY_FUNC(kstrcmp, s1, s2);
+    return strcmp(s1, s2);
 }
 
-EXPORT(int, strlcat) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, kstrlcat, char *dst, const char *src, SceSize len) {
+    TRACY_FUNC(strlcat, dst, src, len);
+    char *res = strncat(dst, src, len);
+    return Ptr<char>(res, emuenv.mem);
 }
 
-EXPORT(int, strlcpy) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, strlcpy, char *dst, const char *src, SceSize len) {
+    TRACY_FUNC(strlcpy, dst, src, len);
+    char *res = strncpy(dst, src, len);
+    return Ptr<char>(res, emuenv.mem);
 }
 
-EXPORT(int, kstrlen) {
-    return UNIMPLEMENTED();
+EXPORT(uint32_t, kstrlen, const char *s1, SceSize maxlen) {
+    TRACY_FUNC(kstrlen, s1, maxlen);
+    return static_cast<uint32_t>(strnlen(s1, maxlen));
 }
 
 EXPORT(int, kstrncat) {
@@ -141,8 +157,10 @@ EXPORT(int, kstrrchr) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, kstrstr) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>, kstrstr, const char *s1, const char *s2) {
+    TRACY_FUNC(kstrstr, s1, s2);
+    char *res = const_cast<char *>(strstr(s1, s2));
+    return Ptr<char>(res, emuenv.mem);
 }
 
 EXPORT(int, kstrtol) {
