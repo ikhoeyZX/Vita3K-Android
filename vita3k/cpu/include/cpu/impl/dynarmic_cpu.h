@@ -21,7 +21,9 @@
 
 #include <cpu/functions.h>
 #include <cpu/impl/interface.h>
-
+#ifdef USE_UNICORN
+#include <cpu/impl/unicorn_cpu.h>
+#endif
 #include <memory>
 
 class ArmDynarmicCallback;
@@ -44,11 +46,12 @@ class DynarmicCPU : public CPUInterface {
     bool log_mem = false;
     bool log_code = false;
     bool cpu_opt;
+    bool cpu_unsafe;
 
     std::unique_ptr<Dynarmic::A32::Jit> make_jit();
 
 public:
-    DynarmicCPU(CPUState *state, std::size_t processor_id, bool cpu_opt);
+    DynarmicCPU(CPUState *state, std::size_t processor_id, bool cpu_opt, bool cpu_unsafe);
     ~DynarmicCPU() override;
     int run() override;
     void stop() override;
