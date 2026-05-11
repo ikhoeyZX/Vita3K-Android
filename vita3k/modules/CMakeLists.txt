@@ -69,6 +69,7 @@ set(SOURCE_LIST
 	SceKernelDmacMgr/SceDmacmgr.cpp
 	SceKernelModulemgr/SceBacktrace.cpp
 	SceKernelModulemgr/SceModulemgr.cpp
+	SceKernelModulemgr/SceModulemgrForDriver.cpp
 	SceKernelThreadMgr/SceThreadmgr.cpp
 	SceKernelThreadMgr/SceThreadmgrCoredumpTime.cpp
 	SceKernelThreadMgr/SceThreadmgrForDriver.cpp
@@ -182,11 +183,13 @@ set(SOURCE_LIST
 	SceSysmem/SceCpu.cpp
 	SceSysmem/SceCpuForDriver.cpp
 	SceSysmem/SceDebugForDriver.cpp
+	SceSysmem/SceDebugForKernel.cpp
 	SceSysmem/SceDebugLed.cpp
 	SceSysmem/SceDipsw.cpp
 	SceSysmem/SceDipswForDriver.cpp
 	SceSysmem/SceProcEventForDriver.cpp
 	SceSysmem/SceSysclibForDriver.cpp
+	SceSysmem/SceQafMgrForDriver.cpp
 	SceSysmem/SceSysmem.cpp
 	SceSysmem/SceSysmemForDriver.cpp
 	SceSysmodule/SceSysmodule.cpp
