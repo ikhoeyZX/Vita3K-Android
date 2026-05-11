@@ -144,14 +144,11 @@ struct KernelState {
     SceRtcTick base_tick;
     Ptr<SceProcessParam> process_param;
 
-    SceUID get_nex
     Debugger debugger;
 
     // kubridge exception handlers (DABT=0, PABT=1, UNDEF=2)
     static constexpr int EXCEPTION_HANDLER_MAX = 3;
     std::atomic<Address> exception_handlers[EXCEPTION_HANDLER_MAX]{};
-
-    SceUID get_nex
 
     SceUID get_next_uid() {
         return next_uid++;
