@@ -301,8 +301,6 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, const Pa
         return SCE_ERROR_ERRNO_ENOENT;
     }
 
-    const std::vector<Patch> patches = get_patches(emuenv.patch_path, emuenv.io.title_id, module_path);
-
     SceUID module_id = load_self(emuenv.kernel, emuenv.mem, module_buffer.data(), module_path, emuenv.log_path, patches);
 
     if (module_id >= 0) {
