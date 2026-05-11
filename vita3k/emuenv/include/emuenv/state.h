@@ -39,7 +39,6 @@ struct State;
 };
 
 struct Config;
-struct CPUProtocolBase;
 struct MemState;
 struct CtrlState;
 struct TouchState;
@@ -59,6 +58,7 @@ struct RegMgrState;
 struct SfoFile;
 struct GDBState;
 struct HTTPState;
+struct CameraState;
 
 typedef int32_t SceInt;
 struct IVector2 {
@@ -104,6 +104,7 @@ private:
     std::unique_ptr<SfoFile> _sfo_handle;
     std::unique_ptr<GDBState> _gdb;
     std::unique_ptr<HTTPState> _http;
+    std::unique_ptr<CameraState> _camera;
 
 public:
     // App info contained in its `param.sfo` file
@@ -128,24 +129,25 @@ public:
     std::string self_name{};
     std::string self_path{};
     Config &cfg;
-    std::unique_ptr<CPUProtocolBase> cpu_protocol{};
     SceUID main_thread_id{};
     size_t frame_count = 0;
     uint32_t sdl_ticks = 0;
-    uint16_t fps = 0;
-    uint16_t avg_fps = 0;
-    uint16_t min_fps = 0;
-    uint16_t max_fps = 0;
+    uint32_t fps = 0;
+    uint32_t avg_fps = 0;
+    uint32_t min_fps = 0;
+    uint32_t max_fps = 0;
     float fps_values[20] = {};
     uint32_t current_fps_offset = 0;
     uint32_t ms_per_frame = 0;
     WindowPtr window = WindowPtr(nullptr, nullptr);
     renderer::Backend backend_renderer{};
     RendererPtr renderer{};
-    FVector2 viewport_pos = { 0, 0 };
-    FVector2 viewport_size = { 0, 0 };
     IVector2 drawable_size = { 0, 0 };
     IVector2 window_size = { 0, 0 }; // Logical size of the window
+    FVector2 logical_viewport_pos = { 0, 0 }; // Position of the logical viewport in the window. For ImGui
+    FVector2 logical_viewport_size = { 0, 0 }; // Size of the logical viewport in the window. For ImGui
+    FVector2 drawable_viewport_pos = { 0, 0 }; // Position of the drawable viewport in the window. For OpenGL/Vulkan
+    FVector2 drawable_viewport_size = { 0, 0 }; // Size of the drawable viewport in the window. For OpenGL/Vulkan
     bool drop_inputs{};
     MemState &mem;
     CtrlState &ctrl;
@@ -167,12 +169,14 @@ public:
     RegMgrState &regmgr;
     SfoFile &sfo_handle;
     NIDSet missing_nids;
-    float dpi_scale = 1.f;
-    uint32_t res_width_dpi_scale = 0;
-    uint32_t res_height_dpi_scale = 0;
+    float system_dpi_scale = 1.f;
+    float manual_dpi_scale = 1.f;
+    FVector2 gui_scale = { 1.f, 1.f };
     GDBState &gdb;
     HTTPState &http;
-    bool file_open_need_delay = false;
+    CameraState &camera;
+    int max_font_level = 0;
+    int current_font_level = 0;
 
     EmuEnvState();
     // declaring a destructor is necessary to forward declare unique_ptrs
