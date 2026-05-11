@@ -16,9 +16,11 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceSysmem.h"
+#include "SceSysmemForDriver.h"
 
 #include <kernel/state.h>
 #include <kernel/types.h>
+#include <modules/sysmem_state.h>
 
 #include <packages/sfo.h>
 
@@ -28,8 +30,7 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceSysmem);
 
-template <>
-std::string to_debug_str<SceKernelMemBlockType>(const MemState &mem, SceKernelMemBlockType type) {
+std::string to_debug_str(const MemState &mem, SceKernelMemBlockType type) {
     switch (type) {
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE: return "SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE";
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX: return "SCE_KERNEL_MEMBLOCK_TYPE_USER_RX";
@@ -58,141 +59,27 @@ struct SceKernelFreeMemorySizeInfo {
     int size_phycont; //!< Free memory size for USER_MAIN_PHYCONT_*_RW memory
 };
 
-struct KernelMemBlock : SceKernelMemBlockInfo {
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
-};
-
-typedef std::shared_ptr<KernelMemBlock> KernelMemBlockPtr;
-typedef std::map<SceUID, KernelMemBlockPtr> Blocks;
-
-struct SysmemState {
-    std::mutex mutex;
-    Blocks blocks;
-    Blocks vm_blocks;
-    SceUID next_uid = 1;
-
-    uint32_t allocated_user = 0;
-    uint32_t allocated_cdram = 0;
-    uint32_t allocated_phycont = 0;
-
-    SceUID get_next_uid() {
-        return next_uid++;
-    }
-};
-
 LIBRARY_INIT(SceSysmem) {
     emuenv.kernel.obj_store.create<SysmemState>();
 }
 
-constexpr SceUInt32 SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT = 4;
-
 EXPORT(SceUID, sceKernelAllocMemBlock, const char *pName, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockOpt *optp) {
     TRACY_FUNC(sceKernelAllocMemBlock, pName, type, size, optp);
-    MemState &mem = emuenv.mem;
-    assert(type != 0);
 
-    if (!pName || !size) {
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    // Build kernel opts from user opts
+    SceKernelAllocMemBlockKernelOpt k_opt = {};
+    k_opt.size = sizeof(k_opt);
+    SceKernelAllocMemBlockKernelOpt *k_opt_ptr = nullptr;
+
+    if (optp) {
+        if (optp->attr & SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT) {
+            k_opt.attr |= SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT;
+            k_opt.alignment = optp->alignment;
+        }
+        k_opt_ptr = &k_opt;
     }
 
-    int min_alignment;
-    switch (type) {
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
-        min_alignment = 0x1000;
-        break;
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
-        min_alignment = 0x40000;
-        break;
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
-        min_alignment = 0x100000;
-        break;
-    default:
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
-    }
-
-    // size should be a multiple of min_alignment
-
-    SceSize alignment = min_alignment;
-    if (optp && (optp->attr & SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT)) {
-        // alignment must be a power of 2
-        if (optp->alignment & (optp->alignment - 1))
-            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
-
-        alignment = std::max(alignment, optp->alignment);
-    }
-
-    // x & -x returns the lsb of x
-    alignment = std::max(alignment, size & -size);
-
-    // https://wiki.henkaku.xyz/vita/SceSysmem_Types#memtype_bit_value
-    Address start_address;
-    switch (type) {
-#ifdef __arm__
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
-        start_address = 0x19600000;
-        break;
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
-        start_address = 0x377FFFFF;
-        break;
-    default:
-        start_address = 0x3EFFFFFF;
-        break;
-    }
-#else
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
-        start_address = 0x70000000U;
-        break;
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
-        start_address = 0x60000000U;
-        break;
-    default:
-        // technically should be 0x81000000 but it shouldn't make a difference
-        start_address = 0x80000000U;
-        break;
-    }
-#endif
-    
-    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
-    const auto guard = std::lock_guard<std::mutex>(state->mutex);
-
-    Ptr<void> address = Ptr<void>(alloc_aligned(mem, size, pName, alignment, start_address));
-    LOG_DEBUG("start_address = {}", log_hex(start_address));
-
-    if (!address) {
-        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
-    }
-
-    const SceUID uid = state->get_next_uid();
-
-    const KernelMemBlockPtr sceKernelMemBlock = std::make_shared<KernelMemBlock>();
-    sceKernelMemBlock->type = type;
-    sceKernelMemBlock->mappedBase = address;
-    sceKernelMemBlock->mappedSize = size;
-    sceKernelMemBlock->size = sizeof(SceKernelMemBlockInfo);
-    std::strncpy(sceKernelMemBlock->name, pName, KERNELOBJECT_MAX_NAME_LENGTH);
-    state->blocks.emplace(uid, sceKernelMemBlock);
-
-    switch (type) {
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
-        state->allocated_user += size;
-        break;
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
-        state->allocated_cdram += size;
-        break;
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
-        state->allocated_phycont += size;
-        break;
-    }
-
-    return uid;
+    return CALL_EXPORT(ksceKernelAllocMemBlock, pName, type, size, k_opt_ptr);
 }
 
 EXPORT(int, sceKernelAllocMemBlockForVM, const char *pName, SceSize size) {
@@ -261,38 +148,7 @@ EXPORT(SceUID, sceKernelFindMemBlockByAddr, Address addr, uint32_t size) {
 
 EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
     TRACY_FUNC(sceKernelFreeMemBlock, uid);
-    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
-    const auto guard = std::lock_guard<std::mutex>(state->mutex);
-    assert(uid >= 0);
-
-    const Blocks::const_iterator block = state->blocks.find(uid);
-    // TODO, is really that ?
-    if (block == state->blocks.end())
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_BLOCK_ID);
-
-    free(emuenv.mem, block->second->mappedBase.address());
-
-    switch (block->second->type) {
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
-        state->allocated_user -= block->second->size;
-        break;
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
-        state->allocated_cdram -= block->second->size;
-        break;
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
-        state->allocated_phycont -= block->second->size;
-        break;
-    default:
-        state->allocated_user -= block->second->size;
-        break;
-    }
-
-    state->blocks.erase(block);
-
-    return SCE_KERNEL_OK;
+    return CALL_EXPORT(ksceKernelFreeMemBlock, uid);
 }
 
 EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
@@ -314,8 +170,8 @@ EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
 
 EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     TRACY_FUNC(sceKernelGetFreeMemorySize, info);
-    
-    // Default memory configuration is 256MB
+
+    // Default memory configuration
     uint32_t max_user = MiB(256);
 
     // if DevKit then max_user = MB(512); else check sfo file for memory expansion mode
@@ -345,53 +201,18 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     constexpr uint32_t max_phycont = MiB(26); // Max physically contiguous memory (26 MiB)
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
-    
-    uint32_t tmp = mem_available(emuenv.mem);
-    uint32_t tmp2 = tmp - max_user;
-    LOG_INFO_ONCE("Free mem: {} MB", (tmp/MiB(1)));
-    LOG_INFO_ONCE("Need mem: {} MB", (max_user/MiB(1)));
 
-    if (tmp2 <= max_user){
-        LOG_ERROR("Out of memory!, use default settings!");
-        tmp2 = align(mem_available(emuenv.mem) / 3, 0x1000);
-        if(tmp2 < max_user){
-            tmp2 = tmp2/4;
-            info->size_user = tmp2;
-        }else{
-            info->size_user = tmp2/2;
-        }
-        info->size_cdram = tmp2/4;
-        info->size_phycont = tmp2/8;
-    }else{
-       // Set the free memory size info
-       info->size_cdram = std::max<int>(max_cdram - state->allocated_cdram, 0);
-       info->size_user = std::max<int>(max_user - state->allocated_user, 0);
-       info->size_phycont = std::max<int>(max_phycont - state->allocated_phycont, 0);
-    }
-//    LOG_TRACE("Free mem final: {} MB", (tmp2/MiB(1)));
-//    LOG_TRACE("size_cdram used: {} MB", (info->size_cdram/MiB(1)));
-//    LOG_TRACE("size_user used: {} MB", (info->size_user/MiB(1)));
-//    LOG_TRACE("size_phycont used: {} MB", (info->size_phycont/MiB(1)));
+    // Set the free memory size info
+    info->size_cdram = std::max<int>(max_cdram - state->allocated_cdram, 0);
+    info->size_user = std::max<int>(max_user - state->allocated_user, 0);
+    info->size_phycont = std::max<int>(max_phycont - state->allocated_phycont, 0);
 
     return 0;
 }
 
 EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
     TRACY_FUNC(sceKernelGetMemBlockBase, uid, basep);
-    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
-    const auto guard = std::lock_guard<std::mutex>(state->mutex);
-    assert(uid >= 0);
-    assert(basep != nullptr);
-
-    const Blocks::const_iterator block = state->blocks.find(uid);
-    if (block == state->blocks.end()) {
-        // TODO Write address?
-        return SCE_KERNEL_ERROR_INVALID_UID;
-    }
-
-    *basep = block->second->mappedBase.address();
-
-    return SCE_KERNEL_OK;
+    return CALL_EXPORT(ksceKernelGetMemBlockBase, uid, basep);
 }
 
 EXPORT(int, sceKernelGetMemBlockInfoByAddr, Address addr, SceKernelMemBlockInfo *info) {
