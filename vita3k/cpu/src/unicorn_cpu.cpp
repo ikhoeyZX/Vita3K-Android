@@ -438,3 +438,7 @@ bool UnicornCPU::get_log_code() {
 bool UnicornCPU::get_log_mem() {
     return memory_read_hook_handle != 0 && memory_write_hook_handle != 0;
 }
+
+void UnicornCPU::clear_exclusive() {
+    // do nothing
+}
