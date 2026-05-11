@@ -86,6 +86,7 @@ set(SOURCE_LIST
 	SceLibKernel/SceLibKernel.cpp
 	SceLibKernel/SceLibRng.cpp
 	SceLibKernel/SceLibSsp.cpp
+	SceLibTaihen/SceLibTaihen.cpp
 	SceLibKernel/SceRtabi.cpp
 	SceLibMono/SceLibMono.cpp
 	SceLibMonoBridge/SceLibMonoBridge.cpp
