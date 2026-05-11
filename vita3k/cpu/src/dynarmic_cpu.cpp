@@ -51,6 +51,9 @@ public:
 
     CallbackOrAccessOneWord CompileSendOneWord(bool two, unsigned opc1, CoprocReg CRn,
         CoprocReg CRm, unsigned opc2) override {
+        if (CRn == CoprocReg::C13 && CRm == CoprocReg::C0 && opc1 == 0 && opc2 == 3) {
+            return &tpidruro;
+        }
         return CallbackOrAccessOneWord{};
     }
 
@@ -130,11 +133,11 @@ public:
     template <typename T>
     T MemoryRead(Dynarmic::A32::VAddr addr) {
         Ptr<T> ptr{ addr };
-        if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->page_size) {
+        if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
             LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x}\n{}", sizeof(T) * 8, addr, this->cpu->save_context().description());
 
             auto pc = this->cpu->get_pc();
-            if (pc < parent->mem->page_size)
+            if (pc < parent->mem->host_page_size)
                 LOG_CRITICAL("PC is 0x{:x}", pc);
             else
                 LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
@@ -167,11 +170,11 @@ public:
     template <typename T>
     void MemoryWrite(Dynarmic::A32::VAddr addr, T value) {
         Ptr<T> ptr{ addr };
-        if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->page_size) {
+        if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
             LOG_ERROR("Invalid write of uint{}_t at addr: 0x{:x}, val = 0x{:x}\n{}", sizeof(T) * 8, addr, value, this->cpu->save_context().description());
 
             auto pc = this->cpu->get_pc();
-            if (pc < parent->mem->page_size)
+            if (pc < parent->mem->host_page_size)
                 LOG_CRITICAL("PC is 0x{:x}", pc);
             else
                 LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
@@ -203,11 +206,11 @@ public:
     template <typename T>
     bool MemoryWriteExclusive(Dynarmic::A32::VAddr addr, T value, T expected) {
         Ptr<T> ptr{ addr };
-        if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->page_size) {
+        if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
             LOG_ERROR("Invalid exclusive write of uint{}_t at addr: 0x{:x}, val = 0x{:x}, expected = 0x{:x}\n{}", sizeof(T) * 8, addr, value, expected, this->cpu->save_context().description());
 
             auto pc = this->cpu->get_pc();
-            if (pc < parent->mem->page_size)
+            if (pc < parent->mem->host_page_size)
                 LOG_CRITICAL("PC is 0x{:x}", pc);
             else
                 LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
@@ -304,11 +307,22 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     Dynarmic::A32::UserConfig config{};
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
     config.callbacks = cb.get();
+    /*
     if (parent->mem->use_page_table) {
         config.page_table = (log_mem || !cpu_opt) ? nullptr : reinterpret_cast<decltype(config.page_table)>(parent->mem->page_table.get());
         config.absolute_offset_page_table = true;
     } else if (!log_mem && cpu_opt) {
         config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
+    }
+    */
+    if (!log_mem && cpu_opt) {
+         config.fastmem_exclusive_access = true; 
+         config.recompile_on_exclusive_fastmem_failure = true;
+         config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
+    }else{
+         config.fastmem_pointer = std::optional<uintptr_t>(std::nullopt);
+         config.fastmem_exclusive_access = false; // if this and below set true native buffer works but only 1-3 fps, weird
+         config.recompile_on_exclusive_fastmem_failure = false; // this one
     }
     config.hook_hint_instructions = true;
     config.enable_cycle_counting = false;
@@ -318,15 +332,29 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;
     config.enable_cycle_counting = false;
 
+    if(cpu_unsafe){
+        config.unsafe_optimizations = true;
+        if(!cpu_opt)
+           config.optimizations == Dynarmic::OptimizationFlag::Unsafe_UnfuseFMA;
+        else
+           config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_UnfuseFMA;
+        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_IgnoreStandardFPCRValue;
+        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_InaccurateNaN;
+        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_IgnoreGlobalMonitor;
+    } else {
+        config.unsafe_optimizations = false;
+    }
+    
     return std::make_unique<Dynarmic::A32::Jit>(config);
 }
 
-DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, bool cpu_opt)
+DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, bool cpu_opt, bool cpu_unsafe)
     : parent(state)
     , cb(std::make_unique<ArmDynarmicCallback>(*state, *this))
     , cp15(std::make_shared<ArmDynarmicCP15>())
     , core_id(processor_id)
-    , cpu_opt(cpu_opt) {
+    , cpu_opt(cpu_opt)
+    , cpu_unsafe(cpu_unsafe) {
     jit = make_jit();
 }
 
