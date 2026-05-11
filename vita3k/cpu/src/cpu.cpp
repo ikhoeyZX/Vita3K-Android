@@ -67,7 +67,6 @@ CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, bool cpu_unsafe, SceUID t
     switch (backend) {
 #ifdef USE_DYNARMIC
     case CPUBackend::Dynarmic: {
-        Dynarmic::ExclusiveMonitor *monitor = static_cast<Dynarmic::ExclusiveMonitor *>(protocol->get_exclusive_monitor());
         state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, cpu_opt, cpu_unsafe);
         break;
     }
