@@ -335,7 +335,7 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     if(cpu_unsafe){
         config.unsafe_optimizations = true;
         if(!cpu_opt)
-           config.optimizations == Dynarmic::OptimizationFlag::Unsafe_UnfuseFMA;
+           config.optimizations = Dynarmic::OptimizationFlag::Unsafe_UnfuseFMA;
         else
            config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_UnfuseFMA;
         config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_IgnoreStandardFPCRValue;
