@@ -457,7 +457,7 @@ EXPORT(int, ksceKernelMemRangeRetainWithPerm) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelMemcpyKernelToUser) {
+EXPORT(int, ksceKernelMemcpyKernelToUser, Ptr<char> dst, Ptr<const char> src, SceSize len) {
     memcpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
     return 0;
 }
