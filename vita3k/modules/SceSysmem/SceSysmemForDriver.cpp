@@ -458,7 +458,8 @@ EXPORT(int, ksceKernelMemRangeRetainWithPerm) {
 }
 
 EXPORT(int, ksceKernelMemcpyKernelToUser) {
-    return UNIMPLEMENTED();
+    memcpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
+    return 0;
 }
 
 EXPORT(int, ksceKernelMemcpyKernelToUserForPid) {
@@ -478,8 +479,12 @@ EXPORT(int, ksceKernelMemcpyUserToKernelForPid) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelMemcpyUserToUser) {
-    return UNIMPLEMENTED();
+EXPORT(int, ksceKernelMemcpyUserToUser, Ptr<void> dst, Ptr<const void> src, SceSize len, int userid_src, int userid_dst) {
+    if (userid_src == userid_dst) 
+        LOG_ERROR("Invalid user id");
+    else
+        memcpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
+    return 0;
 }
 
 EXPORT(int, ksceKernelMemcpyUserToUserForPid) {
