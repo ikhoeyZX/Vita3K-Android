@@ -26,7 +26,6 @@
 #include <cpu/impl/unicorn_cpu.h>
 #endif
 
-#include <cpu/impl/dynarmic_cpu.h>
 #include <cpu/impl/interface.h>
 #include <cpu/state.h>
 #include <mem/ptr.h>
