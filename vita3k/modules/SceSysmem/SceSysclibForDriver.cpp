@@ -80,18 +80,15 @@ EXPORT(int, kmemchr) {
 }
 
 EXPORT(int, kmemcmp, const void *s1, const void *s2, SceSize len) {
-    TRACY_FUNC(kmemcmp, s1, s2, len);
     return memcmp(s1, s2, len);
 }
 
 EXPORT(Ptr<void>, kmemcpy, Ptr<void> dst, const void *src, SceSize len) {
-    TRACY_FUNC(kmemcpy, dst, src, len);
     memcpy(dst.get(emuenv.mem), src, len);
     return dst;
 }
 
 EXPORT(Ptr<void>, kmemmove, Ptr<void> dst, const void *src, SceSize len) {
-    TRACY_FUNC(kmemmove, dst, src, len);
     memmove(dst.get(emuenv.mem), src, len);
     return dst;
 }
@@ -110,30 +107,25 @@ EXPORT(int, ksnprintf) {
 }
 
 EXPORT(Ptr<char>, kstrchr, const char *str, int c) {
-    TRACY_FUNC(kstrchr, str, c);
     char *res = const_cast<char *>(strchr(str, c));
     return Ptr<char>(res, emuenv.mem);
 }
 
 EXPORT(int, kstrcmp, const char *s1, const char *s2) {
-    TRACY_FUNC(kstrcmp, s1, s2);
     return strcmp(s1, s2);
 }
 
 EXPORT(Ptr<char>, kstrlcat, char *dst, const char *src, SceSize len) {
-    TRACY_FUNC(strlcat, dst, src, len);
     char *res = strncat(dst, src, len);
     return Ptr<char>(res, emuenv.mem);
 }
 
 EXPORT(Ptr<char>, strlcpy, char *dst, const char *src, SceSize len) {
-    TRACY_FUNC(strlcpy, dst, src, len);
     char *res = strncpy(dst, src, len);
     return Ptr<char>(res, emuenv.mem);
 }
 
 EXPORT(uint32_t, kstrlen, const char *s1, SceSize maxlen) {
-    TRACY_FUNC(kstrlen, s1, maxlen);
     return static_cast<uint32_t>(strnlen(s1, maxlen));
 }
 
@@ -158,7 +150,6 @@ EXPORT(int, kstrrchr) {
 }
 
 EXPORT(Ptr<char>, kstrstr, const char *s1, const char *s2) {
-    TRACY_FUNC(kstrstr, s1, s2);
     char *res = const_cast<char *>(strstr(s1, s2));
     return Ptr<char>(res, emuenv.mem);
 }
