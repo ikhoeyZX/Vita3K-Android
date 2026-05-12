@@ -115,7 +115,7 @@ EXPORT(int, kstrcmp, const char *s1, const char *s2) {
     return strcmp(s1, s2);
 }
 
-EXPORT(Ptr<char>, kstrlcat, char *dst, const char *src, SceSize len) {
+EXPORT(Ptr<char>, strlcat, char *dst, const char *src, SceSize len) {
     char *res = strncat(dst, src, len);
     return Ptr<char>(res, emuenv.mem);
 }
