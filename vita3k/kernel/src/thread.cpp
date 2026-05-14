@@ -31,7 +31,7 @@
 
 void ThreadSignal::wait() {
     std::unique_lock<std::mutex> lock(mutex);
-    recv_cond.wait(lock, [&]() { return signaled; });
+    recv_cond.wait(lock, [&]() { return signaled || (shutting_down && shutting_down->load(std::memory_order_relaxed)); });
     signaled = false;
 }
 
@@ -71,7 +71,7 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     start_tick = rtc_get_ticks(kernel.base_tick.tick);
     last_vblank_waited = 0;
 
-    cpu = init_cpu(kernel.cpu_backend, kernel.cpu_opt, kernel.cpu_unsafe, id, static_cast<std::size_t>(core_num), mem);
+    cpu = init_cpu(kernel.cpu_opt, id, static_cast<std::size_t>(core_num), mem);
     if (!cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
@@ -93,18 +93,19 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     memset(base_tls_ptr.get(mem), 0, tls_size);
 
     int *tls_array = tls.get_ptr<int>().get(mem);
+
     tls_array[TLS_PROCESS_ID] = 1; // stubbed. unused
     tls_array[TLS_THREAD_ID] = id;
     tls_array[TLS_SP_TOP] = stack.get();
     tls_array[TLS_SP_BOTTOM] = stack.get() + stack_size;
     tls_array[TLS_CURRENT_PRIORITY] = priority;
     tls_array[TLS_CPU_AFFINITY_MASK] = affinity_mask;
+
     const Ptr<uint8_t> user_tls_ptr = base_tls_ptr + KERNEL_TLS_SIZE;
     write_tpidruro(*cpu, user_tls_ptr.address());
     if (kernel.tls_address) {
         assert(kernel.tls_psize <= kernel.tls_msize);
-        // memcpy(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
-        memmove(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
+        memcpy(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
     }
 
     CPUContext ctx;
@@ -137,13 +138,12 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     call_level = 1;
     load_context(*cpu, init_cpu_ctx);
     write_pc(*cpu, entry_point);
-    write_lr(*cpu, cpu->halt_instruction_pc);
+    write_lr(*cpu, kernel.halt_instruction_pc);
     write_reg(*cpu, 0, arglen);
 
     // Copy data to stack
     if (argp && arglen > 0) {
         const Address data_addr = stack_alloc(*cpu, align(arglen, 8));
-        // memcpy(Ptr<uint8_t>(data_addr).get(mem), argp.get(mem), arglen);
         memcpy(Ptr<uint8_t>(data_addr).get(mem), argp.get(mem), arglen);
         write_reg(*cpu, 1, data_addr);
     } else {
@@ -155,8 +155,8 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
         status = ThreadStatus::suspend;
         kernel.debugger.wait_for_debugger = false;
     } else {
-        status = ThreadStatus::run;
         to_do = ThreadToDo::run;
+        status = ThreadStatus::run;
     }
     something_to_do.notify_one();
 
@@ -182,11 +182,27 @@ void ThreadState::exit_delete(bool exit) {
     } else {
         stop(*cpu);
     }
+
+    // Wake if thread waiting on status_cond
+    if (status == ThreadStatus::wait)
+        update_status(ThreadStatus::run);
+
+    // Wake if thread waiting on sceKernelWaitSignal
+    signal.send();
 }
 
 bool ThreadState::run_loop() {
     int res = 0;
     int run_level = std::max(call_level, 1);
+
+    // Set thread-local CPU state so signal handlers can access it.
+    // The guard clears it on any exit so a recycled host thread never sees
+    // a stale CPUState pointer.
+    set_current_cpu_state(cpu.get());
+    struct CpuStateGuard {
+        ~CpuStateGuard() { set_current_cpu_state(nullptr); }
+    } cpu_state_guard;
+
     std::unique_lock<std::mutex> lock(mutex);
 
     auto run_thread_end_callback = [&]() {
@@ -249,13 +265,17 @@ bool ThreadState::run_loop() {
                 }
             }
 
-            // Run the cpu
-            do {
-                if (to_do == ThreadToDo::step) {
-                    res = step(*cpu);
+            // Run the cpu — lock is NOT held on entry, HELD on exit
+            while (true) {
+                lock.lock();
+                const bool do_step = (to_do == ThreadToDo::step);
+                if (do_step)
                     to_do = ThreadToDo::suspend;
+                lock.unlock();
 
-                } else
+                if (do_step)
+                    res = step(*cpu);
+                else
                     res = run(*cpu);
 
                 // handle svc call if this was what stopped the cpu
@@ -264,9 +284,16 @@ bool ThreadState::run_loop() {
                     kernel.call_import(*cpu, nid, id);
                     clear_exclusive(*cpu);
                 }
-            } while (to_do == ThreadToDo::run && res == 0 && call_level == run_level && !hit_breakpoint(*cpu));
 
-            lock.lock();
+                // handle pending abort (exception handler from page fault)
+                if (cpu->abort_pending.exchange(false))
+                    dispatch_abort(*cpu);
+
+                lock.lock();
+                if (to_do != ThreadToDo::run || res != 0 || call_level != run_level || hit_breakpoint(*cpu))
+                    break;
+                lock.unlock();
+            }
 
             // Handle errors
             if (to_do == ThreadToDo::remove)
@@ -303,6 +330,8 @@ bool ThreadState::run_loop() {
             something_to_do.wait(lock);
             break;
         case ThreadToDo::suspend:
+            update_status(ThreadStatus::suspend);
+            something_to_do.wait(lock);
             break;
         }
     }
@@ -317,8 +346,7 @@ void ThreadState::push_arguments(const std::vector<uint32_t> &args) {
         // TODO align to 16 bytes
         const size_t remain_size = args.size() - 4;
         sp -= 4 * remain_size;
-        // memcpy(Ptr<uint32_t>(sp).get(mem), &args[4], remain_size * 4);
-        memmove(Ptr<uint32_t>(sp).get(mem), &args[4], remain_size * 4);
+        memcpy(Ptr<uint32_t>(sp).get(mem), &args[4], remain_size * 4);
     }
     write_sp(*cpu, sp);
 }
@@ -337,7 +365,7 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     call_level++;
     // we shouldn't have to clean the context I believe
     write_pc(*cpu, callback_address);
-    write_lr(*cpu, cpu->halt_instruction_pc);
+    write_lr(*cpu, kernel.halt_instruction_pc);
     push_arguments(args);
     thread_lock.unlock();
 
@@ -357,6 +385,38 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     return returned_value;
 }
 
+void ThreadState::dispatch_abort(CPUState &cpu) {
+    const uint32_t fault_addr = cpu.abort_fault_addr.load();
+    // DABT = type 0
+    const Address handler = kernel.exception_handlers[0].load();
+    if (!handler)
+        return;
+
+    // Build KuKernelAbortContext on guest stack for the handler to read.
+    // Note: by the time we get here, the page has already been unprotected
+    // by the protect_tree mechanism, and the CPU may have executed past
+    // the faulting instruction. The handler is called as a notification;
+    // we don't restore from AbortContext afterward.
+    // { r0-r12, sp, lr, pc, FAR } = 17 uint32_t = 68 bytes
+    const uint32_t ctx_size = 17 * 4;
+    const uint32_t sp_orig = read_sp(cpu);
+    const uint32_t sp_aligned = align_down(sp_orig - ctx_size, 8);
+
+    auto *ctx = Ptr<uint32_t>(sp_aligned).get(*cpu.mem);
+    for (int i = 0; i < 13; i++)
+        ctx[i] = read_reg(cpu, i);
+    ctx[13] = sp_aligned + ctx_size;
+    ctx[14] = read_lr(cpu);
+    ctx[15] = read_pc(cpu);
+    ctx[16] = fault_addr;
+
+    LOG_DEBUG("DABT handler=0x{:08X} FAR=0x{:08X} PC=0x{:08X} SP=0x{:08X} sp_aligned=0x{:08X}",
+        handler, fault_addr, ctx[15], sp_orig, sp_aligned);
+
+    // run_callback saves/restores full CPU context internally
+    run_callback(handler, { sp_aligned });
+}
+
 uint32_t ThreadState::run_guest_function(Address callback_address, SceSize args, const Ptr<void> argp) {
     // save the previous entry point, just in case
     const auto old_entry_point = entry_point;
@@ -368,7 +428,8 @@ uint32_t ThreadState::run_guest_function(Address callback_address, SceSize args,
         std::unique_lock<std::mutex> lock(mutex);
         if (status != ThreadStatus::dormant || to_do == ThreadToDo::run) {
             status_cond.wait(lock, [&]() {
-                return status == ThreadStatus::dormant && to_do != ThreadToDo::run;
+                return kernel.shutting_down.load(std::memory_order_relaxed)
+                    || (status == ThreadStatus::dormant && to_do != ThreadToDo::run);
             });
         }
     }
@@ -381,6 +442,7 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem)
     : id(id)
     , kernel(kernel)
     , mem(mem) {
+    signal.shutting_down = &kernel.shutting_down;
 }
 
 void ThreadState::update_status(ThreadStatus status, std::optional<ThreadStatus> expected) {
@@ -401,7 +463,10 @@ Address ThreadState::stack_top() const {
 
 void ThreadState::suspend() {
     assert(to_do == ThreadToDo::run);
-    to_do = ThreadToDo::suspend;
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        to_do = ThreadToDo::suspend;
+    }
     stop(*cpu);
 }
 
@@ -418,15 +483,15 @@ void ThreadState::resume(bool step) {
 std::string ThreadState::log_stack_traceback() const {
     constexpr Address START_OFFSET = 0;
     constexpr Address END_OFFSET = 1024;
-    std::stringstream ss;
+    std::string str;
     const Address sp = read_sp(*cpu);
     for (Address addr = sp - START_OFFSET; addr <= sp + END_OFFSET; addr += 4) {
         if (Ptr<uint32_t>(addr).valid(mem)) {
             const Address value = *Ptr<uint32_t>(addr).get(mem);
             const auto mod = kernel.find_module_by_addr(value);
             if (mod)
-                ss << fmt::format("{} (module: {})\n", log_hex(value), mod->module_name);
+                fmt::format_to(std::back_inserter(str), "0x{:X} (module: {})\n", value, mod->module_name);
         }
     }
-    return ss.str();
+    return str;
 }
