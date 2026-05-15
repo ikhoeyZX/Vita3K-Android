@@ -428,8 +428,7 @@ uint32_t ThreadState::run_guest_function(Address callback_address, SceSize args,
         std::unique_lock<std::mutex> lock(mutex);
         if (status != ThreadStatus::dormant || to_do == ThreadToDo::run) {
             status_cond.wait(lock, [&]() {
-                return kernel.shutting_down.load(std::memory_order_relaxed)
-                    || (status == ThreadStatus::dormant && to_do != ThreadToDo::run);
+                return (status == ThreadStatus::dormant && to_do != ThreadToDo::run);
             });
         }
     }
