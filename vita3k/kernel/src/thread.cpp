@@ -31,7 +31,7 @@
 
 void ThreadSignal::wait() {
     std::unique_lock<std::mutex> lock(mutex);
-    recv_cond.wait(lock, [&]() { return signaled || (shutting_down && shutting_down->load(std::memory_order_relaxed)); });
+    recv_cond.wait(lock, [&]() { return signaled; });
     signaled = false;
 }
 
@@ -71,7 +71,7 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     start_tick = rtc_get_ticks(kernel.base_tick.tick);
     last_vblank_waited = 0;
 
-    cpu = init_cpu(kernel.cpu_opt, id, static_cast<std::size_t>(core_num), mem);
+    cpu = init_cpu(kernel.cpu_backend, kernel.cpu_opt, kernel.cpu_unsafe, id, static_cast<std::size_t>(core_num), mem);
     if (!cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
@@ -138,7 +138,7 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     call_level = 1;
     load_context(*cpu, init_cpu_ctx);
     write_pc(*cpu, entry_point);
-    write_lr(*cpu, kernel.halt_instruction_pc);
+    write_lr(*cpu, cpu->halt_instruction_pc);
     write_reg(*cpu, 0, arglen);
 
     // Copy data to stack
@@ -365,7 +365,7 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     call_level++;
     // we shouldn't have to clean the context I believe
     write_pc(*cpu, callback_address);
-    write_lr(*cpu, kernel.halt_instruction_pc);
+    write_lr(*cpu, cpu->halt_instruction_pc);
     push_arguments(args);
     thread_lock.unlock();
 
@@ -442,7 +442,6 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem)
     : id(id)
     , kernel(kernel)
     , mem(mem) {
-    signal.shutting_down = &kernel.shutting_down;
 }
 
 void ThreadState::update_status(ThreadStatus status, std::optional<ThreadStatus> expected) {
