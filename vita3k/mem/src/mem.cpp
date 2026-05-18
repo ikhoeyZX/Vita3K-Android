@@ -38,7 +38,7 @@
 
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
 #ifdef __arm__
-constexpr size_t TOTAL_MEM_SIZE = static_cast<uint32_t>(GiB(2.1));
+constexpr size_t TOTAL_MEM_SIZE = static_cast<uint32_t>(GiB(1.4));
 #else
 constexpr size_t TOTAL_MEM_SIZE = GiB(4);
 #endif
@@ -77,7 +77,9 @@ bool init(MemState &state, const bool use_page_table) {
 
     assert(state.host_page_size >= 4096); // Limit imposed by Unicorn.
     
-#ifndef __arm__
+#ifdef __arm__
+    void *preferred_address = reinterpret_cast<void *>(1ULL << 31);
+#else
     void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
 #endif
     
@@ -104,6 +106,8 @@ bool init(MemState &state, const bool use_page_table) {
 #else
     state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
 #endif
+    LOG_INFO("Memory free: {}", mem_available(state.memory));
+    
     if (state.memory.get() == MAP_FAILED) {
         LOG_CRITICAL("mmap failed {}", get_error_msg());
         return false;
