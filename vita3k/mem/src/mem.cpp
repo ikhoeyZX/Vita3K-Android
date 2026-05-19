@@ -103,7 +103,10 @@ bool init(MemState &state, const bool use_page_table) {
     // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address 
 #ifdef __arm__
     state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+    
     for(int a =  TOTAL_MEM_SIZE, a > 0, a - MiB(96)) {
+        state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+    
         if (state.memory.get() == MAP_FAILED) {
             LOG_CRITICAL("mmap failed {}, TOTAL_MEM_SIZE = {}", get_error_msg(), MiB(TOTAL_MEM_SIZE));
         } else {
