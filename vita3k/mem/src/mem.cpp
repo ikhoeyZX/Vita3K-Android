@@ -104,14 +104,16 @@ bool init(MemState &state, const bool use_page_table) {
 #ifdef __arm__
     state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
     
-    for(int a = TOTAL_MEM_SIZE; a > 0; a - MiB(96)) {
+    while(TOTAL_MEM_SIZE > 0) {
         state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+        LOG_INFO("Memory free: {} MB", MiB(mem_available(state)));
     
         if (state.memory.get() == MAP_FAILED) {
             LOG_CRITICAL("mmap failed {}, TOTAL_MEM_SIZE = {} MB", get_error_msg(), MiB(TOTAL_MEM_SIZE));
         } else {
             break;
         }
+        TOTAL_MEM_SIZE = TOTAL_MEM_SIZE - MiB(96);
     }
         
 #else
