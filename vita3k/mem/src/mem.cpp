@@ -106,11 +106,13 @@ bool init(MemState &state, const bool use_page_table) {
 #else
     state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
 #endif
-    LOG_INFO("Memory free: {}", mem_available(state.memory));
+    LOG_INFO("Memory free: {}", mem_available(state));
     
     if (state.memory.get() == MAP_FAILED) {
         LOG_CRITICAL("mmap failed {}", get_error_msg());
+#ifndef __arm__
         return false;
+#endif
     }
 #endif
 
