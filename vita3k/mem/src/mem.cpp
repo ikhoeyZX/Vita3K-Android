@@ -38,7 +38,7 @@
 
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
 #ifdef __arm__
-constexpr size_t TOTAL_MEM_SIZE = GiB(2);
+constexpr size_t TOTAL_MEM_SIZE = static_cast<uint32_t>(GiB(2));
 #else
 constexpr size_t TOTAL_MEM_SIZE = GiB(4);
 #endif
@@ -105,11 +105,11 @@ bool init(MemState &state, const bool use_page_table) {
     state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
     auto readmem = TOTAL_MEM_SIZE;
     while(readmem > MiB(512)) {
-        state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+        state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, readmem, prot, flags, fd, offset)), delete_memory);
         LOG_INFO("Memory free: {} MB", MiB(mem_available(state)));
     
         if (state.memory.get() == MAP_FAILED) {
-            LOG_CRITICAL("mmap failed {}, TOTAL_MEM_SIZE = {} MB", get_error_msg(), MiB(TOTAL_MEM_SIZE));
+            LOG_CRITICAL("mmap failed {}, TOTAL_MEM_SIZE = {} MB", get_error_msg(), MiB(readmem));
         } else {
             break;
         }
