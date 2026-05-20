@@ -166,7 +166,7 @@ jobs:
       - name: Rename APK
         if: ${{ env.BUILD_TYPE == 'release' }}
         run: |
-          mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release-${BUILD_VARIANT}.apk
+          mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release-${{ env.BUILD_VARIANT }}.apk
           
       - uses: actions/upload-artifact@v7.0.0
         if: ${{ env.BUILD_TYPE == 'release' }}
