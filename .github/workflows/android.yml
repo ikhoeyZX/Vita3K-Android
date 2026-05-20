@@ -1,7 +1,18 @@
 name: Android build
 
 # this is greatly inspired by skyline ci build file
-on: [push]
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: Pilih tipe build
+        required: true
+        default: release
+        type: choice
+        options:
+          - release
+          - reldebug
 
 permissions:
   contents: read
@@ -12,6 +23,7 @@ jobs:
     env:
       JVM_OPTS: -Xmx6G
       VCPKG_ROOT: /usr/local/share/vcpkg
+      BUILD_TYPE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build_type || 'release' }}
 
     steps:
       - uses: actions/checkout@v5
@@ -45,9 +57,9 @@ jobs:
         shell: bash
         run: echo "git_short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
         
-      - name: Decode Keystore Release build
+      - name: Decode Keystore
         env:
-          KEYSTORE_ENCODED: ${{ secrets.KEYSTORE }}
+          KEYSTORE_ENCODED: ${{ env.BUILD_TYPE == 'reldebug' && secrets.KEYSTORE_DEBUG || secrets.KEYSTORE }}
         run: echo $KEYSTORE_ENCODED | base64 --decode > "/home/runner/keystore.jks"
 
 #      - name: Setup Android NDK
@@ -62,12 +74,12 @@ jobs:
         with:
           gradle-home-cache-cleanup: true
           
-      - name: Gradle build 64bit release
+      - name: Gradle build 64bit
         env:
           SIGNING_STORE_PATH: "/home/runner/keystore.jks"
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ env.BUILD_TYPE == 'reldebug' && secrets.SIGNING_STORE_PASSWORD_DEBUG || secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ env.BUILD_TYPE == 'reldebug' && secrets.SIGNING_KEY_ALIAS_DEBUG || secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ env.BUILD_TYPE == 'reldebug' && secrets.SIGNING_KEY_PASSWORD_DEBUG || secrets.SIGNING_KEY_PASSWORD }}
         run: |
           bash -c "yes || Yes || true" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
           mkdir android/assets/data
@@ -75,7 +87,12 @@ jobs:
           cp -r lang android/assets
           cp -r vita3k/shaders-builtin android/assets
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
-          ./gradlew --stacktrace --info --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease
+          if [ "$BUILD_TYPE" = "reldebug" ]; then
+            GRADLE_TASK="assembleReldebug"
+          else
+            GRADLE_TASK="assembleRelease"
+          fi
+          ./gradlew --stacktrace --info --configuration-cache --build-cache --parallel --configure-on-demand "$GRADLE_TASK"
 
 #      - name: Decode Keystore Debug build
 #        env:
@@ -103,13 +120,12 @@ jobs:
 
       - name: Rename APK
         run: |
-          mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-release.apk
-#          mv  android/build/outputs/apk/reldebug/android-reldebug.apk  android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-reldebug.apk
+          mv android/build/outputs/apk/${BUILD_TYPE}/android-${BUILD_TYPE}.apk android/build/outputs/apk/${BUILD_TYPE}/vita3k-aarch64-${{ env.git_short_sha }}-${BUILD_TYPE}.apk
           
       - uses: actions/upload-artifact@v7.0.0
         with:
-          name: vita3k-${{ env.git_short_sha }}-release_arm64.zip
-          path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-release.apk
+          name: vita3k-${{ env.git_short_sha }}-${{ env.BUILD_TYPE }}_arm64.zip
+          path: android/build/outputs/apk/${{ env.BUILD_TYPE }}/vita3k-aarch64-${{ env.git_short_sha }}-${{ env.BUILD_TYPE }}.apk
 
 #      - uses: actions/upload-artifact@v7.0.0
 #        with:
@@ -117,6 +133,7 @@ jobs:
 #          path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-reldebug.apk
 
       - name: Gradle build 32bit
+        if: ${{ env.BUILD_TYPE == 'release' }}
         env:
           SIGNING_STORE_PATH: "/home/runner/keystore.jks"
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
@@ -131,10 +148,12 @@ jobs:
           ./gradlew --stacktrace --info --configuration-cache --build-cache --parallel --configure-on-demand assembleRelease
 
       - name: Rename APK
+        if: ${{ env.BUILD_TYPE == 'release' }}
         run: |
           mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release.apk
           
       - uses: actions/upload-artifact@v5
+        if: ${{ env.BUILD_TYPE == 'release' }}
         with:
           name: vita3k-${{ env.git_short_sha }}-release_armv7a.zip
           path: android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release.apk
