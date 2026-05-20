@@ -38,7 +38,7 @@
 
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
 #ifdef __arm__
-constexpr size_t TOTAL_MEM_SIZE = static_cast<uint32_t>(GiB(2));
+constexpr uint32_t TOTAL_MEM_SIZE = static_cast<uint32_t>(MiB(1408));
 #else
 constexpr size_t TOTAL_MEM_SIZE = GiB(4);
 #endif
@@ -77,9 +77,7 @@ bool init(MemState &state, const bool use_page_table) {
 
     assert(state.host_page_size >= 4096); // Limit imposed by Unicorn.
     
-#ifdef __arm__
-    void *preferred_address = reinterpret_cast<void *>(1ULL << 31);
-#else
+#ifndef __arm__
     void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
 #endif
     
@@ -102,10 +100,15 @@ bool init(MemState &state, const bool use_page_table) {
     const off_t offset = 0;
     // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address 
 #ifdef __arm__
-    state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+    state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
     auto readmem = TOTAL_MEM_SIZE;
+    if (TOTAL_MEM_SIZE == 0) {
+       LOG_CRITICAL("TOTAL_MEM_SIZE is zero");
+       readmem = GiB(2);
+    }
+
     while(readmem > MiB(512)) {
-        state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, readmem, prot, flags, fd, offset)), delete_memory);
+        state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, readmem, prot, flags, fd, offset)), delete_memory);
         LOG_INFO("Memory free: {} MB", MiB(mem_available(state)));
     
         if (state.memory.get() == MAP_FAILED) {
