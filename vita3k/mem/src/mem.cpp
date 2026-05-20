@@ -38,7 +38,7 @@
 
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
 #ifdef __arm__
-size_t TOTAL_MEM_SIZE = static_cast<uint32_t>(MiB(1536));
+constexpr size_t TOTAL_MEM_SIZE = GiB(2);
 #else
 constexpr size_t TOTAL_MEM_SIZE = GiB(4);
 #endif
@@ -103,9 +103,9 @@ bool init(MemState &state, const bool use_page_table) {
     // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address 
 #ifdef __arm__
     state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
-    
-    while(TOTAL_MEM_SIZE > 0) {
-        state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+    auto readmem = TOTAL_MEM_SIZE;
+    while(readmem > MiB(512)) {
+        state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, readmem, prot, flags, fd, offset)), delete_memory);
         LOG_INFO("Memory free: {} MB", MiB(mem_available(state)));
     
         if (state.memory.get() == MAP_FAILED) {
@@ -113,7 +113,7 @@ bool init(MemState &state, const bool use_page_table) {
         } else {
             break;
         }
-        TOTAL_MEM_SIZE = TOTAL_MEM_SIZE - MiB(96);
+        readmem = readmem - MiB(96);
     }
         
 #else
