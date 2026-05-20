@@ -13,6 +13,14 @@ on:
         options:
           - release
           - reldebug
+      build_variant:
+        description: Select build variant
+        required: true
+        default: powervr
+        type: choice
+        options:
+          - powervr
+          - original
 
 permissions:
   contents: read
@@ -24,6 +32,7 @@ jobs:
       JVM_OPTS: -Xmx6G
       VCPKG_ROOT: /usr/local/share/vcpkg
       BUILD_TYPE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build_type || 'release' }}
+      BUILD_VARIANT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build_variant || 'powervr' }}
 
     steps:
       - uses: actions/checkout@v5
@@ -73,6 +82,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
         with:
           gradle-home-cache-cleanup: true
+
+      - name: Switch to original variant
+        if: ${{ env.BUILD_VARIANT == 'original' }}
+        run: |
+          sed -i 's/\.ikhoeyZX//g' android/build.gradle
+          sed -i 's/\.ikhoeyZX//g' android/32bit.gradle
+          sed -i 's/Vita3K ZX/Vita3K/g' android/src/main/res/values/strings.xml
           
       - name: Gradle build 64bit
         env:
@@ -120,12 +136,12 @@ jobs:
 
       - name: Rename APK
         run: |
-          mv android/build/outputs/apk/${BUILD_TYPE}/android-${BUILD_TYPE}.apk android/build/outputs/apk/${BUILD_TYPE}/vita3k-aarch64-${{ env.git_short_sha }}-${BUILD_TYPE}.apk
+          mv android/build/outputs/apk/${BUILD_TYPE}/android-${BUILD_TYPE}.apk android/build/outputs/apk/${BUILD_TYPE}/vita3k-aarch64-${{ env.git_short_sha }}-${BUILD_TYPE}-${BUILD_VARIANT}.apk
           
       - uses: actions/upload-artifact@v7.0.0
         with:
-          name: vita3k-${{ env.git_short_sha }}-${{ env.BUILD_TYPE }}_arm64.zip
-          path: android/build/outputs/apk/${{ env.BUILD_TYPE }}/vita3k-aarch64-${{ env.git_short_sha }}-${{ env.BUILD_TYPE }}.apk
+          name: vita3k-${{ env.git_short_sha }}-${{ env.BUILD_TYPE }}-${{ env.BUILD_VARIANT }}_arm64.zip
+          path: android/build/outputs/apk/${{ env.BUILD_TYPE }}/vita3k-aarch64-${{ env.git_short_sha }}-${{ env.BUILD_TYPE }}-${{ env.BUILD_VARIANT }}.apk
 
 #      - uses: actions/upload-artifact@v7.0.0
 #        with:
@@ -150,10 +166,10 @@ jobs:
       - name: Rename APK
         if: ${{ env.BUILD_TYPE == 'release' }}
         run: |
-          mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release.apk
+          mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release-${BUILD_VARIANT}.apk
           
       - uses: actions/upload-artifact@v7.0.0
         if: ${{ env.BUILD_TYPE == 'release' }}
         with:
-          name: vita3k-${{ env.git_short_sha }}-release_armv7a.zip
-          path: android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release.apk
+          name: vita3k-${{ env.git_short_sha }}-release-${{ env.BUILD_VARIANT }}_armv7a.zip
+          path: android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release-${{ env.BUILD_VARIANT }}.apk
