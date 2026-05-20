@@ -102,10 +102,10 @@ bool init(MemState &state, const bool use_page_table) {
     const off_t offset = 0;
     // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address 
 #ifdef __arm__
-    state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+    state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
     auto readmem = TOTAL_MEM_SIZE;
     while(readmem > MiB(512)) {
-        state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, readmem, prot, flags, fd, offset)), delete_memory);
+        state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
         LOG_INFO("Memory free: {} MB", MiB(mem_available(state)));
     
         if (state.memory.get() == MAP_FAILED) {
