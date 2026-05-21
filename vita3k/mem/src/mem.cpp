@@ -106,16 +106,20 @@ bool init(MemState &state, const bool use_page_table) {
        LOG_CRITICAL("TOTAL_MEM_SIZE is zero");
        readmem = GiB(2);
     }
+    LOG_INFO("readmem = {}", readmem);
+    bool exit = false;
 
-    while(readmem > MiB(512)) {
+    while(readmem > MiB(512) || exit) {
         state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, readmem, prot, flags, fd, offset)), delete_memory);
-        LOG_INFO("Memory free: {} MB", MiB(mem_available(state)));
+        LOG_INFO("Memory free: {} MB", mem_available(state));
     
         if (state.memory.get() == MAP_FAILED) {
-            LOG_CRITICAL("mmap failed {}, TOTAL_MEM_SIZE = {} MB", get_error_msg(), MiB(readmem));
+            LOG_CRITICAL("mmap failed {}, TOTAL_MEM_SIZE = {}", get_error_msg(), readmem);
         } else {
+            exit = true;
             break;
         }
+        LOG_INFO("readmem = {}", readmem);
         readmem = readmem - MiB(96);
     }
         
