@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -354,4 +354,12 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
 
     return finished;
 }
+
+void PlayerModule::cleanup_voice_state(ModuleData &data) {
+    SceNgsPlayerStates *state = data.get_state<SceNgsPlayerStates>();
+    if (state->swr) {
+        swr_free(&state->swr);
+    }
+}
+
 } // namespace ngs
