@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -162,7 +162,7 @@ EXPORT(int, sceAppUtilBgdlGetStatus) {
 }
 
 static bool is_addcont_exist(EmuEnvState &emuenv, const SceChar8 *path) {
-    const auto drm_content_id_path{ emuenv.pref_path / (+VitaIoDevice::ux0)._to_string() / emuenv.io.device_paths.addcont0 / reinterpret_cast<const char *>(path) };
+    const auto drm_content_id_path{ emuenv.pref_path / "ux0" / emuenv.io.device_paths.addcont0 / reinterpret_cast<const char *>(path) };
     return (fs::exists(drm_content_id_path) && (!fs::is_empty(drm_content_id_path)));
 }
 
