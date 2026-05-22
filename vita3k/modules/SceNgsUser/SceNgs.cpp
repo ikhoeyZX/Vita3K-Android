@@ -228,8 +228,8 @@ EXPORT(SceInt32, sceNgsPatchGetInfo, ngs::Patch *patch, SceNgsPatchAudioPropInfo
         deli_info->input_index = patch->dest_index;
         deli_info->output_index = patch->output_index;
         deli_info->output_subindex = patch->output_sub_index;
-        deli_info->source_voice_handle = Ptr<ngs::Voice>(patch->source, emuenv.mem);
-        deli_info->dest_voice_handle = Ptr<ngs::Voice>(patch->dest, emuenv.mem);
+        deli_info->source_voice_handle = guest_subptr(patch->source->rack->memspace, patch->source->rack->memspace.get(emuenv.mem), patch->source);
+        deli_info->dest_voice_handle = guest_subptr(patch->dest->rack->memspace, patch->dest->rack->memspace.get(emuenv.mem), patch->dest);
     }
 
     return SCE_NGS_OK;
@@ -337,6 +337,7 @@ EXPORT(SceInt32, sceNgsRackRelease, ngs::Rack *rack, Ptr<void> callback) {
         op.system = rack->system;
         op.release_data.state = &emuenv.ngs;
         op.release_data.rack = rack;
+        op.release_data.rack_handle = guest_subptr(rack->memspace, rack->memspace.get(emuenv.mem), rack).address();
         op.release_data.callback = callback.address();
         rack->system->voice_scheduler.operations_pending.push(op);
     }
