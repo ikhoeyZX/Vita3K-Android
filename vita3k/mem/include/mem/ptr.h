@@ -21,6 +21,11 @@
 #include <mem/functions.h>
 #include <mem/state.h>
 
+#include <cassert>
+#include <cstdint>
+#include <limits>
+#include <type_traits>
+
 template <class T>
 class Ptr {
 public:
@@ -36,15 +41,6 @@ public:
         static_assert(std::is_convertible_v<U *, T *>, "Ptr is not convertible.");
     }
 
-    Ptr(T *pointer, const MemState &mem) {
-        const uint8_t *const pointer_bytes = reinterpret_cast<const uint8_t *>(pointer);
-        if (pointer_bytes == 0) {
-            addr = 0;
-        } else {
-            addr = static_cast<Address>(pointer_bytes - &mem.memory[0]);
-        }
-    }
-
     Address address() const {
         return addr;
     }
@@ -57,10 +53,9 @@ public:
     T *get(const MemState &mem) const {
         if (addr == 0) {
             return nullptr;
-        } else if (mem.use_page_table) {
-            return reinterpret_cast<T *>(mem.page_table[addr / KiB(4)] + addr);
         } else {
-            return reinterpret_cast<T *>(&mem.memory[addr]);
+            const PagePtr page_base = mem.page_table ? mem.page_table[addr / KiB(4)] : mem.memory.get();
+            return page_base ? reinterpret_cast<T *>(page_base + addr) : nullptr;
         }
     }
 
@@ -68,7 +63,8 @@ public:
     bool atomic_compare_and_swap(MemState &mem, U value, U expected) {
         static_assert(std::is_arithmetic_v<U>);
         static_assert(std::is_same_v<U, T>);
-        uint8_t *mem_ptr = mem.use_page_table ? mem.page_table[addr / KiB(4)] : mem.memory.get();
+        uint8_t *mem_ptr = mem.page_table ? mem.page_table[addr / KiB(4)] : mem.memory.get();
+        assert(mem_ptr != nullptr);
         const auto ptr = reinterpret_cast<volatile U *>(&mem_ptr[addr]);
         return ::atomic_compare_and_swap(ptr, value, expected);
     }
@@ -114,6 +110,25 @@ bool operator<(const Ptr<T> &a, const Ptr<U> &b) {
 template <class T>
 bool operator==(const Ptr<T> &a, const Ptr<T> &b) {
     return a.address() == b.address();
+}
+
+template <class T, class U>
+// Derive a guest subpointer from a known guest/host base pair for the same object or range.
+Ptr<T> guest_subptr(const Ptr<U> &guest_base, const void *host_base, const T *host_ptr) {
+    if (!host_ptr) {
+        return Ptr<T>{};
+    }
+
+    assert(host_base != nullptr);
+
+    const auto host_base_addr = reinterpret_cast<std::uintptr_t>(host_base);
+    const auto host_ptr_addr = reinterpret_cast<std::uintptr_t>(host_ptr);
+    assert(host_ptr_addr >= host_base_addr);
+
+    const auto offset = host_ptr_addr - host_base_addr;
+    assert(offset <= std::numeric_limits<Address>::max() - guest_base.address());
+
+    return Ptr<T>(guest_base.address() + static_cast<Address>(offset));
 }
 
 template <class T>
