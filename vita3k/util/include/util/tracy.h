@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,10 +31,15 @@ std::string to_debug_str(const MemState &mem, T type) {
     return std::move(datass).str();
 }
 
+template <fmt::formattable T>
+std::string to_debug_str(const MemState &mem, T type) {
+    return fmt::format("{}", type);
+}
+
 // Override pointers, we want to print the address in hex
 template <typename U>
 std::string to_debug_str(const MemState &mem, U *type) {
-    return log_hex(Ptr<U>(type, mem).address()); // Convert host ptr to guest
+    return log_hex(reinterpret_cast<std::uintptr_t>(type));
 }
 
 // Override for guest pointers, we want to print the guest address
@@ -53,13 +58,13 @@ template <>
 inline std::string to_debug_str(const MemState &mem, char *type) {
     // Format for correct char* should be "(address in hex (0x12345)) (string)", this is just in the
     // extreme case that the string is actually "0x0 NULLPTR" and be confusing
-    return type ? fmt::format("0x{:X} {}", Ptr<char>(type, mem).address(), type) : "0x0 NULLPTR";
+    return type ? fmt::format("0x{:X} {}", reinterpret_cast<std::uintptr_t>(type), type) : "0x0 NULLPTR";
 }
 
 // Override for char pointers as the contents are readable
 template <>
 inline std::string to_debug_str(const MemState &mem, const char *type) {
-    return type ? fmt::format("0x{:X} {}", Ptr<const char>(type, mem).address(), type) : "0x0 NULLPTR";
+    return type ? fmt::format("0x{:X} {}", reinterpret_cast<std::uintptr_t>(type), type) : "0x0 NULLPTR";
 }
 
 template <>
