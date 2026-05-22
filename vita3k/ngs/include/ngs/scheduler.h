@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -50,6 +50,7 @@ struct OperationPending {
         struct {
             State *state;
             Rack *rack;
+            Address rack_handle;
             // can't use a ptr, otherwise the default constructor is deleted
             Address callback;
         } release_data;
