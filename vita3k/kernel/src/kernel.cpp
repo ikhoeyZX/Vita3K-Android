@@ -21,17 +21,16 @@
 
 #include <cpu/common.h>
 #include <kernel/state.h>
-#include <mem/functions.h>
 
 #include <kernel/thread/thread_state.h>
 
 #include <cpu/functions.h>
 #include <mem/ptr.h>
+#include <mem/functions.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
-#include <SDL3/SDL_mutex.h>
-#include <SDL3/SDL_thread.h>
+#include <SDL_thread.h>
 
 int CorenumAllocator::new_corenum() {
     const std::lock_guard<std::mutex> guard(lock);
@@ -54,13 +53,13 @@ void CorenumAllocator::set_max_core_count(const std::size_t max) {
 struct ThreadParams {
     KernelState *kernel = nullptr;
     SceUID thid = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
-    SDL_Semaphore *host_may_destroy_params = nullptr;
+    std::shared_ptr<SDL_semaphore> host_may_destroy_params = std::shared_ptr<SDL_semaphore>(SDL_CreateSemaphore(0), SDL_DestroySemaphore);
 };
 
 static int SDLCALL thread_function(void *data) {
     assert(data != nullptr);
     const ThreadParams params = *static_cast<const ThreadParams *>(data);
-    SDL_SignalSemaphore(params.host_may_destroy_params);
+    SDL_SemPost(params.host_may_destroy_params.get());
     const ThreadStatePtr thread = params.kernel->get_thread(params.thid);
 #ifdef TRACY_ENABLE
     if (!thread->name.empty()) {
@@ -80,7 +79,7 @@ static int SDLCALL thread_function(void *data) {
         params.kernel->corenum_allocator.free_corenum(get_processor_id(*thread->cpu));
         params.kernel->thread_deleted_cond.notify_all();
     }
-
+    
     return r0;
 }
 
@@ -88,11 +87,16 @@ KernelState::KernelState()
     : debugger(*this) {
 }
 
-bool KernelState::init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt) {
+bool KernelState::init(MemState &mem, const CallImportFunc &call_import, CPUBackend cpu_backend, bool cpu_opt) {
+#ifdef USE_UNICORN
+    constexpr std::size_t MAX_CORE_COUNT = 150;
+#endif
     corenum_allocator.set_max_core_count(MAX_CORE_COUNT);
+
     start_tick = rtc_get_ticks(rtc_base_ticks());
     base_tick = { rtc_base_ticks() };
     this->call_import = call_import;
+    this->cpu_backend = cpu_backend;
     this->cpu_opt = cpu_opt;
 
     // Generate halt instruction (NOP + WFI)
@@ -101,7 +105,7 @@ bool KernelState::init(MemState &mem, const CallImportFunc &call_import, bool cp
     halt_ptr[0] = 0xBF00; // NOP
     halt_ptr[1] = 0xBF30; // WFI
     halt_instruction_pc = halt_instruction.get() | 1; // thumb mode pc
-
+    
     return true;
 }
 
@@ -150,21 +154,17 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
     ThreadStatePtr thread = std::make_shared<ThreadState>(get_next_uid(), *this, mem);
     if (thread->init(name, entry_point, init_priority, affinity_mask, stack_size, option) < 0)
         return nullptr;
-
-    {
+     {
         const std::lock_guard<std::mutex> lock(mutex);
         threads.emplace(thread->id, thread);
-    }
+     }
 
     ThreadParams params;
     params.kernel = this;
     params.thid = thread->id;
 
-    params.host_may_destroy_params = SDL_CreateSemaphore(0);
-    SDL_DetachThread(SDL_CreateThread(&thread_function, thread->name.c_str(), &params));
-    SDL_WaitSemaphore(params.host_may_destroy_params);
-    SDL_DestroySemaphore(params.host_may_destroy_params);
-
+    SDL_CreateThread(&thread_function, thread->name.c_str(), &params);
+    SDL_SemWait(params.host_may_destroy_params.get());
     return thread;
 }
 
