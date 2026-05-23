@@ -168,9 +168,10 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
 
     if (!gui.live_area_contents.contains(app_path)) {
         auto default_contents = false;
+        LOG_DEBUG_ONCE("VITAIODEVICE DEBUG OUTPUT: app_device = {}", device::get_device_string(app_device, false));
         const auto fw_path{ emuenv.pref_path / "vs0" };
         const auto default_fw_contents{ fw_path / "data/internal/livearea/default/sce_sys/livearea/contents/template.xml" };
-        const auto APP_PATH{ emuenv.pref_path / get_device_string(app_device, false) / "app" / app_path };
+        const auto APP_PATH{ emuenv.pref_path / device::get_device_string(app_device, false) / "app" / app_path };
         const auto live_area_path{ fs::path("sce_sys") / ((emuenv.license.rif[TITLE_ID].sku_flag == 3) && fs::exists(APP_PATH / "sce_sys/retail/livearea") ? "retail/livearea" : "livearea") };
         auto template_xml{ APP_PATH / live_area_path / "contents/template.xml" };
 
