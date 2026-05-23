@@ -160,7 +160,7 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
     const auto &live_area_lang = gui.lang.user_lang[LIVE_AREA];
     const auto is_sys_app = app_path.starts_with("NPXS") && (app_path != "NPXS10007");
     const auto is_ps_app = app_path.starts_with("PCS") || (app_path == "NPXS10007");
-    const VitaIoDevice app_device = is_sys_app ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
+    const VitaIoDevice app_device = is_sys_app ? VitaIoDevice::toString(VitaIoDevice::vs0) : VitaIoDevice::toString(VitaIoDevice::ux0);
     const auto APP_INDEX = get_app_index(gui, app_path);
     const auto TITLE_ID = APP_INDEX->title_id;
 
@@ -170,7 +170,7 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
         auto default_contents = false;
         const auto fw_path{ emuenv.pref_path / "vs0" };
         const auto default_fw_contents{ fw_path / "data/internal/livearea/default/sce_sys/livearea/contents/template.xml" };
-        const auto APP_PATH{ emuenv.pref_path / app_device._to_string() / "app" / app_path };
+        const auto APP_PATH{ emuenv.pref_path / app_device / "app" / app_path };
         const auto live_area_path{ fs::path("sce_sys") / ((emuenv.license.rif[TITLE_ID].sku_flag == 3) && fs::exists(APP_PATH / "sce_sys/retail/livearea") ? "retail/livearea" : "livearea") };
         auto template_xml{ APP_PATH / live_area_path / "contents/template.xml" };
 
