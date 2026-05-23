@@ -42,6 +42,7 @@
 #include <vector>
 
 struct ThreadState;
+struct SDL_Thread;
 struct MemState;
 
 struct CodecEngineBlock;
@@ -56,6 +57,8 @@ typedef std::shared_ptr<KernelModule> SceKernelModulePtr;
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 typedef std::map<SceUID, CodecEngineBlock> CodecEngineBlocks;
 typedef std::map<SceUID, Ptr<Ptr<void>>> SlotToAddress;
+typedef std::shared_ptr<SDL_Thread> ThreadPtr;
+typedef std::map<SceUID, ThreadPtr> ThreadPtrs;
 typedef std::map<SceUID, ThreadStatePtr> ThreadStatePtrs;
 typedef std::map<SceUID, SceKernelModulePtr> SceKernelModuleInfoPtrs;
 typedef std::map<SceUID, CallbackPtr> CallbackPtrs;
@@ -136,6 +139,8 @@ struct KernelState {
     ModuleUidByNid module_uid_by_nid;
 
     bool cpu_opt;
+    bool cpu_unsafe;
+    CPUBackend cpu_backend;
     CorenumAllocator corenum_allocator;
     CallImportFunc call_import;
 
@@ -163,7 +168,7 @@ struct KernelState {
         return next_uid++;
     }
 
-    bool init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt);
+    bool init(MemState &mem, const CallImportFunc &call_import, CPUBackend cpu_backend, bool cpu_opt);
     void deinit(MemState &mem);
     void load_process_param(MemState &mem, Ptr<uint32_t> ptr);
     ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point = Ptr<const void>(0));
