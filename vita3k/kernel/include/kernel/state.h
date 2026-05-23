@@ -24,20 +24,25 @@
 #include <kernel/sync_primitives.h>
 #include <kernel/types.h>
 #include <mem/allocator.h>
+#include <mem/block.h>
 #include <mem/ptr.h>
 #include <mem/util.h>
 #include <rtc/rtc.h>
 #include <util/containers.h>
 #include <util/types.h>
 
+#include <emuenv/app_launch_request.h>
+
 #include <atomic>
+#include <condition_variable>
+#include <functional>
 #include <map>
 #include <mutex>
+#include <optional>
 #include <vector>
 
 struct ThreadState;
-
-struct SDL_Thread;
+struct MemState;
 
 struct CodecEngineBlock;
 
@@ -52,8 +57,6 @@ typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 typedef std::map<SceUID, CodecEngineBlock> CodecEngineBlocks;
 typedef std::map<SceUID, Ptr<Ptr<void>>> SlotToAddress;
 typedef std::map<SceUID, ThreadStatePtr> ThreadStatePtrs;
-typedef std::shared_ptr<SDL_Thread> ThreadPtr;
-typedef std::map<SceUID, ThreadPtr> ThreadPtrs;
 typedef std::map<SceUID, SceKernelModulePtr> SceKernelModuleInfoPtrs;
 typedef std::map<SceUID, CallbackPtr> CallbackPtrs;
 typedef unordered_map_fast<uint32_t, Address> ExportNids;
@@ -118,8 +121,8 @@ struct KernelState {
     CallbackPtrs callbacks;
 
     ThreadStatePtrs threads;
-    void* jni_env;
-    void* jni_activity;
+    void *jni_env;
+    void *jni_activity;
 
     SceKernelModuleInfoPtrs loaded_modules;
     LoadedSysmodules loaded_sysmodules;
@@ -133,28 +136,35 @@ struct KernelState {
     ModuleUidByNid module_uid_by_nid;
 
     bool cpu_opt;
-    bool cpu_unsafe;
-    CPUBackend cpu_backend;
     CorenumAllocator corenum_allocator;
     CallImportFunc call_import;
+
+    // Shared NOP+WFI sentinel used by the Dynarmic as the halt return address
+    Block halt_instruction;
+    Address halt_instruction_pc;
 
     ObjectStore obj_store;
 
     uint64_t start_tick;
     SceRtcTick base_tick;
     Ptr<SceProcessParam> process_param;
+    Ptr<void> client_vtable = Ptr<void>(0);
+    Ptr<Address> shellsvc_client = Ptr<Address>(0);
+    Ptr<void> libc_dso_handle_main = Ptr<void>(0);
 
     Debugger debugger;
 
     // kubridge exception handlers (DABT=0, PABT=1, UNDEF=2)
     static constexpr int EXCEPTION_HANDLER_MAX = 3;
     std::atomic<Address> exception_handlers[EXCEPTION_HANDLER_MAX]{};
+    std::condition_variable thread_deleted_cond;
 
     SceUID get_next_uid() {
         return next_uid++;
     }
 
-    bool init(MemState &mem, const CallImportFunc &call_import, CPUBackend cpu_backend, bool cpu_opt);
+    bool init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt);
+    void deinit(MemState &mem);
     void load_process_param(MemState &mem, Ptr<uint32_t> ptr);
     ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point = Ptr<const void>(0));
     ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option);
@@ -162,10 +172,16 @@ struct KernelState {
     ThreadStatePtr get_thread(SceUID thread_id);
     Ptr<Ptr<void>> get_thread_tls_addr(MemState &mem, SceUID thread_id, int key);
 
-    void exit_delete_all_threads();
     bool is_threads_paused() { return !paused_threads_status.empty(); }
     void pause_threads();
     void resume_threads();
+
+    // Kill all guest threads and block until they have exited. Must only be called from a host thread.
+    void process_exit();
+    std::function<void(int, std::optional<AppLaunchRequest>)> process_exit_callback;
+    // Request process exit. Safe to call from a guest thread. Returns immediately.
+    // The registered process_exit_callback is invoked to notify the host layer.
+    void request_process_exit(int res, std::optional<AppLaunchRequest> relaunch = std::nullopt);
 
     void set_memory_watch(bool enabled);
     void invalidate_jit_cache(Address start, size_t length);
