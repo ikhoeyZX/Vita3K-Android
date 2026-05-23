@@ -21,13 +21,16 @@
 #include <ctrl/ctrl.h>
 #include <dialog/state.h>
 #include <gui/functions.h>
-#include <io/state.h>
 #include <kernel/state.h>
 #include <packages/license.h>
 #include <renderer/state.h>
 
+#include <io/device.h>
+#include <io/functions.h>
+#include <io/state.h>
 #include <io/VitaIoDevice.h>
 #include <io/vfs.h>
+
 #include <util/log.h>
 
 #include <pugixml.hpp>
