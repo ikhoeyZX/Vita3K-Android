@@ -1,3 +1,4 @@
+
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
 //
@@ -30,8 +31,6 @@
 #include <rtc/rtc.h>
 #include <util/containers.h>
 #include <util/types.h>
-
-#include <emuenv/app_launch_request.h>
 
 #include <atomic>
 #include <condition_variable>
@@ -171,6 +170,7 @@ struct KernelState {
     bool init(MemState &mem, const CallImportFunc &call_import, CPUBackend cpu_backend, bool cpu_opt);
     void deinit(MemState &mem);
     void load_process_param(MemState &mem, Ptr<uint32_t> ptr);
+    void exit_delete_all_threads();
     ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point = Ptr<const void>(0));
     ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option);
 
@@ -180,13 +180,6 @@ struct KernelState {
     bool is_threads_paused() { return !paused_threads_status.empty(); }
     void pause_threads();
     void resume_threads();
-
-    // Kill all guest threads and block until they have exited. Must only be called from a host thread.
-    void process_exit();
-    std::function<void(int, std::optional<AppLaunchRequest>)> process_exit_callback;
-    // Request process exit. Safe to call from a guest thread. Returns immediately.
-    // The registered process_exit_callback is invoked to notify the host layer.
-    void request_process_exit(int res, std::optional<AppLaunchRequest> relaunch = std::nullopt);
 
     void set_memory_watch(bool enabled);
     void invalidate_jit_cache(Address start, size_t length);
