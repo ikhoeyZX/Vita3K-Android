@@ -205,65 +205,6 @@ void KernelState::resume_threads() {
     paused_threads_status.clear();
 }
 
-void KernelState::deinit(MemState &mem) {
-    process_exit();
-    threads.clear();
-
-    simple_events.clear();
-    timers.clear();
-    semaphores.clear();
-    condvars.clear();
-    lwcondvars.clear();
-    mutexes.clear();
-    lwmutexes.clear();
-    rwlocks.clear();
-    eventflags.clear();
-    msgpipes.clear();
-    callbacks.clear();
-
-    loaded_modules.clear();
-    loaded_sysmodules.clear();
-    loaded_internal_sysmodules.clear();
-
-    {
-        std::lock_guard<std::mutex> lock(export_nids_mutex);
-        export_nids.clear();
-        func_binding_infos.clear();
-        var_binding_infos.clear();
-        module_uid_by_nid.clear();
-    }
-
-    corenum_allocator.alloc.reset();
-    corenum_allocator.alloc.set_maximum(0);
-
-    obj_store.clear();
-
-    tls_address = Ptr<const void>(0);
-    tls_psize = 0;
-    tls_msize = 0;
-
-    thread_event_start = Ptr<const void>(0);
-    thread_event_start_arg = 0;
-    thread_event_end = Ptr<const void>(0);
-    thread_event_end_arg = 0;
-
-    codec_blocks.clear();
-
-    halt_instruction = nullptr;
-    halt_instruction_pc = 0;
-
-    process_param = nullptr;
-    client_vtable = Ptr<void>(0);
-    shellsvc_client = Ptr<Address>(0);
-    libc_dso_handle_main = Ptr<void>(0);
-
-    debugger.deinit();
-
-    next_uid = 1;
-
-    paused_threads_status.clear();
-}
-
 SceKernelModuleInfo *KernelState::find_module_by_addr(Address address) {
     const auto lock = std::lock_guard(mutex);
     for (auto &[_, mod] : loaded_modules) {
