@@ -180,22 +180,11 @@ Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id,
     return address;
 }
 
-void KernelState::request_process_exit(int res, std::optional<AppLaunchRequest> relaunch) {
-    if (process_exit_callback)
-        process_exit_callback(res, std::move(relaunch));
-}
-
-void KernelState::process_exit() {
-    {
-        std::lock_guard<std::mutex> lock(mutex);
-        for (auto &[_, timer] : timers)
-            timer->condvar.notify_all();
-        for (auto &[_, thread] : threads)
-            thread->exit_delete(false);
+void KernelState::exit_delete_all_threads() {
+    const std::lock_guard<std::mutex> lock(mutex);
+    for (auto &[_, thread] : threads) {
+        thread->exit_delete();
     }
-
-    std::unique_lock<std::mutex> lock(mutex);
-    thread_deleted_cond.wait(lock, [this] { return threads.empty(); });
 }
 
 void KernelState::pause_threads() {
