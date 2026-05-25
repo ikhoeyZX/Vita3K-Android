@@ -108,7 +108,7 @@ EXPORT(int, ksnprintf) {
 
 EXPORT(Ptr<char>, kstrchr, const char *str, int c) {
     char *res = const_cast<char *>(strchr(str, c));
-    return Ptr<char>(res, emuenv.mem);
+    return Ptr<char>(res);
 }
 
 EXPORT(int, kstrcmp, const char *s1, const char *s2) {
@@ -117,12 +117,12 @@ EXPORT(int, kstrcmp, const char *s1, const char *s2) {
 
 EXPORT(Ptr<char>, strlcat, char *dst, const char *src, SceSize len) {
     char *res = strncat(dst, src, len);
-    return Ptr<char>(res, emuenv.mem);
+    return Ptr<char>(res);
 }
 
 EXPORT(Ptr<char>, strlcpy, char *dst, const char *src, SceSize len) {
     char *res = strncpy(dst, src, len);
-    return Ptr<char>(res, emuenv.mem);
+    return Ptr<char>(res);
 }
 
 EXPORT(uint32_t, kstrlen, const char *s1, SceSize maxlen) {
@@ -151,7 +151,7 @@ EXPORT(int, kstrrchr) {
 
 EXPORT(Ptr<char>, kstrstr, const char *s1, const char *s2) {
     char *res = const_cast<char *>(strstr(s1, s2));
-    return Ptr<char>(res, emuenv.mem);
+    return Ptr<char>(res);
 }
 
 EXPORT(int, kstrtol) {
