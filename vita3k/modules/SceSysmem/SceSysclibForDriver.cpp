@@ -106,8 +106,18 @@ EXPORT(int, ksnprintf) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<char>, kstrchr, Ptr<const char> str, int c) {
-    char *res = const_cast<char *>(strchr(str.get(emuenv.mem), c));
+EXPORT(Ptr<char>, kstrchr, Ptr<const char> str, char ch) {
+    Ptr<char> res = Ptr<char>();
+    char *_str = str.get(emuenv.mem);
+    for (int i = static_cast<int>(strlen(_str) - 1); i >= 0; i--) {
+        const char ch1 = _str[i];
+        if (ch1 == ch) {
+            res = str + i * sizeof(char);
+            break;
+        }
+    }
+    LOG_WARN("Unimplemented!");
+
     return res;
 }
 
@@ -116,12 +126,18 @@ EXPORT(int, kstrcmp, const char *s1, const char *s2) {
 }
 
 EXPORT(Ptr<char>, strlcat, Ptr<char> dst, Ptr>const char> src, SceSize len) {
-    char *res = strncat(dst.get(emuenv.mem), src.get(emuenv.mem), len);
+    Ptr<char> res = Ptr<char>();
+    char *str = strncat(dst.get(emuenv.mem), src.get(emuenv.mem), len);
+    res = str * sizeof(char);
+    LOG_WARN("Unimplemented!");
     return res;
 }
 
 EXPORT(Ptr<char>, strlcpy, Ptr<char> dst, Ptr<const char> src, SceSize len) {
-    char *res = strncpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
+    Ptr<char> res = Ptr<char>();
+    char *str = strncpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
+    res = str * sizeof(char);
+    LOG_WARN("Unimplemented!");
     return res;
 }
 
@@ -150,7 +166,10 @@ EXPORT(int, kstrrchr) {
 }
 
 EXPORT(Ptr<char>, kstrstr, Ptr<const char> s1, Ptr<const char> s2) {
-    char *res = const_cast<char *>(strstr(s1.get(emuenv.mem), s2.get(emuenv.mem)));
+    Ptr<char> res = Ptr<char>();
+    char *str = strstr(s1.get(emuenv.mem), s2.get(emuenv.mem));
+    res = str * sizeof(char);
+    LOG_WARN("Unimplemented!");
     return res;
 }
 
