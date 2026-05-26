@@ -114,7 +114,7 @@ EXPORT(int, kstrcmp, const char *s1, const char *s2) {
     return strcmp(s1, s2);
 }
 
-EXPORT(Ptr<char>, strlcat, Ptr<char> dst, Ptr>const char> src, SceSize len) {
+EXPORT(Ptr<char>, strlcat, Ptr<char> dst, Ptr<char> src, SceSize len) {
     Ptr<char> res = Ptr<char>();
     char *str = strncat(dst.get(emuenv.mem), src.get(emuenv.mem), len);
     res = str * sizeof(char);
@@ -122,7 +122,7 @@ EXPORT(Ptr<char>, strlcat, Ptr<char> dst, Ptr>const char> src, SceSize len) {
     return res;
 }
 
-EXPORT(Ptr<char>, strlcpy, Ptr<char> dst, Ptr<const char> src, SceSize len) {
+EXPORT(Ptr<char>, strlcpy, Ptr<char> dst, Ptr<char> src, SceSize len) {
     Ptr<char> res = Ptr<char>();
     char *str = strncpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
     res = str * sizeof(char);
@@ -154,7 +154,7 @@ EXPORT(int, kstrrchr) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<char>, kstrstr, Ptr<const char> s1, Ptr<const char> s2) {
+EXPORT(Ptr<char>, kstrstr, Ptr<char> s1, Ptr<char> s2) {
     Ptr<char> res = Ptr<char>();
     char *str = strstr(s1.get(emuenv.mem), s2.get(emuenv.mem));
     res = str * sizeof(char);
