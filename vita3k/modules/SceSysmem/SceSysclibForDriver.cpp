@@ -106,8 +106,8 @@ EXPORT(int, ksnprintf) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<char>, kstrchr, const char *str, int c) {
-    char *res = const_cast<char *>(strchr(str, c));
+EXPORT(Ptr<char>, kstrchr, Ptr<const char> str, int c) {
+    char *res = const_cast<char *>(strchr(str.get(emuenv.mem), c));
     return Ptr<char>(res);
 }
 
@@ -115,13 +115,13 @@ EXPORT(int, kstrcmp, const char *s1, const char *s2) {
     return strcmp(s1, s2);
 }
 
-EXPORT(Ptr<char>, strlcat, char *dst, const char *src, SceSize len) {
-    char *res = strncat(dst, src, len);
+EXPORT(Ptr<char>, strlcat, Ptr<char> dst, Ptr>const char> src, SceSize len) {
+    char *res = strncat(dst.get(emuenv.mem), src.get(emuenv.mem), len);
     return Ptr<char>(res);
 }
 
-EXPORT(Ptr<char>, strlcpy, char *dst, const char *src, SceSize len) {
-    char *res = strncpy(dst, src, len);
+EXPORT(Ptr<char>, strlcpy, Ptr<char> dst, Ptr<const char> src, SceSize len) {
+    char *res = strncpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
     return Ptr<char>(res);
 }
 
@@ -149,8 +149,8 @@ EXPORT(int, kstrrchr) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<char>, kstrstr, const char *s1, const char *s2) {
-    char *res = const_cast<char *>(strstr(s1, s2));
+EXPORT(Ptr<char>, kstrstr, Ptr<const char> s1, Ptr<const char> s2) {
+    char *res = const_cast<char *>(strstr(s1.get(emuenv.mem), s2.get(emuenv.mem)));
     return Ptr<char>(res);
 }
 
