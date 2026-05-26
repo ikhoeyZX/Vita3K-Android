@@ -18,6 +18,7 @@
 #include <module/module.h>
 
 #include <cstring>
+#include <string.h>
 
 EXPORT(int, __aeabi_idiv) {
     return UNIMPLEMENTED();
