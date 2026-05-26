@@ -79,8 +79,8 @@ EXPORT(int, kmemchr) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, kmemcmp, const void *s1, const void *s2, SceSize len) {
-    return memcmp(s1, s2, len);
+EXPORT(int, kmemcmp, Ptr<void> s1, Ptr<void> s2, SceSize len) {
+    return memcmp(s1.get(emuenv.mem), s2.get(emuenv.mem), len);
 }
 
 EXPORT(Ptr<void>, kmemcpy, Ptr<void> dst, const void *src, SceSize len) {
@@ -110,27 +110,19 @@ EXPORT(int, kstrchr) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, kstrcmp, const char *s1, const char *s2) {
-    return strcmp(s1, s2);
+EXPORT(int, kstrcmp, Ptr<char> s1, Ptr<char> s2) {
+    return strcmp(s1.get(emuenv.mem), s2.get(emuenv.mem));
 }
 
-EXPORT(Ptr<char>, strlcat, Ptr<char> dst, Ptr<char> src, SceSize len) {
-    Ptr<char> res = Ptr<char>();
-    char *str = strncat(dst.get(emuenv.mem), src.get(emuenv.mem), len);
-    res = Ptr<char>(str * sizeof(char));
-    LOG_WARN("Unimplemented!");
-    return res;
+EXPORT(int, strlcat) {
+    return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<char>, strlcpy, Ptr<char> dst, Ptr<char> src, SceSize len) {
-    Ptr<char> res = Ptr<char>();
-    char *str = strncpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
-    res = Ptr<char>(str * sizeof(char));
-    LOG_WARN("Unimplemented!");
-    return res;
+EXPORT(int, strlcpy) {
+    return UNIMPLEMENTED();
 }
 
-EXPORT(uint32_t, kstrlen, const char *s1, SceSize maxlen) {
+EXPORT(uint32_t, kstrlen, Ptr<char> s1, SceSize maxlen) {
     return static_cast<uint32_t>(strnlen(s1, maxlen));
 }
 
@@ -142,24 +134,21 @@ EXPORT(int, kstrncmp) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, kstrncpy) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<char>,kstrncpy, Ptr<char> destination, Ptr<char> source, SceSize size) {
+    strncpy(destination.get(emuenv.mem), source.get(emuenv.mem), size);
+    return destination;
 }
 
-EXPORT(int, strnlen) {
-    return UNIMPLEMENTED();
+EXPORT(int, strnlen, Ptr<char> str) {
+    return static_cast<int>(strlen(str.get(emuenv.mem)));
 }
 
 EXPORT(int, kstrrchr) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<char>, kstrstr, Ptr<char> s1, Ptr<char> s2) {
-    Ptr<char> res = Ptr<char>();
-    char *str = strstr(s1.get(emuenv.mem), s2.get(emuenv.mem));
-    res = str * sizeof(char);
-    LOG_WARN("Unimplemented!");
-    return res;
+EXPORT(int, kstrstr) {
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, kstrtol) {
