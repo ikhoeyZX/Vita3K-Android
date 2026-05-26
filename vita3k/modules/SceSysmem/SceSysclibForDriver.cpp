@@ -117,7 +117,7 @@ EXPORT(int, kstrcmp, const char *s1, const char *s2) {
 EXPORT(Ptr<char>, strlcat, Ptr<char> dst, Ptr<char> src, SceSize len) {
     Ptr<char> res = Ptr<char>();
     char *str = strncat(dst.get(emuenv.mem), src.get(emuenv.mem), len);
-    res = str * sizeof(char);
+    res = Ptr<char>(str * sizeof(char));
     LOG_WARN("Unimplemented!");
     return res;
 }
@@ -125,7 +125,7 @@ EXPORT(Ptr<char>, strlcat, Ptr<char> dst, Ptr<char> src, SceSize len) {
 EXPORT(Ptr<char>, strlcpy, Ptr<char> dst, Ptr<char> src, SceSize len) {
     Ptr<char> res = Ptr<char>();
     char *str = strncpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
-    res = str * sizeof(char);
+    res = Ptr<char>(str * sizeof(char));
     LOG_WARN("Unimplemented!");
     return res;
 }
