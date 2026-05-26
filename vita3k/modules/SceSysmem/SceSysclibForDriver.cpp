@@ -124,7 +124,7 @@ EXPORT(int, strlcpy) {
 }
 
 EXPORT(uint32_t, kstrlen, Ptr<char> s1, SceSize maxlen) {
-    return static_cast<uint32_t>(strnlen(s1, maxlen));
+    return static_cast<uint32_t>(strnlen(s1.get(emuenv.mem), maxlen));
 }
 
 EXPORT(int, kstrncat) {
