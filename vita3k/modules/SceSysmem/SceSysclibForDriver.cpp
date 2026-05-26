@@ -106,19 +106,8 @@ EXPORT(int, ksnprintf) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<char>, kstrchr, Ptr<const char> str, char ch) {
-    Ptr<char> res = Ptr<char>();
-    char *_str = str.get(emuenv.mem);
-    for (int i = static_cast<int>(strlen(_str) - 1); i >= 0; i--) {
-        const char ch1 = _str[i];
-        if (ch1 == ch) {
-            res = str + i * sizeof(char);
-            break;
-        }
-    }
-    LOG_WARN("Unimplemented!");
-
-    return res;
+EXPORT(int, kstrchr) {
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, kstrcmp, const char *s1, const char *s2) {
