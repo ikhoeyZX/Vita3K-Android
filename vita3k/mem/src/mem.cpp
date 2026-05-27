@@ -622,10 +622,6 @@ bool is_protecting(MemState &state, Address addr, MemPerm *perm) {
 }
 
 void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *addr_ptr) {
-#ifdef __arm__
-    // 32bit unicorn doesn't support page table or native buffer
-    return;
-#else
     assert((size & 4095) == 0);
 
     for (uint32_t block = 0; block < size / KiB(4); block++) {
@@ -643,11 +639,6 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
 }
 
 void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
-#ifdef __arm__
-    // 32bit unicorn doesn't support page table or native buffer
-    return;
-#else
-    
     const auto mapping_it = find_external_mapping(mem, addr);
     if (mapping_it == mem.external_mapping.end()) {
         // Some mapping modes, like double-buffer trapping, only use guest protections and never install an external host mapping.
