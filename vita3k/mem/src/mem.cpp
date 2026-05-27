@@ -350,17 +350,18 @@ bool init(MemState &state, const bool use_page_table) {
 
     assert(state.host_page_size >= STANDARD_PAGE_SIZE);
     assert((state.host_page_size % STANDARD_PAGE_SIZE) == 0);
-    
+
     state.alloc_table = AllocPageTable(new AllocMemPage[GUEST_PAGE_COUNT]);
     memset(state.alloc_table.get(), 0, sizeof(AllocMemPage) * GUEST_PAGE_COUNT);
     state.allocator.set_maximum(GUEST_PAGE_COUNT);
-    
+
     state.page_table = PageTable(new PagePtr[GUEST_PAGE_COUNT]);
     std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, nullptr);
-    
+
     state.use_page_table = use_page_table;
     if (!try_reserve_direct_mirror(state)) {
         state.backing_mode = MemBackingMode::SparseMappings;
+    }
 
     const auto handler = [&state](uint8_t *addr, bool write) noexcept {
         return handle_access_violation(state, addr, write);
@@ -369,14 +370,6 @@ bool init(MemState &state, const bool use_page_table) {
 
     const Address null_address = alloc_inner(state, 0, state.host_page_size / STANDARD_PAGE_SIZE, "null", true);
     assert(null_address == 0);
-
-#ifdef __arm__
-    // unicorn cpu doesn't support page table
-    state.use_page_table = false;
-#else
-    state.use_page_table = use_page_table;
-#endif
-        
     protect_inner(state, 0, state.host_page_size, MemPerm::None);
 
     return true;
