@@ -21,6 +21,7 @@
 #include <mem/functions.h>
 #include <mem/util.h>
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -33,10 +34,16 @@ struct AllocMemPage {
 static_assert(sizeof(AllocMemPage) == 4);
 
 typedef uint8_t *PagePtr;
+typedef uintptr_t HostAddress;
 typedef std::unique_ptr<uint8_t[], std::function<void(uint8_t *)>> Memory;
 typedef std::unique_ptr<AllocMemPage[]> AllocPageTable;
 typedef std::unique_ptr<PagePtr[]> PageTable;
 typedef std::map<int, std::string> PageNameMap;
+
+enum class MemBackingMode {
+    DirectMirror,
+    SparseMappings,
+};
 
 struct ProtectBlockInfo {
     uint32_t size = 0;
@@ -58,8 +65,15 @@ struct ProtectSegmentInfo {
 typedef std::map<Address, ProtectSegmentInfo, std::greater<>> ProtectSegmentTrees;
 
 struct MemExternalMapping {
-    Address address;
-    uint32_t size;
+    Address address = 0;
+    uint32_t size = 0;
+};
+
+struct MemGuestHostMapping {
+    Address address = 0;
+    uint32_t size = 0;
+    uint8_t *host_ptr = nullptr;
+    bool external = false;
 };
 
 struct MemState {
@@ -67,6 +81,7 @@ struct MemState {
     std::mutex protect_mutex;
 
     uint32_t host_page_size = 0;
+    MemBackingMode backing_mode = MemBackingMode::DirectMirror;
     Memory memory;
     AllocPageTable alloc_table;
     BitmapAllocator allocator;
@@ -74,11 +89,11 @@ struct MemState {
 
     PageNameMap page_name_map;
 
+    // Guest-page translation is always available inside mem.
+    // CPU backends may optionally consume the same table as a fastmem export.
     bool use_page_table = false;
     PageTable page_table;
-#if defined(__aarch64__ ) || defined(__x86_64__)
-    std::map<uint64_t, MemExternalMapping, std::greater<>> external_mapping;
-#else
-    std::map<uintptr_t, MemExternalMapping, std::greater<>> external_mapping;
-#endif
+    std::map<Address, MemGuestHostMapping> guest_mappings;
+    std::map<HostAddress, MemGuestHostMapping> host_mappings;
+    std::map<HostAddress, MemExternalMapping> external_mapping;
 };
