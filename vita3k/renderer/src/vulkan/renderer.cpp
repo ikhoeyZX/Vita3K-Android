@@ -1089,18 +1089,10 @@ void VKState::cleanup() {
         release_descriptor_sets(frames[i].color_descriptor);
     }
 
-    pipeline_cache.cleanup();
-
     for (int i = 0; i < MAX_FRAMES_RENDERING; i++)
         frames[i].destroy_queue.destroy_objects();
 
     screen_renderer.cleanup();
-
-    overlay_renderer.destroy();
-
-    surface_cache.cleanup();
-
-    texture_cache.cleanup();
 
     for (auto &[addr, mapping] : mapped_memories) {
         if (mem && (mapping_method == MappingMethod::DoubleBuffer || mapping_method == MappingMethod::PageTable
@@ -1151,8 +1143,6 @@ void VKState::cleanup() {
 
     allocator.destroy();
 
-    vkutil::deinit();
-
     device.destroy();
 
     if (debug_messenger) {
@@ -1174,7 +1164,6 @@ void VKState::cleanup() {
     shaders_count_compiled = 0;
     programs_count_pre_compiled = 0;
     should_display = false;
-    render_abort = false;
 }
 
 void VKState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, DisplayState &display,
