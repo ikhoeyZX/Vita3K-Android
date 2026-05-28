@@ -318,7 +318,7 @@ bool try_reserve_direct_mirror(MemState &state) {
     const off_t offset = 0;
     void *const memory = mmap(preferred_address, mirror_size_bytes(), prot, flags, fd, offset);
     if (memory == MAP_FAILED) {
-        LOG_CRITICAL("mmap failed {}", get_error_msg());
+        LOG_CRITICAL("mmap failed {}", strerror(errno));
         return false;
     }
     state.memory = Memory(static_cast<uint8_t *>(memory), delete_memory);
