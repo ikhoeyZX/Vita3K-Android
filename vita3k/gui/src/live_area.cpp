@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -168,7 +168,6 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
 
     if (!gui.live_area_contents.contains(app_path)) {
         auto default_contents = false;
-        LOG_DEBUG_ONCE("VITAIODEVICE DEBUG OUTPUT: app_device = {}", device::get_device_string(app_device, false));
         const auto fw_path{ emuenv.pref_path / "vs0" };
         const auto default_fw_contents{ fw_path / "data/internal/livearea/default/sce_sys/livearea/contents/template.xml" };
         const auto APP_PATH{ emuenv.pref_path / device::get_device_string(app_device, false) / "app" / app_path };
