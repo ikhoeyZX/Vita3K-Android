@@ -44,9 +44,9 @@
 
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
 #ifdef __arm__
-constexpr uint32_t GUEST_ADDRESS_SPACE_SIZE = 3ULL << 30;
+constexpr uint32_t GUEST_ADDRESS_SPACE_SIZE = 1ULL << 31; // 2GB
 #else
-constexpr uint64_t GUEST_ADDRESS_SPACE_SIZE = 1ULL << 32;
+constexpr uint64_t GUEST_ADDRESS_SPACE_SIZE = 1ULL << 32; // 4GB
 #endif
 constexpr size_t GUEST_PAGE_COUNT = static_cast<size_t>(GUEST_ADDRESS_SPACE_SIZE / STANDARD_PAGE_SIZE);
 constexpr bool LOG_PROTECT = false;
@@ -318,13 +318,16 @@ bool try_reserve_direct_mirror(MemState &state) {
     const off_t offset = 0;
     void *const memory = mmap(preferred_address, mirror_size_bytes(), prot, flags, fd, offset);
     if (memory == MAP_FAILED) {
+        LOG_CRITICAL("mmap failed {}", get_error_msg());
         return false;
     }
     state.memory = Memory(static_cast<uint8_t *>(memory), delete_memory);
 #endif
 
     state.backing_mode = MemBackingMode::DirectMirror;
+#ifndef __arm__
     std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, state.memory.get());
+#endif
     return true;
 }
 } // namespace
@@ -347,6 +350,7 @@ bool init(MemState &state, const bool use_page_table) {
 #else
     state.host_page_size = static_cast<int>(sysconf(_SC_PAGESIZE));
 #endif
+    LOG_DEBUG("host_page_size = {} KB", state.host_page_size/KiB(1));
 
     assert(state.host_page_size >= STANDARD_PAGE_SIZE);
     assert((state.host_page_size % STANDARD_PAGE_SIZE) == 0);
