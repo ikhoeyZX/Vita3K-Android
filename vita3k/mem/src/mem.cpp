@@ -350,8 +350,12 @@ bool init(MemState &state, const bool use_page_table) {
 #else
     state.host_page_size = static_cast<int>(sysconf(_SC_PAGESIZE));
 #endif
+    auto tmp = static_cast<int>(sysconf(_SC_PHYS_PAGES))/KiB(1);
+    LOG_DEBUG("physical_size = {} KB", tmp);
     LOG_DEBUG("host_page_size = {} KB", state.host_page_size/KiB(1));
-
+    LOG_DEBUG("memory_real = {} KB", state.host_page_size/KiB(1) * tmp);
+    LOG_DEBUG("GUEST_PAGE_COUNT = {} KB", GUEST_PAGE_COUNT/KiB(1));
+ 
     assert(state.host_page_size >= STANDARD_PAGE_SIZE);
     assert((state.host_page_size % STANDARD_PAGE_SIZE) == 0);
 
