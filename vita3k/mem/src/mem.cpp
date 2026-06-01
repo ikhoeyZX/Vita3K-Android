@@ -70,12 +70,14 @@ size_t mirror_size_bytes() {
 
 PagePtr canonical_page_base(const MemState &state, Address guest_addr) {
     if (state.backing_mode == MemBackingMode::DirectMirror) {
+        LOG_INFO("MemBackingMode = DirectMirror");
         return state.memory.get();
     }
 
     const Address chunk_start = align_down(guest_addr, state.host_page_size);
     const auto mapping = state.guest_mappings.find(chunk_start);
     if (mapping == state.guest_mappings.end()) {
+        LOG_ERROR("guest_mappings: can't align down!");
         return nullptr;
     }
 
@@ -84,7 +86,7 @@ PagePtr canonical_page_base(const MemState &state, Address guest_addr) {
 
 uint8_t *canonical_host_ptr(const MemState &state, Address guest_addr) {
     const PagePtr base = canonical_page_base(state, guest_addr);
-    return base ? base + guest_addr : nullptr;
+    return base ? (base + guest_addr) : nullptr;
 }
 
 template <typename Fn>
@@ -121,14 +123,20 @@ void for_each_active_host_page(MemState &state, Address addr, uint32_t size, Fn 
 auto find_host_mapping(MemState &state, const HostAddress host_addr) {
     auto mapping = state.host_mappings.upper_bound(host_addr);
     if (mapping == state.host_mappings.begin()) {
+        LOG_INFO("find_host_mapping = state.host_mappings.end");
         return state.host_mappings.end();
     }
 
+    LOG_INFO("mapping = {}", mapping);
     --mapping;
+    LOG_INFO("--mapping = {}", mapping);
     if (host_addr < mapping->first + mapping->second.size) {
         return mapping;
     }
 
+    LOG_ERROR("find_host_mapping = not found!, set as state.host_mappings.end");
+    
+        
     return state.host_mappings.end();
 }
 
@@ -149,6 +157,7 @@ void apply_page_table_range(MemState &state, Address addr, uint32_t size, PagePt
     for (Address page_addr = addr; page_addr < addr + size; page_addr += STANDARD_PAGE_SIZE) {
         state.page_table[page_addr / STANDARD_PAGE_SIZE] = base;
     }
+    LOG_INFO("state.page_table = {}", state.page_table);
 }
 
 void restore_canonical_page_table_range(MemState &state, Address addr, uint32_t size) {
@@ -316,8 +325,12 @@ bool try_reserve_direct_mirror(MemState &state) {
     const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
     const int fd = -1;
     const off_t offset = 0;
-    // void *const memory = mmap(preferred_address, mirror_size_bytes(), prot, flags, fd, offset);
-    void *const memory = mmap(nullptr, mirror_size_bytes(), prot, flags, fd, offset);
+    void *const memory = nullptr;
+    memory = mmap(preferred_address, mirror_size_bytes(), prot, flags, fd, offset);
+    if (memory == MAP_FAILED) {
+        LOG_CRITICAL("mmap failed {}, retry...", strerror(errno));
+        memory = mmap(nullptr, mirror_size_bytes(), prot, flags, fd, offset);
+    }
     if (memory == MAP_FAILED) {
         LOG_CRITICAL("mmap failed {}", strerror(errno));
         return false;
@@ -325,7 +338,7 @@ bool try_reserve_direct_mirror(MemState &state) {
     state.memory = Memory(static_cast<uint8_t *>(memory), delete_memory);
 #endif
 
-    state.backing_mode = MemBackingMode::DirectMirror;
+   // state.backing_mode = MemBackingMode::DirectMirror;
 #ifndef __arm__
     std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, state.memory.get());
 #endif
