@@ -325,7 +325,7 @@ bool try_reserve_direct_mirror(MemState &state) {
     const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
     const int fd = -1;
     const off_t offset = 0;
-    void *const memory = nullptr;
+    void *memory = nullptr;
     memory = mmap(preferred_address, mirror_size_bytes(), prot, flags, fd, offset);
     if (memory == MAP_FAILED) {
         LOG_CRITICAL("mmap failed {}, retry...", strerror(errno));
