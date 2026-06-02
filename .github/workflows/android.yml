@@ -57,11 +57,6 @@ jobs:
 #             ndk-version: 28.0.12674087-rc1
 #             link-to-sdk: true
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
-        with:
-          gradle-home-cache-cleanup: true
-          
       - name: Gradle build 64bit release
         env:
           SIGNING_STORE_PATH: "/home/runner/keystore.jks"
@@ -116,6 +111,7 @@ jobs:
 #          name: vita3k-${{ env.git_short_sha }}-reldebug_arm64.zip
 #          path: android/build/outputs/apk/release/vita3k-aarch64-${{ env.git_short_sha }}-reldebug.apk
 
+# this version is experiemental, so not recommended and will dissabled when release
       - name: Gradle build 32bit
         env:
           SIGNING_STORE_PATH: "/home/runner/keystore.jks"
