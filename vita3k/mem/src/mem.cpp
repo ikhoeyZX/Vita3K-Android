@@ -127,9 +127,7 @@ auto find_host_mapping(MemState &state, const HostAddress host_addr) {
         return state.host_mappings.end();
     }
 
-    LOG_INFO("mapping = {}", log_hex(mapping));
     --mapping;
-    LOG_INFO("--mapping = {}", log_hex(mapping));
     if (host_addr < mapping->first + mapping->second.size) {
         return mapping;
     }
