@@ -155,7 +155,6 @@ void apply_page_table_range(MemState &state, Address addr, uint32_t size, PagePt
     for (Address page_addr = addr; page_addr < addr + size; page_addr += STANDARD_PAGE_SIZE) {
         state.page_table[page_addr / STANDARD_PAGE_SIZE] = base;
     }
-    LOG_INFO("state.page_table = {}", state.page_table);
 }
 
 void restore_canonical_page_table_range(MemState &state, Address addr, uint32_t size) {
@@ -380,8 +379,10 @@ bool init(MemState &state, const bool use_page_table) {
 
     state.use_page_table = use_page_table;
     if (!try_reserve_direct_mirror(state)) {
+        LOG_INFO("MemBackingMode::SparseMappings");
         state.backing_mode = MemBackingMode::SparseMappings;
-    }
+    } else
+        LOG_INFO("MemBackingMode::directMirror");
 
     const auto handler = [&state](uint8_t *addr, bool write) noexcept {
         return handle_access_violation(state, addr, write);
@@ -428,6 +429,7 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
         page_num = start_page;
     } else {
         page_num = state.allocator.allocate_from(start_page, page_count, false);
+        LOG_INFO("Pagenum = {}", page_num);
         if (page_num < 0)
             return 0;
     }
