@@ -63,6 +63,16 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
 static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force);
 static void delete_memory(uint8_t *memory);
 
+#ifdef _WIN32
+std::string get_error_msg() {
+    return std::system_category().message(GetLastError());
+}
+#else
+std::string get_error_msg() {
+    return strerror(errno);
+}
+#endif
+
 namespace {
 size_t mirror_size_bytes() {
     return sizeof(void *) >= sizeof(uint64_t) ? static_cast<size_t>(GUEST_ADDRESS_SPACE_SIZE) : 0;
@@ -70,7 +80,6 @@ size_t mirror_size_bytes() {
 
 PagePtr canonical_page_base(const MemState &state, Address guest_addr) {
     if (state.backing_mode == MemBackingMode::DirectMirror) {
-        LOG_INFO("MemBackingMode = DirectMirror");
         return state.memory.get();
     }
 
@@ -195,7 +204,8 @@ uintptr_t caller_address() {
 #ifdef _MSC_VER
     return reinterpret_cast<uintptr_t>(_ReturnAddress());
 #else
-    return 0;
+    return reinterpret_cast<uintptr_t>(__builtin_return_address(0));
+   // return 0;
 #endif
 }
 
@@ -208,7 +218,7 @@ bool protect_host_memory(uint8_t *memory, size_t size, DWORD protection) {
 }
 
 uint8_t *map_sparse_chunk(uint32_t size) {
-    return static_cast<uint8_t *>(VirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE));
+       return static_cast<uint8_t *>(VirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE));
 }
 
 void unmap_sparse_chunk(uint8_t *memory, uint32_t size) {
@@ -237,15 +247,28 @@ bool protect_host_memory(uint8_t *memory, size_t size, int protection) {
 }
 
 uint8_t *map_sparse_chunk(uint32_t size) {
-    const int fd = -1;
+//    const int fd = -1;
     const off_t offset = 0;
-    void *const mapping = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, fd, offset);
+    const int prot = PROT_NONE;
+//    const int prot = PROT_READ | PROT_WRITE;
+    const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
+    const int fd = 0;
+    
+#ifndef __arm__
+    void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
+    void *const mapping = mmap(preferred_address, size, prot, flags, fd, offset);
+#else
+    void *const mapping = mmap(nullptr, size, prot, flags, fd, offset);
+#endif
+    if (mapping == MAP_FAILED)
+        LOG_CRITICAL("mmap failed {}", get_error_msg());
+    
     return mapping == MAP_FAILED ? nullptr : static_cast<uint8_t *>(mapping);
 }
 
 void unmap_sparse_chunk(uint8_t *memory, uint32_t size) {
     const int ret = munmap(memory, size);
-    LOG_CRITICAL_IF(ret == -1, "munmap failed: {}", strerror(errno));
+    LOG_CRITICAL_IF(ret == -1, "munmap failed: {}", get_error_msg());
 }
 
 bool commit_direct_chunk(MemState &state, Address chunk_start) {
@@ -256,9 +279,9 @@ bool commit_direct_chunk(MemState &state, Address chunk_start) {
 void decommit_direct_chunk(MemState &state, Address chunk_start) {
     uint8_t *const chunk_ptr = state.memory.get() + chunk_start;
     int ret = mprotect(chunk_ptr, state.host_page_size, PROT_NONE);
-    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", strerror(errno));
+    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
     ret = madvise(chunk_ptr, state.host_page_size, MADV_DONTNEED);
-    LOG_CRITICAL_IF(ret == -1, "madvise failed: {}", strerror(errno));
+    LOG_CRITICAL_IF(ret == -1, "madvise failed: {}", get_error_msg());
 }
 #endif
 
@@ -342,16 +365,6 @@ bool try_reserve_direct_mirror(MemState &state) {
     return true;
 }
 } // namespace
-
-#ifdef _WIN32
-std::string get_error_msg() {
-    return std::system_category().message(GetLastError());
-}
-#else
-std::string get_error_msg() {
-    return strerror(errno);
-}
-#endif
 
 bool init(MemState &state, const bool use_page_table) {
 #ifdef _WIN32
