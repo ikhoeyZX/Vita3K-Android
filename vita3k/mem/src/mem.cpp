@@ -363,9 +363,9 @@ bool try_reserve_direct_mirror(MemState &state) {
 #endif
 
     state.backing_mode = MemBackingMode::DirectMirror;
-#ifndef __arm__
-    std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, state.memory.get());
-#endif
+// #ifndef __arm__
+//    std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, state.memory.get());
+// #endif
     return true;
 }
 } // namespace
