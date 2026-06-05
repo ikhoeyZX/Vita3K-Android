@@ -48,6 +48,8 @@ constexpr uint32_t GUEST_ADDRESS_SPACE_SIZE = 1ULL << 31; // 2GB
 #else
 constexpr uint64_t GUEST_ADDRESS_SPACE_SIZE = 1ULL << 32; // 4GB
 #endif
+size_t GUEST_PAGE_COUNT = 0;
+
 constexpr bool LOG_PROTECT = false;
 #ifdef NDEBUG
 constexpr bool PAGE_NAME_TRACKING = false;
@@ -377,7 +379,7 @@ bool init(MemState &state, const bool use_page_table) {
     state.host_page_size = static_cast<int>(sysconf(_SC_PAGESIZE));
 #endif
     auto tmp = static_cast<int>(sysconf(_SC_PHYS_PAGES))/KiB(1);
-    const size_t GUEST_PAGE_COUNT = GUEST_ADDRESS_SPACE_SIZE / state.host_page_size;
+    GUEST_PAGE_COUNT = GUEST_ADDRESS_SPACE_SIZE / state.host_page_size;
     
     LOG_DEBUG("physical_size = {} KB", tmp);
     LOG_DEBUG("host_page_size = {} KB", state.host_page_size/KiB(1));
@@ -748,6 +750,7 @@ void free(MemState &state, Address address) {
     }
 
     const uint32_t page_num = address / STANDARD_PAGE_SIZE;
+    LOG_INFO_ONCE("GUEST_PAGE_COUNT = {}", GUEST_PAGE_COUNT);
     if (page_num >= GUEST_PAGE_COUNT) {
         LOG_ERROR("free called with out-of-range address {} (caller 0x{:X})", log_hex(address), caller_address());
         return;
