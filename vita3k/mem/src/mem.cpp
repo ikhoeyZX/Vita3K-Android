@@ -48,7 +48,8 @@ constexpr uint32_t GUEST_ADDRESS_SPACE_SIZE = 1ULL << 31; // 2GB
 #else
 constexpr uint64_t GUEST_ADDRESS_SPACE_SIZE = 1ULL << 32; // 4GB
 #endif
-constexpr size_t GUEST_PAGE_COUNT = static_cast<size_t>(GUEST_ADDRESS_SPACE_SIZE / STANDARD_PAGE_SIZE);
+// constexpr size_t GUEST_PAGE_COUNT = static_cast<size_t>(GUEST_ADDRESS_SPACE_SIZE / STANDARD_PAGE_SIZE);
+constexpr size_t GUEST_PAGE_COUNT = GUEST_ADDRESS_SPACE_SIZE;
 constexpr bool LOG_PROTECT = false;
 #ifdef NDEBUG
 constexpr bool PAGE_NAME_TRACKING = false;
