@@ -247,12 +247,10 @@ bool protect_host_memory(uint8_t *memory, size_t size, int protection) {
 }
 
 uint8_t *map_sparse_chunk(uint32_t size) {
-//    const int fd = -1;
+    const int fd = -1;
     const off_t offset = 0;
-    const int prot = PROT_NONE;
-//    const int prot = PROT_READ | PROT_WRITE;
+    const int prot = PROT_READ | PROT_WRITE;
     const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
-    const int fd = 0;
     
 #ifndef __arm__
     void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
@@ -343,7 +341,8 @@ bool try_reserve_direct_mirror(MemState &state) {
 #else
     const int prot = PROT_NONE;
     const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
-    const int fd = -1;
+    // const int fd = -1;
+    const int fd = 0;
     const off_t offset = 0;
     void *memory = nullptr;
     memory = mmap(preferred_address, mirror_size_bytes(), prot, flags, fd, offset);
@@ -358,6 +357,7 @@ bool try_reserve_direct_mirror(MemState &state) {
     state.memory = Memory(static_cast<uint8_t *>(memory), delete_memory);
 #endif
 
+    state.backing_mode = MemBackingMode::SparseMappings;
    // state.backing_mode = MemBackingMode::DirectMirror;
 #ifndef __arm__
     std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, state.memory.get());
@@ -392,10 +392,10 @@ bool init(MemState &state, const bool use_page_table) {
 
     state.use_page_table = use_page_table;
     if (!try_reserve_direct_mirror(state)) {
-        LOG_INFO("MemBackingMode::SparseMappings");
+        LOG_INFO_ONCE("MemBackingMode::SparseMappings");
         state.backing_mode = MemBackingMode::SparseMappings;
     } else
-        LOG_INFO("MemBackingMode::directMirror");
+        LOG_INFO_ONCE("MemBackingMode::directMirror");
 
     const auto handler = [&state](uint8_t *addr, bool write) noexcept {
         return handle_access_violation(state, addr, write);
@@ -442,7 +442,6 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
         page_num = start_page;
     } else {
         page_num = state.allocator.allocate_from(start_page, page_count, false);
-        LOG_INFO("Pagenum = {}", page_num);
         if (page_num < 0)
             return 0;
     }
