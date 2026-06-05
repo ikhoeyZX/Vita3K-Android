@@ -48,8 +48,6 @@ constexpr uint32_t GUEST_ADDRESS_SPACE_SIZE = 1ULL << 31; // 2GB
 #else
 constexpr uint64_t GUEST_ADDRESS_SPACE_SIZE = 1ULL << 32; // 4GB
 #endif
-// constexpr size_t GUEST_PAGE_COUNT = static_cast<size_t>(GUEST_ADDRESS_SPACE_SIZE / STANDARD_PAGE_SIZE);
-constexpr size_t GUEST_PAGE_COUNT = GUEST_ADDRESS_SPACE_SIZE;
 constexpr bool LOG_PROTECT = false;
 #ifdef NDEBUG
 constexpr bool PAGE_NAME_TRACKING = false;
@@ -387,12 +385,10 @@ bool init(MemState &state, const bool use_page_table) {
     assert(state.host_page_size >= STANDARD_PAGE_SIZE);
     assert((state.host_page_size % STANDARD_PAGE_SIZE) == 0);
 
+    const size_t GUEST_PAGE_COUNT = GUEST_ADDRESS_SPACE_SIZE / state.host_page_size;
     state.alloc_table = AllocPageTable(new AllocMemPage[GUEST_PAGE_COUNT]);
     memset(state.alloc_table.get(), 0, sizeof(AllocMemPage) * GUEST_PAGE_COUNT);
     state.allocator.set_maximum(GUEST_PAGE_COUNT);
-
-    state.page_table = PageTable(new PagePtr[GUEST_PAGE_COUNT]);
-    std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, nullptr);
 
     state.use_page_table = use_page_table;
     if (!try_reserve_direct_mirror(state)) {
@@ -408,8 +404,17 @@ bool init(MemState &state, const bool use_page_table) {
 
     const Address null_address = alloc_inner(state, 0, state.host_page_size / STANDARD_PAGE_SIZE, "null", true);
     assert(null_address == 0);
+    
+#ifndef ANDROID
     protect_inner(state, 0, state.host_page_size, MemPerm::None);
-
+#endif
+    
+    if (use_page_table) {
+       state.page_table = PageTable(new PagePtr[GUEST_PAGE_COUNT]);
+       // std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, nullptr);
+       std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, state.memory.get());
+    }
+    
     return true;
 }
 
