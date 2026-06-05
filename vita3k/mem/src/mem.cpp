@@ -377,6 +377,8 @@ bool init(MemState &state, const bool use_page_table) {
     state.host_page_size = static_cast<int>(sysconf(_SC_PAGESIZE));
 #endif
     auto tmp = static_cast<int>(sysconf(_SC_PHYS_PAGES))/KiB(1);
+    const size_t GUEST_PAGE_COUNT = GUEST_ADDRESS_SPACE_SIZE / state.host_page_size;
+    
     LOG_DEBUG("physical_size = {} KB", tmp);
     LOG_DEBUG("host_page_size = {} KB", state.host_page_size/KiB(1));
     LOG_DEBUG("memory_real = {} KB", state.host_page_size/KiB(1) * tmp);
@@ -385,7 +387,6 @@ bool init(MemState &state, const bool use_page_table) {
     assert(state.host_page_size >= STANDARD_PAGE_SIZE);
     assert((state.host_page_size % STANDARD_PAGE_SIZE) == 0);
 
-    const size_t GUEST_PAGE_COUNT = GUEST_ADDRESS_SPACE_SIZE / state.host_page_size;
     state.alloc_table = AllocPageTable(new AllocMemPage[GUEST_PAGE_COUNT]);
     memset(state.alloc_table.get(), 0, sizeof(AllocMemPage) * GUEST_PAGE_COUNT);
     state.allocator.set_maximum(GUEST_PAGE_COUNT);
