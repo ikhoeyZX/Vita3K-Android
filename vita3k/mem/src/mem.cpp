@@ -96,6 +96,7 @@ PagePtr canonical_page_base(const MemState &state, Address guest_addr) {
 uint8_t *canonical_host_ptr(const MemState &state, Address guest_addr) {
     const PagePtr base = canonical_page_base(state, guest_addr);
     return base ? (base + guest_addr) : nullptr;
+    return base ? base : nullptr;
 }
 
 template <typename Fn>
@@ -142,8 +143,8 @@ auto find_host_mapping(MemState &state, const HostAddress host_addr) {
     }
 
     LOG_ERROR("find_host_mapping = not found!, set as state.host_mappings.end");
+    state.use_page_table = false;
     
-        
     return state.host_mappings.end();
 }
 
@@ -347,18 +348,20 @@ bool try_reserve_direct_mirror(MemState &state) {
     void *memory = nullptr;
     memory = mmap(preferred_address, mirror_size_bytes(), prot, flags, fd, offset);
     if (memory == MAP_FAILED) {
-        LOG_CRITICAL("mmap failed {}, retry...", strerror(errno));
+        LOG_CRITICAL("mmap failed {}, retry...", get_error_msg());
         memory = mmap(nullptr, mirror_size_bytes(), prot, flags, fd, offset);
     }
     if (memory == MAP_FAILED) {
-        LOG_CRITICAL("mmap failed {}", strerror(errno));
+        LOG_CRITICAL("mmap failed {}", get_error_msg());
         return false;
+    } else {
+        LOG_CRITICAL("mmap status {}", get_error_msg());
     }
+        
     state.memory = Memory(static_cast<uint8_t *>(memory), delete_memory);
 #endif
 
-    state.backing_mode = MemBackingMode::SparseMappings;
-   // state.backing_mode = MemBackingMode::DirectMirror;
+    state.backing_mode = MemBackingMode::DirectMirror;
 #ifndef __arm__
     std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, state.memory.get());
 #endif
@@ -540,10 +543,19 @@ void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm p
 
 bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcept {
     Address vaddr = 0;
+#if !defined(__aarch64__ ) || !defined(__x86_64__)
     const HostAddress fault_addr = reinterpret_cast<HostAddress>(addr);
+#else
+    const HostAddress fault_addr = std::bit_cast<HostAddress>(addr);
+#endif
+
     const std::unique_lock<std::mutex> lock(state.protect_mutex);
     if (state.backing_mode == MemBackingMode::DirectMirror && state.memory) {
+#if !defined(__aarch64__ ) || !defined(__x86_64__)
         const HostAddress memory_addr = reinterpret_cast<HostAddress>(state.memory.get());
+#else
+        const HostAddress memory_addr = std::bit_cast<HostAddress>(state.memory.get());
+#endif
         if (fault_addr >= memory_addr && fault_addr < memory_addr + mirror_size_bytes()) {
             vaddr = static_cast<Address>(fault_addr - memory_addr);
         } else {
@@ -656,7 +668,7 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
         assert(original_address != nullptr);
         memcpy(addr_ptr + block * KiB(4), original_address, KiB(4));
     }
-
+        
     apply_page_table_range(mem, addr, size, addr_ptr - addr);
     protect_inner(mem, addr, size, MemPerm::None);
 
@@ -668,6 +680,7 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
 void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
     const auto mapping_it = find_external_mapping(mem, addr);
     if (mapping_it == mem.external_mapping.end()) {
+    LOG_INFO("clear_guest_protect_range");
         // Some mapping modes, like double-buffer trapping, only use guest protections and never install an external host mapping.
         clear_guest_protect_range(mem, addr, size);
         return;
