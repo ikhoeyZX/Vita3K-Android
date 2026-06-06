@@ -427,7 +427,9 @@ static void delete_memory(uint8_t *memory) {
         const BOOL ret = VirtualFree(memory, 0, MEM_RELEASE);
         assert(ret);
 #else
-        const int ret = munmap(memory, mirror_size_bytes());
+      //  const int ret = munmap(memory, mirror_size_bytes());
+        const int ret = munmap(memory, GUEST_ADDRESS_SPACE_SIZE);
+        
         assert(ret == 0);
 #endif
     }
