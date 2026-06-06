@@ -341,7 +341,8 @@ bool try_reserve_direct_mirror(MemState &state) {
     }
     state.memory = Memory(memory, delete_memory);
 #else
-    const int prot = PROT_NONE;
+    // const int prot = PROT_NONE;
+    const int prot = PROT_READ | PROT_WRITE;
     const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
     // const int fd = -1;
     const int fd = 0;
