@@ -206,8 +206,7 @@ uintptr_t caller_address() {
 #ifdef _MSC_VER
     return reinterpret_cast<uintptr_t>(_ReturnAddress());
 #else
-    return reinterpret_cast<uintptr_t>(__builtin_return_address(0));
-   // return 0;
+    return 0;
 #endif
 }
 
@@ -326,10 +325,11 @@ void unmap_guest_chunk(MemState &state, Address chunk_start) {
 
 bool try_reserve_direct_mirror(MemState &state) {
     if (mirror_size_bytes() == 0) {
+        LOG_INFO("mirror_size_bytes() == 0");
         return false;
     }
 
-    void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
+    void *preferred_address = reinterpret_cast<void *>(1ULL << 32);
 
 #ifdef _WIN32
     uint8_t *memory = static_cast<uint8_t *>(VirtualAlloc(preferred_address, mirror_size_bytes(), MEM_RESERVE, PAGE_NOACCESS));
@@ -341,11 +341,9 @@ bool try_reserve_direct_mirror(MemState &state) {
     }
     state.memory = Memory(memory, delete_memory);
 #else
-    // const int prot = PROT_NONE;
-    const int prot = PROT_READ | PROT_WRITE;
+    const int prot = PROT_NONE;
     const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
-    // const int fd = -1;
-    const int fd = 0;
+    const int fd = -1;
     const off_t offset = 0;
     void *memory = nullptr;
     memory = mmap(preferred_address, mirror_size_bytes(), prot, flags, fd, offset);
@@ -364,9 +362,9 @@ bool try_reserve_direct_mirror(MemState &state) {
 #endif
 
     state.backing_mode = MemBackingMode::DirectMirror;
-// #ifndef __arm__
-//    std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, state.memory.get());
-// #endif
+ #ifndef __arm__
+    std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, state.memory.get());
+ #endif
     return true;
 }
 } // namespace
@@ -428,9 +426,7 @@ static void delete_memory(uint8_t *memory) {
         const BOOL ret = VirtualFree(memory, 0, MEM_RELEASE);
         assert(ret);
 #else
-      //  const int ret = munmap(memory, mirror_size_bytes());
-        const int ret = munmap(memory, GUEST_ADDRESS_SPACE_SIZE);
-        
+        const int ret = munmap(memory, mirror_size_bytes());
         assert(ret == 0);
 #endif
     }
@@ -485,6 +481,11 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
 
     uint8_t *const host_ptr = canonical_host_ptr(state, addr);
     assert(host_ptr != nullptr);
+    if (!protect_host_memory(host_ptr, size, PROT_READ | PROT_WRITE)); {
+        LOG_ERROR("protect_host_memory = can't change prot!");
+        return 0;
+    }
+    
     std::memset(host_ptr, 0, size);
     AllocMemPage &page = state.alloc_table[page_num];
     assert(!page.allocated);
