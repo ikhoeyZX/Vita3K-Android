@@ -481,10 +481,12 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
 
     uint8_t *const host_ptr = canonical_host_ptr(state, addr);
     assert(host_ptr != nullptr);
+    /*
     if (!protect_host_memory(host_ptr, size, PROT_READ | PROT_WRITE)); {
         LOG_ERROR("protect_host_memory = can't change prot!");
         return 0;
     }
+    */
     
     std::memset(host_ptr, 0, size);
     AllocMemPage &page = state.alloc_table[page_num];
