@@ -407,11 +407,6 @@ bool init(MemState &state, const bool use_page_table) {
     assert(null_address == 0);
     LOG_DEBUG("CALL protect_host_memory");
     protect_inner(state, 0, state.host_page_size, MemPerm::None);
-
-    if (!protect_host_memory(state, state.host_page_size / STANDARD_PAGE_SIZE, PROT_READ | PROT_WRITE)); {
-        LOG_ERROR("protect_host_memory = can't change prot!");
-        return 0;
-    }
     
     return true;
 }
@@ -675,8 +670,9 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     }
         
     apply_page_table_range(mem, addr, size, addr_ptr - addr);
-    protect_inner(mem, addr, size, MemPerm::None);
-
+    // protect_inner(mem, addr, size, MemPerm::None);
+    protect_inner(mem, addr, size, MemPerm::ReadWrite);
+ 
     const MemGuestHostMapping mapping { addr, size, addr_ptr, true };
     mem.host_mappings[reinterpret_cast<HostAddress>(addr_ptr)] = mapping;
     mem.external_mapping[reinterpret_cast<HostAddress>(addr_ptr)] = { addr, size };
