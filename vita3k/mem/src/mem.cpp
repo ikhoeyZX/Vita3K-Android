@@ -95,7 +95,7 @@ PagePtr canonical_page_base(const MemState &state, Address guest_addr) {
 
 uint8_t *canonical_host_ptr(const MemState &state, Address guest_addr) {
     const PagePtr base = canonical_page_base(state, guest_addr);
-    return base ? (base + guest_addr) : nullptr;
+   // return base ? (base + guest_addr) : nullptr;
     return base ? base : nullptr;
 }
 
@@ -213,7 +213,7 @@ uintptr_t caller_address() {
 bool protect_host_memory(uint8_t *memory, size_t size, DWORD protection) {
     DWORD old_protect = 0;
     const BOOL ret = VirtualProtect(memory, size, protection, &old_protect);
-    LOG_CRITICAL_IF(!ret, "VirtualProtect failed: {}", std::system_category().message(GetLastError()));
+    LOG_CRITICAL_IF(!ret, "VirtualProtect failed: {}", get_error_msg());
     return ret != 0;
 }
 
@@ -224,25 +224,25 @@ uint8_t *map_sparse_chunk(uint32_t size) {
 void unmap_sparse_chunk(uint8_t *memory, uint32_t size) {
     (void)size;
     const BOOL ret = VirtualFree(memory, 0, MEM_RELEASE);
-    LOG_CRITICAL_IF(!ret, "VirtualFree failed: {}", std::system_category().message(GetLastError()));
+    LOG_CRITICAL_IF(!ret, "VirtualFree failed: {}", get_error_msg());
 }
 
 bool commit_direct_chunk(MemState &state, Address chunk_start) {
     uint8_t *const chunk_ptr = state.memory.get() + chunk_start;
     const void *const ret = VirtualAlloc(chunk_ptr, state.host_page_size, MEM_COMMIT, PAGE_READWRITE);
-    LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", std::system_category().message(GetLastError()));
+    LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
     return ret != nullptr;
 }
 
 void decommit_direct_chunk(MemState &state, Address chunk_start) {
     uint8_t *const chunk_ptr = state.memory.get() + chunk_start;
     const BOOL ret = VirtualFree(chunk_ptr, state.host_page_size, MEM_DECOMMIT);
-    LOG_CRITICAL_IF(!ret, "VirtualFree failed: {}", std::system_category().message(GetLastError()));
+    LOG_CRITICAL_IF(!ret, "VirtualFree failed: {}", get_error_msg());
 }
 #else
 bool protect_host_memory(uint8_t *memory, size_t size, int protection) {
     const int ret = mprotect(memory, size, protection);
-    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", strerror(errno));
+    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
     return ret != -1;
 }
 
@@ -260,6 +260,8 @@ uint8_t *map_sparse_chunk(uint32_t size) {
 #endif
     if (mapping == MAP_FAILED)
         LOG_CRITICAL("mmap failed {}", get_error_msg());
+    else
+        LOG_INFO("mmap status {}", get_error_msg());
     
     return mapping == MAP_FAILED ? nullptr : static_cast<uint8_t *>(mapping);
 }
@@ -335,6 +337,7 @@ bool try_reserve_direct_mirror(MemState &state) {
         memory = static_cast<uint8_t *>(VirtualAlloc(nullptr, mirror_size_bytes(), MEM_RESERVE, PAGE_NOACCESS));
     }
     if (!memory) {
+        LOG_CRITICAL("memory set failed");
         return false;
     }
     state.memory = Memory(memory, delete_memory);
@@ -368,6 +371,7 @@ bool try_reserve_direct_mirror(MemState &state) {
 } // namespace
 
 bool init(MemState &state, const bool use_page_table) {
+    state.use_page_table = use_page_table;
 #ifdef _WIN32
     SYSTEM_INFO system_info = {};
     GetSystemInfo(&system_info);
@@ -384,14 +388,16 @@ bool init(MemState &state, const bool use_page_table) {
     assert(state.host_page_size >= STANDARD_PAGE_SIZE);
     assert((state.host_page_size % STANDARD_PAGE_SIZE) == 0);
 
-    state.alloc_table = AllocPageTable(new AllocMemPage[GUEST_PAGE_COUNT]);
-    memset(state.alloc_table.get(), 0, sizeof(AllocMemPage) * GUEST_PAGE_COUNT);
-    state.allocator.set_maximum(GUEST_PAGE_COUNT);
+    if (state.use_page_table) {
+        state.alloc_table = AllocPageTable(new AllocMemPage[GUEST_PAGE_COUNT]);
+        memset(state.alloc_table.get(), 0, sizeof(AllocMemPage) * GUEST_PAGE_COUNT);
+        state.allocator.set_maximum(GUEST_PAGE_COUNT);
 
-    state.page_table = PageTable(new PagePtr[GUEST_PAGE_COUNT]);
-    std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, nullptr);
-
-    state.use_page_table = use_page_table;
+        state.page_table = PageTable(new PagePtr[GUEST_PAGE_COUNT]);
+      //  std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, nullptr);
+        td::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, state.memory.get());
+    }
+    
     if (!try_reserve_direct_mirror(state)) {
         LOG_INFO_ONCE("MemBackingMode::SparseMappings");
         state.backing_mode = MemBackingMode::SparseMappings;
@@ -405,7 +411,7 @@ bool init(MemState &state, const bool use_page_table) {
 
     const Address null_address = alloc_inner(state, 0, state.host_page_size / STANDARD_PAGE_SIZE, "null", true);
     assert(null_address == 0);
-    protect_inner(state, 0, state.host_page_size, MemPerm::ReadWrite);
+    protect_inner(state, 0, state.host_page_size, MemPerm::None);
     
     return true;
 }
@@ -472,6 +478,14 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
     uint8_t *const host_ptr = canonical_host_ptr(state, addr);
     assert(host_ptr != nullptr);
 
+#ifdef _WIN32
+    const void *const ret = VirtualAlloc(host_ptr, size, MEM_COMMIT, PAGE_READWRITE);
+    LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
+#else
+    const int ret = mprotect(host_ptr, size, PROT_READ | PROT_WRITE);
+    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+#endif
+    
     std::memset(host_ptr, 0, size);
     AllocMemPage &page = state.alloc_table[page_num];
     assert(!page.allocated);
