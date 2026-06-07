@@ -48,8 +48,7 @@ constexpr uint32_t GUEST_ADDRESS_SPACE_SIZE = 1ULL << 31; // 2GB
 #else
 constexpr uint64_t GUEST_ADDRESS_SPACE_SIZE = 1ULL << 32; // 4GB
 #endif
-size_t GUEST_PAGE_COUNT = 0;
-
+constexpr size_t GUEST_PAGE_COUNT = static_cast<size_t>(GUEST_ADDRESS_SPACE_SIZE / STANDARD_PAGE_SIZE);
 constexpr bool LOG_PROTECT = false;
 #ifdef NDEBUG
 constexpr bool PAGE_NAME_TRACKING = false;
@@ -134,7 +133,7 @@ void for_each_active_host_page(MemState &state, Address addr, uint32_t size, Fn 
 auto find_host_mapping(MemState &state, const HostAddress host_addr) {
     auto mapping = state.host_mappings.upper_bound(host_addr);
     if (mapping == state.host_mappings.begin()) {
-        LOG_INFO_ONCE("find_host_mapping = state.host_mappings.end");
+        LOG_INFO("find_host_mapping = state.host_mappings.end");
         return state.host_mappings.end();
     }
 
@@ -143,7 +142,7 @@ auto find_host_mapping(MemState &state, const HostAddress host_addr) {
         return mapping;
     }
 
-    LOG_ERROR_ONCE("find_host_mapping = not found!, set as state.host_mappings.end");
+    LOG_ERROR("find_host_mapping = not found!, set as state.host_mappings.end");
     state.use_page_table = false;
     
     return state.host_mappings.end();
@@ -260,7 +259,8 @@ uint8_t *map_sparse_chunk(uint32_t size) {
 #else
     void *const mapping = mmap(nullptr, size, prot, flags, fd, offset);
 #endif
-    LOG_DEBUG("mmap status {}", get_error_msg());
+    if (mapping == MAP_FAILED)
+        LOG_CRITICAL("mmap failed {}", get_error_msg());
     
     return mapping == MAP_FAILED ? nullptr : static_cast<uint8_t *>(mapping);
 }
@@ -342,7 +342,8 @@ bool try_reserve_direct_mirror(MemState &state) {
 #else
     const int prot = PROT_NONE;
     const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
-    const int fd = -1;
+    // const int fd = -1;
+    const int fd = 0;
     const off_t offset = 0;
     void *memory = nullptr;
     memory = mmap(preferred_address, mirror_size_bytes(), prot, flags, fd, offset);
@@ -354,7 +355,7 @@ bool try_reserve_direct_mirror(MemState &state) {
         LOG_CRITICAL("mmap failed {}", get_error_msg());
         return false;
     } else {
-        LOG_INFO("mmap status {}", get_error_msg());
+        LOG_CRITICAL("mmap status {}", get_error_msg());
     }
         
     state.memory = Memory(static_cast<uint8_t *>(memory), delete_memory);
@@ -377,8 +378,6 @@ bool init(MemState &state, const bool use_page_table) {
     state.host_page_size = static_cast<int>(sysconf(_SC_PAGESIZE));
 #endif
     auto tmp = static_cast<int>(sysconf(_SC_PHYS_PAGES))/KiB(1);
-    GUEST_PAGE_COUNT = GUEST_ADDRESS_SPACE_SIZE / state.host_page_size;
-    
     LOG_DEBUG("physical_size = {} KB", tmp);
     LOG_DEBUG("host_page_size = {} KB", state.host_page_size/KiB(1));
     LOG_DEBUG("memory_real = {} KB", state.host_page_size/KiB(1) * tmp);
@@ -390,6 +389,9 @@ bool init(MemState &state, const bool use_page_table) {
     state.alloc_table = AllocPageTable(new AllocMemPage[GUEST_PAGE_COUNT]);
     memset(state.alloc_table.get(), 0, sizeof(AllocMemPage) * GUEST_PAGE_COUNT);
     state.allocator.set_maximum(GUEST_PAGE_COUNT);
+
+    state.page_table = PageTable(new PagePtr[GUEST_PAGE_COUNT]);
+    std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, nullptr);
 
     state.use_page_table = use_page_table;
     if (!try_reserve_direct_mirror(state)) {
@@ -405,17 +407,8 @@ bool init(MemState &state, const bool use_page_table) {
 
     const Address null_address = alloc_inner(state, 0, state.host_page_size / STANDARD_PAGE_SIZE, "null", true);
     assert(null_address == 0);
-    
-#ifndef ANDROID
     protect_inner(state, 0, state.host_page_size, MemPerm::None);
-#endif
-    
-    if (use_page_table) {
-       state.page_table = PageTable(new PagePtr[GUEST_PAGE_COUNT]);
-       // std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, nullptr);
-       std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, state.memory.get());
-    }
-    
+
     return true;
 }
 
@@ -480,6 +473,7 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
 
     uint8_t *const host_ptr = canonical_host_ptr(state, addr);
     assert(host_ptr != nullptr);
+    LOG_DEBUG("CALL protect_host_memory");
     if (!protect_host_memory(host_ptr, size, PROT_READ | PROT_WRITE)); {
         LOG_ERROR("protect_host_memory = can't change prot!");
         return 0;
@@ -752,7 +746,6 @@ void free(MemState &state, Address address) {
     }
 
     const uint32_t page_num = address / STANDARD_PAGE_SIZE;
-    LOG_INFO_ONCE("GUEST_PAGE_COUNT = {}", GUEST_PAGE_COUNT);
     if (page_num >= GUEST_PAGE_COUNT) {
         LOG_ERROR("free called with out-of-range address {} (caller 0x{:X})", log_hex(address), caller_address());
         return;
