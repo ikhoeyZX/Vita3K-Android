@@ -395,7 +395,7 @@ bool init(MemState &state, const bool use_page_table) {
 
         state.page_table = PageTable(new PagePtr[GUEST_PAGE_COUNT]);
       //  std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, nullptr);
-        td::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, state.memory.get());
+        std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, state.memory.get());
     }
     
     if (!try_reserve_direct_mirror(state)) {
