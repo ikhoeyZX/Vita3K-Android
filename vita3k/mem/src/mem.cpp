@@ -205,8 +205,7 @@ uintptr_t caller_address() {
 #ifdef _MSC_VER
     return reinterpret_cast<uintptr_t>(_ReturnAddress());
 #else
-    return reinterpret_cast<uintptr_t>(__builtin_return_address(0));
-   // return 0;
+    return 0;
 #endif
 }
 
@@ -342,8 +341,7 @@ bool try_reserve_direct_mirror(MemState &state) {
 #else
     const int prot = PROT_NONE;
     const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
-    // const int fd = -1;
-    const int fd = 0;
+    const int fd = -1;
     const off_t offset = 0;
     void *memory = nullptr;
     memory = mmap(preferred_address, mirror_size_bytes(), prot, flags, fd, offset);
@@ -405,7 +403,8 @@ bool init(MemState &state, const bool use_page_table) {
     };
     register_access_violation_handler(handler);
 
-    const Address null_address = alloc_inner(state, 0, state.host_page_size / STANDARD_PAGE_SIZE, "null", true);
+    // const Address null_address = alloc_inner(state, 0, state.host_page_size / STANDARD_PAGE_SIZE, "null", true);
+    const Address null_address = alloc_inner(state, 0, 1, "null", true);
     assert(null_address == 0);
     protect_inner(state, 0, state.host_page_size, MemPerm::None);
 
