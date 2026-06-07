@@ -405,8 +405,7 @@ bool init(MemState &state, const bool use_page_table) {
 
     const Address null_address = alloc_inner(state, 0, state.host_page_size / STANDARD_PAGE_SIZE, "null", true);
     assert(null_address == 0);
-    LOG_DEBUG("CALL protect_host_memory");
-    protect_inner(state, 0, state.host_page_size, MemPerm::None);
+    protect_inner(state, 0, state.host_page_size, MemPerm::ReadWrite);
     
     return true;
 }
@@ -670,23 +669,24 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     }
         
     apply_page_table_range(mem, addr, size, addr_ptr - addr);
-    // protect_inner(mem, addr, size, MemPerm::None);
-    protect_inner(mem, addr, size, MemPerm::ReadWrite);
- 
+    protect_inner(mem, addr, size, MemPerm::None);
+    
     const MemGuestHostMapping mapping { addr, size, addr_ptr, true };
     mem.host_mappings[reinterpret_cast<HostAddress>(addr_ptr)] = mapping;
     mem.external_mapping[reinterpret_cast<HostAddress>(addr_ptr)] = { addr, size };
+    const std::unique_lock<std::mutex> lock(mem.protect_mutex);
 }
 
 void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
     const auto mapping_it = find_external_mapping(mem, addr);
     if (mapping_it == mem.external_mapping.end()) {
-    LOG_INFO("clear_guest_protect_range");
+        LOG_INFO("clear_guest_protect_range");
         // Some mapping modes, like double-buffer trapping, only use guest protections and never install an external host mapping.
         clear_guest_protect_range(mem, addr, size);
         return;
     }
 
+    const std::unique_lock<std::mutex> lock(mem.protect_mutex);
     const MemExternalMapping mapping = mapping_it->second;
     LOG_ERROR_IF(mapping.size != size, "External mapping size mismatch while removing guest address {} (expected {}, got {})", log_hex(addr), mapping.size, size);
     uint8_t *const addr_ptr = reinterpret_cast<uint8_t *>(mapping_it->first);
