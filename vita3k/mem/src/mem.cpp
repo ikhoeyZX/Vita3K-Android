@@ -134,7 +134,7 @@ void for_each_active_host_page(MemState &state, Address addr, uint32_t size, Fn 
 auto find_host_mapping(MemState &state, const HostAddress host_addr) {
     auto mapping = state.host_mappings.upper_bound(host_addr);
     if (mapping == state.host_mappings.begin()) {
-        LOG_INFO("find_host_mapping = state.host_mappings.end");
+        LOG_INFO_ONCE("find_host_mapping = state.host_mappings.end");
         return state.host_mappings.end();
     }
 
@@ -143,7 +143,7 @@ auto find_host_mapping(MemState &state, const HostAddress host_addr) {
         return mapping;
     }
 
-    LOG_ERROR("find_host_mapping = not found!, set as state.host_mappings.end");
+    LOG_ERROR_ONCE("find_host_mapping = not found!, set as state.host_mappings.end");
     state.use_page_table = false;
     
     return state.host_mappings.end();
@@ -206,7 +206,8 @@ uintptr_t caller_address() {
 #ifdef _MSC_VER
     return reinterpret_cast<uintptr_t>(_ReturnAddress());
 #else
-    return 0;
+    return reinterpret_cast<uintptr_t>(__builtin_return_address(0));
+   // return 0;
 #endif
 }
 
@@ -259,8 +260,7 @@ uint8_t *map_sparse_chunk(uint32_t size) {
 #else
     void *const mapping = mmap(nullptr, size, prot, flags, fd, offset);
 #endif
-    if (mapping == MAP_FAILED)
-        LOG_CRITICAL("mmap failed {}", get_error_msg());
+    LOG_DEBUG("mmap status {}", get_error_msg());
     
     return mapping == MAP_FAILED ? nullptr : static_cast<uint8_t *>(mapping);
 }
@@ -325,11 +325,10 @@ void unmap_guest_chunk(MemState &state, Address chunk_start) {
 
 bool try_reserve_direct_mirror(MemState &state) {
     if (mirror_size_bytes() == 0) {
-        LOG_INFO("mirror_size_bytes() == 0");
         return false;
     }
 
-    void *preferred_address = reinterpret_cast<void *>(1ULL << 32);
+    void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
 
 #ifdef _WIN32
     uint8_t *memory = static_cast<uint8_t *>(VirtualAlloc(preferred_address, mirror_size_bytes(), MEM_RESERVE, PAGE_NOACCESS));
@@ -355,16 +354,16 @@ bool try_reserve_direct_mirror(MemState &state) {
         LOG_CRITICAL("mmap failed {}", get_error_msg());
         return false;
     } else {
-        LOG_CRITICAL("mmap status {}", get_error_msg());
+        LOG_INFO("mmap status {}", get_error_msg());
     }
         
     state.memory = Memory(static_cast<uint8_t *>(memory), delete_memory);
 #endif
 
     state.backing_mode = MemBackingMode::DirectMirror;
- #ifndef __arm__
+#ifndef __arm__
     std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, state.memory.get());
- #endif
+#endif
     return true;
 }
 } // namespace
@@ -481,13 +480,10 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
 
     uint8_t *const host_ptr = canonical_host_ptr(state, addr);
     assert(host_ptr != nullptr);
-    /*
     if (!protect_host_memory(host_ptr, size, PROT_READ | PROT_WRITE)); {
         LOG_ERROR("protect_host_memory = can't change prot!");
         return 0;
     }
-    */
-    
     std::memset(host_ptr, 0, size);
     AllocMemPage &page = state.alloc_table[page_num];
     assert(!page.allocated);
