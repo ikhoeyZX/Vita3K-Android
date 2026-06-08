@@ -537,6 +537,7 @@ void unprotect_inner(MemState &state, Address addr, uint32_t size) {
     protect_host_memory(host_page, host_page_size, PROT_READ | PROT_WRITE);
 #endif
     });
+    LOG_DEBUG("CALL");
 }
 
 void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm perm) {
@@ -548,6 +549,7 @@ void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm p
     protect_host_memory(host_page, host_page_size, (perm == MemPerm::None) ? PROT_NONE : ((perm == MemPerm::ReadOnly) ? PROT_READ : (PROT_READ | PROT_WRITE)));
 #endif
     });
+    LOG_DEBUG("CALL");
 }
 
 bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcept {
@@ -685,7 +687,7 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     const MemGuestHostMapping mapping { addr, size, addr_ptr, true };
     mem.host_mappings[reinterpret_cast<HostAddress>(addr_ptr)] = mapping;
     mem.external_mapping[reinterpret_cast<HostAddress>(addr_ptr)] = { addr, size };
-    const std::unique_lock<std::mutex> lock(mem.protect_mutex);
+    protect_inner(mem, addr, size, MemPerm::WriteOnly);
 }
 
 void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
@@ -698,7 +700,6 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
         return;
     }
 
-    const std::unique_lock<std::mutex> lock(mem.protect_mutex);
     const MemExternalMapping mapping = mapping_it->second;
     LOG_ERROR_IF(mapping.size != size, "External mapping size mismatch while removing guest address {} (expected {}, got {})", log_hex(addr), mapping.size, size);
     uint8_t *const addr_ptr = reinterpret_cast<uint8_t *>(mapping_it->first);
