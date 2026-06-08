@@ -525,6 +525,7 @@ static void align_to_page(MemState &state, Address &addr, Address &size) {
     size = end - addr;
 }
 
+/*
 void unprotect_inner(MemState &state, Address addr, uint32_t size) {
     if (LOG_PROTECT) {
         fmt::print("Unprotect: {} {}\n", log_hex(addr), size);
@@ -550,6 +551,35 @@ void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm p
 #endif
     });
     LOG_DEBUG("CALL");
+}
+*/
+void unprotect_inner(MemState &state, Address addr, uint32_t size) {
+    if (LOG_PROTECT) {
+        fmt::print("Unprotect: {} {}\n", log_hex(addr), size);
+    }
+    uint8_t *addr_ptr = state.use_page_table ? state.page_table[addr / KiB(4)] : state.memory.get();
+
+#ifdef _WIN32
+    DWORD old_protect = 0;
+    const BOOL ret = VirtualProtect(&addr_ptr[addr], size - 1, PAGE_READWRITE, &old_protect);
+    LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
+#else
+    const int ret = mprotect(&addr_ptr[addr], size, PROT_READ | PROT_WRITE);
+    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+#endif
+}
+
+void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm perm) {
+    uint8_t *addr_ptr = state.use_page_table ? state.page_table[addr / KiB(4)] : state.memory.get();
+
+#ifdef _WIN32
+    DWORD old_protect = 0;
+    const BOOL ret = VirtualProtect(&addr_ptr[addr], size - 1, (perm == MemPerm::None) ? PAGE_NOACCESS : ((perm == MemPerm::ReadOnly) ? PAGE_READONLY : PAGE_READWRITE), &old_protect);
+    LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
+#else
+    const int ret = mprotect(&addr_ptr[addr], size, (perm == MemPerm::None) ? PROT_NONE : ((perm == MemPerm::ReadOnly) ? PROT_READ : (PROT_READ | PROT_WRITE)));
+    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+#endif
 }
 
 bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcept {
