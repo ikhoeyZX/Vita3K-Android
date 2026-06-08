@@ -510,8 +510,7 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
     assert(!page.allocated);
     page.allocated = 1;
     page.size = page_count;
-    LOG_DEBUG("size = {}, page.size = {}", size, page.size);
-    return result;
+    LOG_DEBUG("page.size = {}", page.size);
 
     if (PAGE_NAME_TRACKING) {
         state.page_name_map.emplace(page_num, name);
@@ -703,7 +702,15 @@ bool is_protecting(MemState &state, Address addr, MemPerm *perm) {
     const std::lock_guard<std::mutex> lock(state.protect_mutex);
     auto ite = state.protect_tree.lower_bound(addr);
 
-    LOG_DEBUG("CALL, MemPerm = {}", log_hex(perm));
+    int tmp=0;
+    if(perm == MemPerm::ReadOnly)
+        tmp=1;
+    else if(perm == MemPerm::WriteOnly)
+        tmp=2;
+    else if(perm == MemPerm::ReadWrite)
+        tmp=3;
+        
+    LOG_DEBUG("CALL, MemPerm = {}", tmp);
     if (ite != state.protect_tree.end() && addr < ite->first + ite->second.size) {
         if (perm)
             *perm = ite->second.perm;
