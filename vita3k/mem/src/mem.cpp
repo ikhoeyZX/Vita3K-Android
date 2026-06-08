@@ -417,7 +417,7 @@ bool init(MemState &state, const bool use_page_table) {
     };
     register_access_violation_handler(handler);
 
-    const Address null_address = alloc_inner(state, 0, state.host_page_size / STANDARD_PAGE_SIZE, "null", true);
+    const Address null_address = alloc_inner(state, 0, (state.host_page_size / STANDARD_PAGE_SIZE), "null", true);
     assert(null_address == 0);
     protect_inner(state, 0, state.host_page_size, MemPerm::None);
     
@@ -510,7 +510,6 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
     assert(!page.allocated);
     page.allocated = 1;
     page.size = page_count;
-    LOG_DEBUG("page.size = {}", page.size);
 
     if (PAGE_NAME_TRACKING) {
         state.page_name_map.emplace(page_num, name);
@@ -703,11 +702,11 @@ bool is_protecting(MemState &state, Address addr, MemPerm *perm) {
     auto ite = state.protect_tree.lower_bound(addr);
 
     int tmp=0;
-    if(perm == MemPerm::ReadOnly)
+    if(*perm == MemPerm::ReadOnly)
         tmp=1;
-    else if(perm == MemPerm::WriteOnly)
+    else if(*perm == MemPerm::WriteOnly)
         tmp=2;
-    else if(perm == MemPerm::ReadWrite)
+    else if(*perm == MemPerm::ReadWrite)
         tmp=3;
         
     LOG_DEBUG("CALL, MemPerm = {}", tmp);
