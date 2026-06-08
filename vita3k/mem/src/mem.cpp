@@ -95,8 +95,7 @@ PagePtr canonical_page_base(const MemState &state, Address guest_addr) {
 
 uint8_t *canonical_host_ptr(const MemState &state, Address guest_addr) {
     const PagePtr base = canonical_page_base(state, guest_addr);
-   // return base ? (base + guest_addr) : nullptr;
-    return base ? base : nullptr;
+    return base ? (base + guest_addr) : nullptr;
 }
 
 template <typename Fn>
@@ -388,15 +387,12 @@ bool init(MemState &state, const bool use_page_table) {
     assert(state.host_page_size >= STANDARD_PAGE_SIZE);
     assert((state.host_page_size % STANDARD_PAGE_SIZE) == 0);
 
-    if (state.use_page_table) {
-        state.alloc_table = AllocPageTable(new AllocMemPage[GUEST_PAGE_COUNT]);
-        memset(state.alloc_table.get(), 0, sizeof(AllocMemPage) * GUEST_PAGE_COUNT);
-        state.allocator.set_maximum(GUEST_PAGE_COUNT);
+    state.alloc_table = AllocPageTable(new AllocMemPage[GUEST_PAGE_COUNT]);
+    memset(state.alloc_table.get(), 0, sizeof(AllocMemPage) * GUEST_PAGE_COUNT);
+    state.allocator.set_maximum(GUEST_PAGE_COUNT);
 
-        state.page_table = PageTable(new PagePtr[GUEST_PAGE_COUNT]);
-      //  std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, nullptr);
-        std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, state.memory.get());
-    }
+    state.page_table = PageTable(new PagePtr[GUEST_PAGE_COUNT]);
+    std::fill_n(state.page_table.get(), GUEST_PAGE_COUNT, nullptr);
     
     if (!try_reserve_direct_mirror(state)) {
         LOG_INFO_ONCE("MemBackingMode::SparseMappings");
@@ -425,6 +421,8 @@ static void delete_memory(uint8_t *memory) {
         const int ret = munmap(memory, mirror_size_bytes());
         assert(ret == 0);
 #endif
+    } else {
+        LOG_ERROR("Memory Already empty!");
     }
 }
 
@@ -479,11 +477,9 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
     assert(host_ptr != nullptr);
 
 #ifdef _WIN32
-    const void *const ret = VirtualAlloc(host_ptr, size, MEM_COMMIT, PAGE_READWRITE);
-    LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
+    protect_host_memory(host_ptr, size, PAGE_READWRITE);
 #else
-    const int ret = mprotect(host_ptr, size, PROT_READ | PROT_WRITE);
-    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+    protect_host_memory(host_ptr, size, PROT_READ | PROT_WRITE);
 #endif
     
     std::memset(host_ptr, 0, size);
@@ -674,6 +670,7 @@ bool is_protecting(MemState &state, Address addr, MemPerm *perm) {
 }
 
 void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *addr_ptr) {
+    LOG_DEBUG("CALL");
     assert((size & 4095) == 0);
 
     for (uint32_t block = 0; block < size / KiB(4); block++) {
@@ -692,6 +689,7 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
 }
 
 void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
+    LOG_DEBUG("CALL");
     const auto mapping_it = find_external_mapping(mem, addr);
     if (mapping_it == mem.external_mapping.end()) {
         LOG_INFO("clear_guest_protect_range");
