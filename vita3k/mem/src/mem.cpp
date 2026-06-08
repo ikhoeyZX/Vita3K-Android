@@ -731,7 +731,7 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     }
         
     apply_page_table_range(mem, addr, size, addr_ptr - addr);
-    protect_inner(mem, addr, size, MemPerm::None);
+    // protect_inner(mem, addr, size, MemPerm::None);
     
     const MemGuestHostMapping mapping { addr, size, addr_ptr, true };
     mem.host_mappings[reinterpret_cast<HostAddress>(addr_ptr)] = mapping;
@@ -839,7 +839,8 @@ uint32_t mem_available(MemState &state) {
 const char *mem_name(Address address, MemState &state) {
     if (PAGE_NAME_TRACKING) {
         auto page_name = state.page_name_map.find(address / STANDARD_PAGE_SIZE);
-        LOG_DEBUG("CALL, string = {}", page_name.c_str());
+        LOG_DEBUG("CALL, string = {}", page_name != state.page_name_map.end() ? page_name->second.c_str() : "");
+        
         return page_name != state.page_name_map.end() ? page_name->second.c_str() : "";
     }
     
