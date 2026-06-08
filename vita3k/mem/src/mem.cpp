@@ -116,7 +116,9 @@ void for_each_active_host_page(MemState &state, Address addr, uint32_t size, Fn 
     while (page_start < page_end) {
         const PagePtr active_page_base = state.page_table[page_start / STANDARD_PAGE_SIZE];
         if (active_page_base) {
-            uint8_t *const page_ptr = active_page_base + page_start;
+            // uint8_t *const page_ptr = active_page_base + page_start;
+            uint8_t *const page_ptr = active_page_base + (page_start % STANDARD_PAGE_SIZE);
+
             uint8_t *const host_page = reinterpret_cast<uint8_t *>(
                 align_down(reinterpret_cast<uintptr_t>(page_ptr), state.host_page_size));
             if (host_page != last_host_page) {
@@ -428,13 +430,24 @@ static void delete_memory(uint8_t *memory) {
 
 bool is_valid_addr(const MemState &state, Address addr) {
     const uint32_t page_num = addr / STANDARD_PAGE_SIZE;
-    return addr && state.allocator.free_slot_count(page_num, page_num + 1) == 0;
+    //return addr && state.allocator.free_slot_count(page_num, page_num + 1) == 0;
+    
+    bool result = false;
+    result = addr && state.allocator.free_slot_count(page_num, page_num + 1) == 0;
+    
+    LOG_DEBUG("RESULT = {}", result);
+    return result;
 }
 
 bool is_valid_addr_range(const MemState &state, Address start, Address end) {
     const uint32_t start_page = start / STANDARD_PAGE_SIZE;
     const uint32_t end_page = (end + STANDARD_PAGE_SIZE - 1) / STANDARD_PAGE_SIZE;
-    return state.allocator.free_slot_count(start_page, end_page) == 0;
+    // return state.allocator.free_slot_count(start_page, end_page) == 0;
+    bool result = false;
+    result = state.allocator.free_slot_count(start_page, end_page) == 0;
+    LOG_DEBUG("RESULT = {}", result);
+    return result;
+    
 }
 
 static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force) {
@@ -487,6 +500,8 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
     assert(!page.allocated);
     page.allocated = 1;
     page.size = page_count;
+    LOG_DEBUG("size = {}, page.size = {}", size, page.size);
+    return result;
 
     if (PAGE_NAME_TRACKING) {
         state.page_name_map.emplace(page_num, name);
@@ -525,7 +540,6 @@ static void align_to_page(MemState &state, Address &addr, Address &size) {
     size = end - addr;
 }
 
-/*
 void unprotect_inner(MemState &state, Address addr, uint32_t size) {
     if (LOG_PROTECT) {
         fmt::print("Unprotect: {} {}\n", log_hex(addr), size);
@@ -548,38 +562,9 @@ void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm p
     protect_host_memory(host_page, host_page_size, (perm == MemPerm::None) ? PAGE_NOACCESS : ((perm == MemPerm::ReadOnly) ? PAGE_READONLY : PAGE_READWRITE));
 #else
     protect_host_memory(host_page, host_page_size, (perm == MemPerm::None) ? PROT_NONE : ((perm == MemPerm::ReadOnly) ? PROT_READ : (PROT_READ | PROT_WRITE)));
+    LOG_DEBUG("CALL, MemPerm = {}", log_hex(perm));
 #endif
     });
-    LOG_DEBUG("CALL");
-}
-*/
-void unprotect_inner(MemState &state, Address addr, uint32_t size) {
-    if (LOG_PROTECT) {
-        fmt::print("Unprotect: {} {}\n", log_hex(addr), size);
-    }
-    uint8_t *addr_ptr = state.use_page_table ? state.page_table[addr / KiB(4)] : state.memory.get();
-
-#ifdef _WIN32
-    DWORD old_protect = 0;
-    const BOOL ret = VirtualProtect(&addr_ptr[addr], size - 1, PAGE_READWRITE, &old_protect);
-    LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
-#else
-    const int ret = mprotect(&addr_ptr[addr], size, PROT_READ | PROT_WRITE);
-    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
-#endif
-}
-
-void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm perm) {
-    uint8_t *addr_ptr = state.use_page_table ? state.page_table[addr / KiB(4)] : state.memory.get();
-
-#ifdef _WIN32
-    DWORD old_protect = 0;
-    const BOOL ret = VirtualProtect(&addr_ptr[addr], size - 1, (perm == MemPerm::None) ? PAGE_NOACCESS : ((perm == MemPerm::ReadOnly) ? PAGE_READONLY : PAGE_READWRITE), &old_protect);
-    LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
-#else
-    const int ret = mprotect(&addr_ptr[addr], size, (perm == MemPerm::None) ? PROT_NONE : ((perm == MemPerm::ReadOnly) ? PROT_READ : (PROT_READ | PROT_WRITE)));
-    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
-#endif
 }
 
 bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcept {
@@ -682,6 +667,7 @@ bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPe
         state.protect_tree.erase(it--);
     }
 
+    LOG_DEBUG("CALL, MemPerm = {}", log_hex(protect.perm)));
     protect_inner(state, addr, protect.size, protect.perm);
     state.protect_tree.emplace(addr, std::move(protect));
     return true;
@@ -691,6 +677,7 @@ bool is_protecting(MemState &state, Address addr, MemPerm *perm) {
     const std::lock_guard<std::mutex> lock(state.protect_mutex);
     auto ite = state.protect_tree.lower_bound(addr);
 
+    LOG_DEBUG("CALL, MemPerm = {}", log_hex(perm));
     if (ite != state.protect_tree.end() && addr < ite->first + ite->second.size) {
         if (perm)
             *perm = ite->second.perm;
@@ -717,7 +704,6 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     const MemGuestHostMapping mapping { addr, size, addr_ptr, true };
     mem.host_mappings[reinterpret_cast<HostAddress>(addr_ptr)] = mapping;
     mem.external_mapping[reinterpret_cast<HostAddress>(addr_ptr)] = { addr, size };
-    protect_inner(mem, addr, size, MemPerm::WriteOnly);
 }
 
 void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
@@ -749,18 +735,21 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
 }
 
 Address alloc(MemState &state, uint32_t size, const char *name, Address start_addr) {
+    LOG_DEBUG("CALL");
     const std::lock_guard<std::mutex> lock(state.generation_mutex);
     const uint32_t page_count = align(size, STANDARD_PAGE_SIZE) / STANDARD_PAGE_SIZE;
     return alloc_inner(state, start_addr / STANDARD_PAGE_SIZE, page_count, name, false);
 }
 
 Address alloc_at(MemState &state, Address address, uint32_t size, const char *name) {
+    LOG_DEBUG("CALL");
     auto addr = try_alloc_at(state, address, size, name);
     LOG_CRITICAL_IF(addr == 0, "Failed to allocate at specific page. Memory address:{}, size:{}, name:{}", log_hex(address), log_hex(size), name);
     return addr;
 }
 
 Address try_alloc_at(MemState &state, Address address, uint32_t size, const char *name) {
+    LOG_DEBUG("CALL");
     const std::lock_guard<std::mutex> lock(state.generation_mutex);
     const uint32_t wanted_page = address / STANDARD_PAGE_SIZE;
     size += address % STANDARD_PAGE_SIZE;
