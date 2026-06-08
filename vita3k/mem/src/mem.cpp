@@ -274,7 +274,11 @@ void unmap_sparse_chunk(uint8_t *memory, uint32_t size) {
 
 bool commit_direct_chunk(MemState &state, Address chunk_start) {
     uint8_t *const chunk_ptr = state.memory.get() + chunk_start;
-    return protect_host_memory(chunk_ptr, state.host_page_size, PROT_READ | PROT_WRITE);
+    bool tmp=false;
+    // return protect_host_memory(chunk_ptr, state.host_page_size, PROT_READ | PROT_WRITE);
+    tmp = protect_host_memory(chunk_ptr, state.host_page_size, PROT_READ | PROT_WRITE);
+    LOG_DEBUG("CALL = {}", tmp);
+    return tmp;
 }
 
 void decommit_direct_chunk(MemState &state, Address chunk_start) {
@@ -287,11 +291,14 @@ void decommit_direct_chunk(MemState &state, Address chunk_start) {
 #endif
 
 bool map_guest_chunk(MemState &state, Address chunk_start) {
+    LOG_DEBUG("CALL");
     if (state.backing_mode == MemBackingMode::DirectMirror) {
+        LOG_DEBUG("CALL commit_direct_chunk");
         return commit_direct_chunk(state, chunk_start);
     }
 
     if (state.guest_mappings.find(chunk_start) != state.guest_mappings.end()) {
+        LOG_DEBUG("CALL = true1");
         return true;
     }
 
@@ -305,10 +312,12 @@ bool map_guest_chunk(MemState &state, Address chunk_start) {
     state.guest_mappings.emplace(chunk_start, mapping);
     state.host_mappings.emplace(reinterpret_cast<HostAddress>(host_ptr), mapping);
     apply_page_table_range(state, chunk_start, state.host_page_size, host_ptr - chunk_start);
+    LOG_DEBUG("CALL = true2");
     return true;
 }
 
 void unmap_guest_chunk(MemState &state, Address chunk_start) {
+    LOG_DEBUG("CALL");
     if (state.backing_mode == MemBackingMode::DirectMirror) {
         decommit_direct_chunk(state, chunk_start);
         return;
@@ -327,6 +336,7 @@ void unmap_guest_chunk(MemState &state, Address chunk_start) {
 
 bool try_reserve_direct_mirror(MemState &state) {
     if (mirror_size_bytes() == 0) {
+        LOG_DEBUG("mirror_size_bytes is 0");
         return false;
     }
 
@@ -556,14 +566,22 @@ void unprotect_inner(MemState &state, Address addr, uint32_t size) {
 }
 
 void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm perm) {
+    int tmp=0;
     for_each_active_host_page(state, addr, size, [&](uint8_t *host_page, uint32_t host_page_size) {
 
 #ifdef _WIN32
     protect_host_memory(host_page, host_page_size, (perm == MemPerm::None) ? PAGE_NOACCESS : ((perm == MemPerm::ReadOnly) ? PAGE_READONLY : PAGE_READWRITE));
 #else
     protect_host_memory(host_page, host_page_size, (perm == MemPerm::None) ? PROT_NONE : ((perm == MemPerm::ReadOnly) ? PROT_READ : (PROT_READ | PROT_WRITE)));
-    LOG_DEBUG("CALL, MemPerm = {}", log_hex(perm));
 #endif
+    if(perm == MemPerm::ReadOnly)
+        tmp=1;
+    else if(perm == MemPerm::WriteOnly)
+        tmp=2;
+    else if(perm == MemPerm::ReadWrite)
+        tmp=3;
+        
+    LOG_DEBUG("CALL, MemPerm = {}", tmp);
     });
 }
 
@@ -667,7 +685,15 @@ bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPe
         state.protect_tree.erase(it--);
     }
 
-    LOG_DEBUG("CALL, MemPerm = {}", log_hex(protect.perm)));
+    int tmp=0;
+    if(perm == MemPerm::ReadOnly)
+        tmp=1;
+    else if(perm == MemPerm::WriteOnly)
+        tmp=2;
+    else if(perm == MemPerm::ReadWrite)
+        tmp=3;
+        
+    LOG_DEBUG("CALL, MemPerm = {}", tmp);
     protect_inner(state, addr, protect.size, protect.perm);
     state.protect_tree.emplace(addr, std::move(protect));
     return true;
@@ -807,8 +833,10 @@ uint32_t mem_available(MemState &state) {
 const char *mem_name(Address address, MemState &state) {
     if (PAGE_NAME_TRACKING) {
         auto page_name = state.page_name_map.find(address / STANDARD_PAGE_SIZE);
+        LOG_DEBUG("CALL, string = {}", page_name.c_str());
         return page_name != state.page_name_map.end() ? page_name->second.c_str() : "";
     }
+    
     return "";
 }
 
