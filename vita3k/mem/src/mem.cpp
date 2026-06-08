@@ -134,7 +134,7 @@ void for_each_active_host_page(MemState &state, Address addr, uint32_t size, Fn 
 auto find_host_mapping(MemState &state, const HostAddress host_addr) {
     auto mapping = state.host_mappings.upper_bound(host_addr);
     if (mapping == state.host_mappings.begin()) {
-        LOG_INFO("find_host_mapping = state.host_mappings.end");
+        LOG_INFO_ONCE("find_host_mapping = state.host_mappings.end");
         return state.host_mappings.end();
     }
 
@@ -143,7 +143,7 @@ auto find_host_mapping(MemState &state, const HostAddress host_addr) {
         return mapping;
     }
 
-    LOG_ERROR("find_host_mapping = not found!, set as state.host_mappings.end");
+    LOG_ERROR_ONCE("find_host_mapping = not found!, set as state.host_mappings.end");
     state.use_page_table = false;
     
     return state.host_mappings.end();
@@ -275,10 +275,7 @@ void unmap_sparse_chunk(uint8_t *memory, uint32_t size) {
 bool commit_direct_chunk(MemState &state, Address chunk_start) {
     uint8_t *const chunk_ptr = state.memory.get() + chunk_start;
     bool tmp=false;
-    // return protect_host_memory(chunk_ptr, state.host_page_size, PROT_READ | PROT_WRITE);
-    tmp = protect_host_memory(chunk_ptr, state.host_page_size, PROT_READ | PROT_WRITE);
-    LOG_DEBUG("CALL = {}", tmp);
-    return tmp;
+    return protect_host_memory(chunk_ptr, state.host_page_size, PROT_READ | PROT_WRITE);
 }
 
 void decommit_direct_chunk(MemState &state, Address chunk_start) {
@@ -291,14 +288,11 @@ void decommit_direct_chunk(MemState &state, Address chunk_start) {
 #endif
 
 bool map_guest_chunk(MemState &state, Address chunk_start) {
-    LOG_DEBUG("CALL");
     if (state.backing_mode == MemBackingMode::DirectMirror) {
-        LOG_DEBUG("CALL commit_direct_chunk");
         return commit_direct_chunk(state, chunk_start);
     }
 
     if (state.guest_mappings.find(chunk_start) != state.guest_mappings.end()) {
-        LOG_DEBUG("CALL = true1");
         return true;
     }
 
@@ -312,12 +306,10 @@ bool map_guest_chunk(MemState &state, Address chunk_start) {
     state.guest_mappings.emplace(chunk_start, mapping);
     state.host_mappings.emplace(reinterpret_cast<HostAddress>(host_ptr), mapping);
     apply_page_table_range(state, chunk_start, state.host_page_size, host_ptr - chunk_start);
-    LOG_DEBUG("CALL = true2");
     return true;
 }
 
 void unmap_guest_chunk(MemState &state, Address chunk_start) {
-    LOG_DEBUG("CALL");
     if (state.backing_mode == MemBackingMode::DirectMirror) {
         decommit_direct_chunk(state, chunk_start);
         return;
@@ -336,7 +328,7 @@ void unmap_guest_chunk(MemState &state, Address chunk_start) {
 
 bool try_reserve_direct_mirror(MemState &state) {
     if (mirror_size_bytes() == 0) {
-        LOG_DEBUG("mirror_size_bytes is 0");
+        LOG_DEBUG_ONCE("mirror_size_bytes is 0");
         return false;
     }
 
@@ -440,24 +432,13 @@ static void delete_memory(uint8_t *memory) {
 
 bool is_valid_addr(const MemState &state, Address addr) {
     const uint32_t page_num = addr / STANDARD_PAGE_SIZE;
-    //return addr && state.allocator.free_slot_count(page_num, page_num + 1) == 0;
-    
-    bool result = false;
-    result = addr && state.allocator.free_slot_count(page_num, page_num + 1) == 0;
-    
-    LOG_DEBUG("RESULT = {}", result);
-    return result;
+    return addr && state.allocator.free_slot_count(page_num, page_num + 1) == 0;
 }
 
 bool is_valid_addr_range(const MemState &state, Address start, Address end) {
     const uint32_t start_page = start / STANDARD_PAGE_SIZE;
     const uint32_t end_page = (end + STANDARD_PAGE_SIZE - 1) / STANDARD_PAGE_SIZE;
-    // return state.allocator.free_slot_count(start_page, end_page) == 0;
-    bool result = false;
-    result = state.allocator.free_slot_count(start_page, end_page) == 0;
-    LOG_DEBUG("RESULT = {}", result);
-    return result;
-    
+    return state.allocator.free_slot_count(start_page, end_page) == 0;
 }
 
 static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force) {
@@ -560,11 +541,9 @@ void unprotect_inner(MemState &state, Address addr, uint32_t size) {
     protect_host_memory(host_page, host_page_size, PROT_READ | PROT_WRITE);
 #endif
     });
-    LOG_DEBUG("CALL");
 }
 
 void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm perm) {
-    int tmp=0;
     for_each_active_host_page(state, addr, size, [&](uint8_t *host_page, uint32_t host_page_size) {
 
 #ifdef _WIN32
@@ -572,6 +551,7 @@ void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm p
 #else
     protect_host_memory(host_page, host_page_size, (perm == MemPerm::None) ? PROT_NONE : ((perm == MemPerm::ReadOnly) ? PROT_READ : (PROT_READ | PROT_WRITE)));
 #endif
+    int tmp=0;
     if(perm == MemPerm::ReadOnly)
         tmp=1;
     else if(perm == MemPerm::WriteOnly)
@@ -721,7 +701,6 @@ bool is_protecting(MemState &state, Address addr, MemPerm *perm) {
 }
 
 void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *addr_ptr) {
-    LOG_DEBUG("CALL");
     assert((size & 4095) == 0);
 
     for (uint32_t block = 0; block < size / KiB(4); block++) {
@@ -729,8 +708,9 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
         assert(original_address != nullptr);
         memcpy(addr_ptr + block * KiB(4), original_address, KiB(4));
     }
-        
-    apply_page_table_range(mem, addr, size, addr_ptr - addr);
+    apply_page_table_range(mem, addr, size, addr_ptr);
+    
+    // apply_page_table_range(mem, addr, size, addr_ptr - addr);
     // protect_inner(mem, addr, size, MemPerm::None);
     
     const MemGuestHostMapping mapping { addr, size, addr_ptr, true };
@@ -739,7 +719,6 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
 }
 
 void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
-    LOG_DEBUG("CALL");
     const auto mapping_it = find_external_mapping(mem, addr);
     if (mapping_it == mem.external_mapping.end()) {
         LOG_INFO("clear_guest_protect_range");
@@ -767,21 +746,18 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
 }
 
 Address alloc(MemState &state, uint32_t size, const char *name, Address start_addr) {
-    LOG_DEBUG("CALL");
     const std::lock_guard<std::mutex> lock(state.generation_mutex);
     const uint32_t page_count = align(size, STANDARD_PAGE_SIZE) / STANDARD_PAGE_SIZE;
     return alloc_inner(state, start_addr / STANDARD_PAGE_SIZE, page_count, name, false);
 }
 
 Address alloc_at(MemState &state, Address address, uint32_t size, const char *name) {
-    LOG_DEBUG("CALL");
     auto addr = try_alloc_at(state, address, size, name);
     LOG_CRITICAL_IF(addr == 0, "Failed to allocate at specific page. Memory address:{}, size:{}, name:{}", log_hex(address), log_hex(size), name);
     return addr;
 }
 
 Address try_alloc_at(MemState &state, Address address, uint32_t size, const char *name) {
-    LOG_DEBUG("CALL");
     const std::lock_guard<std::mutex> lock(state.generation_mutex);
     const uint32_t wanted_page = address / STANDARD_PAGE_SIZE;
     size += address % STANDARD_PAGE_SIZE;
