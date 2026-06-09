@@ -421,22 +421,22 @@ bool init(MemState &state, const bool use_page_table) {
 #ifdef _WIN32
     SYSTEM_INFO system_info = {};
     GetSystemInfo(&system_info);
-    state.page_size = system_info.dwPageSize;
+    state.host_page_size = system_info.dwPageSize;
 #else
-    state.page_size = static_cast<int>(sysconf(_SC_PAGESIZE));
+    state.host_page_size = static_cast<int>(sysconf(_SC_PAGESIZE));
 #endif
-    state.page_size = std::max(STANDARD_PAGE_SIZE, state.page_size);
+    state.host_page_size = std::max(STANDARD_PAGE_SIZE, state.host_page_size);
 
-    assert(state.page_size >= 4096); // Limit imposed by Unicorn.
-    assert(!use_page_table || state.page_size == KiB(4));
+    assert(state.host_page_size >= 4096); // Limit imposed by Unicorn.
+    assert(!use_page_table || state.host_page_size == KiB(4));
 
     void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
 
 #ifdef _WIN32
-    state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(preferred_address, TOTAL_MEM_SIZE, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
+    state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(preferred_address, GUEST_ADDRESS_SPACE_SIZE, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
     if (!state.memory) {
         // fallback
-        state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(nullptr, TOTAL_MEM_SIZE, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
+        state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(nullptr, GUEST_ADDRESS_SPACE_SIZE, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
 
         if (!state.memory) {
             LOG_CRITICAL("VirtualAlloc failed: {}", get_error_msg());
@@ -450,14 +450,14 @@ bool init(MemState &state, const bool use_page_table) {
     const int fd = 0;
     const off_t offset = 0;
     // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address
-    state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+    state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, GUEST_ADDRESS_SPACE_SIZE, prot, flags, fd, offset)), delete_memory);
     if (state.memory.get() == MAP_FAILED) {
         LOG_CRITICAL("mmap failed {}", get_error_msg());
         return false;
     }
 #endif
 
-    const size_t table_length = TOTAL_MEM_SIZE / state.page_size;
+    const size_t table_length = GUEST_ADDRESS_SPACE_SIZE / state.host_page_size;
     state.alloc_table = AllocPageTable(new AllocMemPage[table_length]);
     memset(state.alloc_table.get(), 0, sizeof(AllocMemPage) * table_length);
 
@@ -481,9 +481,9 @@ bool init(MemState &state, const bool use_page_table) {
 
     state.use_page_table = use_page_table;
     if (use_page_table) {
-        state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / KiB(4)]);
+        state.page_table = PageTable(new PagePtr[GUEST_ADDRESS_SPACE_SIZE / KiB(4)]);
         // we use an absolute offset (it is faster), so each entry is the same
-        std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE / KiB(4), state.memory.get());
+        std::fill_n(state.page_table.get(), GUEST_ADDRESS_SPACE_SIZE / KiB(4), state.memory.get());
     }
 
     return true;
