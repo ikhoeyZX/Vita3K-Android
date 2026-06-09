@@ -699,7 +699,7 @@ bool is_protecting(MemState &state, Address addr, MemPerm *perm) {
 
     return false;
 }
-
+/*
 void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *addr_ptr) {
     assert((size & 4095) == 0);
 
@@ -716,6 +716,33 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     const MemGuestHostMapping mapping { addr, size, addr_ptr, true };
     mem.host_mappings[reinterpret_cast<HostAddress>(addr_ptr)] = mapping;
     mem.external_mapping[reinterpret_cast<HostAddress>(addr_ptr)] = { addr, size };
+}
+*/
+void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *addr_ptr) {
+    assert((size & 4095) == 0);
+    if (!mem.use_page_table)
+        return;
+
+    #if defined(__aarch64__ ) || defined(__x86_64__)
+    uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
+#else
+    uintptr_t addr_value = reinterpret_cast<uintptr_t>(addr_ptr);
+#endif    
+    uint8_t *page_table_entry = addr_ptr - addr;
+    uint8_t *original_address = &mem.memory[addr];
+    for (int block = 0; block < size / KiB(4); block++) {
+        // this is not thread write safe, but hopefully not other thread is busy copying while this happens
+        memcpy(addr_ptr + block * KiB(4), original_address + block * KiB(4), KiB(4));
+        mem.page_table[addr / KiB(4) + block] = page_table_entry;
+    }
+
+    // set the first page table entry to the original value to be able to call protect_inner
+    mem.page_table[addr / KiB(4)] = mem.memory.get();
+    protect_inner(mem, addr, size, MemPerm::None);
+    mem.page_table[addr / KiB(4)] = page_table_entry;
+
+    const std::unique_lock<std::mutex> lock(mem.protect_mutex);
+    mem.external_mapping[addr_value] = { addr, size };
 }
 
 void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
