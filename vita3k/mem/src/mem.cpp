@@ -514,6 +514,7 @@ bool is_valid_addr_range(const MemState &state, Address start, Address end) {
     return state.allocator.free_slot_count(start_page, end_page) == 0;
 }
 
+/*
 static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force) {
     int page_num;
     if (force) {
@@ -560,6 +561,46 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
 #endif
     
     std::memset(host_ptr, 0, size);
+    AllocMemPage &page = state.alloc_table[page_num];
+    assert(!page.allocated);
+    page.allocated = 1;
+    page.size = page_count;
+
+    if (PAGE_NAME_TRACKING) {
+        state.page_name_map.emplace(page_num, name);
+    }
+
+    return addr;
+}
+*/
+
+static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force) {
+    int page_num;
+    if (force) {
+        if (state.allocator.allocate_at(start_page, page_count) < 0) {
+            LOG_CRITICAL("Failed to allocate at specific page");
+        }
+        page_num = start_page;
+    } else {
+        page_num = state.allocator.allocate_from(start_page, page_count, false);
+        if (page_num < 0)
+            return 0;
+    }
+
+    const uint32_t size = page_count * state.host_page_size;
+    const Address addr = page_num * state.host_page_size;
+    uint8_t *const memory = &state.memory[addr];
+
+    // Make memory chunk available to access
+#ifdef _WIN32
+    const void *const ret = VirtualAlloc(memory, size, MEM_COMMIT, PAGE_READWRITE);
+    LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
+#else
+    const int ret = mprotect(memory, size, PROT_READ | PROT_WRITE);
+    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+#endif
+    std::memset(memory, 0, size);
+
     AllocMemPage &page = state.alloc_table[page_num];
     assert(!page.allocated);
     page.allocated = 1;
