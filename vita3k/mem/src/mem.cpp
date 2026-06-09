@@ -372,7 +372,7 @@ bool try_reserve_direct_mirror(MemState &state) {
     return true;
 }
 } // namespace
-
+/*
 bool init(MemState &state, const bool use_page_table) {
     state.use_page_table = use_page_table;
 #ifdef _WIN32
@@ -413,6 +413,79 @@ bool init(MemState &state, const bool use_page_table) {
     assert(null_address == 0);
     protect_inner(state, 0, state.host_page_size, MemPerm::None);
     
+    return true;
+}
+*/
+
+bool init(MemState &state, const bool use_page_table) {
+#ifdef _WIN32
+    SYSTEM_INFO system_info = {};
+    GetSystemInfo(&system_info);
+    state.page_size = system_info.dwPageSize;
+#else
+    state.page_size = static_cast<int>(sysconf(_SC_PAGESIZE));
+#endif
+    state.page_size = std::max(STANDARD_PAGE_SIZE, state.page_size);
+
+    assert(state.page_size >= 4096); // Limit imposed by Unicorn.
+    assert(!use_page_table || state.page_size == KiB(4));
+
+    void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
+
+#ifdef _WIN32
+    state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(preferred_address, TOTAL_MEM_SIZE, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
+    if (!state.memory) {
+        // fallback
+        state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(nullptr, TOTAL_MEM_SIZE, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
+
+        if (!state.memory) {
+            LOG_CRITICAL("VirtualAlloc failed: {}", get_error_msg());
+            return false;
+        }
+    }
+#else
+    // http://man7.org/linux/man-pages/man2/mmap.2.html
+    const int prot = PROT_NONE;
+    const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
+    const int fd = 0;
+    const off_t offset = 0;
+    // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address
+    state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+    if (state.memory.get() == MAP_FAILED) {
+        LOG_CRITICAL("mmap failed {}", get_error_msg());
+        return false;
+    }
+#endif
+
+    const size_t table_length = TOTAL_MEM_SIZE / state.page_size;
+    state.alloc_table = AllocPageTable(new AllocMemPage[table_length]);
+    memset(state.alloc_table.get(), 0, sizeof(AllocMemPage) * table_length);
+
+    state.allocator.set_maximum(table_length);
+
+    const auto handler = [&state](uint8_t *addr, bool write) noexcept {
+        return handle_access_violation(state, addr, write);
+    };
+    register_access_violation_handler(handler);
+
+    const Address null_address = alloc_inner(state, 0, 1, "null", true);
+    assert(null_address == 0);
+#ifdef _WIN32
+    DWORD old_protect = 0;
+    const BOOL ret = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
+    LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
+#else
+//    const int ret = mprotect(state.memory.get(), state.page_size, PROT_NONE);
+//    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+#endif
+
+    state.use_page_table = use_page_table;
+    if (use_page_table) {
+        state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / KiB(4)]);
+        // we use an absolute offset (it is faster), so each entry is the same
+        std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE / KiB(4), state.memory.get());
+    }
+
     return true;
 }
 
