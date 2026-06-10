@@ -455,17 +455,15 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
 }
 
 void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
-    auto addr_ptr = addr.cast<uint8_t>().get(mem)
-    if (!addr_ptr) {
+#ifdef __arm__
+    uintptr_t addr_value = reinterpret_cast<uintptr_t>(addr);
+#else
+    uint64_t addr_value = std::bit_cast<uint64_t>(addr);
+#endif
+    if (!addr_value) {
        LOG_ERROR("addrress is null!");
        return;
     }
-        
-#ifdef __arm__
-    uintptr_t addr_value = reinterpret_cast<uintptr_t>(addr_ptr);
-#else
-    uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
-#endif
     MemExternalMapping mapping;
     if (mem.use_page_table) {
         const std::unique_lock<std::mutex> lock(mem.protect_mutex);
