@@ -458,11 +458,10 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
 #ifdef __arm__
     uintptr_t addr_value = reinterpret_cast<uintptr_t>(addr);
 #else
-    uint64_t addr_value = std::bit_cast<uint64_t>(addr);
+    uint64_t addr_value = static_cast<uint64_t>(addr);
 #endif
-    if (!addr_value) {
-       LOG_ERROR("addrress is null!");
-       return;
+    if (addr_value == 0) {
+       LOG_INFO("remove_external_mapping > addrress is 0 ?");
     }
     MemExternalMapping mapping;
     if (mem.use_page_table) {
@@ -473,7 +472,7 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
         mapping = it->second;
         mem.external_mapping.erase(it);
     } else {
-        mapping.address = static_cast<Address>(addr_ptr - mem.memory.get());
+        mapping.address = addr;
         mapping.size = size;
     }
 
