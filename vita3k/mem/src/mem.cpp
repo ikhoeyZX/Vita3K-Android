@@ -511,7 +511,7 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
            for (int block = 0; block < mapping.size / KiB(4); block++) {
                // this is not thread write safe, but hopefully not other thread is busy copying while this happens
                if (!is_nul)
-                  memcpy(&mem.memory[mapping.address] + block * KiB(4), addr_ptr + block * KiB(4), KiB(4));
+                  memcpy(&mem.memory[mapping.address] + block * KiB(4), addr_value + block * KiB(4), KiB(4));
 
                const auto get_mem = mem.memory.get();
                if (!get_mem) {
