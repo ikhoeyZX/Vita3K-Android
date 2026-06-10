@@ -434,10 +434,16 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     assert((size & 4095) == 0);
     if (!mem.use_page_table)
         return;
-
+        
     uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
     uint8_t *page_table_entry = addr_ptr - addr;
     uint8_t *original_address = &mem.memory[addr];
+
+    if (!addr_value || !original_address) {
+        LOG_ERROR("add_external_mapping > addr_value or original_address is nullptr!");
+        return;
+    }
+    
     for (int block = 0; block < size / KiB(4); block++) {
         // this is not thread write safe, but hopefully not other thread is busy copying while this happens
         memcpy(addr_ptr + block * KiB(4), original_address + block * KiB(4), KiB(4));
@@ -460,6 +466,7 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
 #else
     uint64_t addr_value = static_cast<uint64_t>(addr);
 #endif
+    
     if (addr_value == 0) {
        LOG_INFO("remove_external_mapping > addrress is 0 ?");
     }
@@ -500,25 +507,21 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
 
     if (mem.use_page_table) {
         // unprotect the original memory range
-        const auto get_mem = mem.memory.get();
-        if (!get_mem) {
+        uint8_t* addr_ptr = reinterpret_cast<uint8_t*>(addr_value);
+        uint8_t* get_mem = mem.memory.get();
+        
+        if (!get_mem || !addr_ptr) {
             LOG_ERROR("remove_external_mapping > use_page_table: nullptr in memory!, skipped!");
         } else {
            mem.page_table[mapping.address / KiB(4)] = get_mem;
            unprotect_inner(mem, mapping.address, mapping.size);
            // copy back and reset the page table
-           bool is_nul = false;
            for (int block = 0; block < mapping.size / KiB(4); block++) {
                // this is not thread write safe, but hopefully not other thread is busy copying while this happens
-               if (!is_nul)
-                  memcpy(&mem.memory[mapping.address] + block * KiB(4), reinterpret_cast<uint8_t *>(addr_value) + block * KiB(4), KiB(4));
+               const auto mapping_mem = &mem.memory[mapping.address] + block * KiB(4);
+               if (!addr_ptr || !map)
+                  memcpy(mapping_mem, addr_ptr + block * KiB(4), KiB(4));
 
-               const auto get_mem = mem.memory.get();
-               if (!get_mem) 
-                   is_nul = true;
-               else
-                   is_nul = false;
-               
                mem.page_table[mapping.address / KiB(4) + block] = get_mem;
            }
         }
