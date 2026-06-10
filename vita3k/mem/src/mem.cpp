@@ -514,10 +514,9 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
                   memcpy(&mem.memory[mapping.address] + block * KiB(4), reinterpret_cast<uint8_t *>(addr_value) + block * KiB(4), KiB(4));
 
                const auto get_mem = mem.memory.get();
-               if (!get_mem) {
-                   LOG_TRACE("remove_external_mapping > use_page_table > loop: address at {} is null!", log_hex(get_mem));
+               if (!get_mem) 
                    is_nul = true;
-               } else
+               else
                    is_nul = false;
                
                mem.page_table[mapping.address / KiB(4) + block] = get_mem;
