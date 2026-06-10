@@ -455,8 +455,12 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
 }
 
 void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
-
     auto addr_ptr = addr.cast<uint8_t>().get(mem)
+    if (!addr_ptr) {
+       LOG_ERROR("addrress is null!");
+       return;
+    }
+        
 #ifdef __arm__
     uintptr_t addr_value = reinterpret_cast<uintptr_t>(addr_ptr);
 #else
@@ -499,18 +503,28 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
 
     if (mem.use_page_table) {
         // unprotect the original memory range
-        mem.page_table[mapping.address / KiB(4)] = mem.memory.get();
-        unprotect_inner(mem, mapping.address, mapping.size);
-        // copy back and reset the page table
-        for (int block = 0; block < mapping.size / KiB(4); block++) {
-            // this is not thread write safe, but hopefully not other thread is busy copying while this happens
-            // memcpy(&mem.memory[mapping.address] + block * KiB(4), addr_ptr + block * KiB(4), KiB(4));
-            uint8_t *const destination = &mem.memory[mapping.address] + block * KiB(4), addr_ptr + block * KiB(4);
-            if (destination)
-                memcpy(destination, KiB(4));
-            else
-                continue;
-            mem.page_table[mapping.address / KiB(4) + block] = mem.memory.get();
+        const auto get_mem = mem.memory.get();
+        if (!get_mem) {
+            LOG_ERROR("remove_external_mapping > use_page_table: nullptr in memory!, skipped!");
+        } else {
+           mem.page_table[mapping.address / KiB(4)] = get_mem;
+           unprotect_inner(mem, mapping.address, mapping.size);
+           // copy back and reset the page table
+           bool is_nul = false;
+           for (int block = 0; block < mapping.size / KiB(4); block++) {
+               // this is not thread write safe, but hopefully not other thread is busy copying while this happens
+               if (!is_nul)
+                  memcpy(&mem.memory[mapping.address] + block * KiB(4), addr_ptr + block * KiB(4), KiB(4));
+
+               const auto get_mem = mem.memory.get();
+               if (!get_mem) {
+                   LOG_TRACE("remove_external_mapping > use_page_table > loop: address at {} is null!", log_hex(get_mem));
+                   is_nul = true;
+               } else
+                   is_nul = false;
+               
+               mem.page_table[mapping.address / KiB(4) + block] = get_mem;
+           }
         }
     }
 }
