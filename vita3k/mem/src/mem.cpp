@@ -455,33 +455,6 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
 }
 
 void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
-    const auto mapping_it = find_external_mapping(mem, addr);
-    if (mapping_it == mem.external_mapping.end()) {
-        LOG_INFO("clear_guest_protect_range");
-        // Some mapping modes, like double-buffer trapping, only use guest protections and never install an external host mapping.
-        clear_guest_protect_range(mem, addr, size);
-        return;
-    }
-
-    const MemExternalMapping mapping = mapping_it->second;
-    LOG_ERROR_IF(mapping.size != size, "External mapping size mismatch while removing guest address {} (expected {}, got {})", log_hex(addr), mapping.size, size);
-    uint8_t *const addr_ptr = reinterpret_cast<uint8_t *>(mapping_it->first);
-    clear_guest_protect_range(mem, mapping.address, mapping.size);
-
-    restore_canonical_page_table_range(mem, mapping.address, mapping.size);
-    unprotect_inner(mem, mapping.address, mapping.size);
-
-    for (uint32_t block = 0; block < mapping.size / KiB(4); block++) {
-        uint8_t *const destination = canonical_host_ptr(mem, mapping.address + block * KiB(4));
-        assert(destination != nullptr);
-        memcpy(destination, addr_ptr + block * KiB(4), KiB(4));
-    }
-
-    mem.external_mapping.erase(mapping_it);
-    mem.host_mappings.erase(reinterpret_cast<HostAddress>(addr_ptr));
-}
-
-void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
 
     auto addr_ptr = addr.cast<uint8_t>().get(mem)
 #ifdef __arm__
