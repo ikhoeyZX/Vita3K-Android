@@ -1432,7 +1432,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         };
         const uint64_t buffer_address = device.getBufferAddress(address_info);
 
-        add_external_mapping(mem, address.address(), size, reinterpret_cast<uint8_t *>(mapped_location));
+       // add_external_mapping(mem, address.address(), size, reinterpret_cast<uint8_t *>(mapped_location));
         mapped_memories[address.address()] = { address.address(), ExternalBuffer{ device_memory, std::move(buffer) }, mapped_buffer, size, buffer_address };
 #else
         LOG_ERROR("Native buffer is only supported on Android!\n");
@@ -1475,7 +1475,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 #endif
         const vk::Buffer mapped_buffer = buffer.buffer;
 
-        add_external_mapping(mem, address.address(), size, static_cast<uint8_t *>(buffer.mapped_data));
+      //  add_external_mapping(mem, address.address(), size, static_cast<uint8_t *>(buffer.mapped_data));
         mapped_memories[address.address()] = { address.address(), std::move(buffer), mapped_buffer, size, buffer_address };
         break;
     }
