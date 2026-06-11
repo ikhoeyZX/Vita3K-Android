@@ -461,7 +461,7 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
 #else
     uint64_t addr_value = static_cast<uint64_t>(addr);
 #endif
-    LOG_TRACE("addr_value = {}, use_page_table = {}", addr_value, use_page_table);
+    LOG_TRACE("addr_value = {}, use_page_table = {}", addr_value, mem.use_page_table);
     
     MemExternalMapping mapping;
     if (mem.use_page_table) {
