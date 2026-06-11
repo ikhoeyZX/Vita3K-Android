@@ -453,7 +453,6 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
 
     const std::unique_lock<std::mutex> lock(mem.protect_mutex);
     mem.external_mapping[addr_value] = { addr, size };
-#endif
 }
 
 void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
