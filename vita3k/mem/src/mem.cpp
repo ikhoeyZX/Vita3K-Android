@@ -427,10 +427,6 @@ bool is_protecting(MemState &state, Address addr, MemPerm *perm) {
 }
 
 void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *addr_ptr) {
-#ifdef __arm__
-    // 32bit doesn't support page table
-    return;
-#else
     assert((size & 4095) == 0);
     if (!mem.use_page_table)
         return;
@@ -466,10 +462,8 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
 #else
     uint64_t addr_value = static_cast<uint64_t>(addr);
 #endif
+    LOG_TRACE("addr_value = {}, use_page_table = {}", addr_value, use_page_table);
     
-    if (addr_value == 0) {
-       LOG_INFO("remove_external_mapping > addrress is 0 ?");
-    }
     MemExternalMapping mapping;
     if (mem.use_page_table) {
         const std::unique_lock<std::mutex> lock(mem.protect_mutex);
@@ -507,10 +501,9 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
 
     if (mem.use_page_table) {
         // unprotect the original memory range
-        uint8_t* addr_ptr = reinterpret_cast<uint8_t*>(addr_value);
-        uint8_t* get_mem = mem.memory.get();
+        const uint8_t* addr_ptr = reinterpret_cast<uint8_t*>(addr_value);
         
-        if (!get_mem || !addr_ptr) {
+        if (!addr_ptr) {
             LOG_ERROR("remove_external_mapping > use_page_table: nullptr in memory!, skipped!");
         } else {
            mem.page_table[mapping.address / KiB(4)] = get_mem;
@@ -522,7 +515,7 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
                if (!addr_ptr || !mapping_mem)
                   memcpy(mapping_mem, addr_ptr + block * KiB(4), KiB(4));
 
-               mem.page_table[mapping.address / KiB(4) + block] = get_mem;
+               mem.page_table[mapping.address / KiB(4) + block] = mem.memory.get();
            }
         }
     }
@@ -629,24 +622,6 @@ const char *mem_name(Address address, MemState &state) {
         return state.page_name_map.find(address / STANDARD_PAGE_SIZE)->second.c_str();
     }
     return "";
-}
-
-void deinit_mem(MemState &state) {
-    const std::lock_guard<std::mutex> gen_lock(state.generation_mutex);
-
-    {
-        const std::lock_guard<std::mutex> prot_lock(state.protect_mutex);
-        state.protect_tree.clear();
-    }
-
-    state.memory.reset();
-    state.alloc_table.reset();
-    state.allocator.reset();
-    state.page_name_map.clear();
-    state.page_table.reset();
-    state.external_mapping.clear();
-    state.use_page_table = false;
-    state.host_page_size = 0;
 }
 
 #ifdef _WIN32 // ifdef 1
