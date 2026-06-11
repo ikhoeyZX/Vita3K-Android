@@ -505,7 +505,7 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
         if (!addr_ptr) {
             LOG_ERROR("remove_external_mapping > use_page_table: nullptr in memory!, skipped!");
         } else {
-           mem.page_table[mapping.address / KiB(4)] = get_mem;
+           mem.page_table[mapping.address / KiB(4)] = mem.memory.get();
            unprotect_inner(mem, mapping.address, mapping.size);
            // copy back and reset the page table
            for (int block = 0; block < mapping.size / KiB(4); block++) {
