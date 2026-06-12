@@ -1100,7 +1100,7 @@ void VKState::cleanup() {
             || mapping_method == MappingMethod::NativeBuffer
 #endif
             )) {
-            remove_external_mapping(*mem, addr, mapping.size);
+			remove_external_mapping(*mem, address.cast<uint8_t>().get(mem), mapping.size);
         }
 
         if (auto *ext = std::get_if<ExternalBuffer>(&mapping.buffer_impl)) {
