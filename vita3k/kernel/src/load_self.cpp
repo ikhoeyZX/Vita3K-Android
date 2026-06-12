@@ -100,7 +100,7 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
     return true;
 }
 
-static bool unload_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, uint32_t module_id) {
+static bool unload_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, MemState &mem, uint32_t module_id) {
     const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
@@ -236,7 +236,7 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
 
         if (!is_unload && !load_var_imports(var_nids, var_entries, var_count, segments, kernel, mem, module.module_nid))
             return false;
-        if (is_unload && !unload_var_imports(var_nids, var_entries, var_count, segments, kernel, mem, module.module_nid))
+        if (is_unload && !unload_var_imports(var_nids, var_entries, var_count, kernel, mem, module.module_nid))
             return false;
     }
 
@@ -386,7 +386,7 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
     return true;
 }
 
-static bool unload_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, MemState &mem) {
+static bool unload_var_exports(const uint32_t *nids, size_t count, KernelState &kernel, MemState &mem) {
     const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
@@ -461,7 +461,7 @@ static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_modu
 
         if (!is_unload && !load_var_exports(&nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], var_count, kernel, mem))
             return false;
-        if (is_unload && !unload_var_exports(&nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], var_count, kernel, mem))
+        if (is_unload && !unload_var_exports(&nids[exports->num_syms_funcs], var_count, kernel, mem))
             return false;
     }
 
@@ -471,13 +471,12 @@ static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_modu
 /**
  * \return Negative on failure
  */
-SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &dump_path, const Patches *const patches) {
+SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &dump_path) {
     const uint8_t *const image_bytes = static_cast<const uint8_t *>(self);
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
 
     constexpr uint32_t SCE_MAGIC = 0x00454353; // "SCE\0"
     const bool is_self = (self_header.magic == SCE_MAGIC);
-    const char *module_kind = is_self ? "SELF" : "ELF";
 
     if (is_self) {
         // assumes little endian host
@@ -492,7 +491,8 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         }
 
         if (self_path == "app0:sce_module/steroid.suprx") {
-            LOG_WARN("Vitamin dump detected. Continue anyway.");
+            LOG_WARN("Trying boot vitamin dump...");
+            //LOG_CRITICAL("You're trying to load a vitamin dump. It is not supported.");
             // return -1;
         }
     }
@@ -532,6 +532,10 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         LOG_CRITICAL("Cannot load ELF {}: unexpected e_machine {}.", self_path, elf.e_machine);
         return SCE_KERNEL_ERROR_ILLEGAL_ELF_HEADER;
     }
+
+    // log elf header
+    LOG_TRACE("ELF Header: e_type: {}, e_machine: {}, e_version: {}, e_entry: {}, e_phoff: {}, e_shoff: {}, e_flags: {}, e_ehsize: {}, e_phentsize: {}, e_phnum: {}, e_shentsize: {}, e_shnum: {}, e_shstrndx: {}",
+        log_hex(elf.e_type), log_hex(elf.e_machine), log_hex(elf.e_version), log_hex(elf.e_entry), log_hex(elf.e_phoff), log_hex(elf.e_shoff), log_hex(elf.e_flags), log_hex(elf.e_ehsize), log_hex(elf.e_phentsize), log_hex(elf.e_phnum), log_hex(elf.e_shentsize), log_hex(elf.e_shnum), log_hex(elf.e_shstrndx));
 
     bool isRelocatable;
     if (elf.e_type == ET_SCE_EXEC) {
@@ -630,15 +634,6 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                     memcpy(seg_ptr.get(mem), seg_bytes, seg_header.p_filesz);
                 }
 
-                if (patches) {
-                    for (const auto &patch : *patches) {
-                        if (seg_index == patch.seg) {
-                            LOG_INFO("Patching segment {} at offset 0x{:X} with {} values", seg_index, patch.offset, patch.values.size());
-                            memcpy(seg_ptr.get(mem) + patch.offset, patch.values.data(), patch.values.size());
-                        }
-                    }
-                }
-
                 segment_reloc_info[seg_index] = { segment_address, seg_header.p_vaddr, seg_header.p_memsz };
             }
         } else if (seg_header.p_type == PT_SCE_RELA) {
@@ -664,9 +659,19 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
 
     if (kernel.debugger.dump_elfs) {
         const uint8_t *dump_begin = is_self ? (image_bytes + self_header.header_len) : elf_bytes;
-        const uint8_t *dump_end = is_self
-            ? (image_bytes + self_header.self_filesize)
-            : (elf_bytes + elf.e_shoff + (elf.e_shnum * elf.e_shentsize));
+        const uint8_t *dump_end;
+
+        if (is_self) {
+            dump_end = image_bytes + self_header.self_filesize;
+        } else {
+            size_t elf_size = 0;
+            auto dump_segments = reinterpret_cast<const Elf32_Phdr *>(elf_bytes + elf.e_phoff);
+            for (const auto &[seg_index, segment] : segment_reloc_info) {
+                uint8_t *seg_bytes = Ptr<uint8_t>(segment.addr).get(mem);
+                elf_size = std::max(elf_size, static_cast<size_t>(dump_segments[seg_index].p_offset) + static_cast<size_t>(dump_segments[seg_index].p_filesz));
+            }
+            dump_end = elf_bytes + elf_size;
+        }
 
         std::vector<uint8_t> dump_elf(dump_begin, dump_end);
         if (is_self) {
@@ -751,7 +756,10 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
 
     sceKernelModuleInfo->state = module_info->type;
 
-    LOG_INFO("Linking {} {}...", module_kind, self_path);
+    LOG_INFO("Linking {} {}...", is_self ? "SELF" : "ELF", self_path);
+    if (self_path.contains("eboot.bin"))
+        LOG_INFO("eboot.bin module NID: {}", log_hex(module_info->module_nid));
+
     if (!load_exports(sceKernelModuleInfo, *module_info, module_info_segment_address, kernel, mem)) {
         return -1;
     }
