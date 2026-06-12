@@ -430,13 +430,22 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     assert((size & 4095) == 0);
     if (!mem.use_page_table)
         return;
+
+    if (addr_ptr == nullptr) {
+       LOG_ERROR("add_external_mapping > addr_ptr is nullptr!");
+       return;
+    }
         
+#ifdef __arm__
+    uintptr_t addr_value = reinterpret_cast<uintptr_t>(addr_ptr);
+#else
     uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
+#endif
     uint8_t *page_table_entry = addr_ptr - addr;
     uint8_t *original_address = &mem.memory[addr];
 
-    if (!addr_value || !original_address) {
-        LOG_ERROR("add_external_mapping > addr_value or original_address is nullptr!");
+    if (original_address == nullptr) {
+        LOG_ERROR("add_external_mapping > original_address is nullptr!");
         return;
     }
     
@@ -455,13 +464,17 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     mem.external_mapping[addr_value] = { addr, size };
 }
 
-void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
+void remove_external_mapping(MemState &mem, uint8_t *addr_ptr, uint32_t size) {
+    if (addr_ptr == nullptr) {
+       LOG_ERROR("add_external_mapping > addr_ptr is nullptr!");
+       return;
+    }
+    
 #ifdef __arm__
-    uintptr_t addr_value = reinterpret_cast<uintptr_t>(addr);
+    uintptr_t addr_value = reinterpret_cast<uintptr_t>(addr_ptr);
 #else
-    uint64_t addr_value = static_cast<uint64_t>(addr);
+    uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
 #endif
-    LOG_TRACE("addr_value = {}, use_page_table = {}", addr_value, mem.use_page_table);
     
     MemExternalMapping mapping;
     if (mem.use_page_table) {
@@ -472,7 +485,7 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
         mapping = it->second;
         mem.external_mapping.erase(it);
     } else {
-        mapping.address = addr;
+        mapping.address = static_cast<Address>(addr_ptr - mem.memory.get());
         mapping.size = size;
     }
 
@@ -500,22 +513,16 @@ void remove_external_mapping(MemState &mem, Address addr, uint32_t size) {
 
     if (mem.use_page_table) {
         // unprotect the original memory range
-        const uint8_t* addr_ptr = reinterpret_cast<uint8_t*>(addr_value);
-        
-        if (!addr_ptr) {
-            LOG_ERROR("remove_external_mapping > use_page_table: nullptr in memory!, skipped!");
-        } else {
-           mem.page_table[mapping.address / KiB(4)] = mem.memory.get();
-           unprotect_inner(mem, mapping.address, mapping.size);
-           // copy back and reset the page table
-           for (int block = 0; block < mapping.size / KiB(4); block++) {
-               // this is not thread write safe, but hopefully not other thread is busy copying while this happens
-               const auto mapping_mem = &mem.memory[mapping.address] + block * KiB(4);
-               if (!addr_ptr || !mapping_mem)
-                  memcpy(mapping_mem, addr_ptr + block * KiB(4), KiB(4));
-
-               mem.page_table[mapping.address / KiB(4) + block] = mem.memory.get();
-           }
+        mem.page_table[mapping.address / KiB(4)] = mem.memory.get();
+        unprotect_inner(mem, mapping.address, mapping.size);
+        // copy back and reset the page table
+        for (int block = 0; block < mapping.size / KiB(4); block++) {
+            // this is not thread write safe, but hopefully not other thread is busy copying while this happens
+            const auto mem_addr = &mem.memory[mapping.address] + block * KiB(4);
+            if (!mem_addr == nullptr)
+               memcpy(mem_addr, addr_ptr + block * KiB(4), KiB(4));
+            
+            mem.page_table[mapping.address / KiB(4) + block] = mem.memory.get();
         }
     }
 }
