@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -83,7 +83,7 @@ EXPORT(int, _ZN4IPMI6Client6Config24estimateClientMemorySizeEv) {
 // IPMI::Client::create(IPMI::Client**, IPMI::Client::Config const*, void*, void*)
 EXPORT(int, _ZN4IPMI6Client6createEPPS0_PKNS0_6ConfigEPvS6_, Ptr<void> *client, void const *config, Ptr<void> user_data, Ptr<void> client_memory) {
     TRACY_FUNC(_ZN4IPMI6Client6createEPPS0_PKNS0_6ConfigEPvS6_, client, config, user_data, client_memory);
-    *client_memory.cast<Ptr<void>>().get(emuenv.mem) = get_client_vtable(emuenv.mem);
+    *client_memory.cast<Ptr<void>>().get(emuenv.mem) = get_client_vtable(emuenv.kernel, emuenv.mem);
     *client = client_memory;
     STUBBED("Stubed");
     return 0;
