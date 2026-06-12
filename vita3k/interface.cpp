@@ -491,11 +491,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     init_exported_vars(emuenv);
 
     // Load main executable
-    if (!launch_request.self_path.empty()) {
-        emuenv.self_path = launch_request.self_path;
-    } else {
-        emuenv.self_path = !emuenv.cfg.self_path.empty() ? emuenv.cfg.self_path : EBOOT_PATH;
-    }
+    emuenv.self_path = !emuenv.cfg.self_path.empty() ? emuenv.cfg.self_path : EBOOT_PATH;
 
     main_module_id = load_module(emuenv, "app0:" + emuenv.self_path);
 
