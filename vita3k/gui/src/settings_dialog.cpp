@@ -169,6 +169,9 @@ static bool get_custom_config(EmuEnvState &emuenv, const std::string &app_path) 
                 config.modules_mode = core_child.attribute("modules-mode").as_int();
                 for (auto &m : core_child.child("lle-modules"))
                     config.lle_modules.emplace_back(m.text().as_string());
+                
+                config.lle_sysmodule = cpu_child.attribute("lle-sysmodule").as_bool();
+                config.taihen = cpu_child.attribute("taihen").as_bool();
             }
 
             // Load CPU Config
@@ -254,6 +257,8 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     // If no app-specific config file is being used for the initialized application,
     // set up `config` with the values set in the global emulator configuration
     if (!get_custom_config(emuenv, app_path)) {
+        config.lle_sysmodule = emuenv.cfg.lle_sysmodule;
+        config.taihen = emuenv.cfg.taihen;
         config.cpu_backend = emuenv.cfg.cpu_backend;
         config.cpu_opt = emuenv.cfg.cpu_opt;
         config.cpu_unsafe = emuenv.cfg.cpu_unsafe;
@@ -355,6 +360,9 @@ void save_config(GuiState &gui, EmuEnvState &emuenv) {  // has static
         for (const auto &m : config.lle_modules)
             enable_module.append_child("module").append_child(pugi::node_pcdata).set_value(m.c_str());
 
+        core_child.append_attribute("lle-sysmodule") = config.lle_sysmodule;
+        core_child.append_attribute("taihen") = config.taihen;
+
         // CPU
         auto cpu_child = config_child.append_child("cpu");
         cpu_child.append_attribute("cpu-backend") = config.cpu_backend.c_str();
@@ -402,6 +410,8 @@ void save_config(GuiState &gui, EmuEnvState &emuenv) {  // has static
         if (!save_xml)
             LOG_ERROR("Failed to save custom config xml for app path: {}, in path: {}", emuenv.app_path, CONFIG_PATH);
     } else {
+        emuenv.cfg.lle_sysmodule = config.lle_sysmodule;
+        emuenv.cfg.taihen = config.taihen;
         emuenv.cfg.cpu_backend = config.cpu_backend;
         emuenv.cfg.cpu_opt = config.cpu_opt;
         emuenv.cfg.cpu_unsafe = config.cpu_unsafe;
@@ -474,6 +484,9 @@ void set_config(EmuEnvState &emuenv, const std::string &app_path, bool custom) {
         emuenv.cfg.current_config = config;
     else {
         // Else inherit the values from the global emulator config
+        emuenv.cfg.current_config.lle_sysmodule = emuenv.cfg.lle_sysmodule;
+        emuenv.cfg.current_config.taihen = emuenv.cfg.taihen;
+        
         emuenv.cfg.current_config.cpu_backend = emuenv.cfg.cpu_backend;
         emuenv.cfg.current_config.cpu_opt = emuenv.cfg.cpu_opt;
         emuenv.cfg.current_config.cpu_unsafe = emuenv.cfg.cpu_unsafe;
@@ -597,6 +610,12 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         if (!gui.modules.empty()) {
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.core["modules_mode"].c_str());
+            ImGui::Spacing();
+            ImGui::Checkbox(lang.core["lle_sysmpdule"].c_str(), &config.lle_sysmodule);
+            SetTooltipEx(lang.core["lle_sysmpdule_description"].c_str());
+            ImGui::Checkbox(lang.core["taihen"].c_str(), &config.taihen);
+            SetTooltipEx(lang.core["taihen_description"].c_str());
+
             ImGui::Spacing();
             for (auto m = 0; m < MODULES_MODE_COUNT; m++) {
                 if (m)
