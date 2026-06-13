@@ -170,8 +170,8 @@ static bool get_custom_config(EmuEnvState &emuenv, const std::string &app_path) 
                 for (auto &m : core_child.child("lle-modules"))
                     config.lle_modules.emplace_back(m.text().as_string());
                 
-                config.lle_sysmodule = cpu_child.attribute("lle-sysmodule").as_bool();
-                config.taihen = cpu_child.attribute("taihen").as_bool();
+                config.lle_sysmodule = core_child.attribute("lle-sysmodule").as_bool();
+                config.taihen = core_child.attribute("taihen").as_bool();
             }
 
             // Load CPU Config
