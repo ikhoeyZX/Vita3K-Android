@@ -1057,91 +1057,17 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
 }
 
 void VKState::cleanup() {
-/*    device.waitIdle();
-
-    screen_renderer.cleanup();
-
-    allocator.destroy();
-
-    device.destroy(general_command_pool);
-    device.destroy(transfer_command_pool);
-
-    device.destroy();
-    instance.destroy();
-*/
-	const auto release_descriptor_sets = [](FrameDescriptor &descriptor) {
-        std::vector<vk::DescriptorSet>().swap(descriptor.sets);
-        descriptor.descriptors_idx = 0;
-    };
-
     device.waitIdle();
 
-    request_queue.abort();
-
-    context = nullptr;
-
-    for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
-        frames[i].rendered_fences.clear();
-        for (auto &descriptor : frames[i].vert_descriptors)
-            release_descriptor_sets(descriptor);
-        for (auto &descriptor : frames[i].frag_descriptors)
-            release_descriptor_sets(descriptor);
-        release_descriptor_sets(frames[i].color_descriptor);
-    }
-
-    for (int i = 0; i < MAX_FRAMES_RENDERING; i++)
-        frames[i].destroy_queue.destroy_objects();
-
     screen_renderer.cleanup();
-
-    mapped_memories.clear();
-    buffer_trapping.trapped_buffers.clear();
-    mem = nullptr;
-
-    default_image.destroy();
-    default_buffer.destroy();
-
-    for (auto &pool : frame_descriptor_pools)
-        device.destroy(pool);
-    frame_descriptor_pools.clear();
-
-    for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
-        device.destroy(frames[i].render_pool);
-        frames[i].render_pool = nullptr;
-        device.destroy(frames[i].prerender_pool);
-        frames[i].prerender_pool = nullptr;
-    }
-
-    device.destroy(general_command_pool);
-    general_command_pool = nullptr;
-    device.destroy(transfer_command_pool);
-    transfer_command_pool = nullptr;
-    device.destroy(multithread_command_pool);
-    multithread_command_pool = nullptr;
 
     allocator.destroy();
 
+    device.destroy(general_command_pool);
+    device.destroy(transfer_command_pool);
+
     device.destroy();
-
-    if (debug_messenger) {
-        instance.destroyDebugUtilsMessengerEXT(debug_messenger);
-        debug_messenger = nullptr;
-    }
-    if (debug_report) {
-        instance.destroyDebugReportCallbackEXT(debug_report);
-        debug_report = nullptr;
-    }
-
     instance.destroy();
-
-    gxp_ptr_map.clear();
-    shaders_cache_hashs.clear();
-    request_queue.reset();
-    current_frame_idx = 1;
-    last_scene_id = 0;
-    shaders_count_compiled = 0;
-    programs_count_pre_compiled = 0;
-    should_display = false;
 }
 
 void VKState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, DisplayState &display,
@@ -1563,7 +1489,7 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
         break;
 
     case MappingMethod::DoubleBuffer:
-		remove_external_mapping(mem, address.cast<uint8_t>().get(mem), ite->second.size);
+        remove_external_mapping(mem, address.cast<uint8_t>().get(mem), ite->second.size);
         // remove all the trapping related to these locations
         buffer_trapping.remove_range(address.address(), address.address() + ite->second.size);
         break;
@@ -1571,7 +1497,7 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
 #ifdef __ANDROID__
     case MappingMethod::NativeBuffer: {
         remove_external_mapping(mem, address.cast<uint8_t>().get(mem), ite->second.size);
-		device.destroyBuffer(ite->second.buffer);
+        device.destroyBuffer(ite->second.buffer);
         ExternalBuffer &buffer = std::get<ExternalBuffer>(ite->second.buffer_impl);
         device.freeMemory(buffer.memory);
 
@@ -1586,7 +1512,7 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
 
     case MappingMethod::PageTable:
         remove_external_mapping(mem, address.cast<uint8_t>().get(mem), ite->second.size);
-		break;
+        break;
 
     default:
         LOG_CRITICAL("Mapping method not handled, report it to the devs!");
