@@ -529,6 +529,10 @@ struct LangState {
         };
         std::map<std::string, std::string> core = {
             { "title", "Core" },
+            {"lle_sysmodule", "LLE Sysmodule"},
+            {"lle_sysmodule_description", "Use full emulated Sysmodule than HLE (slower).\nYou need psvita firmware to enable this"},
+            {"taihen", "Taihen plugin"},
+            {"taihen_description", "Enable taihen plugin, you need install taihen just like real psvita.\n(ur0/tai/kubridge.skprx and ur0/tai/config.txt)."},
             { "modules_mode", "Modules Mode" },
             { "modules_list", "Modules List" },
             { "select_modules", "Select your desired modules." },
