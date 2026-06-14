@@ -17,11 +17,12 @@
 
 #include "../SceLibKernel/SceLibKernel.h"
 #include "SceThreadmgr.h"
-#include <kernel/state.h>
 #include <module/module.h>
 #include <util/tracy.h>
 
 TRACY_MODULE_NAME(SceThreadmgrForDriver);
+
+#include <kernel/state.h>
 
 EXPORT(int, ksceKernelCancelCallback) {
     return UNIMPLEMENTED();
