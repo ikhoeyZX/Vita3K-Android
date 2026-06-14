@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 #include <cpu/functions.h>
 #include <kernel/state.h>
 
+#include <ngs/modules/atrac9.h>
 #include <ngs/state.h>
 #include <ngs/system.h>
 #include <util/lock_and_find.h>
@@ -325,8 +326,8 @@ void Voice::invoke_callback(KernelState &kernel, const MemState &mem, const SceU
     const Address callback_info_addr = stack_alloc(*thread->cpu, sizeof(SceNgsCallbackInfo));
 
     SceNgsCallbackInfo *info = Ptr<SceNgsCallbackInfo>(callback_info_addr).get(mem);
-    info->rack_handle = Ptr<void>(rack, mem);
-    info->voice_handle = Ptr<void>(this, mem);
+    info->rack_handle = guest_subptr(rack->memspace, rack->memspace.get(mem), rack).cast<void>();
+    info->voice_handle = guest_subptr(rack->memspace, rack->memspace.get(mem), this).cast<void>();
     info->module_id = module_id;
     info->callback_reason = reason1;
     info->callback_reason_2 = reason2;
@@ -356,6 +357,16 @@ bool init(State &ngs, MemState &mem) {
     return true;
 }
 
+void deinit(State &ngs, MemState &mem) {
+    while (!ngs.systems.empty()) {
+        release_system(ngs, mem, ngs.systems.back());
+    }
+
+    Atrac9Module::free_swr_contexts();
+
+    ngs.definitions = Ptr<VoiceDefinition>(0);
+}
+
 bool init_system(State &ngs, const MemState &mem, SceNgsSystemInitParams *parameters, Ptr<void> memspace, const uint32_t memspace_size) {
     // Reserve first memory allocation for our System struct
     System *sys = memspace.cast<System>().get(mem);
@@ -378,13 +389,19 @@ bool init_system(State &ngs, const MemState &mem, SceNgsSystemInitParams *parame
 
 void release_system(State &ngs, const MemState &mem, System *system) {
     // this function assumes no ngs mutex is being held
+    for (Rack *rack : system->racks) {
+        if (!rack)
+            continue;
+        for (const auto &voice : rack->voices) {
+            system->voice_scheduler.deque_voice(voice.get(mem));
+            voice.get(mem)->~Voice();
+        }
+        rack->~Rack();
+    }
 
-    // release all the racks first
-    for (size_t i = 0; i < system->racks.size(); i++)
-        release_rack(ngs, mem, system, system->racks[i]);
+    system->racks.clear();
 
     vector_utils::erase_first(ngs.systems, system);
-
     system->~System();
 }
 
@@ -447,9 +464,15 @@ void release_rack(State &ngs, const MemState &mem, System *system, Rack *rack) {
 
     // remove all queued voices
     for (const auto &voice : rack->voices) {
+        Voice *v = voice.get(mem);
         system->voice_scheduler.deque_voice(voice.get(mem));
-        voice.get(mem)->~Voice();
+        // clean up host resources per voice before destroying
+        for (size_t i = 0; i < rack->modules.size() && i < v->datas.size(); i++) {
+            if (rack->modules[i])
+                rack->modules[i]->cleanup_voice_state(v->datas[i]);
+        }
         // no need to free the voice from the rack
+        v->~Voice();
     }
 
     // remove from system

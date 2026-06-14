@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -54,6 +54,8 @@ enum ScreenshotFormat {
 // When adding in a new macro for generation, ALL options must be stated.
 #define CONFIG_INDIVIDUAL(code)                                                                         \
     code(bool, "boot-fail", false, boot_fail)                                                           \
+    code(bool, "lle-sysmodule", false, lle_sysmodule)                                                           \
+    code(bool, "taihen", false, taihen)                                                           \
     code(bool, "initial-setup", false, initial_setup)                                                   \
     code(bool, "gdbstub", false, gdbstub)                                                               \
     code(bool, "log-active-shaders", false, log_active_shaders)                                         \
@@ -92,12 +94,13 @@ enum ScreenshotFormat {
     code(bool, "export-as-png", true, export_as_png)                                                    \
     code(std::string, "memory-mapping", "double-buffer", memory_mapping)                                \
     code(std::string, "vk-mapping", "Mailbox", vk_mapping)                                              \
-    code(std::string, "deep-stencil", "D24UnormS8Uint", deep_stencil)                                        \
+    code(std::string, "deep-stencil", "D24UnormS8Uint", deep_stencil)                                   \
+    code(int, "set-spirv", 0, set_spirv)                                                                \
     code(bool, "boot-apps-full-screen", false, boot_apps_full_screen)                                   \
-    code(std::string, "audio-backend", "Cubeb", audio_backend)                                          \
+    code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(int, "audio-volume", 100, audio_volume)                                                        \
     code(bool, "ngs-enable", true, ngs_enable)                                                          \
-    code(std::string, "audio-drv", "auto", audio_drv)                                                   \
+    code(std::string, "audio-drv", "aaudio", audio_drv)                                                   \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
     code(int, "sys-date-format", (int)SCE_SYSTEM_PARAM_DATE_FORMAT_MMDDYYYY, sys_date_format)           \
@@ -166,6 +169,7 @@ enum ScreenshotFormat {
     code(bool, "dencrypt-installs", true, dencrypt_installs)                                            \
     code(bool, "asia-font-support", false, asia_font_support)                                           \
     code(bool, "shader-cache", true, shader_cache)                                                      \
+    code(bool, "use-ssbo-opengles", true, use_ssbo_opengles)                                            \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(bool, "fps-hack", false, fps_hack)                                                             \
     code(bool, "use-astc", false, use_astc)                                                             \
@@ -178,6 +182,7 @@ enum ScreenshotFormat {
     code(bool, "psn-signed-in", true, psn_signed_in)                                                    \
     code(bool, "http-enable", true, http_enable)                                                        \
     code(int, "adhoc-addr", 0, adhoc_addr)                                                              \
+    code(bool, "file-open-delay", false, file_open_delay)                                               \
     code(int, "http-timeout-attempts", 50, http_timeout_attempts)                                       \
     code(int, "http-timeout-sleep-ms", 100, http_timeout_sleep_ms)                                      \
     code(int, "http-read-end-attempts", 10, http_read_end_attempts)                                     \

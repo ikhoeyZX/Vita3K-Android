@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 
 #include <util/string_utils.h>
 
-constexpr bool TRACE_RETURN_VALUES = true;
+constexpr bool TRACE_RETURN_VALUES = false;
 constexpr bool LOG_REGISTERS = false;
 
 static inline void func_trace(CPUState &state) {
@@ -60,20 +60,10 @@ void UnicornCPU::read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, in
 
     UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
     MemState &mem = *state.parent->mem;
-    auto start = state.parent->protocol->get_watch_memory_addr(address);
-    if (start) {
-        memcpy(&value, Ptr<const void>(static_cast<Address>(address)).get(mem), size);
-        state.log_memory_access(uc, "Read", start, size, value, mem, *state.parent, address - start);
-    }
 }
 
 void UnicornCPU::write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
     UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
-    auto start = state.parent->protocol->get_watch_memory_addr(address);
-    if (start) {
-        MemState &mem = *state.parent->mem;
-        state.log_memory_access(uc, "Write", start, size, value, mem, *state.parent, address - start);
-    }
 }
 
 void UnicornCPU::log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, MemState &mem, CPUState &cpu, Address offset) {
@@ -128,7 +118,7 @@ void UnicornCPU::log_error_details(uc_err code) {
     LOG_ERROR("Unicorn error {}. {}\n{}", log_hex(code), uc_strerror(code), this->save_context().description());
 
     auto pc = this->get_pc();
-    if (pc < parent->mem->page_size)
+    if (pc < parent->mem->host_page_size)
         LOG_CRITICAL("PC is 0x{:x}", pc);
     else
         LOG_WARN("Executing: {}", disassemble(*parent, pc, nullptr));
@@ -150,7 +140,7 @@ UnicornCPU::UnicornCPU(CPUState *state)
 
     // Don't map the null page into unicorn so that unicorn returns access error instead of
     // crashing the whole emulator on invalid access
-    err = uc_mem_map_ptr(uc.get(), state->mem->page_size, GiB(4) - state->mem->page_size, UC_PROT_ALL, &state->mem->memory[state->mem->page_size]);
+    err = uc_mem_map_ptr(uc.get(), state->mem->host_page_size, GiB(4) - state->mem->host_page_size, UC_PROT_ALL, &state->mem->memory[state->mem->host_page_size]);
     assert(err == UC_ERR_OK);
 
     enable_vfp_fpu(uc.get());
@@ -443,4 +433,8 @@ bool UnicornCPU::get_log_code() {
 
 bool UnicornCPU::get_log_mem() {
     return memory_read_hook_handle != 0 && memory_write_hook_handle != 0;
+}
+
+void UnicornCPU::clear_exclusive() {
+    // do nothing
 }

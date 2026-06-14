@@ -19,12 +19,14 @@
 #include <tracy/Tracy.hpp>
 #endif
 
+#include <cpu/common.h>
 #include <kernel/state.h>
 
 #include <kernel/thread/thread_state.h>
 
 #include <cpu/functions.h>
 #include <mem/ptr.h>
+#include <mem/functions.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
@@ -71,10 +73,13 @@ static int SDLCALL thread_function(void *data) {
     thread->run_loop();
     const uint32_t r0 = read_reg(*thread->cpu, 0);
 
-    std::lock_guard<std::mutex> lock(params.kernel->mutex);
-    params.kernel->threads.erase(thread->id);
-    params.kernel->corenum_allocator.free_corenum(get_processor_id(*thread->cpu));
-
+    {
+        std::lock_guard<std::mutex> lock(params.kernel->mutex);
+        params.kernel->threads.erase(thread->id);
+        params.kernel->corenum_allocator.free_corenum(get_processor_id(*thread->cpu));
+        params.kernel->thread_deleted_cond.notify_all();
+    }
+    
     return r0;
 }
 
@@ -83,18 +88,24 @@ KernelState::KernelState()
 }
 
 bool KernelState::init(MemState &mem, const CallImportFunc &call_import, CPUBackend cpu_backend, bool cpu_opt) {
+#ifdef USE_UNICORN
     constexpr std::size_t MAX_CORE_COUNT = 150;
-
-    corenum_allocator.set_max_core_count(MAX_CORE_COUNT);
-#ifdef USE_DYNARMIC
-    exclusive_monitor = new_exclusive_monitor(MAX_CORE_COUNT);
 #endif
+    corenum_allocator.set_max_core_count(MAX_CORE_COUNT);
+
     start_tick = rtc_get_ticks(rtc_base_ticks());
     base_tick = { rtc_base_ticks() };
-    cpu_protocol = std::make_unique<CPUProtocol>(*this, mem, call_import);
+    this->call_import = call_import;
     this->cpu_backend = cpu_backend;
     this->cpu_opt = cpu_opt;
 
+    // Generate halt instruction (NOP + WFI)
+    halt_instruction = alloc_block(mem, 4, "halt_instruction");
+    const auto halt_ptr = halt_instruction.get_ptr<uint16_t>().get(mem);
+    halt_ptr[0] = 0xBF00; // NOP
+    halt_ptr[1] = 0xBF30; // WFI
+    halt_instruction_pc = halt_instruction.get() | 1; // thumb mode pc
+    
     return true;
 }
 
@@ -143,8 +154,10 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
     ThreadStatePtr thread = std::make_shared<ThreadState>(get_next_uid(), *this, mem);
     if (thread->init(name, entry_point, init_priority, affinity_mask, stack_size, option) < 0)
         return nullptr;
-    const auto lock = std::lock_guard(mutex);
-    threads.emplace(thread->id, thread);
+     {
+        const std::lock_guard<std::mutex> lock(mutex);
+        threads.emplace(thread->id, thread);
+     }
 
     ThreadParams params;
     params.kernel = this;

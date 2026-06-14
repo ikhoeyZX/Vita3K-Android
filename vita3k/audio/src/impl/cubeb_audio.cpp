@@ -1,6 +1,5 @@
-
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -84,7 +83,17 @@ CubebAudioAdapter::~CubebAudioAdapter() {
 }
 
 bool CubebAudioAdapter::init() {
-    if (cubeb_init(&cubeb_ctx, "Vita3K audio", "opensl") != CUBEB_OK) {
+    const char* value = nullptr;
+
+#ifdef ANDROID
+//    if (cubeb_aaudio)
+        value = "aaudio";
+//    else
+//        value = "opensl";
+#endif
+    
+ //   if (cubeb_init(&cubeb_ctx, "Vita3K audio", "opensl") != CUBEB_OK) {
+    if (cubeb_init(&cubeb_ctx, "Vita3K audio", value) != CUBEB_OK) {
         LOG_ERROR("Could not initialize cubeb context");
         return false;
     }
@@ -107,7 +116,8 @@ AudioOutPortPtr CubebAudioAdapter::open_port(int nb_channels, int freq, int nb_s
     uint32_t latency;
     if (cubeb_get_min_latency(cubeb_ctx, &port->spec, &latency) != CUBEB_OK)
         // default value (min latency is not supported on OpenSL)
-        latency = 256;
+        // latency = 256;
+        latency = 768;
 
     if (cubeb_stream_init(cubeb_ctx, &port->out_stream, "Vita3K audio out", nullptr, nullptr, nullptr,
             &port->spec, latency, impl_cubeb_audio_callback, impl_cubeb_state_callback, port.get())

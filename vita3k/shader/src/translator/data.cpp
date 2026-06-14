@@ -573,6 +573,7 @@ bool USSETranslatorVisitor::vldst(
     const bool is_store = inst.opcode == Opcode::STR;
     DataType type_to_ldst = DataType::UNK;
 
+    LOG_INFO("data_type -> type_to_ldst : {}", log_hex(data_type));
     switch (data_type) {
     case 0:
         type_to_ldst = DataType::F32;
@@ -586,8 +587,11 @@ bool USSETranslatorVisitor::vldst(
         type_to_ldst = DataType::INT8;
         break;
 
-    default:
+    default: {
+        LOG_ERROR("data_type -> type_to_ldst : UNKNOWN!");
+        type_to_ldst = DataType::F32;
         break;
+    }
     }
 
     const int total_number_to_fetch = mask_count + 1;
@@ -763,9 +767,13 @@ bool USSETranslatorVisitor::vldst(
             return true;
         }
 
+        bool support_spirv = false;
+        if (m_features.support_spirv >= 4)
+            support_spirv = true;
+            
         for (int i = 0; i < total_bytes_fo_fetch / 4; ++i) {
             spv::Id offset = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(4 * i));
-            spv::Id src = utils::fetch_memory(m_b, m_spirv_params, m_util_funcs, offset);
+            spv::Id src = utils::fetch_memory(m_b, m_spirv_params, m_util_funcs, offset, support_spirv, m_features.use_glsl);
             store(to_store, src, 0b1);
             to_store.num += 1;
         }

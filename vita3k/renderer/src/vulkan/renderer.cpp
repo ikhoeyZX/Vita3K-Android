@@ -302,7 +302,7 @@ bool VKState::init() {
     return true;
 }
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && defined(__aarch64__)
 static void *load_custom_adreno_driver(const std::string &driver_name) {
     const fs::path driver_path = fs::path(SDL_AndroidGetInternalStoragePath()) / "driver" / driver_name / "/";
 
@@ -424,7 +424,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 	    // VK_API_VERSION_1_(minor)
         vk_api_version = VK_MAKE_API_VERSION(0, 1, minor, 0);
 		
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && defined(__aarch64__)
         if (!config.current_config.custom_driver_name.empty()) {
             void *vulkan_handle = load_custom_adreno_driver(config.current_config.custom_driver_name);
             if (vulkan_handle) {
@@ -657,6 +657,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         bool support_buffer_device_address = false;
         bool support_external_memory = false;
         bool support_shader_interlock = false;
+		bool support_spirv14 = false;
+		bool support_f16i8_ext = false;
         const std::map<std::string_view, bool *> optional_extensions = {
             { vk::KHRGetMemoryRequirements2ExtensionName, &temp_bool },
             // can be used by vma to improve performance
@@ -677,6 +679,10 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             { vk::KHRShaderFloat16Int8ExtensionName, &support_fsr },
             // used for accurate programmable blending on desktop GPUs
             { vk::EXTFragmentShaderInterlockExtensionName, &support_shader_interlock },
+			// get spirv 1.4 support
+		    { vk::KHRSpirv14ExtensionName, &support_spirv14 },
+			// get low precission support
+		    { vk::KHRShaderFloat16Int8ExtensionName, &support_f16i8_ext },
 #ifdef __APPLE__
             // Needed to create the MoltenVK device
             { vk::KHRPortabilitySubsetExtensionName, &temp_bool },
@@ -709,6 +715,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             support_buffer_device_address &= static_cast<bool>(features.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress);
         }
         support_memory_mapping &= support_buffer_device_address;
+        features.support_spirv_1_4 = support_spirv14;
+		features.support_f16i8 = support_f16i8_ext;
 
         if (support_standard_layout) {
             auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
@@ -833,6 +841,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 			LOG_WARN_ONCE("Your device didn't support shader interlock!");
             device_info.unlink<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>();
 		}
+		if (!features.support_spirv_1_4)
+			LOG_WARN_ONCE("Your device didn't support SPIRV 1.4");
 
         try {
 			device = physical_device.createDevice(device_info.get<vk::DeviceCreateInfo>());
@@ -903,6 +913,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
     // create the default image and buffer
     {
+
         default_buffer = vkutil::Buffer(KiB(4));
         default_buffer.init_buffer(vk::BufferUsageFlagBits::eVertexBuffer);
 
@@ -1000,9 +1011,9 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
         request_mapping = MappingMethod::DoubleBuffer;
     else if (config_mapping == "external-host")
         request_mapping = MappingMethod::ExernalHost;
-    else if (config_mapping == "page-table")
+    else if (config_mapping == "page-table" && cfg.current_config.cpu_backend == "Dynarmic")
         request_mapping = MappingMethod::PageTable;
-    else if (config_mapping == "native-buffer")
+    else if (config_mapping == "native-buffer" && cfg.current_config.cpu_backend == "Dynarmic")
         request_mapping = MappingMethod::NativeBuffer;
     const std::string_view mapping_string[] = { "Disabled", "Double buffer", "External Host", "Page Table", "Native Buffer" };
 
@@ -1011,6 +1022,7 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
         mapping_method = request_mapping;
 
     features.enable_memory_mapping = mapping_method != MappingMethod::Disabled;
+	features.support_spirv = cfg.set_spirv;
 
 #ifdef __ANDROID__
     if (mapping_method == MappingMethod::NativeBuffer) {
@@ -1240,13 +1252,15 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     return static_cast<uint32_t>(std::countr_zero(hardware_types));
 
     };
-    
+
+    uint32_t STANDARD_PAGE_SIZE = KiB(4);
+	
     switch (mapping_method) {
     case MappingMethod::NativeBuffer: {
 #ifdef __ANDROID__
         // if we get there, this means we support the hardware buffer extension
         AHardwareBuffer_Desc buffer_desc{
-            .width = static_cast<uint32_t>(size + KiB(4)),
+		    .width = static_cast<uint32_t>(size + STANDARD_PAGE_SIZE),
             .height = 1,
             .layers = 1,
             .format = AHARDWAREBUFFER_FORMAT_BLOB,
@@ -1294,7 +1308,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             uint32_t mapped_memory_type = find_suitable_mapped_type(fd_props.memoryTypeBits);
             vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportMemoryFdInfoKHR, vk::MemoryAllocateFlagsInfo> alloc_info{
                 vk::MemoryAllocateInfo{
-                    .allocationSize = size + KiB(4),
+                    .allocationSize = size + STANDARD_PAGE_SIZE,
                     .memoryTypeIndex = mapped_memory_type },
                 vk::ImportMemoryFdInfoKHR{
                     .handleType = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd,
@@ -1308,7 +1322,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 
         vk::StructureChain<vk::BufferCreateInfo, vk::ExternalMemoryBufferCreateInfoKHR> buffer_info{
             vk::BufferCreateInfo{
-                .size = size + KiB(4),
+                .size = size + STANDARD_PAGE_SIZE,
                 .usage = mapped_memory_flags,
                 .sharingMode = vk::SharingMode::eExclusive },
             vk::ExternalMemoryBufferCreateInfoKHR{
@@ -1332,26 +1346,26 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     case MappingMethod::PageTable: {
         // add 4 KiB because we can as an easy way to prevent crashes due to memory accesses right after the memory boundary
         // also make sure later the mapped address is 4K aligned
-        vkutil::Buffer buffer(size + KiB(4));
+        vkutil::Buffer buffer(size + STANDARD_PAGE_SIZE);
         constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
 	        // .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
             .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessRandom,
-            // .usage = vma::MemoryUsage::eAutoPreferHost,
-	        .usage = vma::MemoryUsage::eAuto,
-		//	.requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
+            .usage = vma::MemoryUsage::eAutoPreferHost,
+	       // .usage = vma::MemoryUsage::eAuto,
+			// .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
         //    .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
-		    .requiredFlags = vk::MemoryPropertyFlagBits::eHostVisible,
-            .preferredFlags = vk::MemoryPropertyFlagBits::eDeviceLocal,
+		    .requiredFlags = vk::MemoryPropertyFlagBits::eHostCached,
+            .preferredFlags = vk::MemoryPropertyFlagBits::eHostVisible,
         };
         buffer.init_buffer(mapped_memory_flags, memory_mapped_alloc);
 
 #ifdef __aarch64__
 		const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
-        const int64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
+        const int64_t buffer_offset = align(buffer_ptr_val, STANDARD_PAGE_SIZE) - buffer_ptr_val;
         buffer.mapped_data = std::bit_cast<void *> (buffer_ptr_val + buffer_offset);
 #else
 		const uintptr_t buffer_ptr_val = reinterpret_cast<uintptr_t>(buffer.mapped_data);
-        const intptr_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
+        const intptr_t buffer_offset = align(buffer_ptr_val, STANDARD_PAGE_SIZE) - buffer_ptr_val;
 		buffer.mapped_data = reinterpret_cast<void *> (buffer_ptr_val + buffer_offset);
 #endif
 
@@ -1436,7 +1450,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     }
 
     case MappingMethod::DoubleBuffer: {
-        vkutil::Buffer buffer(size + KiB(4));
+        vkutil::Buffer buffer(size + STANDARD_PAGE_SIZE);
         buffer.init_buffer(mapped_memory_flags, vkutil::vma_mapped_alloc);
 
         vk::BufferDeviceAddressInfoKHR address_info{
@@ -1590,20 +1604,30 @@ std::vector<std::string> VKState::get_vulkan_feature_list(int type) {
 		}
 
 	    case 1: {
-			std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm, vk::Format::eS8Uint, vk::Format::eX8D24UnormPack32 };
-			for ( vk::Format format : candidates ) {
+			std::vector<vk::Format> candidates = { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint,  vk::Format::eD16UnormS8Uint,  vk::Format::eD16Unorm, vk::Format::eS8Uint, vk::Format::eX8D24UnormPack32};
+			for (vk::Format format : candidates) {
 				  vk::FormatProperties props = physical_device.getFormatProperties( format );
 				
-                  if ( props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment )
+                  if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
                       result.push_back(vk::to_string(format));
 				}
 	              // if not found use default instead
-            if ( result.empty() ) 
+            if (result.empty()) 
                 result.push_back(vk::to_string(vk::Format::eD24UnormS8Uint));
 				
 	        break;
 		}
-		
+
+		case 2: {
+			// print spirv version
+			result = { "1.0", "1.1", "1.2",  "1.3 (vulkan 1.1)" };
+            if (features.support_spirv_1_4) {
+                result.push_back("1.4");
+				result.push_back("1.5 (vulkan 1.2)");
+			}
+	        break;
+		}
+				
 	    default: 
 			result.push_back("INVALID");
 		    break;
@@ -1648,7 +1672,7 @@ bool VKState::support_custom_drivers() {
 }
 
 void VKState::set_turbo_mode(bool set) {
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && defined(__aarch64__)
     if (!support_custom_drivers())
         return;
 

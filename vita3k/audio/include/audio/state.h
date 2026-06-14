@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -119,6 +119,7 @@ struct AudioState {
     ResumeAudioThread resume_thread;
     std::string audio_backend;
     float global_volume;
+    bool cubeb_aaudio = false;
 
     bool init(const ResumeAudioThread &resume_thread, const std::string &adapter_name);
     void set_backend(const std::string &adapter_name);

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,11 +19,15 @@
 
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
+#include <boost/core/demangle.hpp>
+#include <boost/describe/enum.hpp>
+#include <boost/describe/enum_to_string.hpp>
 #include <spdlog/spdlog.h>
 #include <util/exit_code.h>
 #include <util/fs.h>
 
 #include <atomic>
+#include <functional>
 #include <type_traits>
 
 #define LOG_TRACE SPDLOG_TRACE
@@ -33,11 +37,7 @@
 #define LOG_ERROR SPDLOG_ERROR
 #define LOG_CRITICAL SPDLOG_CRITICAL
 
-#define LOG_IF(log_function, flag, ...) \
-    do {                                \
-        if (flag)                       \
-            log_function(__VA_ARGS__);  \
-    } while (0)
+#define LOG_IF(log_function, flag, ...) ((flag) ? log_function(__VA_ARGS__) : static_cast<void>(0))
 
 #define LOG_TRACE_IF(flag, ...) LOG_IF(LOG_TRACE, flag, __VA_ARGS__)
 #define LOG_DEBUG_IF(flag, ...) LOG_IF(LOG_DEBUG, flag, __VA_ARGS__)
@@ -65,6 +65,7 @@ namespace logging {
 ExitCode init(const Root &root_paths, bool use_stdout);
 void set_level(spdlog::level::level_enum log_level);
 ExitCode add_sink(const fs::path &log_path);
+void set_log_callback(std::function<void(std::string, int)> cb);
 
 } // namespace logging
 
@@ -117,6 +118,22 @@ public:
     auto format(const Ptr<T> p, FormatContext &ctx) const {
         return detail::write(ctx.out(),
             basic_string_view<Char>(log_hex_full(p.address())));
+    }
+};
+template <typename T, typename Char>
+    requires(boost::describe::has_describe_enumerators<T>::value)
+struct formatter<T, Char> : formatter<string_view, Char> {
+public:
+    template <typename FormatContext>
+    auto format(const T e, FormatContext &ctx) const {
+        auto name = boost::describe::enum_to_string(e, nullptr);
+        if (name != nullptr) {
+            return detail::write(ctx.out(), name);
+        } else {
+            auto enum_as_uint = static_cast<std::make_unsigned_t<T>>(e);
+            auto enum_as_string = fmt::format("{}(0x{:0{}X})", boost::core::demangle(typeid(T).name()), enum_as_uint, sizeof(enum_as_uint) * 2);
+            return detail::write(ctx.out(), basic_string_view<Char>(enum_as_string));
+        }
     }
 };
 FMT_END_NAMESPACE

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -211,7 +211,6 @@ EXPORT(int, sceNgsPatchCreateRouting, SceNgsPatchSetupInfo *patch_info, Ptr<ngs:
 
 EXPORT(SceInt32, sceNgsPatchGetInfo, ngs::Patch *patch, SceNgsPatchAudioPropInfo *prop_info, SceNgsPatchDeliveryInfo *deli_info) {
     TRACY_FUNC(sceNgsPatchGetInfo, patch, prop_info, deli_info);
-
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
 
@@ -229,8 +228,8 @@ EXPORT(SceInt32, sceNgsPatchGetInfo, ngs::Patch *patch, SceNgsPatchAudioPropInfo
         deli_info->input_index = patch->dest_index;
         deli_info->output_index = patch->output_index;
         deli_info->output_subindex = patch->output_sub_index;
-        deli_info->source_voice_handle = Ptr<ngs::Voice>(patch->source, emuenv.mem);
-        deli_info->dest_voice_handle = Ptr<ngs::Voice>(patch->dest, emuenv.mem);
+        deli_info->source_voice_handle = guest_subptr(patch->source->rack->memspace, patch->source->rack->memspace.get(emuenv.mem), patch->source);
+        deli_info->dest_voice_handle = guest_subptr(patch->dest->rack->memspace, patch->dest->rack->memspace.get(emuenv.mem), patch->dest);
     }
 
     return SCE_NGS_OK;
@@ -255,16 +254,16 @@ EXPORT(int, sceNgsPatchRemoveRouting, Ptr<ngs::Patch> patch) {
 
 EXPORT(int, sceNgsRackGetRequiredMemorySize, ngs::System *system, SceNgsRackDescription *description, uint32_t *size) {
     TRACY_FUNC(sceNgsRackGetRequiredMemorySize, system, description, size);
+    if (!emuenv.cfg.current_config.ngs_enable) {
+        *size = 1;
+        return 0;
+    }
+
     if (!system) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_HANDLE);
     }
     if (!description || !description->definition || !size)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
-
-    if (!emuenv.cfg.current_config.ngs_enable) {
-        *size = 1;
-        return 0;
-    }
 
     auto definition = description->definition.get(emuenv.mem);
     if (definition->output_count == 0 || definition->type >= ngs::BussType::BUSS_MAX)
@@ -338,6 +337,7 @@ EXPORT(SceInt32, sceNgsRackRelease, ngs::Rack *rack, Ptr<void> callback) {
         op.system = rack->system;
         op.release_data.state = &emuenv.ngs;
         op.release_data.rack = rack;
+        op.release_data.rack_handle = guest_subptr(rack->memspace, rack->memspace.get(emuenv.mem), rack).address();
         op.release_data.callback = callback.address();
         rack->system->voice_scheduler.operations_pending.push(op);
     }
@@ -788,6 +788,10 @@ EXPORT(SceInt32, sceNgsVoiceInit, ngs::Voice *voice, const SceNgsVoicePreset *pr
     if (init_flags & SCE_NGS_VOICE_INIT_PRESET) {
         if (!preset) {
             STUBBED("Default preset not implemented");
+            for (size_t i = 0; i < voice->rack->modules.size(); i++) {
+                if (voice->rack->modules[i])
+                    voice->rack->modules[i]->set_default_preset(emuenv.mem, voice->datas[i]);
+            }
         } else if (!voice->set_preset(emuenv.mem, preset)) {
             return RET_ERROR(SCE_NGS_ERROR);
         }

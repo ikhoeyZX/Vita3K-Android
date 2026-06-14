@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <unordered_map>
 
 enum class TimerFlags : uint32_t {
     FIFO_THREAD = 0x00000000,
@@ -54,6 +55,37 @@ enum class TimerFlags : uint32_t {
 };
 
 TRACY_MODULE_NAME(SceLibKernel);
+
+namespace {
+struct MspaceInfo {
+    Ptr<void> base;
+    uint32_t capacity = 0;
+};
+
+std::unordered_map<Address, MspaceInfo> mspace_infos;
+
+Ptr<void> guest_mspace_ptr(MemState &mem, const Ptr<void> space, const void *host_ptr) {
+    if (!host_ptr) {
+        return Ptr<void>{};
+    }
+
+    const auto it = mspace_infos.find(space.address());
+    if (it == mspace_infos.end()) {
+        LOG_ERROR("Missing mspace metadata for handle {}", log_hex(space.address()));
+        return Ptr<void>{};
+    }
+
+    void *const host_base = it->second.base.get(mem);
+    const auto host_base_addr = reinterpret_cast<std::uintptr_t>(host_base);
+    const auto host_ptr_addr = reinterpret_cast<std::uintptr_t>(host_ptr);
+    if (host_ptr_addr < host_base_addr || host_ptr_addr - host_base_addr >= it->second.capacity) {
+        LOG_ERROR("Mspace allocation escaped guest-backed range. handle={}, ptr={}", log_hex(space.address()), log_hex(host_ptr_addr));
+        return Ptr<void>{};
+    }
+
+    return guest_subptr(it->second.base, host_base, host_ptr).cast<void>();
+}
+} // namespace
 
 inline static uint64_t get_current_time() {
     return std::chrono::duration_cast<std::chrono::microseconds>(
@@ -139,9 +171,11 @@ EXPORT(int, sceClibLookCtypeTable, uint32_t param1) {
     }
 }
 
-EXPORT(int, sceClibMemchr) {
-    TRACY_FUNC(sceClibMemchr);
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, sceClibMemchr, Ptr<const void> buf, int c, SceSize len) {
+    TRACY_FUNC(sceClibMemchr, buf, c, len);
+    const uint8_t *src = buf.cast<const uint8_t>().get(emuenv.mem);
+    const uint8_t *res = static_cast<const uint8_t *>(memchr(src, c, len));
+    return guest_subptr(buf.cast<const uint8_t>(), src, res).cast<void>();
 }
 
 EXPORT(int, sceClibMemcmp, const void *s1, const void *s2, SceSize len) {
@@ -160,9 +194,16 @@ EXPORT(Ptr<void>, sceClibMemcpy, Ptr<void> dst, const void *src, SceSize len) {
     return dst;
 }
 
-EXPORT(int, sceClibMemcpyChk) {
-    TRACY_FUNC(sceClibMemcpyChk);
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, sceClibMemcpyChk, Ptr<void> dst, const Ptr<void> src, SceSize len) {
+    TRACY_FUNC(sceClibMemcpyChk, dst, src, len);
+    
+    if (len == 0) {
+        LOG_DEBUG("len is 0");
+        return dst;
+    }
+    LOG_DEBUG("call sceClibMemcpy");
+    CALL_EXPORT(sceClibMemcpy, dst, src.get(emuenv.mem), len);
+    return dst;
 }
 
 EXPORT(Ptr<void>, sceClibMemcpy_safe, Ptr<void> dst, const Ptr<void> src, SceSize len) {
@@ -219,22 +260,31 @@ EXPORT(Ptr<void>, sceClibMspaceCalloc, Ptr<void> space, uint32_t elements, uint3
     const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
 
     void *address = mspace_calloc(space.get(emuenv.mem), elements, size);
-    return Ptr<void>(address, emuenv.mem);
+    return guest_mspace_ptr(emuenv.mem, space, address);
 }
 
 EXPORT(Ptr<void>, sceClibMspaceCreate, Ptr<void> base, uint32_t capacity) {
     TRACY_FUNC(sceClibMspaceCreate, base, capacity);
     const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
 
-    mspace space = create_mspace_with_base(base.get(emuenv.mem), capacity, 0);
-    return Ptr<void>(space, emuenv.mem);
+    void *const host_base = base.get(emuenv.mem);
+    mspace space = create_mspace_with_base(host_base, capacity, 0);
+    if (!space) {
+        return Ptr<void>{};
+    }
+
+    const Ptr<void> guest_space = guest_subptr(base, host_base, static_cast<void *>(space));
+    mspace_infos[guest_space.address()] = { base, capacity };
+    return guest_space;
 }
 
 EXPORT(uint32_t, sceClibMspaceDestroy, Ptr<void> space) {
     TRACY_FUNC(sceClibMspaceDestroy, space);
     const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
 
-    return static_cast<uint32_t>(destroy_mspace(space.get(emuenv.mem)));
+    const auto freed = static_cast<uint32_t>(destroy_mspace(space.get(emuenv.mem)));
+    mspace_infos.erase(space.address());
+    return freed;
 }
 
 EXPORT(void, sceClibMspaceFree, Ptr<void> space, Ptr<void> address) {
@@ -254,7 +304,7 @@ EXPORT(Ptr<void>, sceClibMspaceMalloc, Ptr<void> space, uint32_t size) {
     const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
 
     void *address = mspace_malloc(space.get(emuenv.mem), size);
-    return Ptr<void>(address, emuenv.mem);
+    return guest_mspace_ptr(emuenv.mem, space, address);
 }
 
 EXPORT(int, sceClibMspaceMallocStats) {
@@ -277,7 +327,7 @@ EXPORT(Ptr<void>, sceClibMspaceMemalign, Ptr<void> space, uint32_t alignment, ui
     const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
 
     void *address = mspace_memalign(space.get(emuenv.mem), alignment, size);
-    return Ptr<void>(address, emuenv.mem);
+    return guest_mspace_ptr(emuenv.mem, space, address);
 }
 
 EXPORT(Ptr<void>, sceClibMspaceRealloc, Ptr<void> space, Ptr<void> address, uint32_t size) {
@@ -285,7 +335,7 @@ EXPORT(Ptr<void>, sceClibMspaceRealloc, Ptr<void> space, Ptr<void> address, uint
     const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
 
     void *new_address = mspace_realloc(space.get(emuenv.mem), address.get(emuenv.mem), size);
-    return Ptr<void>(new_address, emuenv.mem);
+    return guest_mspace_ptr(emuenv.mem, space, new_address);
 }
 
 EXPORT(int, sceClibMspaceReallocalign) {
@@ -341,10 +391,11 @@ EXPORT(int, sceClibStrcatChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<char>, sceClibStrchr, const char *str, int c) {
+EXPORT(Ptr<char>, sceClibStrchr, Ptr<const char> str, int c) {
     TRACY_FUNC(sceClibStrchr, str, c);
-    char *res = const_cast<char *>(strchr(str, c));
-    return Ptr<char>(res, emuenv.mem);
+    const char *host_str = str.get(emuenv.mem);
+    char *res = const_cast<char *>(strchr(host_str, c));
+    return guest_subptr(str, host_str, res);
 }
 
 EXPORT(int, sceClibStrcmp, const char *s1, const char *s2) {
@@ -357,10 +408,10 @@ EXPORT(int, sceClibStrcpyChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<char>, sceClibStrlcat, char *dst, const char *src, SceSize len) {
+EXPORT(Ptr<char>, sceClibStrlcat, Ptr<char> dst, Ptr<const char> src, SceSize len) {
     TRACY_FUNC(sceClibStrlcat, dst, src, len);
-    char *res = strncat(dst, src, len);
-    return Ptr<char>(res, emuenv.mem);
+    strncat(dst.get(emuenv.mem), src.get(emuenv.mem), len);
+    return dst;
 }
 
 EXPORT(int, sceClibStrlcatChk) {
@@ -368,10 +419,10 @@ EXPORT(int, sceClibStrlcatChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<char>, sceClibStrlcpy, char *dst, const char *src, SceSize len) {
+EXPORT(Ptr<char>, sceClibStrlcpy, Ptr<char> dst, Ptr<const char> src, SceSize len) {
     TRACY_FUNC(sceClibStrlcpy, dst, src, len);
-    char *res = strncpy(dst, src, len);
-    return Ptr<char>(res, emuenv.mem);
+    strncpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
+    return dst;
 }
 
 EXPORT(int, sceClibStrlcpyChk) {
@@ -388,10 +439,10 @@ EXPORT(int, sceClibStrncasecmp, const char *s1, const char *s2, SceSize len) {
 #endif
 }
 
-EXPORT(Ptr<char>, sceClibStrncat, char *dst, const char *src, SceSize len) {
+EXPORT(Ptr<char>, sceClibStrncat, Ptr<char> dst, Ptr<const char> src, SceSize len) {
     TRACY_FUNC(sceClibStrncat, dst, src, len);
-    char *res = strncat(dst, src, len);
-    return Ptr<char>(res, emuenv.mem);
+    strncat(dst.get(emuenv.mem), src.get(emuenv.mem), len);
+    return dst;
 }
 
 EXPORT(int, sceClibStrncatChk) {
@@ -404,10 +455,10 @@ EXPORT(int, sceClibStrncmp, const char *s1, const char *s2, SceSize len) {
     return strncmp(s1, s2, len);
 }
 
-EXPORT(Ptr<char>, sceClibStrncpy, char *dst, const char *src, SceSize len) {
+EXPORT(Ptr<char>, sceClibStrncpy, Ptr<char> dst, Ptr<const char> src, SceSize len) {
     TRACY_FUNC(sceClibStrncpy, dst, src, len);
-    char *res = strncpy(dst, src, len);
-    return Ptr<char>(res, emuenv.mem);
+    strncpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
+    return dst;
 }
 
 EXPORT(int, sceClibStrncpyChk) {
@@ -420,16 +471,18 @@ EXPORT(uint32_t, sceClibStrnlen, const char *s1, SceSize maxlen) {
     return static_cast<uint32_t>(strnlen(s1, maxlen));
 }
 
-EXPORT(Ptr<char>, sceClibStrrchr, const char *src, int ch) {
+EXPORT(Ptr<char>, sceClibStrrchr, Ptr<const char> src, int ch) {
     TRACY_FUNC(sceClibStrrchr, src, ch);
-    char *res = const_cast<char *>(strrchr(src, ch));
-    return Ptr<char>(res, emuenv.mem);
+    const char *host_src = src.get(emuenv.mem);
+    char *res = const_cast<char *>(strrchr(host_src, ch));
+    return guest_subptr(src, host_src, res);
 }
 
-EXPORT(Ptr<char>, sceClibStrstr, const char *s1, const char *s2) {
+EXPORT(Ptr<char>, sceClibStrstr, Ptr<const char> s1, Ptr<const char> s2) {
     TRACY_FUNC(sceClibStrstr, s1, s2);
-    char *res = const_cast<char *>(strstr(s1, s2));
-    return Ptr<char>(res, emuenv.mem);
+    const char *host_s1 = s1.get(emuenv.mem);
+    char *res = const_cast<char *>(strstr(host_s1, s2.get(emuenv.mem)));
+    return guest_subptr(s1, host_s1, res);
 }
 
 EXPORT(int64_t, sceClibStrtoll, const char *str, char **endptr, int base) {
@@ -535,7 +588,7 @@ EXPORT(int, sceIoDevctl, const char *dev, SceInt cmd, const void *indata, SceSiz
             return RET_ERROR(SCE_ERROR_ERRNO_ENOENT);
         }
 
-        fs::path dev_path = device._to_string();
+        fs::path dev_path = boost::describe::enum_to_string(device, "");
         fs::path path = emuenv.pref_path / dev_path;
         fs::space_info space = fs::space(path);
 
@@ -622,9 +675,6 @@ EXPORT(int, sceIoMkdirAsync) {
     return UNIMPLEMENTED();
 }
 
-
-static const char* VN_file = "root.pfs";
-
 EXPORT(SceUID, sceIoOpen, const char *file, const int flags, const SceMode mode) {
     TRACY_FUNC(sceIoOpen, file, flags, mode);
     if (file == nullptr) {
@@ -632,12 +682,10 @@ EXPORT(SceUID, sceIoOpen, const char *file, const int flags, const SceMode mode)
     }
 
     // emmc 4.0 lowest respond time around 22.8 ms, 25ms should be okay
-    if (strstr(file, VN_file)) {
-       // VN files are too much to read so no delay because it slow!
-    }else{
+    if (emuenv.file_open_need_delay) {
         std::this_thread::sleep_for(std::chrono::milliseconds(25));
     }
-
+    
     LOG_INFO("Opening file: {}", file);
     return open_file(emuenv.io, file, flags, emuenv.pref_path, export_name);
 }
@@ -1297,9 +1345,7 @@ EXPORT(int, sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea) {
 
 EXPORT(int, sceKernelExitProcess, int res) {
     TRACY_FUNC(sceKernelExitProcess, res);
-    // TODO Handle exit code?
     emuenv.kernel.exit_delete_all_threads();
-
     return SCE_KERNEL_OK;
 }
 

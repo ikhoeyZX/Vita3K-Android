@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,11 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <module/read_arg.h>
-#include <module/vargs.h>
+#include <module/module.h>
 
-// Workaround for old Clang and GCC
-template <>
-module::vargs make_vargs(const LayoutArgsState &state) {
-    return module::vargs{ state };
+EXPORT(int, SceQafMgrForDriver_B9770A13) {
+    return UNIMPLEMENTED();
 }

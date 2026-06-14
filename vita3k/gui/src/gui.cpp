@@ -443,7 +443,7 @@ std::string get_sys_lang_name(uint32_t lang_id) {
 }
 
 static bool get_user_apps(GuiState &gui, EmuEnvState &emuenv) {
-    const auto apps_cache_path{ emuenv.pref_path / "ux0/temp/apps.dat" };
+    const auto apps_cache_path{ emuenv.pref_path / "ux0/temp/apps_zx.dat" };
     fs::ifstream apps_cache(apps_cache_path, std::ios::in | std::ios::binary);
     if (apps_cache.is_open()) {
         gui.app_selector.user_apps.clear();
@@ -506,7 +506,7 @@ void save_apps_cache(GuiState &gui, EmuEnvState &emuenv) {
     const auto temp_path{ emuenv.pref_path / "ux0/temp" };
     fs::create_directories(temp_path);
 
-    fs::ofstream apps_cache(temp_path / "apps.dat", std::ios::out | std::ios::binary);
+    fs::ofstream apps_cache(temp_path / "apps_zx.dat", std::ios::out | std::ios::binary);
     if (apps_cache.is_open()) {
         // Write Size of apps list
         const auto size = gui.app_selector.user_apps.size();

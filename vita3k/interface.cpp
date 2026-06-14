@@ -46,6 +46,7 @@
 
 #include <gui/imgui_impl_sdl.h>
 
+#include "patch/patch.h"
 #include <ctime>
 #include <regex>
 
@@ -331,7 +332,7 @@ static std::vector<fs::path> get_contents_path(const fs::path &path) {
     return contents_path;
 }
 
-static bool install_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &content_path) {
+bool install_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &content_path) {
     const auto sfo_path{ content_path / "sce_sys/param.sfo" };
     const auto theme_path{ content_path / "theme.xml" };
     vfs::FileBuffer buffer;
@@ -409,6 +410,23 @@ uint32_t install_contents(EmuEnvState &emuenv, GuiState *gui, const fs::path &pa
     return installed;
 }
 
+void do_patches(MemState &mem, const Patches &patches, const SceKernelModuleInfo &sceKernelModuleInfo) {
+    for (const auto &patch : patches) {
+        if (patch.seg < MODULE_INFO_NUM_SEGMENTS) {
+            auto &seg = sceKernelModuleInfo.segments[patch.seg];
+            auto seg_ptr = seg.vaddr.cast<uint8_t>();
+            if (seg_ptr) {
+                LOG_INFO("Patching segment {} at offset 0x{:X} with {} values", patch.seg, patch.offset, patch.values.size());
+                if (patch.offset + patch.values.size() <= seg.memsz) {
+                    memcpy(seg_ptr.get(mem) + patch.offset, patch.values.data(), patch.values.size());
+                } else {
+                    LOG_ERROR("Patch out of bounds for segment {} at offset 0x{:X}", patch.seg, patch.offset);
+                }
+            }
+        }
+    }
+}
+
 static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     const auto call_import = [&emuenv](CPUState &cpu, uint32_t nid, SceUID thread_id) {
         ::call_import(emuenv, cpu, nid, thread_id);
@@ -457,19 +475,32 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     init_device_paths(emuenv.io);
     init_savedata_app_path(emuenv.io, emuenv.pref_path);
 
+    // for now enable by default for this game
+    if (emuenv.io.title_id.find("Silent Hill") != std::string::npos) 
+        emuenv.file_open_need_delay = true;
+    else if(emuenv.cfg.file_open_delay)
+        emuenv.file_open_need_delay = true;
+    else
+        emuenv.file_open_need_delay = false;
+    
     // Load param.sfo
     vfs::FileBuffer param_sfo;
     if (vfs::read_app_file(param_sfo, emuenv.pref_path, emuenv.io.app_path, "sce_sys/param.sfo"))
         sfo::load(emuenv.sfo_handle, param_sfo);
-    
+
     init_exported_vars(emuenv);
 
     // Load main executable
     emuenv.self_path = !emuenv.cfg.self_path.empty() ? emuenv.cfg.self_path : EBOOT_PATH;
+
     main_module_id = load_module(emuenv, "app0:" + emuenv.self_path);
+
     if (main_module_id >= 0) {
         const auto module = emuenv.kernel.loaded_modules[main_module_id];
         LOG_INFO("Main executable {} ({}) loaded", module->info.module_name, emuenv.self_path);
+        const Patches patches = get_patches(emuenv.patch_path, emuenv.io.title_id, "app0:" + emuenv.self_path);
+        if (!patches.empty())
+            do_patches(emuenv.mem, patches, module->info);
     } else
         return FileNotFound;
     // Set self name from self path, can contain folder, get file name only
@@ -501,6 +532,13 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
                 emuenv.kernel.loaded_sysmodules[module_id] = {};
         }
     };
+
+    if (emuenv.cfg.lle_sysmodule) {
+        LOG_INFO("Loading lle_sysmodule...");
+        lib_load_list.emplace_back("os0:kd/bootimage.skprx");
+        lib_load_list.emplace_back("os0:kd/sysmodule.skprx");
+    }
+    
     add_preload_module(0x00010000, SCE_SYSMODULE_INVALID, "libc", true);
     add_preload_module(0x00020000, SCE_SYSMODULE_DBG, "libdbg", false);
     add_preload_module(0x00080000, SCE_SYSMODULE_INVALID, "libshellsvc", false);
@@ -513,9 +551,14 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
 
     for (const auto &module_path : lib_load_list) {
         auto res = load_module(emuenv, module_path);
-        if (res < 0)
-            return FileNotFound;
+        LOG_ERROR_IF(res < 0, "Failed to load preloaded module: {}. Ignoring this error.", module_path);
     }
+    
+    if (emuenv.cfg.taihen) {
+        // Load taiHEN plugins configured for this title
+        load_taihen_plugins_for_title(emuenv, emuenv.io.title_id);
+    }
+    
     return Success;
 }
 

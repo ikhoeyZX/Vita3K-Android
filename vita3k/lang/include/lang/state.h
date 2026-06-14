@@ -529,6 +529,10 @@ struct LangState {
         };
         std::map<std::string, std::string> core = {
             { "title", "Core" },
+            {"lle_sysmodule", "LLE Sysmodule"},
+            {"lle_sysmodule_description", "Use full emulated Sysmodule than HLE (slower).\nYou need psvita firmware to enable this"},
+            {"taihen", "Taihen plugin"},
+            {"taihen_description", "Enable taihen plugin, you need install taihen just like real psvita.\n(ur0/tai/kubridge.skprx and ur0/tai/config.txt)."},
             { "modules_mode", "Modules Mode" },
             { "modules_list", "Modules List" },
             { "select_modules", "Select your desired modules." },
@@ -557,6 +561,8 @@ struct LangState {
             { "renderer_accuracy", "Renderer Accuracy" },
             { "v_sync", "V-Sync" },
             { "v_sync_description", "Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid visual tearing." },
+            { "use_ssbo_opengles", "SSBO on OpenGLES" },
+            { "use_ssbo_opengles_description", "Use SSBO instead UBO, this method only supported in Adreno!" },
             { "disable_surface_sync", "Disable Surface Sync" },
             { "surface_sync_description", "Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on)." },
             { "async_pipeline_compilation", "Asynchronous Pipeline Compilation" },
@@ -588,7 +594,8 @@ struct LangState {
             { "turbo_description", "Provides a way to force the GPU to run at the maximum possible clocks (thermal constraints will still be applied)" },
             { "deep_stencil", "Vulkan deep stencil format" },
             { "deep_stencil_description", "Changing deep stencil format very usefull if you have problem with game,\nknown issue that old phone GPU can't use eD32SfloatS8Uint!" },
-
+            { "spirv_version", "Change shader Spir-V version" },
+            { "spirv_version_description", "If you changing this version, you need clear shader cache since this function tied to shader pipelines " },
             { "use_astc", "Use ASTC texture" },
             { "use_astc_description", "Use ASTC texture compression instead DXT (BCn), render output maybe similiar to Mali GPU" },
             { "fps_hack", "FPS Hack" },

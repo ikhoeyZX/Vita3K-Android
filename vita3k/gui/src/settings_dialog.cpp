@@ -169,6 +169,9 @@ static bool get_custom_config(EmuEnvState &emuenv, const std::string &app_path) 
                 config.modules_mode = core_child.attribute("modules-mode").as_int();
                 for (auto &m : core_child.child("lle-modules"))
                     config.lle_modules.emplace_back(m.text().as_string());
+                
+                config.lle_sysmodule = core_child.attribute("lle-sysmodule").as_bool();
+                config.taihen = core_child.attribute("taihen").as_bool();
             }
 
             // Load CPU Config
@@ -254,6 +257,8 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     // If no app-specific config file is being used for the initialized application,
     // set up `config` with the values set in the global emulator configuration
     if (!get_custom_config(emuenv, app_path)) {
+        config.lle_sysmodule = emuenv.cfg.lle_sysmodule;
+        config.taihen = emuenv.cfg.taihen;
         config.cpu_backend = emuenv.cfg.cpu_backend;
         config.cpu_opt = emuenv.cfg.cpu_opt;
         config.cpu_unsafe = emuenv.cfg.cpu_unsafe;
@@ -355,6 +360,9 @@ void save_config(GuiState &gui, EmuEnvState &emuenv) {  // has static
         for (const auto &m : config.lle_modules)
             enable_module.append_child("module").append_child(pugi::node_pcdata).set_value(m.c_str());
 
+        core_child.append_attribute("lle-sysmodule") = config.lle_sysmodule;
+        core_child.append_attribute("taihen") = config.taihen;
+
         // CPU
         auto cpu_child = config_child.append_child("cpu");
         cpu_child.append_attribute("cpu-backend") = config.cpu_backend.c_str();
@@ -402,6 +410,8 @@ void save_config(GuiState &gui, EmuEnvState &emuenv) {  // has static
         if (!save_xml)
             LOG_ERROR("Failed to save custom config xml for app path: {}, in path: {}", emuenv.app_path, CONFIG_PATH);
     } else {
+        emuenv.cfg.lle_sysmodule = config.lle_sysmodule;
+        emuenv.cfg.taihen = config.taihen;
         emuenv.cfg.cpu_backend = config.cpu_backend;
         emuenv.cfg.cpu_opt = config.cpu_opt;
         emuenv.cfg.cpu_unsafe = config.cpu_unsafe;
@@ -474,6 +484,9 @@ void set_config(EmuEnvState &emuenv, const std::string &app_path, bool custom) {
         emuenv.cfg.current_config = config;
     else {
         // Else inherit the values from the global emulator config
+        emuenv.cfg.current_config.lle_sysmodule = emuenv.cfg.lle_sysmodule;
+        emuenv.cfg.current_config.taihen = emuenv.cfg.taihen;
+        
         emuenv.cfg.current_config.cpu_backend = emuenv.cfg.cpu_backend;
         emuenv.cfg.current_config.cpu_opt = emuenv.cfg.cpu_opt;
         emuenv.cfg.current_config.cpu_unsafe = emuenv.cfg.cpu_unsafe;
@@ -495,6 +508,7 @@ void set_config(EmuEnvState &emuenv, const std::string &app_path, bool custom) {
         emuenv.cfg.current_config.export_textures = emuenv.cfg.export_textures;
         emuenv.cfg.current_config.export_as_png = emuenv.cfg.export_as_png;
         emuenv.cfg.current_config.fps_hack = emuenv.cfg.fps_hack;
+        emuenv.cfg.current_config.audio_backend = emuenv.cfg.audio_backend;
         emuenv.cfg.current_config.audio_volume = emuenv.cfg.audio_volume;
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
         emuenv.cfg.current_config.pstv_mode = emuenv.cfg.pstv_mode;
@@ -597,6 +611,12 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (!gui.modules.empty()) {
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.core["modules_mode"].c_str());
             ImGui::Spacing();
+            ImGui::Checkbox(lang.core["lle_sysmodule"].c_str(), &config.lle_sysmodule);
+            SetTooltipEx(lang.core["lle_sysmodule_description"].c_str());
+            ImGui::Checkbox(lang.core["taihen"].c_str(), &config.taihen);
+            SetTooltipEx(lang.core["taihen_description"].c_str());
+
+            ImGui::Spacing();
             for (auto m = 0; m < MODULES_MODE_COUNT; m++) {
                 if (m)
                     ImGui::SameLine();
@@ -648,19 +668,24 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     } else
         ImGui::PopStyleColor();
 
+#ifndef __arm__
     // CPU
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("CPU")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
         static const char *LIST_CPU_BACKEND[] = {
+#ifdef USE_DYNARMIC
             "Dynarmic",
+#endif
 #ifdef USE_UNICORN
             "Unicorn"
 #endif
         };
         static const char *LIST_CPU_BACKEND_DISPLAY[] = {
+#ifdef USE_DYNARMIC
             "Dynarmic",
+#endif
 #ifdef USE_UNICORN
             lang.cpu["unicorn"].c_str()
 #endif
@@ -681,7 +706,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
-
+#endif
+    
     // GPU
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("GPU")) {
@@ -713,7 +739,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 gpu_list.push_back(gpu.c_str());
             ImGui::Combo(lang.gpu["gpu"].c_str(), &emuenv.cfg.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size()));
             SetTooltipEx(lang.gpu["select_gpu"].c_str());
-
+            
+#ifdef __aarch64__
             if (emuenv.renderer->support_custom_drivers()) {
                 if (emuenv.cfg.gpu_idx == 0)
                     config.custom_driver_name = "";
@@ -738,6 +765,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     }
                 }
             }
+#endif
 
             if (is_ingame)
                 ImGui::BeginDisabled();
@@ -752,6 +780,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         } else if (!is_vulkan) {
             ImGui::Checkbox(lang.gpu["v_sync"].c_str(), &config.v_sync);
             SetTooltipEx(lang.gpu["v_sync_description"].c_str());
+            ImGui::SameLine();
+            ImGui::Checkbox(lang.gpu["use_ssbo_opengles"].c_str(), &emuenv.cfg.use_ssbo_opengles);
+            SetTooltipEx(lang.gpu["use_ssbo_opengles_description"].c_str());
             ImGui::SameLine();
         }
         bool has_surface_sync = !is_vulkan || (emuenv.renderer->supported_mapping_methods_mask > 1);
@@ -949,85 +980,117 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang.gpu["fps_hack"].c_str(), &config.fps_hack);
         SetTooltipEx(lang.gpu["fps_hack_description"].c_str());
 
-        if (emuenv.renderer->supported_mapping_methods_mask > 1 && !is_renderer_changed) {
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
+        if (!is_renderer_changed && is_vulkan) {
+           if (emuenv.renderer->supported_mapping_methods_mask > 1) {
+               ImGui::Spacing();
+               ImGui::Separator();
+               ImGui::Spacing();
 
-            if (is_ingame)
-                ImGui::BeginDisabled();
+               if (is_ingame)
+                   ImGui::BeginDisabled();
 
-            std::vector<const char *> mapping_methods_strings = {
-                "Disabled",
-                "Double buffer",
-                "External host",
-                "Page table",
-                "Native buffer"
-            };
-            std::vector<std::string_view> mapping_methods_indexes = {
-                "disabled",
-                "double-buffer",
-                "external-host",
-                "page-table",
-                "native-buffer"
-            };
+               std::vector<const char *> mapping_methods_strings = {
+                   "Disabled",
+                   "Double buffer",
+#ifndef __arm__
+                   "External host",
+                   "Page table",
+                   "Native buffer"
+#endif
+               };
+               std::vector<std::string_view> mapping_methods_indexes = {
+                   "disabled",
+                   "double-buffer",
+#ifndef __arm__
+                   "external-host",
+                   "page-table",
+                   "native-buffer"
+#endif
+               };
 
-            int list_pos = 0;
-            for (int i = 0; i < 5; i++) {
-                if ((1 << i) & emuenv.renderer->supported_mapping_methods_mask) {
-                    list_pos++;
-                } else {
-                    mapping_methods_strings.erase(mapping_methods_strings.begin() + list_pos);
-                    mapping_methods_indexes.erase(mapping_methods_indexes.begin() + list_pos);
-                }
-            }
+               int list_pos = 0;
+               for (int i = 0; i < mapping_methods_strings.size(); i++) {
+                   if ((1 << i) & emuenv.renderer->supported_mapping_methods_mask) {
+                       list_pos++;
+                   } else {
+                       mapping_methods_strings.erase(mapping_methods_strings.begin() + list_pos);
+                       mapping_methods_indexes.erase(mapping_methods_indexes.begin() + list_pos);
+                   }
+               }
+               
+               static int current_mapping = std::find(mapping_methods_indexes.begin(), mapping_methods_indexes.end(), config.memory_mapping) - mapping_methods_indexes.begin();
+               if (ImGui::Combo(lang.gpu["mapping_method"].c_str(), &current_mapping, mapping_methods_strings.data(), mapping_methods_strings.size())) {
+                   config.memory_mapping = mapping_methods_indexes[current_mapping];
+               }
+               if (ImGui::IsItemHovered()) {
+                   ImGui::SetTooltip("%s", lang.gpu["mapping_method_description"].c_str());
+               }
+               ImGui::Spacing();
+           }
+           ImGui::Spacing();
 
-            static int current_mapping = std::find(mapping_methods_indexes.begin(), mapping_methods_indexes.end(), config.memory_mapping) - mapping_methods_indexes.begin();
-            if (ImGui::Combo(lang.gpu["mapping_method"].c_str(), &current_mapping, mapping_methods_strings.data(), mapping_methods_strings.size())) {
-                config.memory_mapping = mapping_methods_indexes[current_mapping];
-            }
-            if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("%s", lang.gpu["mapping_method_description"].c_str());
-            }
-            ImGui::Spacing();
+           // Swapchain
+           // you need restart to take effect in this menu
+           const std::vector<std::string> vk_surface_list_str = emuenv.renderer->get_vulkan_feature_list(0);
+
+           std::vector<const char *> vk_surface_list;
+           for (const auto &vk_surface : vk_surface_list_str)
+               vk_surface_list.push_back(vk_surface.c_str());
+
+           static int current_surface_format = std::find(vk_surface_list.begin(), vk_surface_list.end(), config.vk_mapping) - vk_surface_list.begin();
+           if (ImGui::Combo(lang.gpu["surface_format_method"].c_str(), &current_surface_format, vk_surface_list.data(), vk_surface_list.size())) {
+               config.vk_mapping = vk_surface_list[current_surface_format];
+           }
+           if (ImGui::IsItemHovered()) {
+               SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
+           }
+           ImGui::Spacing();
+
+           // Deep stencil
+           // usefull for some games and old hardware
+           const std::vector<std::string> stencil_list_str = emuenv.renderer->get_vulkan_feature_list(1);
+
+           std::vector<const char *> stencil_list;
+           for (const auto &stencil : stencil_list_str)
+               stencil_list.push_back(stencil.c_str());
+
+           static int current_stencil_list = std::find(stencil_list.begin(), stencil_list.end(), config.deep_stencil) - stencil_list.begin();
+           if(ImGui::Combo(lang.gpu["deep_stencil"].c_str(), &current_stencil_list, stencil_list.data(), static_cast<int>(stencil_list.size()))) {
+               config.deep_stencil = stencil_list_str[current_stencil_list];
+           }
+           if (ImGui::IsItemHovered()) {
+               SetTooltipEx(lang.gpu["deep_stencil_description"].c_str());
+           }
+           ImGui::Spacing();
+
+           // Spirv version
+           // untested, for now we set manually and later i will change how shader work
+           const std::vector<std::string> spirv_list_str = emuenv.renderer->get_vulkan_feature_list(2);
+           std::vector<const char *> spirv_list;
+           for (const auto &spirv : spirv_list_str)
+               spirv_list.push_back(spirv.c_str());
+
+           static std::string str_set_spirv;
+           static int current_spirv_list;
+           static bool is_fill;
+           if (is_fill) {
+               current_spirv_list = std::find(spirv_list.begin(), spirv_list.end(), str_set_spirv) - spirv_list.begin();
+           } else {
+               current_spirv_list = emuenv.cfg.set_spirv;
+               str_set_spirv = spirv_list_str[current_spirv_list];
+               is_fill = true;
+           }
+           if(ImGui::Combo(lang.gpu["spirv_version"].c_str(), &current_spirv_list, spirv_list.data(), static_cast<int>(spirv_list.size()))) {
+               str_set_spirv = spirv_list_str[current_spirv_list];
+               emuenv.cfg.set_spirv = current_spirv_list;
+           }
+           if (ImGui::IsItemHovered()) {
+               SetTooltipEx(lang.gpu["spirv_version_description"].c_str());
+           }
+           ImGui::Spacing();
         }
-        ImGui::Spacing();
-
-        // Swapchain
-        // you need restart to take effect in this menu
-        const std::vector<std::string> vk_surface_list_str = emuenv.renderer->get_vulkan_feature_list(0);
-
-        std::vector<const char *> vk_surface_list;
-        for (const auto &vk_surface : vk_surface_list_str)
-            vk_surface_list.push_back(vk_surface.c_str());
-
-        static int current_surface_format = std::find(vk_surface_list.begin(), vk_surface_list.end(), config.vk_mapping) - vk_surface_list.begin();
-        if (ImGui::Combo(lang.gpu["surface_format_method"].c_str(), &current_surface_format, vk_surface_list.data(), vk_surface_list.size())) {
-            config.vk_mapping = vk_surface_list[current_surface_format];
-        }
-        if (ImGui::IsItemHovered()) {
-            SetTooltipEx(lang.gpu["surface_format_method_description"].c_str());
-            ImGui::Spacing();
-        }
-        ImGui::Spacing();
-
-        // Deep stencil
-        // usefull for some games and old hardware
-        const std::vector<std::string> stencil_list_str = emuenv.renderer->get_vulkan_feature_list(1);
-
-        std::vector<const char *> stencil_list;
-        for (const auto &stencil : stencil_list_str)
-            stencil_list.push_back(stencil.c_str());
-
-        static int current_stencil_list = std::find(stencil_list.begin(), stencil_list.end(), config.deep_stencil) - stencil_list.begin();
-        if(ImGui::Combo(lang.gpu["deep_stencil"].c_str(), &current_stencil_list, stencil_list.data(), static_cast<int>(stencil_list.size()))) {
-            config.deep_stencil = stencil_list_str[current_stencil_list];
-        }
-        if (ImGui::IsItemHovered()) {
-            SetTooltipEx(lang.gpu["deep_stencil_description"].c_str());
-            ImGui::Spacing();
-        }
-
+        
+        // Adreno only
         if (emuenv.renderer->support_custom_drivers()) {
             if (is_vulkan) {
                 if (is_ingame)
@@ -1092,7 +1155,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::BeginDisabled();
         static const char *LIST_BACKEND_AUDIO[] = { "SDL", "Cubeb" };
         if (ImGui::Combo(lang.audio["audio_backend"].c_str(), &audio_backend_idx, LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
-            emuenv.cfg.audio_backend = LIST_BACKEND_AUDIO[audio_backend_idx];
+            config.audio_backend = LIST_BACKEND_AUDIO[audio_backend_idx];
         SetTooltipEx(lang.audio["select_audio_backend"].c_str());
         if (!emuenv.io.app_path.empty())
             ImGui::EndDisabled();
@@ -1105,7 +1168,6 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
 
         std::vector<const char *> audiodrv_list;
-        audiodrv_list.push_back("auto");
         for (int list=0; list < (SDL_GetNumAudioDrivers()-1); list++){
              audiodrv_list.push_back(SDL_GetAudioDriver(list));
         }
@@ -1168,6 +1230,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox("Discord Rich Presence", &emuenv.cfg.discord_rich_presence);
         SetTooltipEx(lang.emulator["discord_rich_presence"].c_str());
 #endif
+        ImGui::Checkbox("Reduce storage speed", &emuenv.cfg.file_open_delay);
+        SetTooltipEx("Reduce speed reading game files to emulate ps vita emmc speed");
+        
         ImGui::Checkbox(lang.emulator["texture_cache"].c_str(), &emuenv.cfg.texture_cache);
         SetTooltipEx(lang.emulator["texture_cache_description"].c_str());
         ImGui::SameLine();
@@ -1520,12 +1585,14 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SameLine();
         ImGui::Checkbox(lang.debug["dump_elfs"].c_str(), &emuenv.kernel.debugger.dump_elfs);
         SetTooltipEx(lang.debug["dump_elfs_description"].c_str());
+#ifndef __arm__
         if (emuenv.backend_renderer == renderer::Backend::Vulkan) {
             ImGui::Spacing();
             ImGui::Checkbox(lang.debug["validation_layer"].c_str(), &emuenv.cfg.validation_layer);
             ImGui::SameLine();
             SetTooltipEx(lang.debug["validation_layer_description"].c_str());
         }
+#endif
         ImGui::Spacing();
         ImGui::Checkbox(lang.debug["debug_menu"].c_str(), &emuenv.cfg.debug_menu);
         ImGui::Spacing();

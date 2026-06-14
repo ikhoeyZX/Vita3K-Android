@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -341,4 +341,23 @@ bool Atrac9Module::process(KernelState &kern, const MemState &mem, const SceUID 
 
     return is_finished;
 }
+
+void Atrac9Module::free_swr_contexts() {
+    if (swr_mono_to_stereo) {
+        swr_free(&swr_mono_to_stereo);
+        swr_mono_to_stereo = nullptr;
+    }
+    if (swr_stereo) {
+        swr_free(&swr_stereo);
+        swr_stereo = nullptr;
+    }
+}
+
+void Atrac9Module::cleanup_voice_state(ModuleData &data) {
+    SceNgsAT9States *state = data.get_state<SceNgsAT9States>();
+    if (state->swr) {
+        swr_free(&state->swr);
+    }
+}
+
 } // namespace ngs

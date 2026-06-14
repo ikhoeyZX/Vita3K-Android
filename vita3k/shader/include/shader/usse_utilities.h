@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ struct SpirvUtilFunctions {
     std::map<DataType, spv::Function *> pack_funcs;
     spv::Function *fetch_memory{ nullptr };
     spv::Function *unpack_fx10{ nullptr };
+    spv::Function *pack_fx10{ nullptr };
 
     // buffer_address_vec[i][1] contains the buffer pointer with an array of vec_i and stride 16 bytes
     // 0 in the last index is for the read buffer, 1 is for the write buffer
@@ -49,7 +50,7 @@ spv::Id unpack(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &f
 spv::Id unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id scalar, const DataType type);
 spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id vec, const DataType source_type);
 
-spv::Id fetch_memory(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, spv::Id addr);
+spv::Id fetch_memory(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, spv::Id addr, bool is_spv1_4, bool is_glsl);
 void buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand dest, int dest_offset, spv::Id addr, uint32_t component_size, uint32_t nb_components, int buffer_idx = -1, bool is_buffer_store = false);
 
 spv::Id make_vector_or_scalar_type(spv::Builder &b, spv::Id component, int size);

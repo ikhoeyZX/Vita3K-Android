@@ -88,7 +88,7 @@
 	url = https://github.com/cameron314/concurrentqueue.git
 [submodule "external/ffmpeg"]
 	path = external/ffmpeg
-	url = https://github.com/ikhoeyZX/ffmpeg-core.git
+	url = https://github.com/Vita3K/ffmpeg-core.git
 [submodule "external/dynarmic"]
 	path = external/dynarmic
 	url = https://github.com/ikhoeyZX/dynarmic.git
@@ -102,3 +102,6 @@
 [submodule "external/tracy"]
 	path = external/tracy
 	url = https://github.com/wolfpld/tracy.git
+[submodule "external/substitute"]
+	path = external/substitute
+	url = https://github.com/Vita3K/substitute.git

@@ -59,7 +59,7 @@ set(SOURCE_LIST
 	SceHid/SceHid.cpp
 	SceHttp/SceHttp.cpp
 	SceIme/SceIme.cpp
-        SceIpmi/SceIpmi.cpp
+	SceIpmi/SceIpmi.cpp
 	SceIncomingDialog/SceIncomingDialog.cpp
 	SceIofilemgr/SceIofilemgr.cpp
 	SceJpeg/SceJpegUser.cpp
@@ -69,10 +69,12 @@ set(SOURCE_LIST
 	SceKernelDmacMgr/SceDmacmgr.cpp
 	SceKernelModulemgr/SceBacktrace.cpp
 	SceKernelModulemgr/SceModulemgr.cpp
+	SceKernelModulemgr/SceModulemgrForDriver.cpp
 	SceKernelThreadMgr/SceThreadmgr.cpp
 	SceKernelThreadMgr/SceThreadmgrCoredumpTime.cpp
 	SceKernelThreadMgr/SceThreadmgrForDriver.cpp
 	SceKernelThreadMgr/SceThreadmgrForKernel.cpp
+	kubridge/kubridge.cpp
 	SceLibc/SceLibc.cpp
 	SceLibc/SceLibm.cpp
 	SceLibc/SceLibstdcxx.cpp
@@ -86,6 +88,7 @@ set(SOURCE_LIST
 	SceLibKernel/SceLibRng.cpp
 	SceLibKernel/SceLibSsp.cpp
 	SceLibKernel/SceRtabi.cpp
+	taiHEN/taiHEN.cpp
 	SceLibMono/SceLibMono.cpp
 	SceLibMonoBridge/SceLibMonoBridge.cpp
 	SceLibMp4Recorder/SceLibMp4Recorder.cpp
@@ -138,6 +141,7 @@ set(SOURCE_LIST
 	ScePgf/ScePgf.cpp
 	ScePhotoExport/ScePhotoExport.cpp
 	ScePower/ScePower.cpp
+	ScePower/ScePowerForDriver.cpp
 	SceProcessmgr/SceProcessmgr.cpp
 	SceProcessmgr/SceProcessmgrForDriver.cpp
 	ScePromoterUtil/ScePromoterUtil.cpp
@@ -179,11 +183,13 @@ set(SOURCE_LIST
 	SceSysmem/SceCpu.cpp
 	SceSysmem/SceCpuForDriver.cpp
 	SceSysmem/SceDebugForDriver.cpp
+	SceSysmem/SceDebugForKernel.cpp
 	SceSysmem/SceDebugLed.cpp
 	SceSysmem/SceDipsw.cpp
 	SceSysmem/SceDipswForDriver.cpp
 	SceSysmem/SceProcEventForDriver.cpp
 	SceSysmem/SceSysclibForDriver.cpp
+	SceSysmem/SceQafMgrForDriver.cpp
 	SceSysmem/SceSysmem.cpp
 	SceSysmem/SceSysmemForDriver.cpp
 	SceSysmodule/SceSysmodule.cpp
@@ -193,7 +199,7 @@ set(SOURCE_LIST
 	SceTouch/SceTouch.cpp
 	SceTriggerUtil/SceTriggerUtil.cpp
 	SceUdcd/SceUdcd.cpp
-        SceUlobjDbg/SceUlobjDbg.cpp
+	SceUlobjDbg/SceUlobjDbg.cpp
 	SceUlobjMgr/SceUlobjMgr.cpp
 	SceUlt/SceUlt.cpp
 	SceUsbd/SceUsbdForUser.cpp
@@ -210,8 +216,20 @@ set(SOURCE_LIST
 	SceWlanBt/SceWlan.cpp
 )
 
+if(APPLE)
+    list(APPEND SOURCE_LIST
+        SceNet/macos_net_helper.h
+        SceNet/macos_net_helper.cpp
+    )
+endif()
+
 add_library(modules STATIC ${SOURCE_LIST})
 target_include_directories(modules PUBLIC include)
-target_link_libraries(modules PRIVATE audio codec ctrl dialog display dlmalloc gui gxm kernel mem motion net ngs np ssl packages patch printf renderer rtc sdl2 touch xxHash::xxhash)
+target_include_directories(modules PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/taiHEN)
+target_link_libraries(modules PRIVATE audio codec ctrl dialog display dlmalloc gui gxm kernel mem motion net ngs np ssl packages patch printf renderer rtc sdl2 substitute touch xxHash::xxhash)
 target_link_libraries(modules PUBLIC module)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_LIST})
+
+if(APPLE)
+    target_link_libraries(modules PUBLIC "-framework SystemConfiguration")
+endif()

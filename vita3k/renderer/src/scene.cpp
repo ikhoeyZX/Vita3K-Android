@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -141,7 +141,7 @@ COMMAND(handle_sync_surface_data) {
         return;
     }
 
-// #ifndef ANDROID
+#ifndef ANDROID
     const size_t width = surface->width;
     const size_t height = surface->height;
     const size_t stride_in_pixels = surface->strideInPixels;
@@ -193,7 +193,7 @@ COMMAND(handle_sync_surface_data) {
 
     close_access_parent_protect_segment(mem, data);
     
-// #endif // ANDROID
+#endif // ANDROID
     
     if (helper.cmd->status) {
         complete_command(renderer, helper, 0);

@@ -39,7 +39,6 @@ struct State;
 };
 
 struct Config;
-struct CPUProtocolBase;
 struct MemState;
 struct CtrlState;
 struct TouchState;
@@ -128,7 +127,6 @@ public:
     std::string self_name{};
     std::string self_path{};
     Config &cfg;
-    std::unique_ptr<CPUProtocolBase> cpu_protocol{};
     SceUID main_thread_id{};
     size_t frame_count = 0;
     uint32_t sdl_ticks = 0;
@@ -172,6 +170,7 @@ public:
     uint32_t res_height_dpi_scale = 0;
     GDBState &gdb;
     HTTPState &http;
+    bool file_open_need_delay = false;
 
     EmuEnvState();
     // declaring a destructor is necessary to forward declare unique_ptrs

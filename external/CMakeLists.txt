@@ -57,6 +57,7 @@ set(SPDLOG_NO_THREAD_ID ON CACHE BOOL "")
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "")
 add_subdirectory(spdlog EXCLUDE_FROM_ALL)
 
+add_subdirectory(substitute EXCLUDE_FROM_ALL)
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
 
@@ -68,10 +69,6 @@ target_include_directories(cppcommon PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/CppComm
 
 add_library(glad STATIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/src/glad.c")
 target_include_directories(glad PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/include")
-
-add_library(better-enums INTERFACE)
-target_include_directories(better-enums INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/better-enums")
-target_compile_definitions(better-enums INTERFACE BETTER_ENUMS_STRICT_CONVERSION=1)
 
 add_library(googletest STATIC googletest/googletest/src/gtest_main.cc googletest/googletest/src/gtest-all.cc)
 target_include_directories(googletest PUBLIC googletest/googletest/include)
@@ -140,9 +137,9 @@ elseif (ARCHITECTURE STREQUAL "x86_64")
 endif ()
 
 if(ANDROID)
-  if (ARCHITECTURE STREQUAL "arm64")
-	add_subdirectory(libadrenotools)
- endif()
+   if (ARCHITECTURE STREQUAL "arm64")
+	  add_subdirectory(libadrenotools)
+   endif()
 endif()
 
 if(WIN32)
@@ -157,18 +154,11 @@ endif()
 # Only enable Dynarmic for x86-64 and aarch64 architectures
 if (ARCHITECTURE STREQUAL "x86" OR ARCHITECTURE STREQUAL "arm")
 	message(STATUS "Dynarmic support disabled for architecture: ${ARCHITECTURE}")
+	set(USE_UNICORN TRUE PARENT_SCOPE)
+    set(USE_DYNARMIC FALSE PARENT_SCOPE)
 	add_subdirectory(dynarmic EXCLUDE_FROM_ALL)
-	set(USE_DYNARMIC FALSE)
-        set(USE_UNICORN TRUE)
-endif()
-
-if(USE_UNICORN)
-	set(UNICORN_ARCH "arm")
-	add_subdirectory(unicorn EXCLUDE_FROM_ALL)
-endif()
-
-if(USE_DYNARMIC)
-   if (ARCHITECTURE STREQUAL "arm64")
+elseif(USE_DYNARMIC)
+    if (ARCHITECTURE STREQUAL "arm64")
 	set(DYNARMIC_TESTS OFF CACHE BOOL "")
 	set(DYNARMIC_NO_BUNDLED_FMT ON CACHE BOOL "")
 	set(DYNARMIC_FRONTENDS "A32" CACHE STRING "")
@@ -182,6 +172,11 @@ if(USE_DYNARMIC)
 		endif()
 	endif()
     endif()
+endif()
+
+if(USE_UNICORN)
+	set(UNICORN_ARCH "arm")
+	add_subdirectory(unicorn EXCLUDE_FROM_ALL)
 endif()
 
 add_library(vita-toolchain INTERFACE)
@@ -271,25 +266,33 @@ target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Vulkan-
 if(APPLE)
 	target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/MoltenVK")
 elseif(ANDROID)
-	# add validation layer
-	if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt/${ANDROID_ABI}/libVkLayer_khronos_validation.so")
-		set(VALIDATION_BINARY "android-binaries-1.4.341.0")
+	if(NOT ${ANDROID_ABI} STREQUAL "armeabi-v7a")
+	   # add validation layer
+	   if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt/${ANDROID_ABI}/libVkLayer_khronos_validation.so")
+		   set(VALIDATION_BINARY "android-binaries-1.4.341.0")
 
-		# download it if not already done
-		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/validation_layers.zip")
-			message(STATUS "Downloading validation layer...")
-			file(DOWNLOAD https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download/vulkan-sdk-1.4.341.0/${VALIDATION_BINARY}.zip
-				"${CMAKE_BINARY_DIR}/external/validation_layers.zip" SHOW_PROGRESS)
-		endif()
+		   # download it if not already done
+		   if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/validation_layers.zip")
+			   message(STATUS "Downloading validation layer...")
+			   file(DOWNLOAD https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download/vulkan-sdk-1.4.341.0/${VALIDATION_BINARY}.zip
+				   "${CMAKE_BINARY_DIR}/external/validation_layers.zip" SHOW_PROGRESS)
+		   endif()
 
-		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/validation_layers")
-			file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/validation_layers")
-			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${CMAKE_BINARY_DIR}/external/validation_layers.zip"
-				WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/validation_layers")
-		endif()
+		   if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/validation_layers")
+			   file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/validation_layers")
+			   execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${CMAKE_BINARY_DIR}/external/validation_layers.zip"
+				   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/validation_layers")
+		   endif()
 		
-		file(COPY "${CMAKE_BINARY_DIR}/external/validation_layers/${VALIDATION_BINARY}/${ANDROID_ABI}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt")
-	endif()
+		   file(COPY "${CMAKE_BINARY_DIR}/external/validation_layers/${VALIDATION_BINARY}/${ANDROID_ABI}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt")
+	   endif()
+   endif()
+endif()
+
+# See https://github.com/KhronosGroup/Vulkan-Hpp?tab=readme-ov-file#cc-interop-for-handles
+if(ARCHITECTURE STREQUAL "arm")
+	message(STATUS "Enabling Vulkan-Hpp typesafe conversion for arm architecture")
+	target_compile_definitions(vulkan INTERFACE VULKAN_HPP_TYPESAFE_CONVERSION=1)
 endif()
 
 add_library(vma INTERFACE)
@@ -299,7 +302,7 @@ target_include_directories(vma INTERFACE
 
 if(ANDROID)
 	set(USE_STATIC_ANDROID_FFMPEG ON)
-        set(ENABLE_MEDIACODEC ON)
+        set(ENABLE_MEDIACODEC OFF)
 	# if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt/${ANDROID_ABI}/libavcodec.so")
 	# 	file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg/shared/android/${ANDROID_ABI}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt")
 	# endif()
@@ -402,7 +405,7 @@ option(XXH_X86DISPATCH_ALLOW_AVX "Allow building XXH3 with AVX even if it crashe
 if((NOT APPLE) AND (ARCHITECTURE STREQUAL "x86_64"))
 	set(DISPATCH 1)
 endif()
-add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)
+add_subdirectory(xxHash/build/cmake EXCLUDE_FROM_ALL)
 if(XXH_X86DISPATCH_ALLOW_AVX)
 	target_compile_definitions(xxhash PRIVATE XXH_X86DISPATCH_ALLOW_AVX)
 endif()

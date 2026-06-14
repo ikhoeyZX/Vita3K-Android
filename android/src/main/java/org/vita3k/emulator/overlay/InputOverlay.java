@@ -160,9 +160,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   public void setState(int overlay_mask){
     boolean was_showing = mOverlayMask != 0;
 
-    if(hide_overlay && mOverlayMask == 4) {
-      // skipped
-    } else if (hide_overlay) {
+    if (hide_overlay && mOverlayMask != 4) {
         mOverlayMask = 4;
         refreshControls();
         invalidate();
@@ -248,17 +246,9 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     for (InputOverlayDrawableButton button : overlayButtons)
     {
-
       // kinda dirty but should be work
-      if(hide_overlay){
-        if (button.getRole() == OVERLAY_MASK_TOUCH_SCREEN_SWITCH) {
-              
-        }else{
-            continue;
-        }
-      } else if ((button.getRole() & mOverlayMask) == 0){
-            continue;
-      }
+      if ((hide_overlay && button.getRole() != OVERLAY_MASK_TOUCH_SCREEN_SWITCH) || (button.getRole() & mOverlayMask) == 0)
+          continue;
 
       // Determine the button state to apply based on the MotionEvent action flag.
       switch (action)
@@ -288,16 +278,14 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
           if (button.getTrackId() == event.getPointerId(pointerIndex))
           {
             button.setPressedState(false);
-            if(button.getLegacyId() != ButtonType.BUTTON_TOUCH_SWITCH) {
+            if (button.getLegacyId() != ButtonType.BUTTON_TOUCH_SWITCH) {
               setButton(button.getControl(), false);
-            } else if(button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE) {
-              if(hide_overlay && mOverlayMask == 4){
-                // ignored
-              }else if(hide_overlay){
-                mOverlayMask = 4;
-                detachController();
-                refreshControls();
-                attachController();
+            } else if (button.getLegacyId() == ButtonType.BUTTON_TOUCH_HIDE) {
+              if (hide_overlay && mOverlayMask != 4){
+                 mOverlayMask = 4;
+                 detachController();
+                 refreshControls();
+                 attachController();
               }
             }
             
@@ -309,7 +297,6 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     }
 
     if (!hide_overlay) {
-        
        for (InputOverlayDrawableDpad dpad : overlayDpads)
        {
          // Determine the button state to apply based on the MotionEvent action flag.
@@ -340,15 +327,6 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
                if (dpad.getBounds().right - (dpad.getWidth() / 3) < (int) event.getX(pointerIndex))
                  dpadPressed[3] = true;
 
-            // Release the buttons first, then press
-            /*for (int i = 0; i < dpadPressed.length; i++)
-            {
-              if (!dpadPressed[i])
-              {
-                setButton(dpad.getControl(i), false);
-              }
-            }*/
-               
                // Press buttons
                for (int i = 0; i < dpadPressed.length; i++)
                {

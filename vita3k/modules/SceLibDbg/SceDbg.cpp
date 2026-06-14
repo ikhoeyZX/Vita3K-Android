@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,15 +39,16 @@ EXPORT(int, sceDbgAssertionHandler, const char *filename, int line, bool do_stop
 
     LOG_INFO("file {}, line {}, {}", filename, line, buffer.data());
 
-    if (do_stop)
-        emuenv.kernel.exit_delete_all_threads();
-
-    if (!result) {
+    if (!result) 
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    
+    if (do_stop) {
+        emuenv.kernel.exit_delete_all_threads();
+    } else {
+        LOG_ERROR("sceDbgAssertionHandler : can't stop!");
+        return SCE_KERNEL_ERROR_EVENT_ERROR;
     }
-
-    assert(!do_stop);
-
+    
     return 0;
 }
 
@@ -93,7 +94,8 @@ EXPORT(int, sceDbgSetBreakOnWarningState) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceDbgSetMinimumLogLevel) {
-    TRACY_FUNC(sceDbgSetMinimumLogLevel);
+EXPORT(int, sceDbgSetMinimumLogLevel, int value) {
+    TRACY_FUNC(sceDbgSetMinimumLogLevel, value);
+    LOG_TRACE("sceDbgSetMinimumLogLevel = {}");
     return UNIMPLEMENTED();
 }

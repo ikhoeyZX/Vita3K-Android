@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -96,6 +96,7 @@ public:
     uint32_t module_id() const override { return 0x5CE6; }
     void on_state_change(const MemState &mem, ModuleData &v, const VoiceState previous) override;
     void on_param_change(const MemState &mem, ModuleData &data) override;
+    void cleanup_voice_state(ModuleData &data) override;
 
     static constexpr uint32_t get_max_parameter_size() {
         return sizeof(SceNgsPlayerParams);

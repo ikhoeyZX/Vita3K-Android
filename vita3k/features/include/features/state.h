@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,6 +30,10 @@ struct FeatureState {
     bool enable_memory_mapping = false; ///< Is the host GPU memory directly mapped with gxm memory?
     bool support_scaled_attribute_formats = true; // can we pass integer to the shader and read them as floats? This is not supported on some Android GPUs
     bool use_texture_viewport = false; ///< Are we using texture viewports in the shader
+    bool support_spirv_1_4 = false; ///< optional
+    int support_spirv = 0; ///< instead hardcoded version spirv, just get from hardware instead
+    bool use_glsl = false; ///< mark shader as glsl not vulkan, since only adreno support SSBO, we use this for other gpu
+    bool support_f16i8 = false; ///< vulkan only, support VK_KHR_shader_float16_int8 for shaders
 
     bool is_programmable_blending_supported() const {
         return support_shader_interlock || support_texture_barrier || direct_fragcolor;

@@ -500,9 +500,11 @@ bool late_init(EmuEnvState &state) {
         return false;
     }
 
-    if (state.mem.use_page_table && state.kernel.cpu_backend == CPUBackend::Unicorn)
+    if (state.mem.use_page_table && state.kernel.cpu_backend == CPUBackend::Unicorn) {
         LOG_CRITICAL("Unicorn backend is not supported with a page table");
-
+        state.mem.use_page_table = false;
+    }
+        
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);

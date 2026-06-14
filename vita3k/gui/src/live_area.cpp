@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,13 +21,16 @@
 #include <ctrl/ctrl.h>
 #include <dialog/state.h>
 #include <gui/functions.h>
-#include <io/state.h>
 #include <kernel/state.h>
 #include <packages/license.h>
 #include <renderer/state.h>
 
+#include <io/device.h>
+#include <io/functions.h>
+#include <io/state.h>
 #include <io/VitaIoDevice.h>
 #include <io/vfs.h>
+
 #include <util/log.h>
 
 #include <pugixml.hpp>
@@ -167,7 +170,7 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
         auto default_contents = false;
         const auto fw_path{ emuenv.pref_path / "vs0" };
         const auto default_fw_contents{ fw_path / "data/internal/livearea/default/sce_sys/livearea/contents/template.xml" };
-        const auto APP_PATH{ emuenv.pref_path / app_device._to_string() / "app" / app_path };
+        const auto APP_PATH{ emuenv.pref_path / device::get_device_string(app_device, false) / "app" / app_path };
         const auto live_area_path{ fs::path("sce_sys") / ((emuenv.license.rif[TITLE_ID].sku_flag == 3) && fs::exists(APP_PATH / "sce_sys/retail/livearea") ? "retail/livearea" : "livearea") };
         auto template_xml{ APP_PATH / live_area_path / "contents/template.xml" };
 

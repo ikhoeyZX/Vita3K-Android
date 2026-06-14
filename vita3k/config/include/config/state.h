@@ -125,6 +125,8 @@ public:
         std::string cpu_backend;
         bool cpu_opt = true;
         bool cpu_unsafe = false;
+        bool lle_sysmodule = false;
+        bool taihen = false;
         int modules_mode = ModulesMode::AUTOMATIC;
         std::vector<std::string> lle_modules = {};
         std::string audio_backend = "SDL";

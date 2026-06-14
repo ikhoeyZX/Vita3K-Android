@@ -44,6 +44,11 @@ static spv::Id get_uv_coeffs(spv::Builder &b, const spv::Id std_builtins, spv::I
         const spv::Id query_lod = b.createOp(spv::OpImageQueryLod, v2f32, { sampled_image, coords });
         lod = b.createOp(spv::OpVectorExtractDynamic, f32, { query_lod, b.makeIntConstant(0) });
     }
+    // if still fail, force LOD = 0
+    if (lod == spv::NoResult) {
+        LOG_WARN("lod got NoResult!, set to 0");
+        lod = b.makeIntConstant(0);
+    }
 
     const spv::Id layer = b.createUnaryOp(spv::OpConvertFToS, i32, lod);
 
@@ -98,8 +103,18 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
             coord_id = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { { true, coord_id }, { true, coord_id }, { false, 0 }, { false, 1 } });
             coord_id = m_b.createBuiltinCall(m_b.getTypeId(coord_id), std_builtins, GLSLstd450Fma, { coord_id, viewport_ratio, viewport_offset });
         } else {
+#ifdef ANDROID
+            const auto x = m_b.createCompositeExtract(coord_id, m_b.getTypeId(coord_id), 0);
+            const auto y = m_b.createCompositeExtract(coord_id, m_b.getTypeId(coord_id), 1);
+            const auto z = m_b.createCompositeExtract(coord_id, m_b.getTypeId(coord_id), 2);
+            const auto w = m_b.createCompositeExtract(coord_id, m_b.getTypeId(coord_id), 3);
+
+            spv::Id safe_coord = m_b.createCompositeConstruct(type_f32_v[4], { x, y, z, w });
+            spv::Id coord_xy = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { { true, safe_coord }, { true, safe_coord }, { false, 0 }, { false, 1 } });
+#else
             // extract the x,y and proj coordinate
             spv::Id coord_xy = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { { true, coord_id }, { true, coord_id }, { false, 0 }, { false, 1 } });
+#endif
             spv::Id third_comp = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, coord_id, m_b.makeIntConstant(2));
             third_comp = m_b.createCompositeConstruct(type_f32_v[2], { third_comp, third_comp });
 
@@ -319,8 +334,14 @@ bool USSETranslatorVisitor::smp(
 
         // query info
         const spv::Id query_lod = m_b.createOp(spv::OpImageQueryLod, type_f32_v[2], { image_sampler, coords });
-        const spv::Id lod = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, query_lod, m_b.makeIntConstant(0));
+        spv::Id lod = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, query_lod, m_b.makeIntConstant(0));
 
+        // if still fail, force LOD = 0
+        if (lod == spv::NoResult) {
+           LOG_WARN("sb_mode -> lod: Got NoResult!, set to 0");
+           lod = m_b.makeIntConstant(0);
+        }
+        
         // xy are the uv coefficients
         spv::Id uv = get_uv_coeffs(m_b, std_builtins, image_sampler, coords, lod);
         // z is the trilinear fraction, w the LOD

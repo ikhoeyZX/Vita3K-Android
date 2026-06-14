@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,26 +15,19 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include <module/module.h>
 
-#include <cpu/common.h>
+#include <util/tracy.h>
 
-struct MemState;
-struct KernelState;
-typedef int SceUID;
-typedef std::function<void(CPUState &cpu, uint32_t nid, SceUID thread_id)> CallImportFunc;
+TRACY_MODULE_NAME(ScePowerForDriver);
 
-struct CPUProtocol : public CPUProtocolBase {
-    CPUProtocol(KernelState &kernel, MemState &mem, const CallImportFunc &func);
-    ~CPUProtocol() override = default;
-    void call_svc(CPUState &cpu, uint32_t svc, Address pc, ThreadState &thread) override;
-    Address get_watch_memory_addr(Address addr) override;
-#ifdef USE_DYNARMIC
-    ExclusiveMonitorPtr get_exclusive_monitor() override;
-#endif
+EXPORT(int, kscePowerGetSysClockFrequency) {
+    TRACY_FUNC(kscePowerGetSysClockFrequency);
+    return 333;
+}
 
-private:
-    CallImportFunc call_import;
-    KernelState *kernel;
-    MemState *mem;
-};
+EXPORT(int, kscePowerSetSysClockFrequency, int freq) {
+    TRACY_FUNC(kscePowerSetSysClockFrequency, freq);
+    // No-op in the emulator — CPU speed is not tied to Vita clock frequency
+    return 0;
+}

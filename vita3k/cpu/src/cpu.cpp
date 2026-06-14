@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,9 +25,12 @@
 #ifdef USE_UNICORN
 #include <cpu/impl/unicorn_cpu.h>
 #endif
+
+#include <cpu/impl/interface.h>
 #include <cpu/state.h>
 #include <mem/ptr.h>
 #include <util/types.h>
+
 #include <memory>
 #include <string>
 
@@ -43,10 +46,9 @@ SceUID get_thread_id(CPUState &state) {
     return state.thread_id;
 }
 
-CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, bool cpu_unsafe, SceUID thread_id, std::size_t processor_id, MemState &mem, CPUProtocolBase *protocol) {
+CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, bool cpu_unsafe, SceUID thread_id, std::size_t processor_id, MemState &mem) {
     CPUStatePtr state(new CPUState(), delete_cpu_state);
     state->mem = &mem;
-    state->protocol = protocol;
     state->thread_id = thread_id;
 
     // TODO: we can move this to kernel after we drop unicorn
@@ -64,8 +66,7 @@ CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, bool cpu_unsafe, SceUID t
     switch (backend) {
 #ifdef USE_DYNARMIC
     case CPUBackend::Dynarmic: {
-        Dynarmic::ExclusiveMonitor *monitor = static_cast<Dynarmic::ExclusiveMonitor *>(protocol->get_exclusive_monitor());
-        state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, monitor, cpu_opt, cpu_unsafe);
+        state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, cpu_opt, cpu_unsafe);
         break;
     }
 #endif
@@ -78,7 +79,7 @@ CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, bool cpu_unsafe, SceUID t
     default:
         return nullptr;
     }
-
+    
     return state;
 }
 
@@ -186,6 +187,10 @@ bool get_log_mem(CPUState &state) {
     return state.cpu->get_log_mem();
 }
 
+void clear_exclusive(CPUState &state) {
+    state.cpu->clear_exclusive();
+}
+
 std::size_t get_processor_id(CPUState &state) {
     return state.cpu->processor_id();
 }
@@ -224,4 +229,14 @@ uint32_t stack_free(CPUState &state, size_t size) {
     const uint32_t new_sp = read_sp(state) + size;
     write_sp(state, new_sp);
     return new_sp;
+}
+
+static thread_local CPUState *current_cpu_state = nullptr;
+
+void set_current_cpu_state(CPUState *state) {
+    current_cpu_state = state;
+}
+
+CPUState *get_current_cpu_state() {
+    return current_cpu_state;
 }
