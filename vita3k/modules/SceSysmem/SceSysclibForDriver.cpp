@@ -149,13 +149,23 @@ EXPORT(Ptr<void>, kmemcpy, Ptr<void> dst, Ptr<const void> src, SceSize size) {
     }
     auto res = memcpy(dst.get(emuenv.mem), src.get(emuenv.mem), size);
     if (res == nullptr) {
+        LOG_ERROR("kmemcpy -> res is null!");
         return {}; // Error occurred
     }
     return dst; // Success
 }
 
-EXPORT(int, kmemmove) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, kmemmove, Ptr<void> dst, Ptr<const void> src, SceSize size) {
+    TRACY_FUNC(kmemcpy, dst, src, size);
+    if (dst.address() == src.address() || size == 0) {
+        return dst; // No operation needed
+    }
+    auto res = memmove(dst.get(emuenv.mem), src.get(emuenv.mem), size);
+    if (res == nullptr) {
+        LOG_ERROR("kmemmove -> res is null!");
+        return {}; // Error occurred
+    }
+    return dst; // Success
 }
 
 EXPORT(Ptr<void>, kmemset, Ptr<void> dst, int val, SceSize size) {
@@ -195,6 +205,7 @@ EXPORT(int, strlcpy) {
 EXPORT(int, kstrlen, const char *s) {
     TRACY_FUNC(kstrlen, s);
     if (!s) {
+        LOG_ERROR("kstrlen -> value is null!");
         return 0; // Handle null pointer
     }
     return strlen(s);
