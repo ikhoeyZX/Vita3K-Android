@@ -611,8 +611,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (!gui.modules.empty()) {
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.core["modules_mode"].c_str());
             ImGui::Spacing();
-            ImGui::Checkbox(lang.core["lle_sysmpdule"].c_str(), &config.lle_sysmodule);
-            SetTooltipEx(lang.core["lle_sysmpdule_description"].c_str());
+            ImGui::Checkbox(lang.core["lle_sysmodule"].c_str(), &config.lle_sysmodule);
+            SetTooltipEx(lang.core["lle_sysmodule_description"].c_str());
             ImGui::Checkbox(lang.core["taihen"].c_str(), &config.taihen);
             SetTooltipEx(lang.core["taihen_description"].c_str());
 
