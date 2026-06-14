@@ -38,9 +38,9 @@
 
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
 #ifdef __arm__
-constexpr uint32_t TOTAL_MEM_SIZE = static_cast<uint32_t>(GiB(2));
+uint32_t TOTAL_MEM_SIZE = static_cast<uint32_t>(GiB(2));
 #else
-constexpr size_t TOTAL_MEM_SIZE = GiB(4);
+size_t TOTAL_MEM_SIZE = GiB(4);
 #endif
 constexpr bool LOG_PROTECT = false;
 #ifdef NDEBUG
@@ -101,33 +101,25 @@ bool init(MemState &state, const bool use_page_table) {
     // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address 
 #ifdef __arm__
     state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
-    auto readmem = TOTAL_MEM_SIZE;
-    if (TOTAL_MEM_SIZE == 0) {
-       LOG_CRITICAL("TOTAL_MEM_SIZE is zero");
-       readmem = GiB(2);
-    }
-    LOG_INFO("readmem = {}", readmem);
     bool exit = false;
 
-    while(readmem > MiB(512) || exit) {
-        state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, readmem, prot, flags, fd, offset)), delete_memory);
-        LOG_INFO("Memory free: {}", mem_available(state));
+    while(TOTAL_MEM_SIZE <= MiB(512) || exit) {
+        state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
     
         if (state.memory.get() == MAP_FAILED) {
-            LOG_CRITICAL("mmap failed {}, TOTAL_MEM_SIZE = {}, retry...", get_error_msg(), readmem);
+            LOG_CRITICAL("mmap failed {}, TOTAL_MEM_SIZE = {}, retry...", get_error_msg(), TOTAL_MEM_SIZE);
         } else {
             exit = true;
             break;
         }
-        LOG_INFO("readmem = {}", readmem);
-        readmem = readmem - MiB(96);
+        LOG_INFO("readmem = {} MB", TOTAL_MEM_SIZE/ MiB(1));
+        TOTAL_MEM_SIZE = TOTAL_MEM_SIZE - MiB(96);
     }
         
 #else
-    state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+   // state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+    state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
 #endif
-    LOG_INFO("Memory free final: {} MB", mem_available(state));
-    
     if (state.memory.get() == MAP_FAILED) {
         LOG_CRITICAL("mmap failed {}", get_error_msg());
         return false;
