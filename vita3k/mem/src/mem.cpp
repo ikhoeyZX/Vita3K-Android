@@ -103,7 +103,7 @@ bool init(MemState &state, const bool use_page_table) {
     state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
     bool exit = false;
 
-    while(TOTAL_MEM_SIZE <= MiB(512) || exit) {
+    while (TOTAL_MEM_SIZE >= MiB(512) && !exit) {
         state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
     
         if (state.memory.get() == MAP_FAILED) {
