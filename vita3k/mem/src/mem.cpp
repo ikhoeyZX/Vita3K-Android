@@ -100,22 +100,18 @@ bool init(MemState &state, const bool use_page_table) {
     const off_t offset = 0;
     // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address 
 #ifdef __arm__
-    state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
     bool exit = false;
-
     while (TOTAL_MEM_SIZE >= MiB(512) && !exit) {
-        state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
-    
-        if (state.memory.get() == MAP_FAILED) {
-            LOG_CRITICAL("mmap failed {}, TOTAL_MEM_SIZE = {}, retry...", get_error_msg(), TOTAL_MEM_SIZE);
-        } else {
-            exit = true;
-            break;
-        }
-        LOG_INFO("readmem = {} MB", TOTAL_MEM_SIZE/ MiB(1));
-        TOTAL_MEM_SIZE = TOTAL_MEM_SIZE - MiB(96);
-    }
-        
+       void* base = mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset);
+
+       if (base == MAP_FAILED) {
+           LOG_CRITICAL("mmap failed {}, TOTAL_MEM_SIZE = {}, retry...",get_error_msg(), TOTAL_MEM_SIZE / MiB(1));
+           TOTAL_MEM_SIZE -= MiB(96); 
+       } else {
+           state.memory = Memory(static_cast<uint8_t*>(base), delete_memory);
+           exit = true;
+       }
+   }
 #else
    // state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
     state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
