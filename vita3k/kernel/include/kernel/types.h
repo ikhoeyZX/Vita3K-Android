@@ -45,7 +45,6 @@
 
 #define SCE_KERNEL_STACK_SIZE_USER_MAIN KiB(256)
 #define SCE_KERNEL_STACK_SIZE_USER_DEFAULT KiB(4)
-
 #define SCE_KERNEL_THREAD_STACK_SIZE_MAX MiB(32)
 
 #define SCE_KERNEL_ATTR_TH_FIFO 0x00000000U
@@ -556,12 +555,13 @@ enum TlsItems {
     TLS_SP_TOP = 2,
     TLS_SP_BOTTOM = 3,
     TLS_VFP_EXCEPTION = 4,
-    TLS_RESERVED_5,
-    TLS_RESERVED_6, // libc reserved longjump addr
-    TLS_RESERVED_7, // libc reserved some memory address mask
+    TLS_RESERVED_5 = 5,
+    TLS_RESERVED_6 = 6, // libc reserved longjump addr
+    TLS_STACK_CHECK_GUARD = 7, // libc reserved some memory address mask
     TLS_CURRENT_PRIORITY = 8,
     TLS_CPU_AFFINITY_MASK = 9,
     TLS_NET_ERRNO = 0x40,
+    TLS_FIBER_CONTEXT = 0x41,
     TLS_LIBC_ERRNO = 0x88,
 };
 
