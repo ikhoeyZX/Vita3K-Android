@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path
 
 #ifdef ANDROID
 //    const std::string gl_version = "#version 300 es\nprecision highp float;\n";
-      const std::string gl_version = "#version 320 es\nprecision mediump float;\n";
+    const std::string gl_version = "#version 320 es\nprecision mediump float;\n";
 #else 
     const std::string gl_version = "#version 410 core\n";
 #endif
@@ -49,22 +49,28 @@ UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path
     // Read the vertex/fragment shader code from files
     std::string vs_code;
     {
-        const std::vector<uint8_t> vs_code_raw = fs_utils::read_asset_raw(fs::path(vertex_file_path));
-        vs_code.resize(vs_code_raw.size());
-        memcpy(vs_code.data(), vs_code_raw.data(), vs_code_raw.size());
-    }
+       const std::vector<uint8_t> vs_code_raw = fs_utils::read_asset_raw(fs::path(vertex_file_path));
+       if (!vs_code_raw.empty()) {
+           vs_code.assign(reinterpret_cast<const char*>(vs_code_raw.data()), vs_code_raw.size());
+       } else {
+           LOG_WARN("vertex shader code is empty!");
+       }
+   }
 
-    std::string fs_code;
-    {
-        const std::vector<uint8_t> fs_code_raw = fs_utils::read_asset_raw(fs::path(fragment_file_path));
-        fs_code.resize(fs_code_raw.size());
-        memcpy(fs_code.data(), fs_code_raw.data(), fs_code_raw.size());
-    }
+   std::string fs_code;
+   {
+       const std::vector<uint8_t> fs_code_raw = fs_utils::read_asset_raw(fs::path(fragment_file_path));
+       if (!fs_code_raw.empty()) {
+           fs_code.assign(reinterpret_cast<const char*>(fs_code_raw.data()), fs_code_raw.size());
+       } else {
+           LOG_WARN("fragment shader code is empty!");
+       }
+   }
 
-    if(vs_code.empty() || fs_code.empty()){
-        LOG_ERROR("Couldn't open shader: {}", vertex_file_path);
-        return UniqueGLObject();
-    }
+   if (vs_code.empty() || fs_code.empty()) {
+       LOG_ERROR("Couldn't open shader: {}", vertex_file_path);
+       return UniqueGLObject();
+   }
 
     GLint result = 0;
     int info_log_length;
