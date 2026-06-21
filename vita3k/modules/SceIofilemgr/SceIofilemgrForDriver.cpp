@@ -177,7 +177,7 @@ EXPORT(int, ksceIoGetRemoteKPLSData) {
 }
 
 EXPORT(int, ksceIoGetThreadDefaultPriorityForSystem) {
-    TRACY_FUNC(_sceIoMkdirAsync);
+    TRACY_FUNC(ksceIoGetThreadDefaultPriorityForSystem);
     return UNIMPLEMENTED();
 }
 
@@ -512,7 +512,7 @@ EXPORT(int, ksceVopPwrite) {
 }
 
 EXPORT(int, ksceVopRead) {
-    TRACY_FUNC(_sceIoMkdirAsync);
+    TRACY_FUNC(ksceVopRead);
     return UNIMPLEMENTED();
 }
 
