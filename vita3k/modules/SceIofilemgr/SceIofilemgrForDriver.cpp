@@ -112,11 +112,6 @@ EXPORT(int, ksceIoDevctlAsync) {
     TRACY_FUNC(ksceIoDevctlAsync);
     return UNIMPLEMENTED();
 }
-
-EXPORT(int, ksceIoDevctlAsync) {
-    TRACY_FUNC(ksceIoDevctlAsync);
-    return UNIMPLEMENTED();
-}
           
 EXPORT(int, ksceIoDopen, const char *dir) {
     TRACY_FUNC(ksceIoDopen, dir);
