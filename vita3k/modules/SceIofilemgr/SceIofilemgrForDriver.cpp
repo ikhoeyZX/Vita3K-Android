@@ -63,9 +63,9 @@ EXPORT(int, ksceIoClearErrorEvent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceIoClose) {
-    TRACY_FUNC(ksceIoClose);
-    return UNIMPLEMENTED();
+EXPORT(int, ksceIoClose, const SceUID fd) {
+    TRACY_FUNC(ksceIoClose, fd);
+    return close_file(emuenv.io, fd, export_name);
 }
 
 EXPORT(int, ksceIoCloseAsync) {
@@ -83,9 +83,9 @@ EXPORT(int, ksceIoCreateMountEvent) {
     return UNIMPLEMENTED();
 }          
           
-EXPORT(int, ksceIoDclose) {
-    TRACY_FUNC(ksceIoDclose);
-    return UNIMPLEMENTED();
+EXPORT(int, ksceIoDclose, const SceUID fd) {
+    TRACY_FUNC(ksceIoDclose, fd);
+    return close_dir(emuenv.io, fd, export_name);
 }
 
 EXPORT(int, ksceIoDcloseAsync) {
@@ -118,24 +118,22 @@ EXPORT(int, ksceIoDevctlAsync) {
     return UNIMPLEMENTED();
 }
           
-EXPORT(int, ksceIoDopen) {
-    TRACY_FUNC(ksceIoDopen);
-    return UNIMPLEMENTED();
-}         
+EXPORT(int, ksceIoDopen, const char *dir) {
+    TRACY_FUNC(ksceIoDopen, dir);
+    return open_dir(emuenv.io, dir, emuenv.pref_path, export_name);
+}
           
 EXPORT(int, ksceIoDopenAsync) {
     TRACY_FUNC(ksceIoDopenAsync);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceIoDread) {
-    TRACY_FUNC(ksceIoDread);
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, ksceIoDread) {
-    TRACY_FUNC(ksceIoDread);
-    return UNIMPLEMENTED();
+EXPORT(int, ksceIoDread, const SceUID fd, SceIoDirent *dir) {
+    TRACY_FUNC(ksceIoDread, fd, dir);
+    if (dir == nullptr) {
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    }
+    return read_dir(emuenv.io, fd, dir, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, ksceIoDread2) {
@@ -188,9 +186,9 @@ EXPORT(int, ksceIoGetThreadDefaultPriorityForSystem) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceIoGetstat) {
-    TRACY_FUNC(ksceIoGetstat);
-    return UNIMPLEMENTED();
+EXPORT(int, ksceIoGetstat, const char *file, SceIoStat *stat) {
+    TRACY_FUNC(ksceIoGetstat, file, stat);
+    return stat_file(emuenv.io, file, stat, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, ksceIoGetstat2) {
@@ -203,9 +201,9 @@ EXPORT(int, ksceIoGetstatAsync) {
     return UNIMPLEMENTED();
 } 
 
-EXPORT(int, ksceIoGetstatByFd) {
-    TRACY_FUNC(ksceIoGetstatByFd);
-    return UNIMPLEMENTED();
+EXPORT(int, ksceIoGetstatByFd, const SceUID fd, SceIoStat *stat) {
+    TRACY_FUNC(ksceIoGetstatByFd, fd, stat);
+    return stat_file_by_fd(emuenv.io, fd, stat, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, ksceIoGetstatByFdAsync) {
@@ -223,9 +221,9 @@ EXPORT(int, ksceIoIoctlAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceIoLseek) {
-    TRACY_FUNC(ksceIoLseek);
-    return UNIMPLEMENTED();
+EXPORT(SceOff, ksceIoLseek, const SceUID fd, Ptr<_sceIoLseekOpt> opt) {
+    TRACY_FUNC(ksceIoLseek, fd, opt);
+    return seek_file(fd, opt.get(emuenv.mem)->offset, opt.get(emuenv.mem)->whence, emuenv.io, export_name);
 }
 
 EXPORT(int, ksceIoLseekAsync) {
@@ -233,10 +231,9 @@ EXPORT(int, ksceIoLseekAsync) {
     return UNIMPLEMENTED();
 }
 
-
-EXPORT(int, ksceIoMkdir) {
-    TRACY_FUNC(ksceIoMkdir);
-    return UNIMPLEMENTED();
+EXPORT(int, ksceIoMkdir, const char *dir, const SceMode mode) {
+    TRACY_FUNC(ksceIoMkdir, dir, mode);
+    return create_dir(emuenv.io, dir, mode, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, ksceIoMkdirAsync) {
@@ -249,9 +246,13 @@ EXPORT(int, ksceIoMount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceIoOpen) {
-    TRACY_FUNC(ksceIoOpen);
-    return UNIMPLEMENTED();
+EXPORT(int, ksceIoOpen, const char *file, const int flags, const SceMode mode) {
+    TRACY_FUNC(ksceIoOpen, file, flags, mode);
+    if (file == nullptr) {
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    }
+    LOG_INFO("Opening file: {}", file);
+    return open_file(emuenv.io, file, flags, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, ksceIoOpenAsync) {
@@ -370,9 +371,9 @@ EXPORT(int, ksceIoUmount) {
     return UNIMPLEMENTED();
 }
           
-EXPORT(int, ksceIoWrite) {
-    TRACY_FUNC(ksceIoWrite);
-    return UNIMPLEMENTED();
+EXPORT(int, ksceIoWrite, const SceUID fd, const void *data, const SceSize size) {
+    TRACY_FUNC(ksceIoWrite, fd, data, size);
+    return write_file(fd, data, size, emuenv.io, export_name);
 }
 
 EXPORT(int, ksceIoWriteAsync) {
