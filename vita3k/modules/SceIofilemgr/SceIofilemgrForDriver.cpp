@@ -39,12 +39,7 @@ EXPORT(int, ksceIoChstat2) {
 }
 
 EXPORT(int, ksceIoChstatAsync) {
-    TRACY_FUNC(_sceIoMkdirAsync);
-    return UNIMPLEMENTED();
-}
-          
-EXPORT(int, _sceIoMkdirAsync) {
-    TRACY_FUNC(_sceIoMkdirAsync);
+    TRACY_FUNC(ksceIoChstatAsync);
     return UNIMPLEMENTED();
 }
 
