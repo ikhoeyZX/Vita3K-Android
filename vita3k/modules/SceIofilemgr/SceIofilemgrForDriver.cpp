@@ -491,6 +491,11 @@ EXPORT(int, ksceVopLseek) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, ksceVopMkdir) {
+    TRACY_FUNC(ksceVopMkdir);
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, ksceVopOpen) {
     TRACY_FUNC(ksceVopOpen);
     return UNIMPLEMENTED();
