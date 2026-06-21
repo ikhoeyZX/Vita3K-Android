@@ -37,11 +37,7 @@
 #endif
 
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
-#ifdef __arm__
-uint32_t TOTAL_MEM_SIZE = static_cast<uint32_t>(GiB(2));
-#else
 size_t TOTAL_MEM_SIZE = GiB(4);
-#endif
 constexpr bool LOG_PROTECT = false;
 #ifdef NDEBUG
 constexpr bool PAGE_NAME_TRACKING = false;
@@ -95,7 +91,8 @@ bool init(MemState &state, const bool use_page_table) {
 #else
     // http://man7.org/linux/man-pages/man2/mmap.2.html
     const int prot = PROT_NONE;
-    const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
+    // const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
+    const int flags = MAP_SHARED | MAP_ANONYMOUS;
     const int fd = 0;
     const off_t offset = 0;
     // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address 
@@ -105,7 +102,7 @@ bool init(MemState &state, const bool use_page_table) {
        void* base = mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset);
 
        if (base == MAP_FAILED) {
-           LOG_CRITICAL("mmap failed {}, TOTAL_MEM_SIZE = {}, retry...",get_error_msg(), TOTAL_MEM_SIZE / MiB(1));
+           LOG_CRITICAL("mmap failed {}, TOTAL_MEM_SIZE = {} MB, retry...",get_error_msg(), TOTAL_MEM_SIZE / MiB(1));
            TOTAL_MEM_SIZE -= MiB(96); 
        } else {
            state.memory = Memory(static_cast<uint8_t*>(base), delete_memory);
@@ -120,7 +117,7 @@ bool init(MemState &state, const bool use_page_table) {
         LOG_CRITICAL("mmap failed {}", get_error_msg());
         return false;
     } else {
-        LOG_INFO("Mem ok");
+        LOG_INFO("Mem ok at TOTAL_MEM_SIZE = {} MB",TOTAL_MEM_SIZE / MiB(1));
     }
 #endif
 
