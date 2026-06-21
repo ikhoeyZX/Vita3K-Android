@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -330,48 +330,212 @@ EXPORT(int, ksceIoSetPathMappingFunction) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, ksceIoSetProcessDefaultPriorityForSystem) {
+    TRACY_FUNC(ksceIoSetProcessDefaultPriorityForSystem);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceIoSetThreadDefaultPriorityForSystem) {
+    TRACY_FUNC(ksceIoSetThreadDefaultPriorityForSystem);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceIoSync) {
+    TRACY_FUNC(ksceIoSync);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceIoSyncAsync) {
+    TRACY_FUNC(ksceIoSyncAsync);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceIoSyncByFd) {
+    TRACY_FUNC(ksceIoSyncByFd);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceIoSyncByFd2) {
+    TRACY_FUNC(ksceIoSyncByFd2);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceIoSyncByFdAsync) {
+    TRACY_FUNC(ksceIoSyncByFdAsync);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceIoUmount) {
+    TRACY_FUNC(ksceIoUmount);
+    return UNIMPLEMENTED();
+}
           
+EXPORT(int, ksceIoWrite) {
+    TRACY_FUNC(ksceIoWrite);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceIoWriteAsync) {
+    TRACY_FUNC(ksceIoWriteAsync);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, kscePfsMgrVfsMount) {
+    TRACY_FUNC(kscePfsMgrVfsMount);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, kscePfsMgrVfsUmount) {
+    TRACY_FUNC(kscePfsMgrVfsUmount);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVfsAddVfs) {
+    TRACY_FUNC(ksceVfsAddVfs);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVfsDeleteVfs) {
+    TRACY_FUNC(ksceVfsDeleteVfs);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVfsFreeVnode) {
+    TRACY_FUNC(ksceVfsFreeVnode);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVfsGetNewNode) {
+    TRACY_FUNC(ksceVfsGetNewNode);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVfsLockMnt) {
+    TRACY_FUNC(ksceVfsLockMnt);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVfsMount) {
+    TRACY_FUNC(ksceVfsMount);
+    return UNIMPLEMENTED();
+}
           
-          ksceIoSetProcessDefaultPriorityForSystem: 0xABE65071
-          ksceIoSetThreadDefaultPriorityForSystem: 0x3F0FF9D5
-          ksceIoSync: 0xDDF78594
-          ksceIoSyncAsync: 0x4F9EA8B0
-          ksceIoSyncByFd: 0x338DCD68
-          ksceIoSyncByFd2: 0x43170575
-          ksceIoSyncByFdAsync: 0x041209CF
-          ksceIoUmount: 0x20574100
-          ksceIoWrite: 0x21EE91F0
-          ksceIoWriteAsync: 0xA1BD13D0
-          kscePfsMgrVfsMount: 0xFEEE44A9
-          kscePfsMgrVfsUmount: 0xD220539D
-          ksceVfsAddVfs: 0x673D2FCD
-          ksceVfsDeleteVfs: 0x9CBFA725
-          ksceVfsFreeVnode: 0x21D57633
-          ksceVfsGetNewNode: 0xD60B5C63
-          ksceVfsLockMnt: 0x6B3CA9F7
-          ksceVfsMount: 0xB62DE9A6
-          ksceVfsNodeSetEventFlag: 0x6048F245
-          ksceVfsNodeWaitEventFlag: 0xAA45010B
-          ksceVfsOpDecodePathElem: 0xF7DAC0F5
-          ksceVfsOpDevctl: 0xB07B307D
-          ksceVfsUnlockMnt: 0xDC2D8BCE
-          ksceVfsUnmount: 0x9C7E7B76
-          ksceVopChstat: 0x1974FA92
-          ksceVopClose: 0x40944C2E
-          ksceVopCreate: 0x9E347C7D
-          ksceVopDclose: 0x1350F5C7
-          ksceVopDopen: 0x00C9C2DD
-          ksceVopDread: 0x77584C8F
-          ksceVopGetstat: 0x50A63ACF
-          ksceVopInactive: 0x8FB94521
-          ksceVopIoctl: 0x333C904D
-          ksceVopLseek: 0xB2B13818
-          ksceVopMkdir: 0x2F3F8C70
-          ksceVopOpen: 0x76B79BEC
-          ksceVopPread: 0xABBC80E3
-          ksceVopPwrite: 0xA53C040D
-          ksceVopRead: 0x570388A5
-          ksceVopRename: 0x36A794C7
-          ksceVopRmdir: 0x1D551105
-          ksceVopSync: 0x9CD96406
-          ksceVopWrite: 0x9A68378D
+EXPORT(int, ksceVfsNodeSetEventFlag) {
+    TRACY_FUNC(ksceVfsNodeSetEventFlag);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVfsNodeWaitEventFlag) {
+    TRACY_FUNC(ksceVfsNodeWaitEventFlag);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVfsOpDecodePathElem) {
+    TRACY_FUNC(ksceVfsOpDecodePathElem);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVfsOpDevctl) {
+    TRACY_FUNC(ksceVfsOpDevctl);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVfsUnlockMnt) {
+    TRACY_FUNC(ksceVfsUnlockMnt);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVfsUnmount) {
+    TRACY_FUNC(ksceVfsUnmount);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopChstat) {
+    TRACY_FUNC(ksceVopChstat);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopClose) {
+    TRACY_FUNC(ksceVopClose);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopCreate) {
+    TRACY_FUNC(ksceVopCreate);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopDclose) {
+    TRACY_FUNC(ksceVopDclose);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopDopen) {
+    TRACY_FUNC(ksceVopDopen);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopDread) {
+    TRACY_FUNC(ksceVopDread);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopGetstat) {
+    TRACY_FUNC(ksceVopGetstat);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopInactive) {
+    TRACY_FUNC(ksceVopInactive);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopIoctl) {
+    TRACY_FUNC(ksceVopIoctl);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopLseek) {
+    TRACY_FUNC(ksceVopLseek);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopOpen) {
+    TRACY_FUNC(ksceVopOpen);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopPread) {
+    TRACY_FUNC(ksceVopPread);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopPwrite) {
+    TRACY_FUNC(ksceVopPwrite);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopRead) {
+    TRACY_FUNC(_sceIoMkdirAsync);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopRename) {
+    TRACY_FUNC(ksceVopRename);
+    return UNIMPLEMENTED();
+}          
+    
+EXPORT(int, ksceVopRmdir) {
+    TRACY_FUNC(ksceVopRmdir);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopSync) {
+    TRACY_FUNC(ksceVopSync);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceVopWrite) {
+    TRACY_FUNC(ksceVopWrite);
+    return UNIMPLEMENTED();
+}
