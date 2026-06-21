@@ -62,6 +62,7 @@ set(SOURCE_LIST
 	SceIpmi/SceIpmi.cpp
 	SceIncomingDialog/SceIncomingDialog.cpp
 	SceIofilemgr/SceIofilemgr.cpp
+	SceIofilemgr/SceIofilemgrForDriver.cpp
 	SceJpeg/SceJpegUser.cpp
 	SceJpegArm/SceJpegArm.cpp
 	SceJpegEnc/SceJpegEncUser.cpp
