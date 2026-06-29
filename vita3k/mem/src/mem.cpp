@@ -95,37 +95,35 @@ bool init(MemState &state, const bool use_page_table) {
 #else
     // http://man7.org/linux/man-pages/man2/mmap.2.html
     const int prot = PROT_NONE;
-    // const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
-#ifndef __arm__
     const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
-#else
-    const int flags = MAP_PRIVATE | MAP_GROWSDOWN | MAP_STACK | MAP_ANONYMOUS;
-#endif
-    const int fd = 0;
+    const int fd = -1;
     const off_t offset = 0;
     // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address 
 #ifdef __arm__
+    state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
     bool exit = false;
-    while (TOTAL_MEM_SIZE >= MiB(512) && !exit) {
-       void* base = mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset);
 
-       if (base == MAP_FAILED) {
-           LOG_CRITICAL("mmap failed {}, TOTAL_MEM_SIZE = {} MB, retry...",get_error_msg(), TOTAL_MEM_SIZE / MiB(1));
-           TOTAL_MEM_SIZE -= MiB(96); 
-       } else {
-           state.memory = Memory(static_cast<uint8_t*>(base), delete_memory);
-           exit = true;
-       }
-   }
+    while(TOTAL_MEM_SIZE > MiB(512) || !exit) {
+        state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+       
+        if (state.memory.get() == MAP_FAILED) {
+            LOG_CRITICAL("mmap failed {}, TOTAL_MEM_SIZE = {} MB, retry...", get_error_msg(), TOTAL_MEM_SIZE / MiB(1));
+        } else {
+            exit = true;
+            break;
+        }
+        TOTAL_MEM_SIZE = TOTAL_MEM_SIZE - MiB(96);
+    }
+        
 #else
-   // state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
-    state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+    state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
 #endif
+    
     if (state.memory.get() == MAP_FAILED) {
         LOG_CRITICAL("mmap failed {}", get_error_msg());
         return false;
     } else {
-        LOG_INFO("Mem ok at TOTAL_MEM_SIZE = {} MB",TOTAL_MEM_SIZE / MiB(1));
+        LOG_INFO("Mem ok at: {} MB", TOTAL_MEM_SIZE / MiB(1));
     }
 #endif
 
@@ -310,6 +308,9 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
     Address vaddr = 0;
     const std::unique_lock<std::mutex> lock(state.protect_mutex);
     if (fault_addr < memory_addr || fault_addr >= memory_addr + TOTAL_MEM_SIZE) {
+#ifdef __arm__
+        return false;
+#else
         if (state.use_page_table) {
             // this may come from an external mapping
             uint64_t addr_val = std::bit_cast<uint64_t>(addr);
@@ -322,6 +323,7 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
         } else {
             return false;
         }
+#endif
     } else {
         vaddr = static_cast<Address>(fault_addr - memory_addr);
     }
