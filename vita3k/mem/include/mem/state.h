@@ -21,6 +21,7 @@
 #include <mem/functions.h>
 #include <mem/util.h>
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -36,7 +37,7 @@ struct AllocMemPage {
 static_assert(sizeof(AllocMemPage) == 4);
 
 typedef uint8_t *PagePtr;
-typedef std::unique_ptr<uint8_t[], std::function<void(uint8_t *)>> Memory;
+typedef std::unique_ptr<uint8_t, std::function<void(uint8_t *)>> Memory;
 typedef std::unique_ptr<AllocMemPage[]> AllocPageTable;
 typedef std::unique_ptr<PagePtr[]> PageTable;
 typedef std::map<int, std::string> PageNameMap;
