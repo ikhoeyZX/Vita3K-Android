@@ -143,11 +143,10 @@ UnicornCPU::UnicornCPU(CPUState *state)
     uint64_t desired_size = GiB(4) - state->mem->host_page_size;
     uint64_t map_size = std::min(desired_size, max_memory_size);
     
-    err = uc_mem_map_ptr(uc.get(), memory_start, map_size, UC_PROT_ALL, &state->mem->memory[memory_start]);
+    err = uc_mem_map_ptr(uc.get(), memory_start, map_size, UC_PROT_ALL, state->mem->memory.get() + memory_start);
     
     if (err != UC_ERR_OK) {
-        LOG_WARN("Initial memory mapping failed with size 0x{:x} ({} MB). Attempting fallback allocation...", 
-                 map_size, map_size / (1024 * 1024));
+        LOG_WARN("Initial memory mapping failed with size 0x{:x} ({} MB). Attempting fallback allocation...", map_size, map_size / (1024 * 1024));
         
         // Fallback strategy: try progressively smaller allocations
         std::vector<uint64_t> fallback_sizes = {
@@ -163,12 +162,10 @@ UnicornCPU::UnicornCPU(CPUState *state)
                 fallback_size = max_memory_size;
             }
             
-            err = uc_mem_map_ptr(uc.get(), memory_start, fallback_size, UC_PROT_ALL, 
-                                 &state->mem->memory[memory_start]);
+            err = uc_mem_map_ptr(uc.get(), memory_start, fallback_size, UC_PROT_ALL, state->mem->memory.get() + memory_start);
             
             if (err == UC_ERR_OK) {
-                LOG_INFO("Successfully mapped 0x{:x} ({} MB) of emulated memory", 
-                         fallback_size, fallback_size / (1024 * 1024));
+                LOG_INFO("Successfully mapped 0x{:x} ({} MB) of emulated memory", fallback_size, fallback_size / (1024 * 1024));
                 allocation_succeeded = true;
                 break;
             }
