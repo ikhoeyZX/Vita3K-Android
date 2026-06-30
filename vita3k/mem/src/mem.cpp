@@ -78,10 +78,10 @@ bool init(MemState &state, const bool use_page_table) {
     assert(state.host_page_size >= 4096); // Limit imposed by Unicorn.
     
 #ifdef _WIN32
-    state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(preferred_address, TOTAL_MEM_SIZE, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
+    state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(preferred_address, TOTAL_MEM_SIZE, MEM_RESERVE, PAGE_NOACCESS)), [&state](uint8_t *p) { delete_memory(p, state); });
     if (!state.memory) {
         // fallback
-        state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(nullptr, TOTAL_MEM_SIZE, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
+        state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(nullptr, TOTAL_MEM_SIZE, MEM_RESERVE, PAGE_NOACCESS)), [&state](uint8_t *p) { delete_memory(p, state); });
 
         if (!state.memory) {
             LOG_CRITICAL("VirtualAlloc failed: {}", get_error_msg());
@@ -136,9 +136,9 @@ bool init(MemState &state, const bool use_page_table) {
         return false;
     }
     
-    state.memory = Memory(state.memory_fragments[0].ptr, delete_memory);
+    state.memory = Memory(state.memory_fragments[0].ptr, [&state](uint8_t *p) { delete_memory(p, state); });
 #else
-    state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+    state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), [&state](uint8_t *p) { delete_memory(p, state); });
 #endif
 #endif
     
@@ -237,7 +237,7 @@ uint8_t* get_physical_ptr(MemState &state, Address addr) {
     }
     return nullptr; 
 #else
-    return &state.memory[addr];
+    return state.memory.get() + addr;
 #endif
 }
 
@@ -655,7 +655,7 @@ void free(MemState &state, Address address) {
     }
 
     if (batch_size > 0) {
-        uint8_t *memory = &state.memory[batch_start];
+        uint8_t *memory = state.memory.get() + batch_start;
 #ifdef _WIN32
         const BOOL ret = VirtualFree(memory, batch_size, MEM_DECOMMIT);
         LOG_CRITICAL_IF(!ret, "VirtualFree failed: {}", get_error_msg());
