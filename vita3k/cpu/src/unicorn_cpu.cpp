@@ -69,7 +69,7 @@ void UnicornCPU::write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, i
 void UnicornCPU::log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, MemState &mem, CPUState &cpu, Address offset) {
     const char *const name = mem_name(address, mem);
     auto pc = get_pc();
-    LOG_TRACE("{} ({}): {} {} bytes, address {} + {} ({}, {}), value {} at {}", log_hex((uint64_t)uc), cpu.thread_id, type, size, log_hex(address), log_hex(offset), log_hex(address + offset), name, lo[...]
+    LOG_TRACE("{} ({}): {} {} bytes, address {} + {} ({}, {}), value {} at {}", log_hex((uint64_t)uc), cpu.thread_id, type, size, log_hex(address), log_hex(offset), log_hex(address + offset), name, log_hex(value), log_hex(pc));
 }
 
 constexpr uint32_t INT_SVC = 2;
@@ -138,29 +138,23 @@ UnicornCPU::UnicornCPU(CPUState *state)
     err = uc_hook_add(uc.get(), &hh, UC_HOOK_INTR, reinterpret_cast<void *>(&intr_hook), this, 1, 0);
     assert(err == UC_ERR_OK);
 
-    // Don't map the null page into unicorn so that unicorn returns access error instead of
-    // crashing the whole emulator on invalid access
-    
-    // Calculate memory size - compatible with both 32-bit and 64-bit
     uint64_t memory_start = state->mem->host_page_size;
     uint64_t max_memory_size = 0xFFFFFFFFULL - memory_start;  // 32-bit max address space
     uint64_t desired_size = GiB(4) - state->mem->host_page_size;
     uint64_t map_size = std::min(desired_size, max_memory_size);
     
-    // Try to map with the calculated size
     err = uc_mem_map_ptr(uc.get(), memory_start, map_size, UC_PROT_ALL, &state->mem->memory[memory_start]);
     
     if (err != UC_ERR_OK) {
-        // If allocation fails, try with smaller chunks for 32-bit systems
         LOG_WARN("Initial memory mapping failed with size 0x{:x} ({} MB). Attempting fallback allocation...", 
                  map_size, map_size / (1024 * 1024));
         
         // Fallback strategy: try progressively smaller allocations
         std::vector<uint64_t> fallback_sizes = {
-            GiB(2) - state->mem->host_page_size,  // 2 GB
-            GiB(1) - state->mem->host_page_size,  // 1 GB
-            512 * MiB(1) - state->mem->host_page_size,  // 512 MB
-            256 * MiB(1) - state->mem->host_page_size   // 256 MB
+            GiB(3) - state->mem->host_page_size, 
+            GiB(2) - state->mem->host_page_size,  
+            GiB(1) - state->mem->host_page_size,  
+            512 * MiB(1) - state->mem->host_page_size
         };
         
         bool allocation_succeeded = false;
