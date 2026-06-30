@@ -639,7 +639,7 @@ void free(MemState &state, Address address) {
                 batch_start = host_page;
             batch_size += state.host_page_size;
         } else if (batch_size > 0) {
-            uint8_t *memory = &state.memory.get() + batch_start;
+            uint8_t *memory = state.memory.get() + batch_start;
 #ifdef _WIN32
             const BOOL ret = VirtualFree(memory, batch_size, MEM_DECOMMIT);
             LOG_CRITICAL_IF(!ret, "VirtualFree failed: {}", get_error_msg());
