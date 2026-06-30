@@ -39,8 +39,8 @@
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
 size_t TOTAL_MEM_SIZE = GiB(4);
 #ifdef __arm__
-size_t FRAGMENT_SIZE = MiB(128);
-size_t MIN_FRAGMENT_SIZE = MiB(32);
+size_t FRAGMENT_SIZE = MiB(16);
+size_t MIN_FRAGMENT_SIZE = MiB(4);
 #endif
 constexpr bool LOG_PROTECT = false;
 #ifdef NDEBUG
@@ -91,8 +91,7 @@ bool init(MemState &state, const bool use_page_table) {
 #else
     // http://man7.org/linux/man-pages/man2/mmap.2.html
     const int prot = PROT_NONE;
-    // const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
-    const int flags = MAP_SHARED | MAP_ANONYMOUS;
+    const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
     const int fd = -1;
     const off_t offset = 0;
     // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address 
@@ -103,7 +102,7 @@ bool init(MemState &state, const bool use_page_table) {
     
     while (TOTAL_MEM_SIZE >= MiB(512) && !exit) {
         size_t chunk_size = std::min(FRAGMENT_SIZE, TOTAL_MEM_SIZE);
-        
+        LOG_DEBUG("chunk_size = {} MB", chunk_size);
         while (chunk_size >= MIN_FRAGMENT_SIZE) {
             void* base = mmap(nullptr, chunk_size, prot, flags, fd, offset);
             
@@ -120,14 +119,17 @@ bool init(MemState &state, const bool use_page_table) {
             } else {
                 LOG_ERROR("Allocated memory fragment failed, retry...");
                 chunk_size /= 2;
+                LOG_DEBUG("chunk_size = {} MB", chunk_size / MiB(1));
             }
         }
-        
+
+        LOG_DEBUG("allocated_size = {} MB", allocated_size / MiB(1));
         if (allocated_size >= TOTAL_MEM_SIZE * 0.9) { 
             exit = true;
             LOG_INFO("Fragmented allocation successful: {} MB total", TOTAL_MEM_SIZE / MiB(1));
         } else if (chunk_size < MIN_FRAGMENT_SIZE) {
             chunk_size = std::min(FRAGMENT_SIZE, TOTAL_MEM_SIZE);
+            LOG_DEBUG("chunk_size = {} MB", chunk_size / MiB(1));
         }
     }
     
