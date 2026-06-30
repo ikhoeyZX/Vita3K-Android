@@ -38,6 +38,10 @@
 
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
 size_t TOTAL_MEM_SIZE = GiB(4);
+#ifdef __arm__
+size_t FRAGMENT_SIZE = MiB(128);
+size_t MIN_FRAGMENT_SIZE = MiB(32);
+#endif
 constexpr bool LOG_PROTECT = false;
 #ifdef NDEBUG
 constexpr bool PAGE_NAME_TRACKING = false;
@@ -92,36 +96,71 @@ bool init(MemState &state, const bool use_page_table) {
     const int fd = -1;
     const off_t offset = 0;
     // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address 
+
 #ifdef __arm__
     bool exit = false;
+    size_t allocated_size = 0;
+    
     while (TOTAL_MEM_SIZE >= MiB(512) && !exit) {
-       void* base = mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset);
-
-       if (base == MAP_FAILED) {
-           LOG_CRITICAL("mmap failed {}, TOTAL_MEM_SIZE = {} MB, retry...",get_error_msg(), TOTAL_MEM_SIZE / MiB(1));
-           TOTAL_MEM_SIZE -= MiB(96); 
-       } else {
-           state.memory = Memory(static_cast<uint8_t*>(base), delete_memory);
-           exit = true;
-       }
-   }
-#else
-   state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
-#endif
-    if (state.memory.get() == MAP_FAILED) {
-        LOG_CRITICAL("mmap failed {}", get_error_msg());
-        return false;
-    } else {
-        LOG_INFO("Mem ok at TOTAL_MEM_SIZE = {} MB",TOTAL_MEM_SIZE / MiB(1));
+        size_t chunk_size = std::min(FRAGMENT_SIZE, TOTAL_MEM_SIZE);
+        
+        while (chunk_size >= MIN_FRAGMENT_SIZE) {
+            void* base = mmap(nullptr, chunk_size, prot, flags, fd, offset);
+            
+            if (base != MAP_FAILED) {
+                MemoryFragment fragment;
+                fragment.ptr = static_cast<uint8_t*>(base);
+                fragment.size = chunk_size;
+                fragment.is_committed = false;
+                memory_fragments.push_back(fragment);
+                
+                allocated_size += chunk_size;
+                LOG_INFO("Allocated memory fragment: {} MB at 0x{:X}", chunk_size / MiB(1), reinterpret_cast<uintptr_t>(base));
+                break;  
+            } else {
+                LOG_ERROR("Allocated memory fragment failed, retry...");
+                chunk_size /= 2;
+            }
+        }
+        
+        if (allocated_size >= current_target * 0.9) { 
+            exit = true;
+            LOG_INFO("Fragmented allocation successful: {} MB total", TOTAL_MEM_SIZE / MiB(1));
+        } else if (chunk_size < MIN_FRAGMENT_SIZE) {
+            current_target -= MiB(96);
+            chunk_size = std::min(FRAGMENT_SIZE, TOTAL_MEM_SIZE);
+        }
     }
+    
+    if (allocated_size == 0) {
+        LOG_CRITICAL("Failed to allocate any memory fragments");
+        return false;
+    }
+    
+    state.memory = Memory(memory_fragments[0].ptr, delete_memory);
+#else
+    state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
 #endif
-
+    
     const size_t table_length = TOTAL_MEM_SIZE / STANDARD_PAGE_SIZE;
     state.alloc_table = AllocPageTable(new AllocMemPage[table_length]);
     memset(state.alloc_table.get(), 0, sizeof(AllocMemPage) * table_length);
 
     state.allocator.set_maximum(table_length);
 
+#ifdef __arm__
+    // Enable swap behavior on 32-bit systems
+    for (const auto& fragment : memory_fragments) {
+        const int ret_swap = madvise(fragment.ptr, fragment.size, MADV_WILLNEED);
+        if (ret_swap == -1) {
+            LOG_WARN("madvise WILLNEED failed for fragment: {}", get_error_msg());
+        }
+        
+        const int ret_seq = madvise(fragment.ptr, fragment.size, MADV_SEQUENTIAL);
+        LOG_CRITICAL_IF(ret_seq == -1, "madvise SEQUENTIAL failed: {}", get_error_msg());
+    }
+#endif
+    
     const auto handler = [&state](uint8_t *addr, bool write) noexcept {
         return handle_access_violation(state, addr, write);
     };
@@ -153,6 +192,26 @@ bool init(MemState &state, const bool use_page_table) {
     return true;
 }
 
+void delete_memory(uint8_t *memory) {
+    if (memory != nullptr) {
+#ifdef _WIN32
+        const BOOL ret = VirtualFree(memory, 0, MEM_RELEASE);
+        assert(ret);
+#elif __arm__
+        const std::lock_guard<std::mutex> lock(fragment_mutex);
+        for (auto& fragment : memory_fragments) {
+            if (fragment.ptr != nullptr) {
+                munmap(fragment.ptr, fragment.size);
+                fragment.ptr = nullptr;
+            }
+        }
+        memory_fragments.clear();
+#else
+        munmap(memory, TOTAL_MEM_SIZE);
+#endif
+    }
+}
+
 static void delete_memory(uint8_t *memory) {
     if (memory != nullptr) {
 #ifdef _WIN32
@@ -175,6 +234,22 @@ bool is_valid_addr_range(const MemState &state, Address start, Address end) {
     return state.allocator.free_slot_count(start_page, end_page) == 0;
 }
 
+uint8_t* get_physical_ptr(MemState &state, Address addr) {
+#ifdef __arm__
+    size_t offset = 0;
+    const std::lock_guard<std::mutex> lock(fragment_mutex);
+    for (const auto& frag : memory_fragments) {
+        if (addr < offset + frag.size) {
+            return frag.ptr + (addr - offset);
+        }
+        offset += frag.size;
+    }
+    return nullptr; 
+#else
+    return &state.memory[addr];
+#endif
+}
+
 static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force) {
     int page_num;
     if (force) {
@@ -195,8 +270,12 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
     const Address commit_start = align_down(addr, state.host_page_size);
     const Address commit_end = align(addr + size, state.host_page_size);
     const uint32_t commit_size = commit_end - commit_start;
+#ifdef __arm__
+    uint8_t *const commit_ptr = get_physical_ptr(state, commit_start);
+#else
     uint8_t *const commit_ptr = &state.memory[commit_start];
-
+#endif
+    
     // Make memory chunk available to access
 #ifdef _WIN32
     const void *const ret = VirtualAlloc(commit_ptr, commit_size, MEM_COMMIT, PAGE_READWRITE);
@@ -205,10 +284,16 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
     const int ret = mprotect(commit_ptr, commit_size, PROT_READ | PROT_WRITE);
     LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
 #endif
+    
+#ifdef __arm__
+    std::memset(get_physical_ptr(state, addr), 0, size);
+#else
     std::memset(&state.memory[addr], 0, size);
+#endif
 
     AllocMemPage &page = state.alloc_table[page_num];
     assert(!page.allocated);
+
     page.allocated = 1;
     page.size = page_count;
 
