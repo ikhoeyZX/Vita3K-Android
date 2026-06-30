@@ -53,8 +53,8 @@ constexpr bool PAGE_NAME_TRACKING = true;
 static AccessViolationHandler access_violation_handler;
 static void register_access_violation_handler(const AccessViolationHandler &handler);
 
-static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force);
-static void delete_memory(uint8_t *memory);
+Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force);
+void delete_memory(uint8_t *memory, MemState &state);
 
 #ifdef _WIN32
 std::string get_error_msg() {
@@ -136,7 +136,7 @@ bool init(MemState &state, const bool use_page_table) {
         return false;
     }
     
-    state.memory = Memory(memory_fragments[0].ptr, delete_memory);
+    state.memory = Memory(state.memory_fragments[0].ptr, delete_memory);
 #else
     state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
 #endif
@@ -192,7 +192,7 @@ bool init(MemState &state, const bool use_page_table) {
     return true;
 }
 
-void delete_memory(uint8_t *memory) {
+void delete_memory(uint8_t *memory, MemState &state) {
     if (memory == nullptr) {
         return;
     }
@@ -241,7 +241,7 @@ uint8_t* get_physical_ptr(MemState &state, Address addr) {
 #endif
 }
 
-static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force) {
+Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force) {
     int page_num;
     if (force) {
         if (state.allocator.allocate_at(start_page, page_count) < 0) {
