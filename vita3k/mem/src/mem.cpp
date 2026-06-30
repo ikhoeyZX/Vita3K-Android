@@ -141,6 +141,7 @@ bool init(MemState &state, const bool use_page_table) {
 #else
     state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
 #endif
+#endif
     
     const size_t table_length = TOTAL_MEM_SIZE / STANDARD_PAGE_SIZE;
     state.alloc_table = AllocPageTable(new AllocMemPage[table_length]);
@@ -193,7 +194,10 @@ bool init(MemState &state, const bool use_page_table) {
 }
 
 void delete_memory(uint8_t *memory) {
-    if (memory != nullptr) {
+    if (memory == nullptr) {
+        return;
+    }
+    
 #ifdef _WIN32
         const BOOL ret = VirtualFree(memory, 0, MEM_RELEASE);
         assert(ret);
@@ -209,18 +213,6 @@ void delete_memory(uint8_t *memory) {
 #else
         munmap(memory, TOTAL_MEM_SIZE);
 #endif
-    }
-}
-
-static void delete_memory(uint8_t *memory) {
-    if (memory != nullptr) {
-#ifdef _WIN32
-        const BOOL ret = VirtualFree(memory, 0, MEM_RELEASE);
-        assert(ret);
-#else
-        munmap(memory, TOTAL_MEM_SIZE);
-#endif
-    }
 }
 
 bool is_valid_addr(const MemState &state, Address addr) {
@@ -270,11 +262,7 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
     const Address commit_start = align_down(addr, state.host_page_size);
     const Address commit_end = align(addr + size, state.host_page_size);
     const uint32_t commit_size = commit_end - commit_start;
-#ifdef __arm__
     uint8_t *const commit_ptr = get_physical_ptr(state, commit_start);
-#else
-    uint8_t *const commit_ptr = &state.memory[commit_start];
-#endif
     
     // Make memory chunk available to access
 #ifdef _WIN32
@@ -285,11 +273,7 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
     LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
 #endif
     
-#ifdef __arm__
     std::memset(get_physical_ptr(state, addr), 0, size);
-#else
-    std::memset(&state.memory[addr], 0, size);
-#endif
 
     AllocMemPage &page = state.alloc_table[page_num];
     assert(!page.allocated);
@@ -307,6 +291,7 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
 Address alloc_aligned(MemState &state, uint32_t size, const char *name, unsigned int alignment, Address start_addr) {
     if (alignment == 0)
         return alloc(state, size, name, start_addr);
+    
     const std::lock_guard<std::mutex> lock(state.generation_mutex);
     size += alignment;
     const uint32_t page_count = align(size, STANDARD_PAGE_SIZE) / STANDARD_PAGE_SIZE;
