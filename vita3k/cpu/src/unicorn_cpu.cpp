@@ -69,7 +69,7 @@ void UnicornCPU::write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, i
 void UnicornCPU::log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, MemState &mem, CPUState &cpu, Address offset) {
     const char *const name = mem_name(address, mem);
     auto pc = get_pc();
-    LOG_TRACE("{} ({}): {} {} bytes, address {} + {} ({}, {}), value {} at {}", log_hex((uint64_t)uc), cpu.thread_id, type, size, log_hex(address), log_hex(offset), log_hex(address + offset), name, log_hex(value), log_hex(pc));
+    LOG_TRACE("{} ({}): {} {} bytes, address {} + {} ({}, {}), value {} at {}", log_hex((uint64_t)uc), cpu.thread_id, type, size, log_hex(address), log_hex(offset), log_hex(address + offset), name, lo[...]
 }
 
 constexpr uint32_t INT_SVC = 2;
@@ -140,8 +140,54 @@ UnicornCPU::UnicornCPU(CPUState *state)
 
     // Don't map the null page into unicorn so that unicorn returns access error instead of
     // crashing the whole emulator on invalid access
-    err = uc_mem_map_ptr(uc.get(), state->mem->host_page_size, GiB(4) - state->mem->host_page_size, UC_PROT_ALL, &state->mem->memory[state->mem->host_page_size]);
-    assert(err == UC_ERR_OK);
+    
+    // Calculate memory size - compatible with both 32-bit and 64-bit
+    uint64_t memory_start = state->mem->host_page_size;
+    uint64_t max_memory_size = 0xFFFFFFFFULL - memory_start;  // 32-bit max address space
+    uint64_t desired_size = GiB(4) - state->mem->host_page_size;
+    uint64_t map_size = std::min(desired_size, max_memory_size);
+    
+    // Try to map with the calculated size
+    err = uc_mem_map_ptr(uc.get(), memory_start, map_size, UC_PROT_ALL, &state->mem->memory[memory_start]);
+    
+    if (err != UC_ERR_OK) {
+        // If allocation fails, try with smaller chunks for 32-bit systems
+        LOG_WARN("Initial memory mapping failed with size 0x{:x} ({} MB). Attempting fallback allocation...", 
+                 map_size, map_size / (1024 * 1024));
+        
+        // Fallback strategy: try progressively smaller allocations
+        std::vector<uint64_t> fallback_sizes = {
+            GiB(2) - state->mem->host_page_size,  // 2 GB
+            GiB(1) - state->mem->host_page_size,  // 1 GB
+            512 * MiB(1) - state->mem->host_page_size,  // 512 MB
+            256 * MiB(1) - state->mem->host_page_size   // 256 MB
+        };
+        
+        bool allocation_succeeded = false;
+        for (uint64_t fallback_size : fallback_sizes) {
+            if (fallback_size > max_memory_size) {
+                fallback_size = max_memory_size;
+            }
+            
+            err = uc_mem_map_ptr(uc.get(), memory_start, fallback_size, UC_PROT_ALL, 
+                                 &state->mem->memory[memory_start]);
+            
+            if (err == UC_ERR_OK) {
+                LOG_INFO("Successfully mapped 0x{:x} ({} MB) of emulated memory", 
+                         fallback_size, fallback_size / (1024 * 1024));
+                allocation_succeeded = true;
+                break;
+            }
+        }
+        
+        if (!allocation_succeeded) {
+            LOG_CRITICAL("Failed to allocate memory for Unicorn emulation: {}", uc_strerror(err));
+            throw std::runtime_error(fmt::format("Unicorn memory mapping failed: {}", uc_strerror(err)));
+        }
+    } else {
+        LOG_INFO("Successfully mapped 0x{:x} ({} MB) of emulated memory", 
+                 map_size, map_size / (1024 * 1024));
+    }
 
     enable_vfp_fpu(uc.get());
 }
