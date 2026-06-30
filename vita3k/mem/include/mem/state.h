@@ -62,9 +62,17 @@ struct MemExternalMapping {
     uint32_t size;
 };
 
+struct MemoryFragment {
+    uint8_t *ptr;
+    size_t size;
+    bool is_committed;
+};
+
 struct MemState {
     std::mutex generation_mutex;
     std::mutex protect_mutex;
+    std::mutex fragment_mutex;
+    std::vector<MemoryFragment> memory_fragments;
 
     uint32_t host_page_size = 0;
     Memory memory;
