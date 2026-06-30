@@ -491,7 +491,7 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
 #endif
     uint8_t *page_table_entry = addr_ptr - addr;
-    uint8_t *original_address = &mem.memory.get() + addr;
+    uint8_t *original_address = mem.memory.get() + addr;
 
     if (original_address == nullptr) {
         LOG_ERROR("add_external_mapping > original_address is nullptr!");
@@ -567,7 +567,7 @@ void remove_external_mapping(MemState &mem, uint8_t *addr_ptr, uint32_t size) {
         // copy back and reset the page table
         for (int block = 0; block < mapping.size / KiB(4); block++) {
             // this is not thread write safe, but hopefully not other thread is busy copying while this happens
-            const auto mem_addr = (&mem.memory.get() + mapping.address) + block * KiB(4);
+            const auto mem_addr = (mem.memory.get() + mapping.address) + block * KiB(4);
             if (mem_addr == nullptr)
                memcpy(mem_addr, addr_ptr + block * KiB(4), KiB(4));
             
