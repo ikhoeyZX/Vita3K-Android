@@ -100,7 +100,7 @@ bool init(MemState &state, const bool use_page_table) {
     bool exit = false;
     size_t allocated_size = 0;
     
-    while (TOTAL_MEM_SIZE >= MiB(512) && !exit) {
+    while (TOTAL_MEM_SIZE >= GiB(1) && !exit) {
         size_t chunk_size = std::min(FRAGMENT_SIZE, TOTAL_MEM_SIZE);
         LOG_DEBUG("chunk_size = {} MB", chunk_size);
         while (chunk_size >= MIN_FRAGMENT_SIZE) {
@@ -124,10 +124,11 @@ bool init(MemState &state, const bool use_page_table) {
         }
 
         LOG_DEBUG("allocated_size = {} MB", allocated_size / MiB(1));
-        if (allocated_size >= TOTAL_MEM_SIZE * 0.9) { 
+        if (allocated_size >= TOTAL_MEM_SIZE * 0.5) { 
             exit = true;
             LOG_INFO("Fragmented allocation successful: {} MB total", TOTAL_MEM_SIZE / MiB(1));
         } else if (chunk_size < MIN_FRAGMENT_SIZE) {
+            TOTAL_MEM_SIZE -= MiB(96);
             chunk_size = std::min(FRAGMENT_SIZE, TOTAL_MEM_SIZE);
             LOG_DEBUG("chunk_size = {} MB", chunk_size / MiB(1));
         }
