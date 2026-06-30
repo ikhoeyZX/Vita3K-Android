@@ -24,6 +24,9 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#ifdef __arm
+#include <vector>
+#endif
 
 struct AllocMemPage {
     uint32_t allocated : 4;
@@ -62,17 +65,22 @@ struct MemExternalMapping {
     uint32_t size;
 };
 
+#ifdef __arm__
 struct MemoryFragment {
     uint8_t *ptr;
     size_t size;
     bool is_committed;
 };
+#endif
 
 struct MemState {
     std::mutex generation_mutex;
     std::mutex protect_mutex;
+
+#ifdef __arm__
     std::mutex fragment_mutex;
     std::vector<MemoryFragment> memory_fragments;
+#endif
 
     uint32_t host_page_size = 0;
     Memory memory;
