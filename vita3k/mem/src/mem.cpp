@@ -112,7 +112,7 @@ bool init(MemState &state, const bool use_page_table) {
                 fragment.ptr = static_cast<uint8_t*>(base);
                 fragment.size = chunk_size;
                 fragment.is_committed = false;
-                memory_fragments.push_back(fragment);
+                state.memory_fragments.push_back(fragment);
                 
                 allocated_size += chunk_size;
                 LOG_INFO("Allocated memory fragment: {} MB at 0x{:X}", chunk_size / MiB(1), reinterpret_cast<uintptr_t>(base));
@@ -123,11 +123,10 @@ bool init(MemState &state, const bool use_page_table) {
             }
         }
         
-        if (allocated_size >= current_target * 0.9) { 
+        if (allocated_size >= TOTAL_MEM_SIZE * 0.9) { 
             exit = true;
             LOG_INFO("Fragmented allocation successful: {} MB total", TOTAL_MEM_SIZE / MiB(1));
         } else if (chunk_size < MIN_FRAGMENT_SIZE) {
-            current_target -= MiB(96);
             chunk_size = std::min(FRAGMENT_SIZE, TOTAL_MEM_SIZE);
         }
     }
@@ -151,7 +150,7 @@ bool init(MemState &state, const bool use_page_table) {
 
 #ifdef __arm__
     // Enable swap behavior on 32-bit systems
-    for (const auto& fragment : memory_fragments) {
+    for (const auto& fragment : state.memory_fragments) {
         const int ret_swap = madvise(fragment.ptr, fragment.size, MADV_WILLNEED);
         if (ret_swap == -1) {
             LOG_WARN("madvise WILLNEED failed for fragment: {}", get_error_msg());
@@ -202,14 +201,14 @@ void delete_memory(uint8_t *memory) {
         const BOOL ret = VirtualFree(memory, 0, MEM_RELEASE);
         assert(ret);
 #elif __arm__
-        const std::lock_guard<std::mutex> lock(fragment_mutex);
-        for (auto& fragment : memory_fragments) {
+        const std::lock_guard<std::mutex> lock(state.fragment_mutex);
+        for (auto& fragment : state.memory_fragments) {
             if (fragment.ptr != nullptr) {
                 munmap(fragment.ptr, fragment.size);
                 fragment.ptr = nullptr;
             }
         }
-        memory_fragments.clear();
+        state.memory_fragments.clear();
 #else
         munmap(memory, TOTAL_MEM_SIZE);
 #endif
@@ -229,8 +228,8 @@ bool is_valid_addr_range(const MemState &state, Address start, Address end) {
 uint8_t* get_physical_ptr(MemState &state, Address addr) {
 #ifdef __arm__
     size_t offset = 0;
-    const std::lock_guard<std::mutex> lock(fragment_mutex);
-    for (const auto& frag : memory_fragments) {
+    const std::lock_guard<std::mutex> lock(state.fragment_mutex);
+    for (const auto& frag : state.memory_fragments) {
         if (addr < offset + frag.size) {
             return frag.ptr + (addr - offset);
         }
