@@ -37,10 +37,13 @@
 #endif
 
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
-size_t TOTAL_MEM_SIZE = GiB(4);
+
 #ifdef __arm__
+size_t TOTAL_MEM_SIZE = GiB(3);
 size_t FRAGMENT_SIZE = MiB(16);
 size_t MIN_FRAGMENT_SIZE = MiB(4);
+#else
+size_t TOTAL_MEM_SIZE = GiB(4);
 #endif
 constexpr bool LOG_PROTECT = false;
 #ifdef NDEBUG
