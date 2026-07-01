@@ -99,9 +99,10 @@ bool init(MemState &state, const bool use_page_table) {
 #ifdef __arm__
     bool exit = false;
     size_t allocated_size = 0;
+    size_t fragmem = TOTAL_MEM_SIZE;
     
-    while (TOTAL_MEM_SIZE >= GiB(1) && !exit) {
-        size_t chunk_size = std::min(FRAGMENT_SIZE, TOTAL_MEM_SIZE);
+    while (fragmem >= MIN_FRAGMENT_SIZE && !exit) {
+        size_t chunk_size = std::min(FRAGMENT_SIZE, fragmem);
         LOG_DEBUG("chunk_size = {} MB", chunk_size);
         while (chunk_size >= MIN_FRAGMENT_SIZE) {
             void* base = mmap(nullptr, chunk_size, prot, flags, fd, offset);
@@ -126,6 +127,7 @@ bool init(MemState &state, const bool use_page_table) {
         LOG_DEBUG("allocated_size = {} MB", allocated_size / MiB(1));
         if (allocated_size >= TOTAL_MEM_SIZE * 0.5) { 
             exit = true;
+            TOTAL_MEM_SIZE = allocated_size;
             LOG_INFO("Fragmented allocation successful: {} MB total", TOTAL_MEM_SIZE / MiB(1));
         } else if (chunk_size < MIN_FRAGMENT_SIZE) {
             TOTAL_MEM_SIZE -= MiB(96);
