@@ -143,6 +143,7 @@ bool init(MemState &state, const bool use_page_table) {
         LOG_CRITICAL("Failed to allocate any memory fragments");
         return false;
     }
+    state.vmem_size = TOTAL_MEM_SIZE;
     
     state.memory = Memory(state.memory_fragments[0].ptr, [&state](uint8_t *p) { delete_memory(p, state); });
 #else
