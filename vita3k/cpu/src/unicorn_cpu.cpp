@@ -188,7 +188,9 @@ UnicornCPU::UnicornCPU(CPUState *state)
         };
 #else
         fallback_sizes = {
-            desired_size 
+            desired_size - MiB(256),
+            desired_size - MiB(512),
+            GiB(3)
         };
 #endif
         
