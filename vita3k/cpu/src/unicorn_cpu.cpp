@@ -146,7 +146,7 @@ UnicornCPU::UnicornCPU(CPUState *state)
 #else
     uint64_t memory_start = state->mem->host_page_size;
     uint64_t max_memory_size = 0xFFFFFFFFULL - memory_start;  // 32-bit max address space (4gb)
-    uint64_t desired_size = GiB(4) - state->mem->host_page_size; // same as TOTAL_MEM_SIZE in mem.cpp
+    uint64_t desired_size = state->mem->vmem_size - state->mem->host_page_size; // same as TOTAL_MEM_SIZE in mem.cpp
     uint64_t map_size = std::min(desired_size, max_memory_size);
 #endif
     err = uc_mem_map_ptr(uc.get(), memory_start, map_size, UC_PROT_ALL, state->mem->memory.get() + memory_start);
