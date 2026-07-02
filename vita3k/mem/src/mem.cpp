@@ -147,6 +147,7 @@ bool init(MemState &state, const bool use_page_table) {
     
     state.memory = Memory(state.memory_fragments[0].ptr, [&state](uint8_t *p) { delete_memory(p, state); });
 #else
+    state.vmem_size = TOTAL_MEM_SIZE;
     state.memory = Memory(static_cast<uint8_t *>(mmap(nullptr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), [&state](uint8_t *p) { delete_memory(p, state); });
 #endif
 #endif
