@@ -81,9 +81,9 @@ struct MemState {
 #ifdef __arm__
     std::mutex fragment_mutex;
     std::vector<MemoryFragment> memory_fragments;
+#else
     size_t vmem_size = 0; // set mem size for unicorn
 #endif
-
     uint32_t host_page_size = 0;
     Memory memory;
     AllocPageTable alloc_table;
