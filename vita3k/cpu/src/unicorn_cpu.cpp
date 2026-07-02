@@ -138,11 +138,17 @@ UnicornCPU::UnicornCPU(CPUState *state)
     err = uc_hook_add(uc.get(), &hh, UC_HOOK_INTR, reinterpret_cast<void *>(&intr_hook), this, 1, 0);
     assert(err == UC_ERR_OK);
 
+#ifdef __arm__
+    size_t memory_start = state->mem->host_page_size;
+    size_t max_memory_size = 0xC0000000UL - memory_start;  // 3gb max address space
+    size_t desired_size = state->mem->vmem_size - state->mem->host_page_size;
+    size_t map_size = std::min(desired_size, max_memory_size);
+#else
     uint64_t memory_start = state->mem->host_page_size;
-    uint64_t max_memory_size = 0xFFFFFFFFULL - memory_start;  // 32-bit max address space
-    uint64_t desired_size = GiB(4) - state->mem->host_page_size;
+    uint64_t max_memory_size = 0xFFFFFFFFULL - memory_start;  // 32-bit max address space (4gb)
+    uint64_t desired_size = GiB(4) - state->mem->host_page_size; // same as TOTAL_MEM_SIZE in mem.cpp
     uint64_t map_size = std::min(desired_size, max_memory_size);
-    
+#endif
     err = uc_mem_map_ptr(uc.get(), memory_start, map_size, UC_PROT_ALL, state->mem->memory.get() + memory_start);
     
     if (err != UC_ERR_OK) {
@@ -150,10 +156,11 @@ UnicornCPU::UnicornCPU(CPUState *state)
         
         // Fallback strategy: try progressively smaller allocations
         std::vector<uint64_t> fallback_sizes = {
-            GiB(3) - state->mem->host_page_size, 
-            GiB(2) - state->mem->host_page_size,  
-            GiB(1) - state->mem->host_page_size,  
-            512 * MiB(1) - state->mem->host_page_size
+            state->mem->vmem_size - state->mem->host_page_size,
+            (state->mem->vmem_size - MiB(128)) - state->mem->host_page_size,
+            (state->mem->vmem_size - MiB(256)) - state->mem->host_page_size,
+            (state->mem->vmem_size - MiB(512)) - state->mem->host_page_size,
+            (state->mem->vmem_size - GiB(1)) - state->mem->host_page_size
         };
         
         bool allocation_succeeded = false;
