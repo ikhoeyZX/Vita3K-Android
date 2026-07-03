@@ -71,12 +71,12 @@ void UnicornCPU::code_hook(uc_engine *uc, uint64_t address, uint32_t size, void 
 void UnicornCPU::read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
     assert(value == 0);
 
-//    UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
-//    MemState &mem = *state.parent->mem;
+    UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
+    MemState &mem = *state.parent->mem;
 }
 
 void UnicornCPU::write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
-//    UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
+    UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
 }
 
 void UnicornCPU::log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, MemState &mem, CPUState &cpu, Address offset) {
