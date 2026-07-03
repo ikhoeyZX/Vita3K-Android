@@ -186,7 +186,7 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
     const sce_module_imports_raw *const imports_begin = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_top);
     const sce_module_imports_raw *const imports_end = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_end);
 
-    for (const sce_module_imports_raw *imports = imports_begin; imports < imports_end; imports = reinterpret_cast<const sce_module_imports_raw *>(reinterpret_cast<const uint8_t *>(imports) + impo[...]
+    for (const sce_module_imports_raw *imports = imports_begin; imports < imports_end; imports = reinterpret_cast<const sce_module_imports_raw *>(reinterpret_cast<const uint8_t *>(imports) + imports->size)) {
         assert(imports->num_syms_tls_vars == 0);
 
         Address library_name{};
@@ -440,7 +440,7 @@ static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_modu
     const sce_module_exports_raw *const exports_begin = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_top);
     const sce_module_exports_raw *const exports_end = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_end);
 
-    for (const sce_module_exports_raw *exports = exports_begin; exports < exports_end; exports = reinterpret_cast<const sce_module_exports_raw *>(reinterpret_cast<const uint8_t *>(exports) + expo[...]
+    for (const sce_module_exports_raw *exports = exports_begin; exports < exports_end; exports = reinterpret_cast<const sce_module_exports_raw *>(reinterpret_cast<const uint8_t *>(exports) + exports->size)) {
         const char *const lib_name = Ptr<const char>(exports->library_name).get(mem);
 
         if (kernel.debugger.log_exports)
@@ -534,8 +534,8 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     }
 
     // log elf header
-    LOG_TRACE("ELF Header: e_type: {}, e_machine: {}, e_version: {}, e_entry: {}, e_phoff: {}, e_shoff: {}, e_flags: {}, e_ehsize: {}, e_phentsize: {}, e_phnum: {}, e_shentsize: {}, e_shnum: {}, [...]
-        log_hex(elf.e_type), log_hex(elf.e_machine), log_hex(elf.e_version), log_hex(elf.e_entry), log_hex(elf.e_phoff), log_hex(elf.e_shoff), log_hex(elf.e_flags), log_hex(elf.e_ehsize), log_hex[...]
+    LOG_TRACE("ELF Header: e_type: {}, e_machine: {}, e_version: {}, e_entry: {}, e_phoff: {}, e_shoff: {}, e_flags: {}, e_ehsize: {}, e_phentsize: {}, e_phnum: {}, e_shentsize: {}, e_shnum: {}, e_shstrndx: {}",
+        log_hex(elf.e_type), log_hex(elf.e_machine), log_hex(elf.e_version), log_hex(elf.e_entry), log_hex(elf.e_phoff), log_hex(elf.e_shoff), log_hex(elf.e_flags), log_hex(elf.e_ehsize), log_hex(elf.e_phentsize), log_hex(elf.e_phnum), log_hex(elf.e_shentsize), log_hex(elf.e_shnum), log_hex(elf.e_shstrndx));
 
     bool isRelocatable;
     if (elf.e_type == ET_SCE_EXEC) {
@@ -554,7 +554,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     // TODO: is ABI_VERSION always 0?
 
     if (is_self) {
-        LOG_DEBUG_IF(LOG_MODULE_LOADING, "Loading SELF at {}... (ELF type: {}, self_filesize: {}, self_offset: {}, module_info_offset: {})", self_path, log_hex(elf.e_type), log_hex(self_header.se[...]
+        LOG_DEBUG_IF(LOG_MODULE_LOADING, "Loading SELF at {}... (ELF type: {}, self_filesize: {}, self_offset: {}, module_info_offset: {})", self_path, log_hex(elf.e_type), log_hex(self_header.self_filesize), log_hex(self_header.self_offset), log_hex(module_info_offset));
     } else {
         LOG_DEBUG_IF(LOG_MODULE_LOADING, "Loading ELF at {}... (ELF type: {}, module_info_offset: {})", self_path, log_hex(elf.e_type), log_hex(module_info_offset));
     }
@@ -598,7 +598,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
             assert(res == MZ_OK);
         };
 
-        LOG_DEBUG_IF(LOG_MODULE_LOADING, "    [{}] (p_type: {}): p_offset: {}, p_vaddr: {}, p_paddr: {}, p_filesz: {}, p_memsz: {}, p_flags: {}, p_align: {}", get_seg_header_string(seg_header.p_t[...]
+        LOG_DEBUG_IF(LOG_MODULE_LOADING, "    [{}] (p_type: {}): p_offset: {}, p_vaddr: {}, p_paddr: {}, p_filesz: {}, p_memsz: {}, p_flags: {}, p_align: {}", get_seg_header_string(seg_header.p_type), log_hex(seg_header.p_type), log_hex(seg_header.p_offset), log_hex(seg_header.p_vaddr), log_hex(seg_header.p_paddr), log_hex(seg_header.p_filesz), log_hex(seg_header.p_memsz), log_hex(seg_header.p_flags), log_hex(seg_header.p_align));
 
         if (is_self && seg_infos[seg_index].encryption != 2) { // 0 should also be valid?
             LOG_ERROR("Cannot load ELF {}: invalid segment encryption status {}.", self_path, seg_infos[seg_index].encryption);
@@ -622,11 +622,11 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                 }
 
                 if (!segment_address) {
-                    LOG_CRITICAL("Loading {} ELF {} failed: Could not allocate {} bytes @ {} for segment {}.", (isRelocatable) ? "relocatable" : "fixed", self_path, log_hex(seg_header.p_memsz), lo[...]
-                    free_all_segments(mem, segment_reloc_info);
-                    return SCE_KERNEL_ERROR_NO_MEMORY; // TODO is this correct?
+                        LOG_CRITICAL("Loading {} ELF {} failed: Could not allocate {} bytes @ {} for segment {}.", (isRelocatable) ? "relocatable" : "fixed", self_path, log_hex(seg_header.p_memsz), log_hex(seg_header.p_vaddr), seg_index);
+                        free_all_segments(mem, segment_reloc_info);
+                        return SCE_KERNEL_ERROR_NO_MEMORY; // TODO is this correct?
                 }
-
+                
                 const Ptr<uint8_t> seg_ptr(segment_address);
                 if (is_self && seg_infos[seg_index].compression == 2) {
                     uncompress_segment(seg_ptr.get(mem));
