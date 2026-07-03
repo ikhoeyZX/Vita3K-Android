@@ -151,7 +151,7 @@ UnicornCPU::UnicornCPU(CPUState *state)
     uint64_t contiguous_size = std::min(desired_size, max_memory_size);
 #endif
         
-    err = uc_mem_map_ptr(uc.get(), memory_start, map_size, UC_PROT_ALL, state->mem->memory.get() + memory_start);
+    err = uc_mem_map_ptr(uc.get(), memory_start, contiguous_size, UC_PROT_ALL, state->mem->memory.get() + memory_start);
     
     if (err != UC_ERR_OK) {
         LOG_WARN("Initial memory mapping failed with size 0x{:x} ({} MB). Attempting fallback allocation...", map_size, map_size / (1024 * 1024));
