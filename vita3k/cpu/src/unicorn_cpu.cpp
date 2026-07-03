@@ -187,8 +187,7 @@ UnicornCPU::UnicornCPU(CPUState *state)
             throw std::runtime_error(fmt::format("Unicorn memory mapping failed: {}", uc_strerror(err)));
         }
     } else {
-        LOG_INFO("Successfully mapped {} MB of emulated memory", 
-                 desired_size / MiB(1);
+        LOG_INFO("Successfully mapped {} MB of emulated memory", desired_size / MiB(1));
     }
 
     enable_vfp_fpu(uc.get());
