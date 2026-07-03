@@ -30,12 +30,6 @@
 constexpr bool TRACE_RETURN_VALUES = false;
 constexpr bool LOG_REGISTERS = false;
 
-constexpr uint32_t INT_SVC = 2;
-constexpr uint32_t INT_BKPT = 7;
-
-thread_local uint32_t cached_pc = 0;
-thread_local bool pc_cache_valid = false;
-
 static inline void func_trace(CPUState &state) {
     if (TRACE_RETURN_VALUES)
         if (is_returning(state.disasm))
@@ -44,13 +38,6 @@ static inline void func_trace(CPUState &state) {
 
 void UnicornCPU::code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
     UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
-
-    // log when need
-    if (!state.get_log_code()) {
-        func_trace(*state.parent);
-        return;
-    }
-    
     std::string disassembly = disassemble(*state.parent, address);
     if (LOG_REGISTERS) {
         for (int i = 0; i < 12; i++) {
@@ -81,42 +68,32 @@ void UnicornCPU::write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, i
 
 void UnicornCPU::log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, MemState &mem, CPUState &cpu, Address offset) {
     const char *const name = mem_name(address, mem);
-    auto pc = cached_pc;
+    auto pc = get_pc();
     LOG_TRACE("{} ({}): {} {} bytes, address {} + {} ({}, {}), value {} at {}", log_hex((uint64_t)uc), cpu.thread_id, type, size, log_hex(address), log_hex(offset), log_hex(address + offset), name, log_hex(value), log_hex(pc));
 }
+
+constexpr uint32_t INT_SVC = 2;
+constexpr uint32_t INT_BKPT = 7;
 
 void UnicornCPU::intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
     assert(intno == INT_SVC || intno == INT_BKPT);
     UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
-    
     uint32_t pc = state.get_pc();
-    cached_pc = pc;
-    pc_cache_valid = true;
-    
     state.is_inside_intr_hook = true;
-    
     if (intno == INT_SVC) {
+        assert(!state.is_thumb_mode());
         const Address svc_address = pc - 4;
         uint32_t svc_instruction = 0;
         const auto err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
-        
-        if (err == UC_ERR_OK) {
-            uint32_t svc = svc_instruction & 0xffffff;
-            
-            // Verify thumb mode assertion is correct
-            if (svc == 0) {  // Unlikely SVC number, might be thumb
-                svc = (svc_instruction & 0xff0000) >> 16;
-            }
-            
-            state.parent->svc_called = true;
-            state.parent->svc = svc;
-        }
+        assert(err == UC_ERR_OK);
+        const uint32_t svc = state.is_thumb_mode() ? (svc_instruction & 0xff0000) >> 16 : svc_instruction & 0xffffff;
+        state.parent->svc_called = true;
+        state.parent->svc = svc;
         state.stop();
     } else if (intno == INT_BKPT) {
         state.stop();
         state.did_break = true;
     }
-    
     state.is_inside_intr_hook = false;
 }
 
@@ -137,6 +114,7 @@ static void enable_vfp_fpu(uc_engine *uc) {
 }
 
 void UnicornCPU::log_error_details(uc_err code) {
+    // I don't especially want the time logged for every line, but I also want it to print to the log file...
     LOG_ERROR("Unicorn error {}. {}\n{}", log_hex(code), uc_strerror(code), this->save_context().description());
 
     auto pc = this->get_pc();
@@ -172,41 +150,28 @@ UnicornCPU::UnicornCPU(CPUState *state)
     uint64_t desired_size = GiB(4) - state->mem->host_page_size; // limit by 32-bit
     uint64_t contiguous_size = std::min(desired_size, max_memory_size);
 #endif
-    
-    err = uc_mem_map_ptr(uc.get(), memory_start, contiguous_size, UC_PROT_ALL, state->mem->memory.get() + memory_start);
+        
+    err = uc_mem_map_ptr(uc.get(), memory_start, map_size, UC_PROT_ALL, state->mem->memory.get() + memory_start);
     
     if (err != UC_ERR_OK) {
-        LOG_WARN("Initial memory mapping failed with size 0x{:x} ({} MB). Attempting fallback allocation...", contiguous_size, contiguous_size / (1024 * 1024));
+        LOG_WARN("Initial memory mapping failed with size 0x{:x} ({} MB). Attempting fallback allocation...", map_size, map_size / (1024 * 1024));
         
-        std::vector<uint64_t> fallback_sizes;
-        
-#ifdef __arm__
-        fallback_sizes = {
-            MiB(1408),
-            MiB(1280),
-            MiB(1024)
+        // Fallback strategy: try progressively smaller allocations
+        std::vector<uint64_t> fallback_sizes = {
+        #ifndef __arm__
+            (GiB(4) - MiB(512)) - state->mem->host_page_size, 
+        #endif
+            GiB(3) - state->mem->host_page_size, 
+            GiB(2) - state->mem->host_page_size,  
+            GiB(1) - state->mem->host_page_size,  
+            512 * MiB(1) - state->mem->host_page_size
         };
-#else
-        fallback_sizes = {
-            desired_size - MiB(256),
-            desired_size - MiB(512),
-            GiB(3)
-        };
-#endif
         
         bool allocation_succeeded = false;
         for (uint64_t fallback_size : fallback_sizes) {
-#ifdef __arm__
-            uint64_t max_addr_space = 0xC0000000UL - memory_start;
-#else
-            uint64_t max_addr_space = 0xFFFFFFFFULL - memory_start;
-#endif
-            
-            if (fallback_size > max_addr_space) {
-                fallback_size = max_addr_space;
+            if (fallback_size > max_memory_size) {
+                fallback_size = max_memory_size;
             }
-            
-            if (fallback_size == 0) continue;
             
             err = uc_mem_map_ptr(uc.get(), memory_start, fallback_size, UC_PROT_ALL, state->mem->memory.get() + memory_start);
             
@@ -223,7 +188,7 @@ UnicornCPU::UnicornCPU(CPUState *state)
         }
     } else {
         LOG_INFO("Successfully mapped 0x{:x} ({} MB) of emulated memory", 
-                 contiguous_size, contiguous_size / (1024 * 1024));
+                 map_size, map_size / (1024 * 1024));
     }
 
     enable_vfp_fpu(uc.get());
@@ -231,9 +196,6 @@ UnicornCPU::UnicornCPU(CPUState *state)
 
 int UnicornCPU::execute_instructions_no_check(int num) {
     std::uint32_t pc = get_pc();
-    cached_pc = pc;
-    pc_cache_valid = true;
-    
     bool thumb_mode = is_thumb_mode();
     if (thumb_mode) {
         pc |= 1;
@@ -243,56 +205,46 @@ int UnicornCPU::execute_instructions_no_check(int num) {
 
     if (err != UC_ERR_OK) {
         log_error_details(err);
-        pc_cache_valid = false;
         return -1;
     }
 
-    pc_cache_valid = false;
     return 0;
 }
 
 int UnicornCPU::run() {
     uint32_t pc = get_pc();
-    cached_pc = pc;
-    pc_cache_valid = true;
-    
     bool thumb_mode = is_thumb_mode();
     did_break = false;
     parent->svc_called = false;
 
+    pc = get_pc();
     if (thumb_mode) {
         pc |= 1;
     }
 
-    uc_err err = uc_emu_start(uc.get(), pc, 1ULL << 63, 0, 0);
-    
+    uc_err err = uc_emu_start(uc.get(), pc, 0, 0, 0);
     if (err != UC_ERR_OK) {
         log_error_details(err);
-        pc_cache_valid = false;
         return -1;
     }
 
     pc = get_pc();
-    cached_pc = pc;
     thumb_mode = is_thumb_mode();
     if (thumb_mode) {
         pc |= 1;
     }
-    
-    pc_cache_valid = false;
+
     return parent->halt_instruction_pc <= pc && pc <= parent->halt_instruction_pc + 4;
 }
 
 int UnicornCPU::step() {
     uint32_t pc = get_pc();
-    cached_pc = pc;
-    pc_cache_valid = true;
-    
     bool thumb_mode = is_thumb_mode();
 
     did_break = false;
     parent->svc_called = false;
 
+    pc = get_pc();
     if (thumb_mode) {
         pc |= 1;
     }
@@ -301,25 +253,20 @@ int UnicornCPU::step() {
 
     if (err != UC_ERR_OK) {
         log_error_details(err);
-        pc_cache_valid = false;
         return -1;
     }
-    
     pc = get_pc();
-    cached_pc = pc;
     thumb_mode = is_thumb_mode();
     if (thumb_mode) {
         pc |= 1;
     }
-    
-    pc_cache_valid = false;
+
     return parent->halt_instruction_pc <= pc && pc <= parent->halt_instruction_pc + 4;
 }
 
 void UnicornCPU::stop() {
     const uc_err err = uc_emu_stop(uc.get());
     assert(err == UC_ERR_OK);
-    pc_cache_valid = false;
 }
 
 uint32_t UnicornCPU::get_reg(uint8_t idx) {
@@ -349,10 +296,6 @@ void UnicornCPU::set_sp(uint32_t val) {
 }
 
 uint32_t UnicornCPU::get_pc() {
-    if (pc_cache_valid) {
-        return cached_pc;
-    }
-    
     uint32_t value = 0;
     const uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_PC, &value);
     assert(err == UC_ERR_OK);
@@ -363,8 +306,6 @@ uint32_t UnicornCPU::get_pc() {
 void UnicornCPU::set_pc(uint32_t val) {
     const uc_err err = uc_reg_write(uc.get(), UC_ARM_REG_PC, &val);
     assert(err == UC_ERR_OK);
-    cached_pc = val;
-    pc_cache_valid = true;
 }
 
 uint32_t UnicornCPU::get_lr() {
@@ -455,13 +396,15 @@ CPUContext UnicornCPU::save_context() {
     }
     ctx.cpu_registers[13] = get_sp();
     ctx.cpu_registers[14] = get_lr();
-    
-    uint32_t pc = pc_cache_valid ? cached_pc : get_pc();
-    ctx.set_pc(is_thumb_mode() ? pc | 1 : pc);
+    ctx.set_pc(is_thumb_mode() ? get_pc() | 1 : get_pc());
 
     for (size_t i = 0; i < ctx.fpu_registers.size(); i++) {
         ctx.fpu_registers[i] = get_float_reg(i);
     }
+
+    // Unicorn doesn't like tweaking cpsr
+    // ctx.cpsr = get_cpsr();
+    // ctx.fpscr = get_fpscr();
 
     return ctx;
 }
@@ -470,6 +413,10 @@ void UnicornCPU::load_context(const CPUContext &ctx) {
     for (size_t i = 0; i < ctx.fpu_registers.size(); i++) {
         set_float_reg(i, ctx.fpu_registers[i]);
     }
+
+    // Unicorn doesn't like tweaking cpsr
+    // set_cpsr(ctx.cpsr);
+    // set_fpscr(ctx.fpscr);
 
     for (size_t i = 0; i < 16; i++) {
         set_reg(i, ctx.cpu_registers[i]);
@@ -481,7 +428,6 @@ void UnicornCPU::load_context(const CPUContext &ctx) {
 
 void UnicornCPU::invalidate_jit_cache(Address start, size_t length) {
     uc_ctl_remove_cache(uc.get(), start, start + length);
-    pc_cache_valid = false;  // Invalidate PC cache when instruction cache is cleared
 }
 
 bool UnicornCPU::hit_breakpoint() {
