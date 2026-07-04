@@ -49,6 +49,9 @@ static constexpr uint32_t NID_SYSLYB = 0x936c8a78;
 static constexpr uint32_t NID_PROCESS_PARAM = 0x70FBA1E7;
 
 static constexpr bool LOG_MODULE_LOADING = false;
+#ifdef __arm__
+static constexpr bool LOG_MODULE_LOADING = true;
+#endif
 
 struct VarImportsHeader {
     uint32_t unk : 4; // Must be zero
