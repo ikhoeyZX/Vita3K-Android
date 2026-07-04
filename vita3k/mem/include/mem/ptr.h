@@ -41,7 +41,7 @@ public:
         if (pointer_bytes == 0) {
             addr = 0;
         } else {
-            addr = static_cast<Address>(pointer_bytes - &mem.memory[0]);
+            addr = static_cast<Address>(pointer_bytes - mem.memory.get());
         }
     }
 
@@ -60,7 +60,7 @@ public:
         } else if (mem.use_page_table) {
             return reinterpret_cast<T *>(mem.page_table[addr / KiB(4)] + addr);
         } else {
-            return reinterpret_cast<T *>(&mem.memory[addr]);
+            return reinterpret_cast<T *>(&mem.memory.get()[addr]);
         }
     }
 
