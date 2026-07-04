@@ -154,7 +154,7 @@ UnicornCPU::UnicornCPU(CPUState *state)
     err = uc_mem_map_ptr(uc.get(), memory_start, contiguous_size, UC_PROT_ALL, state->mem->memory.get() + memory_start);
     
     if (err != UC_ERR_OK) {
-        LOG_WARN("Initial memory mapping failed with size {} MB. Attempting fallback allocation...", desired_size / MiB(1));
+        LOG_WARN("Initial memory mapping failed with size {} MB. Attempting fallback allocation...", contiguous_size / MiB(1));
         
         // Fallback strategy: try progressively smaller allocations
         std::vector<uint64_t> fallback_sizes = {
@@ -187,7 +187,7 @@ UnicornCPU::UnicornCPU(CPUState *state)
             throw std::runtime_error(fmt::format("Unicorn memory mapping failed: {}", uc_strerror(err)));
         }
     } else {
-        LOG_INFO("Successfully mapped {} MB of emulated memory", desired_size / MiB(1));
+        LOG_INFO("Successfully mapped {} MB of emulated memory", contiguous_size / MiB(1));
     }
 
     enable_vfp_fpu(uc.get());
