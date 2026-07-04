@@ -628,8 +628,10 @@ EXPORT(SceUID, sceIoOpen, const char *file, const int flags, const SceMode mode)
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
 
-    if (emuenv.cfg.current_config.file_loading_delay > 0)
-        std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.current_config.file_loading_delay));
+    // emmc 4.0 lowest respond time around 22.8 ms, 25ms should be okay
+    if (emuenv.file_open_need_delay) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(25));
+    }
 
     LOG_INFO("Opening file: {}", file);
     return open_file(emuenv.io, file, flags, emuenv.pref_path, export_name);
@@ -1290,7 +1292,7 @@ EXPORT(int, sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea) {
 
 EXPORT(int, sceKernelExitProcess, int res) {
     TRACY_FUNC(sceKernelExitProcess, res);
-    emuenv.kernel.request_process_exit(res);
+    emuenv.kernel.exit_delete_all_threads();
     return SCE_KERNEL_OK;
 }
 
