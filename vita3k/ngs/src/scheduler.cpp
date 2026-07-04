@@ -43,7 +43,10 @@ void VoiceScheduler::deque_insert(const MemState &mem, Voice *voice) {
                 continue;
             }
 
-            Voice *dest = patch.get(mem)->dest;
+            Voice *dest = patch.get(mem)->dest.get(mem);
+            if (!dest) {
+                continue;
+            }
             const int32_t pos = get_position(dest);
 
             if (pos == -1) {
@@ -175,7 +178,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         case PendingType::ReleaseRack:
             release_rack(*op.release_data.state, mem, op.system, op.release_data.rack);
             // run callback (we know it is defined)
-            kern.get_thread(thread_id)->run_callback(op.release_data.callback, { op.release_data.rack_handle });
+            kern.get_thread(thread_id)->run_callback(op.release_data.callback, { Ptr<void>(op.release_data.rack, mem).address() });
             break;
         }
 
@@ -204,11 +207,14 @@ bool VoiceScheduler::resort_to_respect_dependencies(const MemState &mem, Voice *
     // Check all dependencies, could be optimized- @sunho suggested dfs topological sort
     for (size_t i = 0; i < source->patches.size(); i++) {
         for (const auto &patch : source->patches[i]) {
-            if (!patch || patch.get(mem)->output_sub_index == -1) {
+            if (!patch || !patch.get(mem)->is_active()) {
                 continue;
             }
 
-            Voice *dest = patch.get(mem)->dest;
+            Voice *dest = patch.get(mem)->dest.get(mem);
+            if (!dest) {
+                continue;
+            }
             const int32_t dest_pos = get_position(dest);
 
             if (dest_pos == -1) {
@@ -234,7 +240,7 @@ Ptr<Patch> VoiceScheduler::patch(const MemState &mem, SceNgsPatchSetupInfo *info
     Voice *source = info->source.get(mem);
     Voice *dest = info->dest.get(mem);
 
-    Ptr<Patch> patch = source->patch(mem, info->source_output_index, info->source_output_subindex, info->dest_input_index, dest);
+    Ptr<Patch> patch = source->patch(mem, info->source_output_index, info->source_output_subindex, info->dest_input_index, info->source, info->dest);
 
     if (!patch) {
         return patch;
