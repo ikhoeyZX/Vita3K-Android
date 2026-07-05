@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ struct MemState;
 struct SegmentInfoForReloc {
     Address addr; // segment address in guest memory
     Address p_vaddr; // segment virtual address in guest memory
-    uint64_t size; // segment memory size
+    size_t size; // segment memory size
 };
 using SegmentInfosForReloc = std::map<uint16_t, SegmentInfoForReloc>;
 
