@@ -61,8 +61,14 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
     const SceGxmColorBaseFormat base_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint32_t &swizzle,
     std::uint16_t *stored_height, std::uint16_t *stored_width) {
     // Create the key to access the cache struct
-    const std::uint64_t key = address.address();
+    if (!address)
+        LOG_ERROR("address is null");
 
+    const std::uint64_t key = address.address();
+    
+    LOG_TRACE("W = {}, H = {}, pixel stride = {}, base format = {}, addresses = {}, purpose = {}, swizzle = {}" width, height, pixel_stride,
+    log_hex(base_format), key, log_hex(purpose), *swizzle);
+    
     const uint32_t original_width = width;
     const uint32_t original_height = height;
 
