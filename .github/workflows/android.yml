@@ -130,7 +130,7 @@ jobs:
         run: |
           mv  android/build/outputs/apk/release/android-release.apk  android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release.apk
           
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7.0.0
         with:
           name: vita3k-${{ env.git_short_sha }}-release_armv7a.zip
           path: android/build/outputs/apk/release/vita3k-armv7a-${{ env.git_short_sha }}-release.apk
