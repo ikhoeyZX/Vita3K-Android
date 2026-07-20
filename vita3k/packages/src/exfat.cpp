@@ -50,8 +50,8 @@ static fs::path get_exfat_file_name(fs::ifstream &img, const uint8_t continuatio
 }
 
 static uint64_t get_cluster_offset(const ExFATSuperBlock &super_block, uint32_t cluster) {
-    const uint64_t sector_size = 1ULL << super_block.sector_bits;
-    const uint64_t sectors_per_cluster = 1ULL << super_block.spc_bits;
+    const uint64_t sector_size = static_cast<uint64_t>(1 << super_block.sector_bits);
+    const uint64_t sectors_per_cluster = static_cast<uint64_t>(1 << super_block.spc_bits);
     const uint64_t cluster_size = sector_size * sectors_per_cluster;
 
     // exFAT data clusters are numbered from 2, and the cluster heap begins
@@ -128,7 +128,7 @@ static void traverse_directory(fs::ifstream &img, const uint64_t img_size, std::
     }
 }
 
-void extract_exfat(const fs::path &partition_path, const std::string &partition, const fs::path &vita_fs_path) {
+void extract_exfat(const fs::path &partition_path, const std::string &partition, const fs::path &pref_path) {
     // Open the partition file for reading in binary mode
     fs::ifstream img(partition_path / partition, std::ios::binary);
     if (!img.is_open()) {
@@ -147,7 +147,7 @@ void extract_exfat(const fs::path &partition_path, const std::string &partition,
     img.read(reinterpret_cast<char *>(&super_block), sizeof(ExFATSuperBlock));
 
     // Set output path
-    const fs::path output_path{ vita_fs_path / partition.substr(0, 3) };
+    const fs::path output_path{ pref_path / partition.substr(0, 3) };
 
     // Current directory
     fs::path current_dir;
