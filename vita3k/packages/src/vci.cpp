@@ -219,7 +219,7 @@ bool install_vci(const fs::path &vci_path, EmuEnvState &emuenv, const std::funct
         return false;
     }
     vfs::FileBuffer param;
-    const std::vector<uint8_t> param = fs_utils::read_asset_raw(fs::path(param_sfo));
+    std::vector<uint8_t> param = fs_utils::read_asset_raw(fs::path(param_sfo));
     sfo::get_param_info(emuenv.app_info, param, emuenv.cfg.sys_lang);
     LOG_INFO("Found {} [{}], category: {}, content id: {}", emuenv.app_info.app_title, emuenv.app_info.app_title_id, emuenv.app_info.app_category, emuenv.app_info.app_content_id);
 
@@ -262,7 +262,7 @@ bool install_vci(const fs::path &vci_path, EmuEnvState &emuenv, const std::funct
 
     // 11) Copy the staged app into ux0 (copy, not rename, so it works across volumes)
     fs::create_directories(path);
-    if (!fs_utils::copy_directories(title_src, path)) {
+    if (!copy_directories(title_src, path)) {
         LOG_ERROR("VCI: failed to copy app into {}", fs_utils::path_to_utf8(path));
         fs::remove_all(staging);
         return false;
