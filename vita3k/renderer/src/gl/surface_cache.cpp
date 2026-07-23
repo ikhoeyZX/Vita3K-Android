@@ -66,7 +66,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
 
     const std::uint64_t key = address.address();
     
-    LOG_TRACE("W = {}, H = {}, pixel stride = {}, addresses = {}, swizzle = {}", width, height, pixel_stride, key, swizzle);
+    // LOG_TRACE("W = {}, H = {}, pixel stride = {}, addresses = {}, swizzle = {}", width, height, pixel_stride, key, swizzle);
     
     const uint32_t original_width = width;
     const uint32_t original_height = height;
