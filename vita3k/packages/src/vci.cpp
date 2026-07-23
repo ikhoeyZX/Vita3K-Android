@@ -218,7 +218,7 @@ bool install_vci(const fs::path &vci_path, EmuEnvState &emuenv, const std::funct
         LOG_ERROR("VCI: param.sfo not found at {}", fs_utils::path_to_utf8(param_sfo));
         return false;
     }
-    vfs::FileBuffer param;
+    
     std::vector<uint8_t> param = fs_utils::read_asset_raw(fs::path(param_sfo));
     sfo::get_param_info(emuenv.app_info, param, emuenv.cfg.sys_lang);
     LOG_INFO("Found {} [{}], category: {}, content id: {}", emuenv.app_info.app_title, emuenv.app_info.app_title_id, emuenv.app_info.app_category, emuenv.app_info.app_content_id);
