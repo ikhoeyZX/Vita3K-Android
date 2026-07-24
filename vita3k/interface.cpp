@@ -35,6 +35,7 @@
 #include <packages/license.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
+#include <packages/vci.h>
 #include <renderer/state.h>
 #include <renderer/texture_cache.h>
 
