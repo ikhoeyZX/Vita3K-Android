@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
 
 #include "SceAudiodecUser.h"
 
-#include <modules/module_parent.h>
-
 #include <audio/state.h>
 #include <codec/state.h>
 #include <kernel/state.h>
@@ -29,9 +27,13 @@ TRACY_MODULE_NAME(SceAudiodecUser);
 
 enum {
     SCE_AUDIODEC_ERROR_API_FAIL = 0x807F0000,
+    SCE_AUDIODEC_ERROR_INVALID_TYPE = 0x807F0001,
     SCE_AUDIODEC_ERROR_NOT_INITIALIZED = 0x807F0005,
+    SCE_AUDIODEC_ERROR_INVALID_PTR = 0x807F0008,
     SCE_AUDIODEC_ERROR_INVALID_HANDLE = 0x807F0009,
     SCE_AUDIODEC_ERROR_NOT_HANDLE_IN_USE = 0x807F000A,
+    SCE_AUDIODEC_ERROR_INVALID_SIZE = 0x807F000D,
+    SCE_AUDIODEC_AT9_ERROR_INVALID_CONFIG = 0x807F2000,
     SCE_AUDIODEC_MP3_ERROR_INVALID_MPEG_VERSION = 0x807F2801,
 };
 
@@ -104,6 +106,8 @@ struct SceAudiodecCtrl {
     Ptr<SceAudiodecInfo> info;
 };
 
+static_assert(sizeof(SceAudiodecCtrl) == 0x28);
+
 constexpr uint32_t SCE_AUDIODEC_AT9_MAX_ES_SIZE = 1024;
 constexpr uint32_t SCE_AUDIODEC_MP3_MAX_ES_SIZE = 1441;
 // max size is 1792 for AAC ES if adts is enabled
@@ -121,6 +125,13 @@ LIBRARY_INIT(SceAudiodec) {
 
 EXPORT(int, sceAudiodecClearContext, SceAudiodecCtrl *ctrl) {
     TRACY_FUNC(sceAudiodecClearContext, ctrl)
+
+    if (!ctrl)
+        return SCE_AUDIODEC_ERROR_INVALID_PTR;
+
+    if (ctrl->size != sizeof(SceAudiodecCtrl))
+        return SCE_AUDIODEC_ERROR_INVALID_SIZE;
+
     const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     if (state->codecs.empty()) {
         return SCE_AUDIODEC_ERROR_NOT_INITIALIZED;
@@ -141,6 +152,12 @@ EXPORT(int, sceAudiodecClearContext, SceAudiodecCtrl *ctrl) {
 }
 
 static int create_decoder(EmuEnvState &emuenv, SceAudiodecCtrl *ctrl, SceAudiodecCodec codec) {
+    if (!ctrl)
+        return SCE_AUDIODEC_ERROR_INVALID_PTR;
+
+    if (ctrl->size != sizeof(SceAudiodecCtrl))
+        return SCE_AUDIODEC_ERROR_INVALID_SIZE;
+
     const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
 
@@ -160,8 +177,8 @@ static int create_decoder(EmuEnvState &emuenv, SceAudiodecCtrl *ctrl, SceAudiode
         info.super_frame_size = decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
         info.frames_in_super_frame = decoder->get(DecoderQuery::AT9_FRAMES_IN_SUPERFRAME);
         ctrl->es_size_max = std::min(info.super_frame_size, SCE_AUDIODEC_AT9_MAX_ES_SIZE);
-        ctrl->pcm_size_max = static_cast<uint32_t>(decoder->get(DecoderQuery::AT9_SAMPLE_PER_FRAME)
-            * decoder->get(DecoderQuery::CHANNELS) * sizeof(int16_t));
+        ctrl->pcm_size_max = decoder->get(DecoderQuery::AT9_SAMPLE_PER_FRAME)
+            * decoder->get(DecoderQuery::CHANNELS) * sizeof(int16_t);
         return 0;
     }
     case SCE_AUDIODEC_TYPE_AAC: {
@@ -196,12 +213,12 @@ static int create_decoder(EmuEnvState &emuenv, SceAudiodecCtrl *ctrl, SceAudiode
             ctrl->pcm_size_max = info.channels * SCE_AUDIODEC_MP3_V2_MAX_PCM_SIZE;
             return 0;
         default:
-            LOG_ERROR("Invalid MPEG version {}.", to_debug_str(emuenv.mem, info.version));
+            LOG_ERROR("Invalid MPEG version {}.", info.version);
             return SCE_AUDIODEC_MP3_ERROR_INVALID_MPEG_VERSION;
         }
     }
     default: {
-        LOG_ERROR("Unimplemented audio decoder {}.", to_debug_str(emuenv.mem, codec));
+        LOG_ERROR("Unimplemented audio decoder {}.", codec);
         return -1;
     }
     }
@@ -226,6 +243,12 @@ EXPORT(int, sceAudiodecCreateDecoderResident) {
 }
 
 static int decode_audio_frames(EmuEnvState &emuenv, const char *export_name, SceAudiodecCtrl *ctrl, SceUInt32 nb_frames) {
+    if (!ctrl)
+        return SCE_AUDIODEC_ERROR_INVALID_PTR;
+
+    if (ctrl->size != sizeof(SceAudiodecCtrl))
+        return SCE_AUDIODEC_ERROR_INVALID_SIZE;
+
     const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     const DecoderPtr &decoder = lock_and_find(ctrl->handle, state->decoders, state->mutex);
 
@@ -266,13 +289,27 @@ EXPORT(int, sceAudiodecDecodeNFrames, SceAudiodecCtrl *ctrl, SceUInt32 nFrames) 
     return decode_audio_frames(emuenv, export_name, ctrl, nFrames);
 }
 
-EXPORT(int, sceAudiodecDecodeNStreams, Ptr<SceAudiodecCtrl> *pCtrls, SceUInt32 nStreams) {
-    TRACY_FUNC(sceAudiodecDecodeNStreams, pCtrls, nStreams);
+EXPORT(int, sceAudiodecDecodeNStreams, SceAudiodecCtrl *ctrl, SceUInt32 nStreams) {
+    TRACY_FUNC(sceAudiodecDecodeNStreams, ctrl, nStreams);
+
+    if (!ctrl)
+        return SCE_AUDIODEC_ERROR_INVALID_PTR;
+
+    if (ctrl->size != sizeof(SceAudiodecCtrl))
+        return SCE_AUDIODEC_ERROR_INVALID_SIZE;
+
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecDeleteDecoder, SceAudiodecCtrl *ctrl) {
     TRACY_FUNC(sceAudiodecDeleteDecoder, ctrl);
+
+    if (!ctrl)
+        return SCE_AUDIODEC_ERROR_INVALID_PTR;
+
+    if (ctrl->size != sizeof(SceAudiodecCtrl))
+        return SCE_AUDIODEC_ERROR_INVALID_SIZE;
+
     const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
     state->decoders.erase(ctrl->handle);
@@ -296,10 +333,42 @@ EXPORT(int, sceAudiodecDeleteDecoderResident) {
     return UNIMPLEMENTED();
 }
 
+static std::uint32_t getAt9Factor(const std::uint8_t *config_data) {
+    std::uint32_t value = (config_data[1] & 0xf) >> 1;
+    if (value == 0)
+        return 1;
+    if ((value == 1) || (value == 2))
+        return 2;
+    return SCE_AUDIODEC_AT9_ERROR_INVALID_CONFIG;
+}
+
 EXPORT(int, sceAudiodecGetContextSize, SceAudiodecCtrl *pCtrl, SceAudiodecCodec codecType) {
     TRACY_FUNC(sceAudiodecGetContextSize, pCtrl, codecType);
-    STUBBED("fake size");
-    return 53;
+
+    if (!pCtrl)
+        return SCE_AUDIODEC_ERROR_INVALID_PTR;
+
+    if (pCtrl->size != sizeof(SceAudiodecCtrl))
+        return SCE_AUDIODEC_ERROR_INVALID_SIZE;
+
+    switch (codecType) {
+    case SCE_AUDIODEC_TYPE_AT9: {
+        const std::uint32_t at9Factor = getAt9Factor(reinterpret_cast<std::uint8_t *>(&pCtrl->info.get(emuenv.mem)->at9.config_data));
+        if (at9Factor == 1 || at9Factor == 2) {
+            return 0x400 * at9Factor + 0x400;
+        }
+        return SCE_AUDIODEC_AT9_ERROR_INVALID_CONFIG;
+    }
+    case SCE_AUDIODEC_TYPE_AAC:
+        return 0x18000;
+    case SCE_AUDIODEC_TYPE_MP3:
+    case SCE_AUDIODEC_TYPE_CELP:
+        return 0;
+    default:
+        // Found these during reverse engineering, log them in case we need an implementation
+        LOG_WARN_IF(codecType == 0x1007 || codecType == 0x1008, "Unsupported codec type {}", codecType);
+        return SCE_AUDIODEC_ERROR_INVALID_TYPE;
+    }
 }
 
 EXPORT(int, sceAudiodecGetInternalError) {
@@ -309,6 +378,10 @@ EXPORT(int, sceAudiodecGetInternalError) {
 
 EXPORT(SceInt32, sceAudiodecInitLibrary, SceAudiodecCodec codecType, SceAudiodecInitParam *pInitParam) {
     TRACY_FUNC(sceAudiodecInitLibrary, codecType, pInitParam);
+
+    if (!pInitParam)
+        return SCE_AUDIODEC_ERROR_INVALID_PTR;
+
     const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
 
@@ -318,6 +391,13 @@ EXPORT(SceInt32, sceAudiodecInitLibrary, SceAudiodecCodec codecType, SceAudiodec
 
 EXPORT(int, sceAudiodecPartlyDecode, SceAudiodecCtrl *ctrl, SceUInt32 samples_offset, SceUInt32 samples_to_decode) {
     TRACY_FUNC(sceAudiodecPartlyDecode, ctrl, samples_offset, samples_to_decode);
+
+    if (!ctrl)
+        return SCE_AUDIODEC_ERROR_INVALID_PTR;
+
+    if (ctrl->size != sizeof(SceAudiodecCtrl))
+        return SCE_AUDIODEC_ERROR_INVALID_SIZE;
+
     // this function is only called by libatrac
     const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     if (!state->codecs[SCE_AUDIODEC_TYPE_AT9].contains(ctrl->handle)) {
