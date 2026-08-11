@@ -366,7 +366,7 @@ EXPORT(int, sceAudiodecGetContextSize, SceAudiodecCtrl *pCtrl, SceAudiodecCodec 
         return 0;
     default:
         // Found these during reverse engineering, log them in case we need an implementation
-        LOG_WARN_IF(codecType == 0x1007 || codecType == 0x1008, "Unsupported codec type {}", codecType);
+        LOG_WARN_IF(codecType == 0x1007 || codecType == 0x1008, "Unsupported codec type {}", static_cast<int>(codecType));
         return SCE_AUDIODEC_ERROR_INVALID_TYPE;
     }
 }
