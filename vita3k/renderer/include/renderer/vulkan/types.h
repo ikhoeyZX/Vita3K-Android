@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,12 +29,18 @@ namespace renderer::vulkan {
 struct VKState;
 struct VKRenderTarget;
 
-constexpr uint8_t MAX_FRAMES_RENDERING = 3;
-constexpr uint8_t NB_TEXTURE_STAGING_BUFFERS = 16;
+constexpr int MAX_FRAMES_RENDERING = 3;
+constexpr int NB_TEXTURE_STAGING_BUFFERS = 16;
+
+constexpr bool is_frame_timestamp_in_flight(const uint64_t frame_timestamp, const uint64_t current_frame_timestamp) {
+    return frame_timestamp != ~uint64_t { 0 }
+        && frame_timestamp <= current_frame_timestamp
+        && current_frame_timestamp - frame_timestamp < MAX_FRAMES_RENDERING;
+}
 
 struct TextureStagingBuffer {
     vkutil::Buffer buffer;
-    uint32_t used_so_far;
+    uint32_t used_so_far = 0;
     uint64_t scene_timestamp = ~0;
     uint64_t frame_timestamp = ~0;
     vk::Fence waiting_fence;
@@ -80,6 +86,8 @@ struct VKTextureCache : public TextureCache {
     vk::Sampler get_retrieved_sampler() const {
         return samplers[last_bound_sampler_index];
     }
+
+    void cleanup();
 };
 
 struct FrameDescriptor {
@@ -116,7 +124,7 @@ struct MappedMemoryBuffer {
 
 struct ExternalBuffer {
     vk::DeviceMemory memory;
-    void* extra;
+    void *extra;
 };
 
 struct MappedMemory {
@@ -140,7 +148,7 @@ struct TrappedBuffer {
     uint32_t extra;
     // no need for it to be atomic
     bool dirty = false;
-    uint8_t* mapped_location;
+    uint8_t *mapped_location;
 
     TrappedBuffer() {}
 };
@@ -152,10 +160,10 @@ struct BufferTrapping {
     // Used when no buffer trapping is applied
     TrappedBuffer temp_buffer;
 
-    VKState& state;
+    VKState &state;
 
-    BufferTrapping(VKState& state);
-    TrappedBuffer* access_buffer(Address addr, uint32_t size, MemState& mem, bool always_trap = false, bool cover_everything = false);
+    BufferTrapping(VKState &state);
+    TrappedBuffer *access_buffer(Address addr, uint32_t size, MemState &mem, bool always_trap = false, bool cover_everything = false);
     void remove_range(Address start, Address end);
 };
 
@@ -340,6 +348,7 @@ private:
 };
 
 struct VKRenderTarget : public renderer::RenderTarget {
+    vk::Device device;
     uint16_t width;
     uint16_t height;
     vkutil::Image color;
@@ -359,7 +368,7 @@ struct VKRenderTarget : public renderer::RenderTarget {
     int cmd_buffer_idx = 0;
 
     VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &params);
-    ~VKRenderTarget() override = default;
+    ~VKRenderTarget() override;
 };
 
 struct VKFragmentProgram : public renderer::FragmentProgram {
