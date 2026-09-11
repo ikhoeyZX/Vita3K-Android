@@ -910,12 +910,22 @@ static void display_entry_thread(EmuEnvState &emuenv) {
         SceGxmSyncObject *new_sync = display_callback->new_sync.get(emuenv.mem);
 
         // sceGxmDisplayQueueAddEntry waits for both buffers to complete
-        renderer::wishlist(old_sync, display_callback->old_sync_timestamp);
-        if (old_sync != new_sync)
-            renderer::wishlist(new_sync, display_callback->new_sync_timestamp);
+        if (renderer::wishlist(old_sync, display_callback->old_sync_timestamp) == renderer::SyncWaitResult::Shutdown) {
+            return;
+        }
+        if (old_sync != new_sync) {
+            if (renderer::wishlist(new_sync, display_callback->new_sync_timestamp) == renderer::SyncWaitResult::Shutdown) {
+                return;
+            }
+        }
 
-        // now we can remove the thread from the display queue
-        display_queue.pop();
+        // check if we're shutting down before calling run_guest_function to avoid deadlock
+        if (emuenv.display.abort.load()) {
+            LOG_DEBUG("Abort detected, removing display callback data and exiting");
+            display_queue.pop();
+            free(emuenv.mem, display_callback->data);
+            break;
+        }
 
         // specify whether the call to SceDisplaySetFrameBuf is expected to do something
         emuenv.display.predicting = display_callback->frame_predicted;
@@ -931,6 +941,7 @@ static void display_entry_thread(EmuEnvState &emuenv) {
             renderer::subject_done(new_sync, display_callback->new_sync_timestamp + 1);
 
         free(emuenv.mem, display_callback->data);
+        display_queue.pop();
     }
 }
 
