@@ -910,14 +910,9 @@ static void display_entry_thread(EmuEnvState &emuenv) {
         SceGxmSyncObject *new_sync = display_callback->new_sync.get(emuenv.mem);
 
         // sceGxmDisplayQueueAddEntry waits for both buffers to complete
-        if (renderer::wishlist(old_sync, display_callback->old_sync_timestamp) == renderer::SyncWaitResult::Shutdown) {
-            return;
-        }
-        if (old_sync != new_sync) {
-            if (renderer::wishlist(new_sync, display_callback->new_sync_timestamp) == renderer::SyncWaitResult::Shutdown) {
-                return;
-            }
-        }
+        renderer::wishlist(old_sync, display_callback->old_sync_timestamp);
+        if (old_sync != new_sync)
+            renderer::wishlist(new_sync, display_callback->new_sync_timestamp);
 
         // check if we're shutting down before calling run_guest_function to avoid deadlock
         if (emuenv.display.abort.load()) {
