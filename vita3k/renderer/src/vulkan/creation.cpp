@@ -155,31 +155,35 @@ VKContext::VKContext(VKState &state, MemState &mem)
 VKContext::~VKContext() {
     if (gpu_request_wait_thread.joinable())
         gpu_request_wait_thread.join();
+
+    for (auto &[addr, vb] : visibility_buffers)
+        state.device.destroy(vb.query_pool);
+    visibility_buffers.clear();
+
+    state.device.destroy(global_descriptor_pool);
+    global_descriptor_pool = nullptr;
 }
 
 VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &params)
-    : color(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eR8G8B8A8Unorm)
+    : device(state.device)
+    , color(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eR8G8B8A8Unorm)
     , depthstencil(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), state.deep_stencil_use) {
     width = static_cast<uint32_t>(params.width * state.res_multiplier);
     height = static_cast<uint32_t>(params.height * state.res_multiplier);
 
-    vk::ImageUsageFlags image_flag;
+    vk::ImageUsageFlags color_usage = vk::ImageUsageFlagBits::eColorAttachment;
     if (state.features.support_shader_interlock)
-        image_flag |= vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage;
+        color_usage |= vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage;
     else
-        image_flag |= vk::ImageUsageFlagBits::eInputAttachment | vk::ImageUsageFlagBits::eTransientAttachment;
-
-    color.init_image(image_flag | vk::ImageUsageFlagBits::eColorAttachment);
+        color_usage |= vk::ImageUsageFlagBits::eInputAttachment | vk::ImageUsageFlagBits::eTransientAttachment;
+    color.init_image(color_usage);
     if (params.multisampleMode == SCE_GXM_MULTISAMPLE_4X) {
         // the depth buffer may need to be 4x bigger if we use a texture without downscale
         depthstencil.width *= 2;
         depthstencil.height *= 2;
     }
 
-    // Need fix this error from vk validation
-    // LOG_TRACE("DEEPTH STENCIL INIT");
-    image_flag |= vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment;
-    depthstencil.init_image(image_flag);
+    depthstencil.init_image(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment);
 
     // transition images to their right state
     vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
