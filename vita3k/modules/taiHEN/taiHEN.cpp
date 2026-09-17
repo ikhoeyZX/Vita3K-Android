@@ -1318,6 +1318,9 @@ static void register_hle_override(EmuEnvState &emuenv, uint32_t nid) {
     kernel.export_nids[nid] = stub_addr;
     redirect_export(kernel, nid, lle_addr, stub_addr);
 
+    // The stub outlives the plugin module, so the plain entry stops belonging to its library.
+    kernel.export_nid_owners.erase(nid);
+    
     // Re-patch any existing import stubs that already point to kubridge's ARM code
     auto range = kernel.func_binding_infos.equal_range(nid);
     for (auto it = range.first; it != range.second; ++it) {
