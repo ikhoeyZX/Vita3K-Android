@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -167,7 +167,7 @@ struct Atrac9DecoderState : public DecoderState {
     uint32_t get(DecoderQuery query) override;
     uint32_t get_es_size() override;
 
-    bool send(const uint8_t *data, uint32_t size) override;
+    bool send(const uint8_t *data, uint32_t size = 0) override;
     bool receive(uint8_t *data, DecoderSize *size) override;
     void flush() override;
 
@@ -282,7 +282,7 @@ struct PlayerState {
     ~PlayerState();
 };
 
-void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint32_t height, const DecoderColorSpace color_space, int32_t in_pitch);
+void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint32_t height, const DecoderColorSpace color_space, bool is_bgra, int32_t in_pitch);
 void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t frame_width, const DecoderColorSpace color_space, bool is_bgra, MJpegPitch pitch[4]);
 int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint32_t height, uint32_t max_size, const DecoderColorSpace color_space, int32_t compress_ratio);
 void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest, const uint32_t width, const uint32_t height, bool is_p3);
