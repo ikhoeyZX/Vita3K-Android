@@ -215,9 +215,14 @@ VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &p
     }
 }
 
+VKRenderTarget::~VKRenderTarget() {
+    for (auto &fence : fences)
+        device.destroy(fence);
+    fences.clear();
+}
+
 bool create(VKState &state, std::unique_ptr<Context> &context, MemState &mem) {
     context = std::make_unique<VKContext>(state, mem);
-
     return true;
 }
 
