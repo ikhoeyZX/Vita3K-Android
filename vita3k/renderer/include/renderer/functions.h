@@ -25,12 +25,10 @@
 struct MemState;
 struct FeatureState;
 struct Config;
-struct DisplayState;
-struct GxmState;
+struct SDL_Window;
 
 namespace renderer {
 struct Context;
-class FrameHost;
 struct FragmentProgram;
 struct RenderTarget;
 struct State;
@@ -43,18 +41,12 @@ void create(SceGxmSyncObject *sync, State &state);
 void destroy(SceGxmSyncObject *sync, State &state);
 void finish(State &state, Context *context);
 
-enum class SyncWaitResult {
-    Ready,
-    TimedOut,
-    Shutdown
-};
-
 /**
  * \brief Wait for all subjects to be done with the given sync object.
  *
  * Return the reason the wait completed.
  */
-SyncWaitResult wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp, const int32_t timeout_micros = -1);
+bool wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp, const int32_t timeout_micros = -1);
 
 /**
  * \brief Set list of subject with sync object to done.
@@ -69,9 +61,8 @@ void submit_command_list(State &state, renderer::Context *context, CommandList &
 bool is_cmd_ready(MemState &mem, CommandList &command_list);
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list);
 void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms = 500);
-void start_render_thread(State &state, DisplayState &display, GxmState &gxm, MemState &mem, Config &config);
-void stop_render_thread(State &state);
-bool init(FrameHost &frame, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths);
+void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config);
+bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths);
 
 void set_depth_bias(State &state, Context *ctx, bool is_front, int factor, int units);
 void set_depth_func(State &state, Context *ctx, bool is_front, SceGxmDepthFunc depth_func);
@@ -102,10 +93,8 @@ void sync_surface_data(State &state, Context *ctx, const SceGxmNotification vert
 
 bool create_context(State &state, std::unique_ptr<Context> &context);
 void destroy_context(State &state, std::unique_ptr<Context> &context);
-void destroy_context_during_shutdown(State &state, std::unique_ptr<Context> &context);
 bool create_render_target(State &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams *params);
 void destroy_render_target(State &state, std::unique_ptr<RenderTarget> &rt);
-void destroy_render_target_during_shutdown(State &state, std::unique_ptr<RenderTarget> &rt);
 
 Command *generic_command_allocate();
 void generic_command_free(Command *cmd);
@@ -160,15 +149,6 @@ int send_single_command(State &state, Context *ctx, const CommandOpcode opcode, 
     else
         return 0;
 }
-
-struct VulkanDeviceInfo {
-    std::vector<std::string> gpu_names;
-    std::vector<int> mapping_method_masks;
-    bool custom_driver_requested = false;
-    bool custom_driver_loaded = false;
-};
-
-VulkanDeviceInfo enumerate_vulkan_devices(const std::string &custom_driver_name = {});
 
 namespace texture {
 
