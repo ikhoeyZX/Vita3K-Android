@@ -35,6 +35,14 @@ struct MemState;
 enum SceGxmTextureBaseFormat : uint32_t;
 
 namespace renderer {
+	
+struct YUVConversionCache {
+    void *sws_context = nullptr;
+    size_t width = 0;
+    size_t height = 0;
+    bool is_p3 = false;
+};
+
 enum class Backend : uint32_t;
 static constexpr size_t TextureCacheSize = 1024;
 
