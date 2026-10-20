@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 // Copyright (c) 2009 Benjamin Dobell, Glass Echidna
 //
 // This program is free software; you can redistribute it and/or modify
@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <cstring>
 
+#include <gxm/functions.h>
 #include <gxm/types.h>
 #include <renderer/functions.h>
 #include <renderer/pvrt-dec.h>
@@ -206,9 +207,9 @@ void convert_x8u24_to_f32(void *dest, const void *data, const uint32_t width, co
 
     for (uint32_t row = 0; row < height; ++row) {
         for (uint32_t col = 0; col < width; ++col) {
-            const uint32_t src_value = src[row * width + height];
+            const uint32_t src_value = src[row * width + col];
             const uint32_t d24 = (src_value >> shift_amount) & ((1U << 24) - 1);
-            dst[row * width + height] = static_cast<float>(d24) / ((1U << 24) - 1);
+            dst[row * width + col] = static_cast<float>(d24) / ((1U << 24) - 1);
         }
     }
 }
@@ -219,7 +220,7 @@ void convert_U8U3U3U2_to_U8U8U8U8(void *dest, const void *data, const uint32_t w
 
     for (uint32_t row = 0; row < height; ++row) {
         for (uint32_t col = 0; col < width; ++col) {
-            const uint32_t src_value = src[row * width + height];
+            const uint32_t src_value = src[row * width + col];
 
             const uint8_t alpha = (src_value & 0xFF00) >> 8;
             const uint8_t red = (src_value & 0x00E0) >> 5;
@@ -228,9 +229,42 @@ void convert_U8U3U3U2_to_U8U8U8U8(void *dest, const void *data, const uint32_t w
 
             const uint32_t value = (alpha << 24) | (blue << 22) | (blue << 20) | (blue << 18) | (blue << 16) | (green << 13) | (green << 10) | ((green & 0b110) << 7) | (red << 5) | (red << 2) | (red >> 1);
 
-            dst[row * width + height] = value;
+            dst[row * width + col] = value;
         }
     }
+}
+
+bool is_u5u5u5u1(const SceGxmTextureFormat format) {
+    if (gxm::get_base_format(format) != SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5)
+        return false;
+
+    switch (format & SCE_GXM_TEXTURE_SWIZZLE_MASK) {
+    case SCE_GXM_TEXTURE_SWIZZLE4_RGBA:
+    case SCE_GXM_TEXTURE_SWIZZLE4_BGRA:
+    case SCE_GXM_TEXTURE_SWIZZLE4_RGB1:
+    case SCE_GXM_TEXTURE_SWIZZLE4_BGR1:
+        return true;
+    default:
+        return false;
+    }
+}
+
+void convert_u5u5u5u1_to_u1u5u5u5(void *dest, const void *data, const uint32_t width, const uint32_t height) {
+    auto dst = static_cast<uint16_t *>(dest);
+    auto src = static_cast<const uint16_t *>(data);
+
+    // move the 1-bit field from bit 0 to bit 15, the 5-bit fields keep their order
+    for (uint32_t i = 0; i < width * height; ++i)
+        dst[i] = static_cast<uint16_t>((src[i] >> 1) | (src[i] << 15));
+}
+
+void convert_u1u5u5u5_to_u5u5u5u1(void *dest, const void *data, const uint32_t width, const uint32_t height) {
+    auto dst = static_cast<uint16_t *>(dest);
+    auto src = static_cast<const uint16_t *>(data);
+
+    // move the 1-bit field from bit 15 to bit 0, the 5-bit fields keep their order
+    for (uint32_t i = 0; i < width * height; ++i)
+        dst[i] = static_cast<uint16_t>((src[i] << 1) | (src[i] >> 15));
 }
 
 void convert_f32m_to_f32(void *dest, const void *data, const uint32_t width, const uint32_t height) {
@@ -272,14 +306,14 @@ void convert_u2f10f10f10_to_f16f16f16f16(void *dest, const void *data, const uin
 
     for (uint32_t row = 0; row < height; ++row) {
         for (uint32_t col = 0; col < width; ++col) {
-            uint32_t src_value = src[row * width + height];
+            uint32_t src_value = src[row * width + col];
             int dst_idx;
             // first get the 2 alpha bits
             if (is_alpha_upper) {
-                dst[row * width + height][3] = u2_to_f16[(src_value >> 30)];
+                dst[row * width + col][3] = u2_to_f16[(src_value >> 30)];
                 dst_idx = 0;
             } else {
-                dst[row * width + height][0] = u2_to_f16[(src_value & 0b11)];
+                dst[row * width + col][0] = u2_to_f16[(src_value & 0b11)];
                 dst_idx = 1;
                 src_value >>= 2;
             }
@@ -288,7 +322,7 @@ void convert_u2f10f10f10_to_f16f16f16f16(void *dest, const void *data, const uin
             for (int i = 0; i < 3; i++) {
                 const uint16_t comp = src_value & ((1 << 10) - 1);
                 src_value >>= 10;
-                dst[row * width + height][dst_idx++] = f10_to_f16(comp);
+                dst[row * width + col][dst_idx++] = f10_to_f16(comp);
             }
         }
     }
@@ -468,7 +502,7 @@ static void decompress_block_bc1(const uint8_t *block_storage, uint32_t *image) 
         std::uint32_t c2 = 0xFF000000 | (b2 << 16) | (g2 << 8) | r2;
         std::uint32_t c3 = 0xFF000000 | (b3 << 16) | (g3 << 8) | r3;
 
-        for (uint8_t i = 0; i < 16; ++i) {
+        for (int i = 0; i < 16; ++i) {
             int index = (block_storage[i / 4] >> (i % 4 * 2)) & 0x03;
             switch (index) {
             case 0:
@@ -493,7 +527,7 @@ static void decompress_block_bc1(const uint8_t *block_storage, uint32_t *image) 
 
         std::uint32_t c2 = 0xFF000000 | (b2 << 16) | (g2 << 8) | r2;
 
-        for (uint8_t i = 0; i < 16; ++i) {
+        for (int i = 0; i < 16; ++i) {
             int index = (block_storage[i / 4] >> (i % 4 * 2)) & 0x03;
             switch (index) {
             case 0:
@@ -630,7 +664,7 @@ static void decompress_block_alpha_signed(const uint8_t *block_storage, uint8_t 
 static void decompress_block_bc2(const uint8_t *block_storage, uint32_t *image) {
     decompress_block_bc1(block_storage + 8, image);
 
-    for (uint8_t i = 0; i < 8; i++) {
+    for (int i = 0; i < 8; i++) {
         image[2 * i] = (((block_storage[i] & 0x0F) | ((block_storage[i] & 0x0F) << 4)) << 24) | (image[2 * i] & 0x00FFFFFF);
         image[2 * i + 1] = (((block_storage[i] & 0xF0) | ((block_storage[i] & 0xF0) >> 4)) << 24) | (image[2 * i + 1] & 0x00FFFFFF);
     }
@@ -654,7 +688,7 @@ static void decompress_block_bc3(const uint8_t *block_storage, uint32_t *image) 
  * \param image             pointer to image where the decompressed pixel data should be stored.
  **/
 static void decompress_block_bc4u(const uint8_t *block_storage, uint8_t *image) {
-    for (uint8_t i = 0; i < 16; i++)
+    for (int i = 0; i < 16; i++)
         image[i] = 0x00;
     decompress_block_alpha(block_storage, image, 0, 1);
 }
@@ -666,7 +700,7 @@ static void decompress_block_bc4u(const uint8_t *block_storage, uint8_t *image) 
  * \param image             pointer to image where the decompressed pixel data should be stored.
  **/
 static void decompress_block_bc4s(const uint8_t *block_storage, uint8_t *image) {
-    for (uint8_t i = 0; i < 16; i++)
+    for (int i = 0; i < 16; i++)
         image[i] = 0x00;
     decompress_block_alpha_signed(block_storage, image, 0, 1);
 }
@@ -678,7 +712,7 @@ static void decompress_block_bc4s(const uint8_t *block_storage, uint8_t *image) 
  * \param image             pointer to image where the decompressed pixel data should be stored.
  **/
 static void decompress_block_bc5u(const uint8_t *block_storage, uint16_t *image) {
-    for (uint8_t i = 0; i < 16; i++)
+    for (int i = 0; i < 16; i++)
         image[i] = 0x0000;
     decompress_block_alpha(block_storage, reinterpret_cast<uint8_t *>(image), 0, 2);
     decompress_block_alpha(block_storage + 8, reinterpret_cast<uint8_t *>(image), 1, 2);
@@ -691,7 +725,7 @@ static void decompress_block_bc5u(const uint8_t *block_storage, uint16_t *image)
  * \param image             pointer to image where the decompressed pixel data should be stored.
  **/
 static void decompress_block_bc5s(const uint8_t *block_storage, uint16_t *image) {
-    for (uint8_t i = 0; i < 16; i++)
+    for (int i = 0; i < 16; i++)
         image[i] = 0x0000;
     decompress_block_alpha_signed(block_storage, reinterpret_cast<uint8_t *>(image), 0, 2);
     decompress_block_alpha_signed(block_storage + 8, reinterpret_cast<uint8_t *>(image), 1, 2);

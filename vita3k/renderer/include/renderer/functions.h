@@ -25,10 +25,12 @@
 struct MemState;
 struct FeatureState;
 struct Config;
-struct SDL_Window;
+struct DisplayState;
+struct GxmState;
 
 namespace renderer {
 struct Context;
+class FrameHost;
 struct FragmentProgram;
 struct RenderTarget;
 struct State;
@@ -41,12 +43,18 @@ void create(SceGxmSyncObject *sync, State &state);
 void destroy(SceGxmSyncObject *sync, State &state);
 void finish(State &state, Context *context);
 
+enum class SyncWaitResult {
+    Ready,
+    TimedOut,
+    Shutdown
+};
+
 /**
  * \brief Wait for all subjects to be done with the given sync object.
  *
  * Return the reason the wait completed.
  */
-bool wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp, const int32_t timeout_micros = -1);
+SyncWaitResult wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp, const int32_t timeout_micros = -1);
 
 /**
  * \brief Set list of subject with sync object to done.
@@ -61,8 +69,9 @@ void submit_command_list(State &state, renderer::Context *context, CommandList &
 bool is_cmd_ready(MemState &mem, CommandList &command_list);
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list);
 void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms = 500);
-void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config);
-bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths);
+void start_render_thread(State &state, DisplayState &display, GxmState &gxm, MemState &mem, Config &config);
+void stop_render_thread(State &state);
+bool init(FrameHost &frame, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths);
 
 void set_depth_bias(State &state, Context *ctx, bool is_front, int factor, int units);
 void set_depth_func(State &state, Context *ctx, bool is_front, SceGxmDepthFunc depth_func);
@@ -93,8 +102,10 @@ void sync_surface_data(State &state, Context *ctx, const SceGxmNotification vert
 
 bool create_context(State &state, std::unique_ptr<Context> &context);
 void destroy_context(State &state, std::unique_ptr<Context> &context);
+void destroy_context_during_shutdown(State &state, std::unique_ptr<Context> &context);
 bool create_render_target(State &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams *params);
 void destroy_render_target(State &state, std::unique_ptr<RenderTarget> &rt);
+void destroy_render_target_during_shutdown(State &state, std::unique_ptr<RenderTarget> &rt);
 
 Command *generic_command_allocate();
 void generic_command_free(Command *cmd);
@@ -149,6 +160,15 @@ int send_single_command(State &state, Context *ctx, const CommandOpcode opcode, 
     else
         return 0;
 }
+
+struct VulkanDeviceInfo {
+    std::vector<std::string> gpu_names;
+    std::vector<int> mapping_method_masks;
+    bool custom_driver_requested = false;
+    bool custom_driver_loaded = false;
+};
+
+VulkanDeviceInfo enumerate_vulkan_devices(const std::string &custom_driver_name = {});
 
 namespace texture {
 
@@ -235,6 +255,13 @@ void convert_U8U3U3U2_to_U8U8U8U8(void *dest, const void *data, const uint32_t w
 void convert_x8u24_to_u24x8(void *dest, const void *data, const uint32_t width, const uint32_t height);
 void convert_f32m_to_f32(void *dest, const void *data, const uint32_t width, const uint32_t height);
 void convert_u2f10f10f10_to_f16f16f16f16(void *dest, const void *data, const uint32_t width, const uint32_t height, const SceGxmTextureFormat format);
+
+// U1U5U5U5 textures keep their 1-bit field in bit 15 (ABGR, ARGB, 1BGR, 1RGB) or in
+// bit 0 (U5U5U5U1_RGBA/BGRA, U5U5U5X1_RGB1/BGR1, for which this returns true).
+// Uploads rotate the texels so that each backend sees a single layout.
+bool is_u5u5u5u1(const SceGxmTextureFormat format);
+void convert_u5u5u5u1_to_u1u5u5u5(void *dest, const void *data, const uint32_t width, const uint32_t height);
+void convert_u1u5u5u5_to_u5u5u5u1(void *dest, const void *data, const uint32_t width, const uint32_t height);
 
 void swizzled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t width, uint16_t height, uint8_t bits_per_pixel);
 void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t width, uint16_t height, uint8_t bits_per_pixel);
