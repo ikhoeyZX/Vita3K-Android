@@ -23,7 +23,6 @@
 #include <gxm/functions.h>
 #include <mem/ptr.h>
 #include <util/align.h>
-#include <util/bit_cast.h>
 #include <util/log.h>
 
 #include <algorithm>
@@ -458,8 +457,8 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
-            if(support_pvrt){
-                LOG_INFO_ONCE("your device support SCE_GXM_TEXTURE_BASE_FORMAT_PVRT");
+            if (support_pvrt) {
+                LOG_INFO_ONCE("Your device support SCE_GXM_TEXTURE_BASE_FORMAT_PVRT");
                 break;
             }
             if (!is_swizzled)
@@ -483,36 +482,31 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
             // this format is supported on all GPUs with vulkan
-            if (is_vulkan && support_e5rgb9){
-                LOG_INFO_ONCE("your device support SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9");
+            if (is_vulkan && support_e5rgb9) {
+                LOG_INFO_ONCE("Your device support SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9");
                 break;
             }
-
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 6);
             decompress_packed_float_e5m9m9m9(base_format, texture_data_decompressed.data(), pixels, width, memory_height);
             pixels = texture_data_decompressed.data();
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
             // don't change what openGL is doing (which is completely wrong)
-            // ignore conversion if supported
-            if (!is_vulkan || support_a2rgb10){
-                LOG_INFO_ONCE("your device support SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10");
+            if (!is_vulkan || support_a2rgb10) {
+                LOG_INFO_ONCE("Your device support SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10");
                 break;
             }
-
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 8);
             convert_u2f10f10f10_to_f16f16f16f16(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height, fmt);
             pixels = texture_data_decompressed.data();
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16;
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
-            if(support_x8d24){
-                LOG_INFO_ONCE("your device support SCE_GXM_TEXTURE_BASE_FORMAT_X8U24");
-                break;
-            }
-
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
-            if (is_vulkan) {
+            if (is_vulkan && support_x8d24) {
+                LOG_INFO_ONCE("Your device support SCE_GXM_TEXTURE_BASE_FORMAT_X8U24");
+                break;
+            } else if (is_vulkan) {
                 // d24_u8 or x8_d24 is not supported on all GPUs (thanks AMD)
                 convert_x8u24_to_f32(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height, fmt);
                 upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_F32;
@@ -534,7 +528,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
         case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
         case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
-            yuv420_texture_to_rgb(texture_data_decompressed.data(),
+            yuv420_texture_to_rgb(yuv_conversion_cache, texture_data_decompressed.data(),
                 static_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, layout_width, layout_height,
                 base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3);
             pixels = texture_data_decompressed.data();
@@ -572,7 +566,20 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             upload_format = get_matching_decompressed_format(base_format);
         }
 
-        upload_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
+        const void *upload_pixels = pixels;
+        if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5 && is_u5u5u5u1(fmt) == is_vulkan) {
+            // Vulkan uploads A1R5G5B5 (1-bit field in bit 15, always supported), OpenGL uses
+            // GL_UNSIGNED_SHORT_5_5_5_1 (1-bit field in bit 0, also available in GLES).
+            // Only the upload is converted, exports keep the guest layout.
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * 2);
+            if (is_vulkan)
+                convert_u5u5u5u1_to_u1u5u5u5(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
+            else
+                convert_u1u5u5u5_to_u5u5u5u1(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
+            upload_pixels = texture_data_decompressed.data();
+        }
+
+        upload_texture_impl(upload_format, width, height, mip_index, upload_pixels, upload_type, pixels_per_stride);
         if (export_textures)
             export_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
 
@@ -645,7 +652,7 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
     if (use_sampler_cache) {
         // remove the sampler state from the representation
         const TextureGxmDataRepr &mask = (gxm_texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) ? strided_texture_mask : default_texture_mask;
-        for (uint8_t i = 0; i < 4; i++)
+        for (int i = 0; i < 4; i++)
             texture_repr[i] &= mask[i];
     }
     auto gxm_it = texture_lookup.find(texture_repr);
