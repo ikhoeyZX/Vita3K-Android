@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,7 +35,6 @@ struct MemState;
 enum SceGxmTextureBaseFormat : uint32_t;
 
 namespace renderer {
-	
 struct YUVConversionCache {
     void *sws_context = nullptr;
     size_t width = 0;
@@ -94,7 +93,7 @@ protected:
     // contain the decrypted header when loading dds
     ddspp::Descriptor *dds_descriptor = nullptr;
     // file being written to when exporting dds
-    fs::ofstream output_file;
+    std::ofstream output_file;
     // used when exporting dds
     bool export_dds_swap_rb = false;
 
@@ -106,6 +105,7 @@ protected:
 public:
     Backend backend;
     bool use_protect = false;
+    YUVConversionCache yuv_conversion_cache;
     // use a separate sampler cache
     bool use_sampler_cache = false;
     int anisotropic_filtering = 1;
@@ -128,21 +128,20 @@ public:
     fs::path export_folder;
     // hash of the textures that have already been exported
     unordered_set_fast<uint64_t> exported_textures_hash;
-    
+
     // smartphone GPUs do not support DXT (BC1/2/3/4/5) textures, they must be decompressed on the GPU
     bool support_dxt = false;
     // format for replaced texture, supported mostly by smartphone GPUs
     bool support_astc = false;
-    // some smartphone GPUs do not support linear filtering on depth surfaces (d24)
+    // some smartphone GPUs do not support linear filtering on depth surfaces
     bool support_depth_linear_filtering = true;
-    // some gpu maybe not support it
+    // powerVR only
+    bool support_pvrt = false;
+    // other color format
     bool support_x8d24 = false;
     bool support_e5rgb9 = false;
     bool support_a2rgb10 = false;
-    
-    // powerVR only
-    bool support_pvrt = false;
-    
+
     bool init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id, const size_t sampler_cache_size = 0);
     void set_replacement_state(bool import_textures, bool export_textures, bool export_as_png);
 
@@ -172,5 +171,7 @@ public:
     virtual void import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) = 0;
     void import_upload_texture();
     void import_done();
+
+    virtual ~TextureCache();
 };
 } // namespace renderer
