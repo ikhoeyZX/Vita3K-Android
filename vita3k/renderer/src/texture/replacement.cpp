@@ -25,11 +25,10 @@
 
 #include <ddspp.h>
 #include <fmt/format.h>
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <stb_image_write.h>
 
-#ifdef __ANDROID__
+#ifdef ANDROID
 // for message popup
 #include <SDL_system.h>
 #endif
@@ -113,8 +112,10 @@ void TextureCache::export_select(const SceGxmTexture &texture) {
         const uint32_t mipcount = texture::get_upload_mip(texture.true_mip_count(), width, height);
         const uint32_t array_size = is_cube ? 6 : 1;
         ddspp::TextureType texture_type = is_cube ? ddspp::Cubemap : ddspp::Texture2D;
-        ddspp::Header header = {};
-        ddspp::HeaderDXT10 dxt_header = {};
+        ddspp::Header header;
+        memset(&header, 0, sizeof(header));
+        ddspp::HeaderDXT10 dxt_header;
+        memset(&dxt_header, 0, sizeof(dxt_header));
         ddspp::encode_header(dxgi_format, width, height, 1, texture_type, mipcount, array_size, header, dxt_header);
 
         // we need to do this to get the descriptor anyway
@@ -231,6 +232,7 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
 
         std::array<uint8_t, 4> *data_dst4 = reinterpret_cast<std::array<uint8_t, 4> *>(converted_data.data());
         std::array<uint8_t, 3> *data_dst3 = reinterpret_cast<std::array<uint8_t, 3> *>(converted_data.data());
+        const uint32_t nb_pixels = pixels_per_stride * height;
 
         // the png write function only accepts u8* textures, so convert everything to it
         switch (base_format) {
@@ -358,11 +360,12 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
             // we need to convert srgb to linear
             bool cant_overwrite_data = data_unswizzled.empty() && converted_data.empty() && data_comp3.empty();
             if (cant_overwrite_data) {
-                converted_data.resize(nb_pixels * nb_comp);
-                memcpy(converted_data.data(), data, nb_pixels * nb_comp);
+                const auto nbpix = static_cast<uint32_t>(nb_pixels * nb_comp);
+                converted_data.resize(nbpix);
+                memcpy(converted_data.data(), data, nbpix);
                 data = converted_data.data();
             }
-            uint8_t *src_pixels = const_cast<uint8_t *>(data);
+            uint8_t *pixels = const_cast<uint8_t *>(data);
 
             auto convert_to_linear = [](uint8_t pixel) {
                 // linear = srgb^(2.2)
@@ -370,14 +373,14 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
             };
             if (nb_comp == 3) {
                 for (uint32_t i = 0; i < nb_pixels; i++) {
-                    src_pixels[i] = convert_to_linear(src_pixels[i]);
+                    pixels[i] = convert_to_linear(pixels[i]);
                 }
             } else {
                 // alpha is already linear
                 for (uint32_t i = 0; i < nb_pixels; i++) {
-                    src_pixels[i * 4 + 0] = convert_to_linear(src_pixels[i * 4 + 0]);
-                    src_pixels[i * 4 + 1] = convert_to_linear(src_pixels[i * 4 + 1]);
-                    src_pixels[i * 4 + 2] = convert_to_linear(src_pixels[i * 4 + 2]);
+                    pixels[i * 4 + 0] = convert_to_linear(pixels[i * 4 + 0]);
+                    pixels[i * 4 + 1] = convert_to_linear(pixels[i * 4 + 1]);
+                    pixels[i * 4 + 2] = convert_to_linear(pixels[i * 4 + 2]);
                 }
             }
         }
@@ -481,7 +484,7 @@ bool TextureCache::import_configure_texture() {
             LOG_ERROR("Failed to read {}", file_name);
             return false;
         }
-		file.close();
+        file.close();
 
         if (ddspp::decode_header(imported_texture_raw_data.data(), *dds_descriptor) != ddspp::Success) {
             LOG_ERROR("Failed to decode file {} header", file_name);
@@ -514,11 +517,11 @@ bool TextureCache::import_configure_texture() {
 
         if (gxm::is_bcn_format(base_format) && !support_dxt) {
             LOG_ERROR_ONCE("BCn textures are not supported by this device");
-#ifdef __ANDROID__
+#ifdef ANDROID
             // this issue is most likely to happen on android
             SDL_AndroidShowToast("BCn textures are not supported by this device!\ncontinue anyway", 1, -1, 0, 0);
 #endif
-            // return false;
+     //       return false;
         }
 
         imported_texture_decoded = imported_texture_raw_data.data() + dds_descriptor->headerSize;
@@ -621,7 +624,7 @@ void TextureCache::refresh_available_textures() {
                 continue;
 
             uint64_t hash;
-            if (!(std::istringstream{ file.filename().string() } >> std::hex >> hash))
+            if (sscanf(file.filename().string().c_str(), "%lX", &hash) != 1)
                 continue;
 
             if (file.extension() != ".png" && file.extension() != ".dds")
@@ -954,6 +957,7 @@ static void apply_swizzle_4(const void *src, void *dst, uint32_t nb_pixels, bool
     constexpr T maskr2 = ((one << size2) - 1) << (size3 + size4);
     constexpr T maskr3 = ((one << size3) - 1) << size4;
     constexpr T maskr4 = ((one << size4) - 1);
+    constexpr T total_size = sizeof(T) * 8;
 
     // used for swapping r and b
     constexpr T mask_rb = ((one << size1) - 1) | (((one << size3) - 1) << (size1 + size2));
@@ -987,6 +991,7 @@ template <typename T, size_t size1, size_t size2, size_t size3>
 static void reverse_comp3_order(const void *src, void *dst, uint32_t nb_pixels) {
     static_assert(size1 == size3);
 
+    constexpr T one = 1;
     constexpr size_t rgb_size = size1 + size2 + size3;
     // this happens only for shared exponent textures
     constexpr bool has_leftover = (rgb_size < sizeof(T) * 8);
