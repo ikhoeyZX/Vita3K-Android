@@ -1257,12 +1257,7 @@ static int destroy_gxm_context(EmuEnvState &emuenv, SceGxmContext *context, cons
         }
 
         destroy_pending_immediate_commands(context);
-
-        if (force_backend_destroy) {
-            renderer::destroy_context_during_shutdown(*emuenv.renderer, context->renderer);
-        } else {
-            renderer::destroy_context(*emuenv.renderer, context->renderer);
-        }
+        renderer::destroy_context(*emuenv.renderer, context->renderer);
 
         if (emuenv.gxm.last_immediate_context == immediate_context->second) {
             emuenv.gxm.last_immediate_context = 0;
@@ -1328,22 +1323,9 @@ void invalidate_sync_objects(GxmState &gxm) {
     for (SceGxmSyncObject *sync_object : gxm.sync_objects) {
         {
             std::lock_guard<std::mutex> sync_lock(sync_object->lock);
-            sync_object->being_deleted = true;
         }
         sync_object->cond.notify_all();
     }
-}
-
-void shutdown(EmuEnvState &emuenv) {
-    emuenv.display.abort = true;
-    emuenv.renderer->notification_ready.notify_all();
-    emuenv.gxm.display_queue.abort();
-    emuenv.renderer->render_abort = true;
-    invalidate_sync_objects(emuenv.gxm);
-    emuenv.renderer->command_finish_one.notify_all();
-
-    // wait for any deferred GXM callback to finish before continuing shutdown
-    const std::lock_guard<std::mutex> callback_guard(emuenv.gxm.callback_lock);
 }
 
 } // namespace gxm
@@ -1366,11 +1348,7 @@ static int destroy_gxm_render_target(EmuEnvState &emuenv, SceGxmRenderTarget *re
         return static_cast<int>(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (force_backend_destroy) {
-        renderer::destroy_render_target_during_shutdown(*emuenv.renderer, render_target->renderer);
-    } else {
-        renderer::destroy_render_target(*emuenv.renderer, render_target->renderer);
-    }
+	renderer::destroy_render_target(*emuenv.renderer, render_target->renderer);
 
     emuenv.gxm.render_targets.erase(tracked_render_target);
     free(emuenv.mem, Ptr<SceGxmRenderTarget>(render_target_addr));
