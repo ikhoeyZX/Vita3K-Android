@@ -471,14 +471,17 @@ bool TextureCache::import_configure_texture() {
         if (dds_descriptor == nullptr)
             dds_descriptor = new ddspp::Descriptor;
 
-        auto res = fs_utils::read_data(import_name, imported_texture_raw_data);
-        if (!res) {
+        fs::ifstream file(import_name, std::ios_base::binary | std::ios_base::ate);
+        const size_t file_size = file.tellg();
+        imported_texture_raw_data.resize(std::max<size_t>(ddspp::MAX_HEADER_SIZE, file_size));
+
+        file.seekg(0);
+        file.read(reinterpret_cast<char *>(imported_texture_raw_data.data()), file_size);
+        if (file.gcount() != file_size) {
             LOG_ERROR("Failed to read {}", file_name);
             return false;
         }
-        if (imported_texture_raw_data.size() < ddspp::MAX_HEADER_SIZE) {
-            imported_texture_raw_data.resize(ddspp::MAX_HEADER_SIZE);
-        }
+        file.close();
 
         if (ddspp::decode_header(imported_texture_raw_data.data(), *dds_descriptor) != ddspp::Success) {
             LOG_ERROR("Failed to decode file {} header", file_name);
