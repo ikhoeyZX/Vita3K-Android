@@ -9,6 +9,8 @@ set(SOURCE_LIST
 	include/kernel/debugger.h
 	include/kernel/load_self.h
 	include/kernel/callback.h
+	include/kernel/wait.h
+	include/kernel/wait_queue.h
 	src/kernel.cpp
 	src/thread.cpp
 	src/debugger.cpp

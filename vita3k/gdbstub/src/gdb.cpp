@@ -1,3 +1,5 @@
+#include <memory>
+
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
 //
@@ -15,10 +17,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <memory>
-
 #include <emuenv/state.h>
-#include <util/bit_cast.h>
 #include <util/log.h>
 
 #include <gdbstub/functions.h>
@@ -446,7 +445,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                 if (step) {
                     // Wait until it finish stepping
                     // TODO if that thread waits for sync primitive, dead lock.
-                    thread->status_cond.wait(thread_lock, [&]() { return thread->status == ThreadStatus::suspend; });
+                    thread->status_cond.wait(thread_lock, [&]() { return thread->status == ThreadStatus::suspended; });
                 }
             }
 
@@ -456,12 +455,12 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                     auto lock = std::unique_lock(state.kernel.mutex);
                     for (const auto &pair : state.kernel.threads) {
                         auto &thread = pair.second;
-                        if (thread->status == ThreadStatus::suspend) {
+                        if (thread->status == ThreadStatus::suspended) {
                             lock.unlock();
                             thread->resume();
                             lock.lock();
 
-                            thread->status_cond.wait(lock, [&]() { return thread->status != ThreadStatus::suspend; });
+                            thread->status_cond.wait(lock, [&]() { return thread->status != ThreadStatus::suspended; });
                         }
                     }
                 }
@@ -474,7 +473,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                         return "";
                     for (const auto &[id, thread] : state.kernel.threads) {
                         const auto thread_guard = std::lock_guard(thread->mutex);
-                        if (thread->status == ThreadStatus::suspend && hit_breakpoint(*thread->cpu)) {
+                        if (thread->status == ThreadStatus::suspended && hit_breakpoint(*thread->cpu)) {
                             state.gdb.inferior_thread = id;
                             did_break = true;
                             break;
@@ -496,9 +495,9 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                     auto lock = std::unique_lock(state.kernel.mutex);
                     for (const auto &pair : state.kernel.threads) {
                         auto thread = pair.second;
-                        if (thread->status == ThreadStatus::run) {
+                        if (thread->status == ThreadStatus::running) {
                             thread->suspend();
-                            thread->status_cond.wait(lock, [=]() { return thread->status == ThreadStatus::suspend || thread->status == ThreadStatus::dormant; });
+                            thread->status_cond.wait(lock, [=]() { return thread->status == ThreadStatus::suspended || thread->status == ThreadStatus::dormant; });
                         }
                     }
                 }

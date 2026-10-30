@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,13 +29,10 @@
 
 // Code heavily influenced by PPSSSPP's SceDisplay.cpp
 
-// static constexpr int TARGET_FPS = 60;
-// static constexpr int64_t TARGET_MICRO_PER_FRAME = 1000000LL / TARGET_FPS;
-static constexpr auto TARGET_MICRO_PER_FRAME = 16666LL;
-
+constexpr int64_t TARGET_MICRO_PER_FRAME = 1000000LL / 60; // TARGET_FPS = 60
 // how many cycles do we need to see before we start predicting the next frame
-static constexpr uint8_t predict_threshold = 3;
-static constexpr uint8_t max_expected_swapchain_size = 6;
+static constexpr int predict_threshold = 3;
+static constexpr int max_expected_swapchain_size = 6;
 
 static void vblank_sync_thread(EmuEnvState &emuenv) {
     DisplayState &display = emuenv.display;
@@ -65,17 +62,9 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
             for (auto &[_, cb] : display.vblank_callbacks)
                 cb->event_notify(cb->get_notifier_id());
 
-            for (std::size_t i = 0; i < display.vblank_wait_infos.size();) {
-                auto &vblank_wait_info = display.vblank_wait_infos[i];
-                if (vblank_wait_info.target_vcount <= display.vblank_count) {
-                    ThreadStatePtr target_wait = vblank_wait_info.target_thread;
-
-                    target_wait->update_status(ThreadStatus::run);
-                    display.vblank_wait_infos.erase(display.vblank_wait_infos.begin() + i);
-                } else {
-                    i++;
-                }
-            }
+            display.vblank_waiters.wake_if([&](auto &waiter) {
+                return waiter.entry.target_vcount <= display.vblank_count;
+            });
         }
         const auto time_ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         const auto time_left = TARGET_MICRO_PER_FRAME - (time_ms % TARGET_MICRO_PER_FRAME);
@@ -93,19 +82,14 @@ void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePt
     }
 
     {
-        auto thread_lock = std::unique_lock(wait_thread->mutex);
+        std::unique_lock<std::mutex> lock(display.mutex);
 
-        {
-            const std::lock_guard<std::mutex> guard(display.mutex);
+        if (target_vcount <= display.vblank_count)
+            return;
 
-            if (target_vcount <= display.vblank_count)
-                return;
-
-            wait_thread->update_status(ThreadStatus::wait);
-            display.vblank_wait_infos.push_back({ wait_thread, target_vcount });
-        }
-
-        wait_thread->status_cond.wait(thread_lock, [=]() { return wait_thread->status == ThreadStatus::run; });
+        // the thread is being deleted, don't run its callbacks
+        if (!display.vblank_waiters.wait(lock, wait_thread, { SCE_KERNEL_WAITTYPE_EVENT }, { target_vcount }, Deadline::max()))
+            return;
     }
 
     if (is_cb) {
