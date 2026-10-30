@@ -30,8 +30,7 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
-#include <SDL3/SDL_mutex.h>
-#include <SDL3/SDL_thread.h>
+#include <SDL_thread.h>
 
 int CorenumAllocator::new_corenum() {
     const std::lock_guard<std::mutex> guard(lock);
@@ -54,7 +53,7 @@ void CorenumAllocator::set_max_core_count(const std::size_t max) {
 struct ThreadParams {
     KernelState *kernel = nullptr;
     SceUID thid = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
-    SDL_Semaphore *host_may_destroy_params = nullptr;
+    std::shared_ptr<SDL_semaphore> host_may_destroy_params = std::shared_ptr<SDL_semaphore>(SDL_CreateSemaphore(0), SDL_DestroySemaphore);
 };
 
 static int SDLCALL thread_function(void *data) {
@@ -93,10 +92,14 @@ KernelState::KernelState()
 }
 
 bool KernelState::init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt) {
+#ifdef USE_UNICORN
+    constexpr std::size_t MAX_CORE_COUNT = 150;
+#endif
     corenum_allocator.set_max_core_count(MAX_CORE_COUNT);
     start_tick = rtc_get_ticks(rtc_base_ticks());
     base_tick = { rtc_base_ticks() };
     this->call_import = call_import;
+	this->cpu_backend = cpu_backend;
     this->cpu_opt = cpu_opt;
 
     // Generate halt instruction (NOP + WFI)
@@ -164,10 +167,8 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
     params.kernel = this;
     params.thid = thread->id;
 
-    params.host_may_destroy_params = SDL_CreateSemaphore(0);
-    SDL_DetachThread(SDL_CreateThread(&thread_function, thread->name.c_str(), &params));
-    SDL_WaitSemaphore(params.host_may_destroy_params);
-    SDL_DestroySemaphore(params.host_may_destroy_params);
+    SDL_CreateThread(&thread_function, thread->name.c_str(), &params);
+    SDL_SemWait(params.host_may_destroy_params.get());
 
     return thread;
 }
@@ -184,20 +185,10 @@ Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id,
     return address;
 }
 
-void KernelState::request_process_exit(int res, std::optional<AppLaunchRequest> relaunch) {
-    if (process_exit_callback)
-        process_exit_callback(res, std::move(relaunch));
-}
-
-void KernelState::process_exit() {
-    {
-        std::lock_guard<std::mutex> lock(mutex);
-        for (auto &[_, thread] : threads)
-            thread->exit_delete(false);
-    }
-
-    std::unique_lock<std::mutex> lock(mutex);
-    thread_deleted_cond.wait(lock, [this] { return threads.empty(); });
+void KernelState::exit_delete_all_threads() {
+    const std::lock_guard<std::mutex> lock(mutex);
+    for (auto &[_, thread] : threads) {
+        thread->exit_delete();
 }
 
 void KernelState::pause_threads() {
