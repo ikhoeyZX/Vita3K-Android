@@ -2285,6 +2285,7 @@ static void gxmSetUniformBuffers(renderer::State &state, GxmState &gxm, SceGxmCo
                     // Bound the size
                     bytes_to_copy = std::min<uint32_t>(ite->first + ite->second.size - buffers[i].address(), bytes_to_copy);
                 }
+			}
 
             // Check other UB friends and bound the size
             for (size_t j = 0; j < buffers.size(); j++) {
