@@ -59,7 +59,7 @@ struct ThreadParams {
 static int SDLCALL thread_function(void *data) {
     assert(data != nullptr);
     const ThreadParams params = *static_cast<const ThreadParams *>(data);
-    SDL_SignalSemaphore(params.host_may_destroy_params);
+    SDL_SemPost(params.host_may_destroy_params.get());
     ThreadStatePtr thread = params.kernel->get_thread(params.thid);
 #ifdef TRACY_ENABLE
     if (!thread->name.empty()) {
@@ -91,7 +91,7 @@ KernelState::KernelState()
     : debugger(*this) {
 }
 
-bool KernelState::init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt) {
+bool KernelState::init(MemState &mem, const CallImportFunc &call_import, CPUBackend cpu_backend, bool cpu_opt) {
 #ifdef USE_UNICORN
     constexpr std::size_t MAX_CORE_COUNT = 150;
 #endif
@@ -189,6 +189,7 @@ void KernelState::exit_delete_all_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
     for (auto &[_, thread] : threads) {
         thread->exit_delete();
+	}
 }
 
 void KernelState::pause_threads() {
