@@ -3,14 +3,14 @@ set(SOURCE_LIST
 	include/kernel/types.h
 	include/kernel/thread/thread_data_queue.h
 	include/kernel/thread/thread_state.h
+	include/kernel/thread/wait.h
+	include/kernel/thread/wait_queue.h
 	include/kernel/sync_primitives.h
 	include/kernel/relocation.h
 	include/kernel/object_store.h
 	include/kernel/debugger.h
 	include/kernel/load_self.h
 	include/kernel/callback.h
-	include/kernel/wait.h
-	include/kernel/wait_queue.h
 	src/kernel.cpp
 	src/thread.cpp
 	src/debugger.cpp
