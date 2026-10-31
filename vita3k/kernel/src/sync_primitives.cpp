@@ -104,7 +104,7 @@ SceInt32 simple_event_waitorpoll(KernelState &kernel, const char *export_name, S
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} existing_pattern: {:#b} wait_pattern: {:#b} timeout: {}"
                   " waiting_threads: {}",
             export_name, event->uid, thread_id, event->name, event->attr, event->pattern, wait_pattern, timeout ? *timeout : 0,
-            event->waiters.size());
+            event->waiting_threads->size());
     }
 
     const ThreadStatePtr thread = kernel.get_thread(thread_id);
@@ -125,7 +125,7 @@ SceInt32 simple_event_waitorpoll(KernelState &kernel, const char *export_name, S
         return SCE_KERNEL_OK;
     } else if (is_wait) {
         const Deadline deadline = deadline_from(timeout);
-        const WaitResult r = event->waiters.wait(event_lock, thread, { SCE_KERNEL_WAITTYPE_EVENT, event_id }, { wait_pattern, result_pattern, user_data }, deadline);
+        const WaitResult r = event->waiting_threads->wait(event_lock, thread, { SCE_KERNEL_WAITTYPE_EVENT, event_id }, { wait_pattern, result_pattern, user_data }, deadline);
         writeback_timeout(timeout, deadline);
         const SceInt32 err = guest_result(r);
         if (err < 0) {
@@ -152,7 +152,7 @@ SceInt32 simple_event_setorpulse(KernelState &kernel, const char *export_name, S
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} existing_pattern: {:#b} set_pattern: {:#b}"
                   " waiting_threads: {}",
             export_name, event->uid, thread_id, event->name, event->attr, event->pattern, pattern,
-            event->waiters.size());
+            event->waiting_threads->size());
     }
 
     const std::lock_guard<std::mutex> event_lock(event->mutex);
@@ -164,7 +164,7 @@ SceInt32 simple_event_setorpulse(KernelState &kernel, const char *export_name, S
     event->pattern = new_pattern;
     event->last_user_data = user_data;
 
-    event->waiters.wake_if([&](auto &waiter) {
+    event->waiting_threads->wake_if([&](auto &waiter) {
         const SimpleEvent::WaitEntry &wait = waiter.entry;
         if (!(event->pattern & wait.pattern))
             return false;
@@ -217,10 +217,10 @@ SceInt32 simple_event_delete(KernelState &kernel, const char *export_name, SceUI
 
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} existing_pattern: {:#b} waiting_threads: {}",
-            export_name, event->uid, thread_id, event->name, event->attr, event->pattern, event->waiters.size());
+            export_name, event->uid, thread_id, event->name, event->attr, event->pattern, event->waiting_threads->size());
     }
 
-    if (event->waiters.empty()) {
+    if (event->waiting_threads->empty()) {
         const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
         kernel.eventflags.erase(event_id);
     } else {
@@ -1228,14 +1228,14 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} existing_flags: {:#b} wait_flags: {:#b} timeout: {}"
                   " waiting_threads: {}",
             export_name, event->uid, thread_id, event->name, event->attr, event->flags, flags, timeout ? *timeout : 0,
-            event->waiters.size());
+            event->waiting_threads->size());
     }
 
     const ThreadStatePtr thread = kernel.get_thread(thread_id);
 
     std::unique_lock<std::mutex> event_lock(event->mutex);
 
-    if ((event->attr & 0x1000) == 0 && !event->waiters.empty()) {
+    if ((event->attr & 0x1000) == 0 && !event->waiting_threads->empty()) {
         return RET_ERROR(SCE_KERNEL_ERROR_EVF_MULTI);
     }
 
@@ -1262,7 +1262,7 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
         return SCE_KERNEL_OK;
     } else if (dowait) {
         const Deadline deadline = deadline_from(timeout);
-        const WaitResult r = event->waiters.wait(event_lock, thread, { SCE_KERNEL_WAITTYPE_EVENTFLAG, event_id }, { wait, flags, outBits }, deadline);
+        const WaitResult r = event->waiting_threads->wait(event_lock, thread, { SCE_KERNEL_WAITTYPE_EVENTFLAG, event_id }, { wait, flags, outBits }, deadline);
         writeback_timeout(timeout, deadline);
         const SceInt32 err = guest_result(r);
         if (err == SCE_KERNEL_ERROR_WAIT_TIMEOUT && outBits) {
@@ -1298,13 +1298,13 @@ SceInt32 eventflag_set(KernelState &kernel, const char *export_name, SceUID thre
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} existing_flags: {:#b} set_flags: {:#b}"
                   " waiting_threads: {}",
             export_name, event->uid, thread_id, event->name, event->attr, event->flags, bitPattern,
-            event->waiters.size());
+            event->waiting_threads->size());
     }
 
     const std::lock_guard<std::mutex> event_lock(event->mutex);
     event->flags |= bitPattern;
 
-    event->waiters.wake_if([&](auto &waiter) {
+    event->waiting_threads->wake_if([&](auto &waiter) {
         const EventFlag::WaitEntry &wait = waiter.entry;
         const SceUInt32 waiting_flags = wait.pattern;
 
@@ -1346,7 +1346,7 @@ SceInt32 eventflag_cancel(KernelState &kernel, const char *export_name, SceUID t
 
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} existing_flags: {:#b} waiting_threads: {}",
-            export_name, event->uid, thread_id, event->name, event->attr, event->flags, event->waiters.size());
+            export_name, event->uid, thread_id, event->name, event->attr, event->flags, event->waiting_threads->size());
     }
 
     const std::lock_guard<std::mutex> event_lock(event->mutex);
@@ -1356,7 +1356,7 @@ SceInt32 eventflag_cancel(KernelState &kernel, const char *export_name, SceUID t
             *waiter.entry.out_bits = pattern;
         return true;
     };
-    const auto nb_threads = static_cast<SceUInt32>(event->waiters.wake_if(set_out_bits, SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_threads = static_cast<SceUInt32>(event->waiting_threads->wake_if(set_out_bits, SCE_KERNEL_ERROR_WAIT_CANCEL));
 
     event->flags = pattern;
 
@@ -1376,10 +1376,10 @@ int eventflag_delete(KernelState &kernel, const char *export_name, SceUID thread
 
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} existing_flags: {:#b} waiting_threads: {}",
-            export_name, event->uid, thread_id, event->name, event->attr, event->flags, event->waiters.size());
+            export_name, event->uid, thread_id, event->name, event->attr, event->flags, event->waiting_threads->size());
     }
 
-    if (event->waiters.empty()) {
+    if (event->waiting_threads->empty()) {
         const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
         kernel.eventflags.erase(event_id);
     } else {
