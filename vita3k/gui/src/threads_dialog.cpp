@@ -70,16 +70,16 @@ void draw_threads_dialog(GuiState &gui, EmuEnvState &emuenv) {
     for (const auto &[id, th_state] : emuenv.kernel.threads) {
         std::string run_state;
         switch (th_state->status) {
-        case ThreadStatus::run:
+        case ThreadStatus::running:
             run_state = "Running";
             break;
-        case ThreadStatus::wait:
+        case ThreadStatus::waiting:
             run_state = "Waiting";
             break;
         case ThreadStatus::dormant:
             run_state = "Dormant";
             break;
-        case ThreadStatus::suspend:
+        case ThreadStatus::suspended:
             run_state = "Suspended";
         }
         if (ImGui::Selectable(fmt::format("{:0>8X}         {:<32}   {:<16}   {:0>8X}",
