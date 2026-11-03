@@ -291,7 +291,7 @@ static void timer_schedule_event(TimerPtr &timer) {
     timer->next_event = curr_time + timer->event_interval;
 
     // the first waiter has to wait for the new event time
-    timer->waiters.notify_all();
+   timer->condvar.notify_all();
 }
 
 SceInt32 timer_set(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID timer_handle, SceUID type, SceKernelSysClock *interval, SceInt32 repeats) {
@@ -306,7 +306,7 @@ SceInt32 timer_set(KernelState &kernel, const char *export_name, SceUID thread_i
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} type: {} interval: {} repeats: {}"
                   " waiting_threads: {}",
             export_name, timer->uid, thread_id, timer->name, timer->attr, type, *interval,
-            repeats, timer->waiters.size());
+            repeats,timer->condvar.size());
     }
 
     const std::lock_guard<std::mutex> timer_lock(timer->mutex);
@@ -332,7 +332,7 @@ SceInt32 timer_waitorpoll(KernelState &kernel, const char *export_name, SceUID t
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} timeout: {}"
                   " waiting_threads: {}",
             export_name, timer->uid, thread_id, timer->name, timer->attr, timeout ? *timeout : 0,
-            timer->waiters.size());
+           timer->condvar.size());
     }
 
     if (timeout)
@@ -374,11 +374,11 @@ SceInt32 timer_waitorpoll(KernelState &kernel, const char *export_name, SceUID t
         return SCE_KERNEL_OK;
     } else if (is_wait) {
         WaitQueue<std::monostate>::Waiter waiter{ .thread = thread, .priority = thread->priority };
-        timer->waiters.push(waiter);
+       timer->condvar.push(waiter);
 
         while (true) {
             // only the first waiter waits for the event, the others wait until they are first
-            const bool is_first = timer->waiters.front() == &waiter;
+            const bool is_first =timer->condvar.front() == &waiter;
             Deadline deadline = Deadline::max();
             if (is_first && timer->next_event != std::numeric_limits<uint64_t>::max()) {
                 const uint64_t wait_time = timer->next_event > current_time ? timer->next_event - current_time : 0;
@@ -389,8 +389,8 @@ SceInt32 timer_waitorpoll(KernelState &kernel, const char *export_name, SceUID t
             const WaitResult r = thread->wait({ SCE_KERNEL_WAITTYPE_EVENT, event_id }, deadline);
             lock.lock();
             if (!r) {
-                timer->waiters.remove(waiter);
-                timer->waiters.notify_all();
+               timer->condvar.remove(waiter);
+               timer->condvar.notify_all();
                 return guest_result(r);
             }
 
@@ -399,12 +399,12 @@ SceInt32 timer_waitorpoll(KernelState &kernel, const char *export_name, SceUID t
                 break;
         }
 
-        timer->waiters.remove(waiter);
+       timer->condvar.remove(waiter);
 
         timer->event_set = !timer->is_pulse && !(timer->attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET);
         set_next_event();
         // notify the other waiting threads
-        timer->waiters.notify_all();
+       timer->condvar.notify_all();
 
         return SCE_KERNEL_OK;
     } else {
