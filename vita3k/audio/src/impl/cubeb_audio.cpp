@@ -147,9 +147,9 @@ void CubebAudioAdapter::audio_output(ThreadState &thread, AudioOutPort &out_port
     std::unique_lock<std::mutex> lock(port.mutex);
     if (port.nb_buffers_ready == port.audio_buffers.size()) {
         // is it really useful to update the thread status?
-        thread.update_status(ThreadStatus::waiting);
+        thread.update_status(ThreadStatus::wait);
         port.cond_var.wait(lock);
-        thread.update_status(ThreadStatus::running);
+        thread.update_status(ThreadStatus::run);
     }
 
     assert(port.nb_buffers_ready < port.audio_buffers.size());

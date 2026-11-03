@@ -85,14 +85,14 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
         bool status = false;
         auto start = std::chrono::steady_clock::now();
         if (*timeout > 0) {
-            status = thread->status_cond.wait_for(primitive_lock, std::chrono::microseconds{ *timeout }, [&] { return thread->status == ThreadStatus::running; });
+            status = thread->status_cond.wait_for(primitive_lock, std::chrono::microseconds{ *timeout }, [&] { return thread->status == ThreadStatus::run; });
         }
 
         if (!status) {
             *timeout = 0; // Time run out, so remaining time is 0
 
             thread_lock.lock();
-            thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+            thread->update_status(ThreadStatus::run, ThreadStatus::wait);
             thread_lock.unlock();
 
             queue->erase(data_it);
@@ -108,7 +108,7 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
             }
         }
     } else {
-        thread->status_cond.wait(primitive_lock, [&] { return thread->status == ThreadStatus::running; });
+        thread->status_cond.wait(primitive_lock, [&] { return thread->status == ThreadStatus::run; });
     }
 
     return SCE_KERNEL_OK;
@@ -185,7 +185,7 @@ SceInt32 simple_event_waitorpoll(KernelState &kernel, const char *export_name, S
         return SCE_KERNEL_OK;
     } else if (is_wait) {
         std::unique_lock<std::mutex> thread_lock(thread->mutex);
-        thread->update_status(ThreadStatus::waiting, ThreadStatus::running);
+        thread->update_status(ThreadStatus::wait, ThreadStatus::run);
 
         WaitingThreadData data;
         data.thread = thread;
@@ -251,7 +251,7 @@ SceInt32 simple_event_setorpulse(KernelState &kernel, const char *export_name, S
 
             const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
 
-            waiting_thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+            waiting_thread->update_status(ThreadStatus::run, ThreadStatus::wait);
 
             event->waiting_threads->erase(it++);
         } else {
@@ -454,7 +454,7 @@ SceInt32 timer_waitorpoll(KernelState &kernel, const char *export_name, SceUID t
 
         return SCE_KERNEL_OK;
     } else if (is_wait) {
-        thread->update_status(ThreadStatus::waiting, ThreadStatus::running);
+        thread->update_status(ThreadStatus::wait, ThreadStatus::run);
 
         WaitingThreadData data;
         data.thread = thread;
@@ -476,7 +476,7 @@ SceInt32 timer_waitorpoll(KernelState &kernel, const char *export_name, SceUID t
         }
 
         timer->waiting_threads->pop();
-        thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+        thread->update_status(ThreadStatus::run, ThreadStatus::wait);
 
         timer->event_set = !timer->is_pulse && !(timer->attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET);
         set_next_event();
@@ -658,7 +658,7 @@ inline int mutex_lock_impl(KernelState &kernel, MemState &mem, const char *expor
 
         // Sleep thread!
         std::unique_lock<std::mutex> thread_lock(thread->mutex);
-        thread->update_status(ThreadStatus::waiting, ThreadStatus::running);
+        thread->update_status(ThreadStatus::wait, ThreadStatus::run);
 
         WaitingThreadData data;
         data.thread = thread;
@@ -736,7 +736,7 @@ inline int mutex_unlock_impl(KernelState &kernel, const char *export_name, SceUI
                 const auto waiting_lock_count = waiting_thread_data.lock_count;
 
                 const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
-                waiting_thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+                waiting_thread->update_status(ThreadStatus::run, ThreadStatus::wait);
 
                 mutex->waiting_threads->pop();
                 mutex->lock_count += waiting_lock_count;
@@ -879,7 +879,7 @@ SceInt32 rwlock_lock(KernelState &kernel, MemState &mem, const char *export_name
         // we need to wait
 
         std::unique_lock<std::mutex> thread_lock(thread->mutex);
-        thread->update_status(ThreadStatus::waiting, ThreadStatus::running);
+        thread->update_status(ThreadStatus::wait, ThreadStatus::run);
 
         WaitingThreadData data;
         data.thread = thread;
@@ -941,7 +941,7 @@ SceInt32 rwlock_unlock(KernelState &kernel, MemState &mem, const char *export_na
             rwlock->waiting_threads->erase(old_it);
 
             const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
-            waiting_thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+            waiting_thread->update_status(ThreadStatus::run, ThreadStatus::wait);
             rwlock->owners.emplace(waiting_thread, 1);
 
             if (waiting_is_write) {
@@ -1056,7 +1056,7 @@ SceInt32 semaphore_wait(KernelState &kernel, const char *export_name, SceUID thr
 
     if (semaphore->val < needCount) {
         std::unique_lock<std::mutex> thread_lock(thread->mutex);
-        thread->update_status(ThreadStatus::waiting, ThreadStatus::running);
+        thread->update_status(ThreadStatus::wait, ThreadStatus::run);
 
         WaitingThreadData data;
         data.thread = thread;
@@ -1112,7 +1112,7 @@ int semaphore_signal(KernelState &kernel, const char *export_name, SceUID thread
 
         const std::unique_lock<std::mutex> waiting_thread_lock(waiting_thread->mutex);
 
-        waiting_thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+        waiting_thread->update_status(ThreadStatus::run, ThreadStatus::wait);
 
         semaphore->waiting_threads->pop();
         semaphore->val -= waiting_signal_count;
@@ -1174,7 +1174,7 @@ int semaphore_cancel(KernelState &kernel, const char *export_name, SceUID thread
             *waiting_thread_data.was_canceled = true;
         }
 
-        waiting_thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+        waiting_thread->update_status(ThreadStatus::run, ThreadStatus::wait);
 
         semaphore->waiting_threads->erase(semaphore->waiting_threads->begin());
         nb_threads++;
@@ -1256,7 +1256,7 @@ int condvar_wait(KernelState &kernel, MemState &mem, const char *export_name, Sc
         return error;
 
     std::unique_lock<std::mutex> thread_lock(thread->mutex);
-    thread->update_status(ThreadStatus::waiting, ThreadStatus::running);
+    thread->update_status(ThreadStatus::wait, ThreadStatus::run);
 
     WaitingThreadData data;
     data.thread = thread;
@@ -1298,7 +1298,7 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
         if (waiting_thread_iter != waiting_threads->end()) {
             const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
 
-            waiting_thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+            waiting_thread->update_status(ThreadStatus::run, ThreadStatus::wait);
             waiting_threads->erase(waiting_thread_iter);
         } else {
             LOG_ERROR("{}: Target thread {} not found", export_name, waiting_thread->name);
@@ -1311,7 +1311,7 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
             if (!waiting_thread_lock)
                 continue;
 
-            waiting_thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+            waiting_thread->update_status(ThreadStatus::run, ThreadStatus::wait);
             waiting_threads->pop();
         }
     }
@@ -1463,7 +1463,7 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
         return SCE_KERNEL_OK;
     } else if (dowait) {
         std::unique_lock<std::mutex> thread_lock(thread->mutex);
-        thread->update_status(ThreadStatus::waiting, ThreadStatus::running);
+        thread->update_status(ThreadStatus::wait, ThreadStatus::run);
 
         WaitingThreadData data;
         data.thread = thread;
@@ -1547,7 +1547,7 @@ SceInt32 eventflag_set(KernelState &kernel, const char *export_name, SceUID thre
 
             const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
 
-            waiting_thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+            waiting_thread->update_status(ThreadStatus::run, ThreadStatus::wait);
 
             event->waiting_threads->erase(it++);
         } else {
@@ -1585,7 +1585,7 @@ SceInt32 eventflag_cancel(KernelState &kernel, const char *export_name, SceUID t
         if (waiting_thread_data.outBits)
             *waiting_thread_data.outBits = pattern;
 
-        waiting_thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+        waiting_thread->update_status(ThreadStatus::run, ThreadStatus::wait);
 
         event->waiting_threads->erase(event->waiting_threads->begin());
         nb_threads++;
@@ -1721,7 +1721,7 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
             for (auto it = msgpipe->senders->begin(); it != msgpipe->senders->end(); ++it) {
                 auto threadInfo = (*it);
                 if (threadInfo.mp.request_size <= msgpipe->data_buffer.Free()) { // Found a thread we can service
-                    threadInfo.thread->status = ThreadStatus::running;
+                    threadInfo.thread->status = ThreadStatus::run;
                     threadInfo.thread->status_cond.notify_one();
 
                     msgpipe->senders->erase(it); // Erase other thread's info - done here to avoid race
@@ -1747,10 +1747,10 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
         msgpipe->receivers->push(wait_data);
 
         std::unique_lock thread_lock(thread->mutex); // Lock thread - needed for condition variable
-        thread->update_status(ThreadStatus::waiting, ThreadStatus::running); // Mark ourselves as sleeping
+        thread->update_status(ThreadStatus::wait, ThreadStatus::run); // Mark ourselves as sleeping
 
         const auto finish = [&] {
-            thread->update_status(ThreadStatus::running); // Wake up
+            thread->update_status(ThreadStatus::run); // Wake up
 
             SceSize readSize = (SceSize)copyOut();
             // msgpipe->receivers->erase(wait_data); //we've already been erased by the sender
@@ -1762,7 +1762,7 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
             do {
                 // FIXME sleep on SimpleEvent
                 msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
-                thread->status_cond.wait(thread_lock, [&] { return thread->status == ThreadStatus::running; });
+                thread->status_cond.wait(thread_lock, [&] { return thread->status == ThreadStatus::run; });
                 if (msgpipe->beingDeleted) { // if beingDeleted then message pipe is locked, so we can't lock again
                     std::atomic_fetch_add(&msgpipe->remainingThreads, static_cast<size_t>(-1));
                     return SCE_KERNEL_ERROR_WAIT_DELETE;
@@ -1774,14 +1774,14 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
             return finish();
         } else { // There's a timeout - wait until we can fill buffer or timeout
             msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
-            auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *pTimeout }, [&] { return thread->status == ThreadStatus::running; });
+            auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *pTimeout }, [&] { return thread->status == ThreadStatus::run; });
             if (msgpipe->beingDeleted) {
                 std::atomic_fetch_add(&msgpipe->remainingThreads, static_cast<size_t>(-1));
                 return SCE_KERNEL_ERROR_WAIT_DELETE;
             }
 
             if (!status) { // Timed out and buffer hasn't been touched
-                thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+                thread->update_status(ThreadStatus::run, ThreadStatus::wait);
                 return RET_ERROR(SCE_KERNEL_ERROR_WAIT_TIMEOUT);
             }
             msgpipe_lock.lock(); // Lock message pipe again
@@ -1815,7 +1815,7 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
         if (!msgpipe->receivers->empty()) {
             for (auto it = msgpipe->receivers->begin(); it != msgpipe->receivers->end(); ++it) {
                 if ((*it).mp.request_size <= msgpipe->data_buffer.Used()) { // Found a thread we can service
-                    (*it).thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+                    (*it).thread->update_status(ThreadStatus::run, ThreadStatus::wait);
 
                     msgpipe->receivers->erase(it); // Erase other thread's info - done here to avoid race
                     break; // Should we try to signal other threads, too?
@@ -1850,10 +1850,10 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
         msgpipe->senders->push(wait_data);
 
         std::unique_lock thread_lock(thread->mutex); // Lock thread - needed for condition variable
-        thread->update_status(ThreadStatus::waiting, ThreadStatus::running); // Mark ourselves as sleeping
+        thread->update_status(ThreadStatus::wait, ThreadStatus::run); // Mark ourselves as sleeping
 
         const auto finish = [&] {
-            thread->update_status(ThreadStatus::running); // Wake up
+            thread->update_status(ThreadStatus::run); // Wake up
 
             SceSize insertedSize = (SceSize)msgpipe->data_buffer.Insert(pSendBuf, sendSize);
             // msgpipe->senders->erase(wait_data); //Don't erase ourselves - recv will do it
@@ -1865,7 +1865,7 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
             do {
                 // FIXME sleep on SimpleEvent
                 msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
-                thread->status_cond.wait(thread_lock, [&] { return thread->status == ThreadStatus::running; });
+                thread->status_cond.wait(thread_lock, [&] { return thread->status == ThreadStatus::run; });
                 if (msgpipe->beingDeleted) { // if beingDeleted then message pipe is locked, so we can't lock again
                     std::atomic_fetch_add(&msgpipe->remainingThreads, static_cast<size_t>(-1));
                     return SCE_KERNEL_ERROR_WAIT_DELETE;
@@ -1878,14 +1878,14 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
             return finish();
         } else { // There's a timeout - wait until we can fill buffer or timeout
             msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
-            auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *pTimeout }, [&] { return thread->status == ThreadStatus::running; });
+            auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *pTimeout }, [&] { return thread->status == ThreadStatus::run; });
             if (msgpipe->beingDeleted) {
                 std::atomic_fetch_add(&msgpipe->remainingThreads, static_cast<size_t>(-1));
                 return SCE_KERNEL_ERROR_WAIT_DELETE;
             }
 
             if (!status) { // Timed out and buffer hasn't been touched
-                thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+                thread->update_status(ThreadStatus::run, ThreadStatus::wait);
                 return RET_ERROR(SCE_KERNEL_ERROR_WAIT_TIMEOUT);
             }
             msgpipe_lock.lock(); // Lock message pipe before read from data_buffer in finish()
@@ -1915,10 +1915,10 @@ SceInt32 msgpipe_delete(KernelState &kernel, const char *export_name, SceUID thr
 
         // Wake up every thread
         for (auto it : *msgpipe->senders) {
-            it.thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+            it.thread->update_status(ThreadStatus::run, ThreadStatus::wait);
         }
         for (auto it : *msgpipe->receivers) {
-            it.thread->update_status(ThreadStatus::running, ThreadStatus::waiting);
+            it.thread->update_status(ThreadStatus::run, ThreadStatus::wait);
         }
         while (std::atomic_load(&msgpipe->remainingThreads) != 0) // FIXME busy loop bad
             std::this_thread::yield();

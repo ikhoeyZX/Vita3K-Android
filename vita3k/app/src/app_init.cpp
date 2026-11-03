@@ -508,8 +508,8 @@ bool late_init(EmuEnvState &state) {
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
-        if (thread->status == ThreadStatus::waiting) {
-            thread->update_status(ThreadStatus::running);
+        if (thread->status == ThreadStatus::wait) {
+            thread->update_status(ThreadStatus::run);
         }
     };
     if (!state.audio.init(resume_thread, state.cfg.audio_backend)) {

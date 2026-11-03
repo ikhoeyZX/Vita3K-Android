@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2026 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 #pragma once
 
 #include <kernel/callback.h>
-#include <kernel/thread/wait_queue.h>
 #include <mem/ptr.h>
 #include <util/types.h>
 
@@ -32,7 +31,11 @@ enum SceDisplayPixelFormat {
     SCE_DISPLAY_PIXELFORMAT_A8B8G8R8 = 0x00000000U
 };
 
-struct VBlankWaitEntry {
+struct ThreadState;
+typedef std::shared_ptr<ThreadState> ThreadStatePtr;
+
+struct DisplayStateVBlankWaitInfo {
+    ThreadStatePtr target_thread;
     uint64_t target_vcount;
 };
 
@@ -49,13 +52,6 @@ struct PredictedDisplayFrame {
 };
 
 struct DisplayState {
-    int viewport_drawable_w = 0;
-    int viewport_drawable_h = 0;
-    float viewport_x = 0;
-    float viewport_y = 0;
-    float viewport_w = 0;
-    float viewport_h = 0;
-
     // next frame as seen by SceDisplay
     DisplayFrameInfo sce_frame;
 
@@ -69,7 +65,7 @@ struct DisplayState {
     std::atomic<bool> imgui_render{ true };
     std::atomic<bool> fullscreen{ false };
     std::atomic<std::uint64_t> vblank_count{ 0 };
-    WaitQueue<VBlankWaitEntry> vblank_waiters;
+    std::vector<DisplayStateVBlankWaitInfo> vblank_wait_infos;
     std::atomic<uint64_t> last_setframe_vblank_count = 0;
     std::map<SceUID, CallbackPtr> vblank_callbacks{};
 
@@ -82,13 +78,11 @@ struct DisplayState {
     // should contain the list of sync objects / swapchain images (in the order they appear in the cycle)
     std::vector<PredictedDisplayFrame> predicted_frames;
     // position in the predicted_frame cycle (the -1 is needed)
-    uint32_t predicted_frame_position = -1;
+    int32_t predicted_frame_position = -1;
     // how many times the same predicted_frames cycle has been seen (if it is below some threshold, do not predict the frame)
     uint32_t predicted_cycles_seen = 0;
     // should the next call to sceDisplaySetFrameBuf do something
     std::atomic<bool> predicting = false;
 
     std::atomic<Address> current_sync_object;
-
-    void deinit();
 };

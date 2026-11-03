@@ -151,8 +151,8 @@ void AudioState::audio_output(ThreadState &thread, AudioOutPort &out_port, const
             out_port.thread = thread.id;
 
             std::unique_lock<std::mutex> mlock(thread.mutex);
-            thread.update_status(ThreadStatus::waiting);
-            thread.status_cond.wait(mlock, [&]() { return thread.status == ThreadStatus::running; });
+            thread.update_status(ThreadStatus::wait);
+            thread.status_cond.wait(mlock, [&]() { return thread.status == ThreadStatus::run; });
         }
     } else {
         if(buffer)

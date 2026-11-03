@@ -21,12 +21,12 @@
 
 #include <cpu/common.h>
 #include <kernel/state.h>
-#include <mem/functions.h>
 
 #include <kernel/thread/thread_state.h>
 
 #include <cpu/functions.h>
 #include <mem/ptr.h>
+#include <mem/functions.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
@@ -60,7 +60,7 @@ static int SDLCALL thread_function(void *data) {
     assert(data != nullptr);
     const ThreadParams params = *static_cast<const ThreadParams *>(data);
     SDL_SemPost(params.host_may_destroy_params.get());
-    ThreadStatePtr thread = params.kernel->get_thread(params.thid);
+    const ThreadStatePtr thread = params.kernel->get_thread(params.thid);
 #ifdef TRACY_ENABLE
     if (!thread->name.empty()) {
         tracy::SetThreadName(thread->name.c_str());
@@ -72,18 +72,14 @@ static int SDLCALL thread_function(void *data) {
 
     thread->run_loop();
     const uint32_t r0 = read_reg(*thread->cpu, 0);
-    const SceUID id = thread->id;
-    const int processor_id = get_processor_id(*thread->cpu);
-    // release our reference first so the erase below destroys the ThreadState before process_exit() is woken
-    thread.reset();
 
     {
         std::lock_guard<std::mutex> lock(params.kernel->mutex);
-        params.kernel->threads.erase(id);
-        params.kernel->corenum_allocator.free_corenum(processor_id);
+        params.kernel->threads.erase(thread->id);
+        params.kernel->corenum_allocator.free_corenum(get_processor_id(*thread->cpu));
         params.kernel->thread_deleted_cond.notify_all();
     }
-
+    
     return r0;
 }
 
@@ -96,10 +92,11 @@ bool KernelState::init(MemState &mem, const CallImportFunc &call_import, CPUBack
     constexpr std::size_t MAX_CORE_COUNT = 150;
 #endif
     corenum_allocator.set_max_core_count(MAX_CORE_COUNT);
+
     start_tick = rtc_get_ticks(rtc_base_ticks());
     base_tick = { rtc_base_ticks() };
     this->call_import = call_import;
-	this->cpu_backend = cpu_backend;
+    this->cpu_backend = cpu_backend;
     this->cpu_opt = cpu_opt;
 
     // Generate halt instruction (NOP + WFI)
@@ -108,7 +105,7 @@ bool KernelState::init(MemState &mem, const CallImportFunc &call_import, CPUBack
     halt_ptr[0] = 0xBF00; // NOP
     halt_ptr[1] = 0xBF30; // WFI
     halt_instruction_pc = halt_instruction.get() | 1; // thumb mode pc
-
+    
     return true;
 }
 
@@ -157,11 +154,10 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
     ThreadStatePtr thread = std::make_shared<ThreadState>(get_next_uid(), *this, mem);
     if (thread->init(name, entry_point, init_priority, affinity_mask, stack_size, option) < 0)
         return nullptr;
-
-    {
+     {
         const std::lock_guard<std::mutex> lock(mutex);
         threads.emplace(thread->id, thread);
-    }
+     }
 
     ThreadParams params;
     params.kernel = this;
@@ -169,7 +165,6 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
 
     SDL_CreateThread(&thread_function, thread->name.c_str(), &params);
     SDL_SemWait(params.host_may_destroy_params.get());
-
     return thread;
 }
 
@@ -189,14 +184,14 @@ void KernelState::exit_delete_all_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
     for (auto &[_, thread] : threads) {
         thread->exit_delete();
-	}
+    }
 }
 
 void KernelState::pause_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
     for (auto &[_, thread] : threads) {
         paused_threads_status[thread->id] = thread->status;
-        if (thread->status == ThreadStatus::running)
+        if (thread->status == ThreadStatus::run)
             thread->suspend();
     }
 }
@@ -204,7 +199,7 @@ void KernelState::pause_threads() {
 void KernelState::resume_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
     for (auto &[_, thread] : threads) {
-        if (paused_threads_status[thread->id] == ThreadStatus::running)
+        if (paused_threads_status[thread->id] == ThreadStatus::run)
             thread->resume();
     }
     paused_threads_status.clear();
