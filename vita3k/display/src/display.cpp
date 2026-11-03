@@ -30,8 +30,7 @@
 // Code heavily influenced by PPSSSPP's SceDisplay.cpp
 
 // static constexpr int TARGET_FPS = 60;
-// static constexpr int64_t TARGET_MICRO_PER_FRAME = 1000000LL / TARGET_FPS;
-static constexpr auto TARGET_MICRO_PER_FRAME = 16666LL;
+static constexpr uint64_t TARGET_MICRO_PER_FRAME = 1000000LL / 60; // TARGET_FPS
 
 // how many cycles do we need to see before we start predicting the next frame
 static constexpr uint8_t predict_threshold = 3;

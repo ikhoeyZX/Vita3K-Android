@@ -199,7 +199,9 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
+	thread->update_status(ThreadStatus::wait);
     emuenv.audio.audio_output(*thread, *prt, buf);
+	thread->update_status(ThreadStatus::run);
 
     return prt->len;
 }

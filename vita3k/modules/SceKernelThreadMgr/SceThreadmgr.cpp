@@ -42,8 +42,13 @@ EXPORT(int, __sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const 
     TRACY_FUNC(__sceKernelCreateLwMutex, workarea, name, attr, opt);
     assert(opt.get(emuenv.mem)->init_count >= 0);
 
-    auto uid_out = &workarea.get(emuenv.mem)->uid;
-    return mutex_create(uid_out, emuenv.kernel, emuenv.mem, export_name, name, thread_id, attr, opt.get(emuenv.mem)->init_count, workarea, SyncWeight::Light);
+    auto uid_out = &workarea.get(emuenv.mem)->uid;		
+    const SceUID uid = mutex_create(uid_out, emuenv.kernel, emuenv.mem, export_name, name, thread_id, attr, opt.get(emuenv.mem)->init_count, workarea, SyncWeight::Light);
+	
+	if (uid < 0)
+        return uid;
+	
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelCancelEvent) {
@@ -107,7 +112,11 @@ EXPORT(int, _sceKernelCreateLwCond, Ptr<SceKernelLwCondWork> workarea, const cha
     const auto uid_out = &workarea.get(emuenv.mem)->uid;
     const auto assoc_mutex_uid = opt.get(emuenv.mem)->workarea_mutex.get(emuenv.mem)->uid;
 
-    return condvar_create(uid_out, emuenv.kernel, export_name, name, thread_id, attr, assoc_mutex_uid, SyncWeight::Light);
+    const SceUID uid = condvar_create(uid_out, emuenv.kernel, export_name, name, thread_id, attr, assoc_mutex_uid, SyncWeight::Light);
+	
+	if (uid < 0)
+        return uid;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelCreateMsgPipeWithLR) {
