@@ -17,114 +17,68 @@
 
 #pragma once
 
+#include <kernel/kernel_object.h>
 #include <kernel/types.h>
-#include <mutex>
+#include <util/intrusive_list.h>
 
-#define SCE_UID_INVALID_UID (SceUID)(0xFFFFFFFF)
+// A callback a thread created, which only that thread runs. Its notifications, runs and link in the
+// owner's list are guarded by the owner's mutex, and the owner's callback calls change them.
+class Callback final : public WithUidClass<Callback, KernelObject, UidClass::callback>, public IntrusiveLink<Callback> {
+    friend class Ref<Callback>;
 
-struct KernelState;
-struct ThreadState;
-typedef std::shared_ptr<ThreadState> ThreadStatePtr;
+    Callback(SceUID thread_id, const char *name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon);
 
-struct Callback {
-    /**
-     * @brief Creates a Callback object
-     *
-     * @param name Name of the callback
-     * @param cb_func Pointer to the callback function
-     * @param pCommon User-provided parameter
-     */
-    Callback(SceUID thread_id, std::string &name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon)
-        : thread_id(thread_id)
-        , name(name)
-        , cb_func(cb_func)
-        , userdata(pCommon) {}
+public:
+    // The notifications since the callback last ran, which its function receives
+    struct Notification {
+        // The last notifier's UID, SCE_UID_INVALID_UID for a direct notify, 0 with nothing pending
+        SceUID notifier_id = 0;
+        uint32_t count = 0;
+        // The last notify's argument
+        SceInt32 arg = 0;
+    };
 
-    /**
-     * @return UID of the thread that created and owns this callback
-     */
-    SceUID get_owner_thread_id() const { return this->thread_id; }
-
-    /**
-     * @return Name of the callback
-     */
-    const std::string &get_name() const { return this->name; }
-
-    /**
-     * @return Callback function
-     */
-    Ptr<SceKernelCallbackFunction> get_callback_function() const { return this->cb_func; }
-
-    /**
-     * @return UID of the event that notified the callback last
-     */
-    SceUID get_notifier_id();
-
-    /**
-     * @return notifyArg from last time callback was notified
-     */
-    SceInt32 get_notify_arg();
-
-    /**
-     * @return User-provided common argument
-     */
-    Ptr<void> get_user_common_ptr() const { return this->userdata; }
-
-    /**
-     * @brief Notify this callback
-     * @param notifier_id UID of the notifying event
-     * @param notify_arg User-specified notification argument
-     */
-    void notify(SceUID notifier_id, SceInt32 notify_arg);
-
-    /**
-     * @brief Notify this callback from an event, without notification argument
-     * @param notifier_id UID of the event that notifies this callback
-     */
-    void event_notify(SceUID notifier_id);
-
-    /**
-     * @brief Notify this callback directly (not from event)
-     * @param notify_arg User-specified notification argument
-     */
-    void direct_notify(SceInt32 notify_arg);
-
-    /**
-     * @brief Cancels every notification sent to this callback
-     */
-    void cancel();
-
-    /**
-     * @return true if the callback can be executed, false otherwise
-     */
-    bool is_executable();
-
-    /**
-     * @return Number of times callback has been notified since last execution
-     */
-    uint32_t get_num_notifications();
-
-    /**
-     * @brief Runs callback in the context of creator thread
-     * @note Calling this method when Callback.executable() == false returns false and does nothing
-     * @note This should be called only in the creator thread
-     */
-    void execute(KernelState &kernel, const std::function<void()> &deleter);
-
-private:
-    void reset();
-    bool is_notified() const;
-    std::mutex _mutex;
-
-    const SceUID thread_id; // UID of the thread that created this callback
-    const std::string name; // Name of the callback
+    // The thread that created this callback and runs it. Calls look it up by its UID, so they fail
+    // once it's deleted.
+    const SceUID thread_id;
     const Ptr<SceKernelCallbackFunction> cb_func; // Function to execute when the callback should run
     const Ptr<void> userdata; // User-provided data - passed as pCommon
 
-    uint32_t num_notifications = 0; // Number of times this callback has been notified - reset every time it is run
-    SceInt32 notification_arg = 0; // User-specified argument passed by sceKernelNotifyCallback
-    SceUID notifier_id = SCE_UID_INVALID_UID; // UID of the last event that notified this thread - SCE_UID_INVALID_UID if not an event
+private:
+    friend struct ThreadState;
+
+    // Guarded by the owner's mutex
+    Notification pending;
+    // The runs of the callback going on, more than one when it runs inside its own run
+    uint32_t running_count = 0;
+    // Deleted by a delete or a nonzero return. During a run the UID stays until the last run ends.
+    bool deleted = false;
 };
 
-typedef std::shared_ptr<Callback> CallbackPtr;
-uint32_t process_callbacks(KernelState &kernel, SceUID thread_id);
+using CallbackRef = Ref<Callback>;
+
+// A registered thread event handler, run on the threads of target for the event types in mask. Its
+// deleted flag, its runs and its link in the kernel's list are guarded by the list's mutex.
+class ThreadEventHandler final : public WithUidClass<ThreadEventHandler, KernelObject, UidClass::thread_event>, public IntrusiveLink<ThreadEventHandler> {
+    friend class Ref<ThreadEventHandler>;
+
+    ThreadEventHandler(const char *name, SceUID target, SceUInt32 mask, Address handler, Address common);
+
+public:
+    // Whether the handler runs on the thread for an event of type
+    bool runs_for(SceUID thread_id, SceUInt32 type) const;
+
+    // A thread UID, or SCE_KERNEL_THREAD_ID_PROCESS_ALL_ID for every thread of the process
+    const SceUID target;
+    const SceUInt32 mask;
+    const Address handler;
+    const Address common;
+
+    // Set by an unregister or by a run that returned nonzero. No new run starts, and the handler
+    // is unlisted once no run of it is left.
+    bool deleted = false;
+    // The runs of the handler going on, on any thread
+    int runs = 0;
+};
+
+using ThreadEventHandlerRef = Ref<ThreadEventHandler>;
