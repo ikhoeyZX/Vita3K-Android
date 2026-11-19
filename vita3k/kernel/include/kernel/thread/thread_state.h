@@ -43,11 +43,11 @@ class RWLock;
 
 // Values are what sceKernelGetThreadInfo reports
 enum class ThreadStatus : SceUInt32 {
-    running = SCE_KERNEL_THREAD_STATUS_RUNNING,
-    waiting = SCE_KERNEL_THREAD_STATUS_WAITING, // Waiting to be awaken by sync object or operation
+    run = SCE_KERNEL_THREAD_STATUS_RUNNING,
+    wait = SCE_KERNEL_THREAD_STATUS_WAITING, // Waiting to be awaken by sync object or operation
     dormant = SCE_KERNEL_THREAD_STATUS_DORMANT, // Waiting for a job
     deleted = SCE_KERNEL_THREAD_STATUS_DELETED, // Gone for guest calls, until its host thread ends
-    suspended = SCE_KERNEL_THREAD_STATUS_SUSPENDED, // Held by a ForVM suspend, only reported
+    suspend = SCE_KERNEL_THREAD_STATUS_SUSPENDED, // Held by a ForVM suspend, only reported
 };
 
 // A thread, which its end waiters wait on like on any waitable object, and which is itself linked
